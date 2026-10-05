@@ -808,12 +808,134 @@ bool Simulation::advanceNavigation(
     return false;
 }
 
+bool Simulation::resumeTradeJourney(
+    Character& actor,
+    Runtime& runtime)
+{
+    TradeJourneyState& journey=runtime.tradeJourney;
+    if(!actor.alive
+       || !journey.active
+       || runtime.pendingContext.active()
+       || !runtime.plan.empty()){
+        return false;
+    }
+    if(!validTradeJourneyState(journey)){
+        cancelTradeJourney(actor,runtime,"invalid trade journey state");
+        return false;
+    }
+
+    Character* partner=nullptr;
+    if(!journey.returning){
+        partner=findFamilyCharacter(world_,journey.partner);
+        if(partner==nullptr || !partner->alive || partner->id==actor.id){
+            transitionTradeJourneyToReturn(
+                actor,runtime,"trade partner unavailable");
+            return false;
+        }
+        if(world_.minute-journey.legStartedMinute
+           >=contextActionTimeoutMinutes(ContextActionKind::Trade)){
+            transitionTradeJourneyToReturn(
+                actor,runtime,"outbound trade leg timed out");
+            return false;
+        }
+    }else if(
+        world_.minute-journey.legStartedMinute
+        >=contextActionTimeoutMinutes(ContextActionKind::Trade)){
+        // Returning home is an obligation, not a disposable context action.
+        // Give a delayed return a fresh routing window instead of stranding
+        // the resident and accidentally converting trade into migration.
+        journey.legStartedMinute=world_.minute;
+    }
+
+    PendingContextAction pending;
+    pending.token=issueContextActionToken();
+    pending.issuedMinute=journey.legStartedMinute;
+    setTradeContextPayload(
+        pending,
+        TradeContextPayload{
+            journey.partner,
+            journey.utility,
+            journey.originSettlement,
+            journey.destinationSettlement,
+            journey.originPos,
+            journey.returning
+        });
+    pending.hasSpatialTarget=true;
+
+    if(journey.returning){
+        pending.targetPos=journey.originPos;
+    }else{
+        const auto partnerRuntime=runtime_.find(journey.partner);
+        if(partnerRuntime==runtime_.end()){
+            transitionTradeJourneyToReturn(
+                actor,runtime,"trade partner runtime unavailable");
+            return false;
+        }
+        pending.targetPos=partnerRuntime->second.pos;
+    }
+
+    runtime.pendingContext=pending;
+    clearNavigation(runtime);
+    return true;
+}
+
+void Simulation::transitionTradeJourneyToReturn(
+    Character& actor,
+    Runtime& runtime,
+    const char* reason)
+{
+    TradeJourneyState& journey=runtime.tradeJourney;
+    if(!journey.active) return;
+
+    runtime.pendingContext.clear();
+    clearNavigation(runtime);
+    journey.returning=true;
+    journey.legStartedMinute=world_.minute;
+
+    std::ostringstream log;
+    log<<actor.name<<" ended outbound trade leg";
+    if(reason!=nullptr && reason[0]!='\0') log<<" ("<<reason<<")";
+    log<<" and is returning to settlement "
+       <<journey.originSettlement;
+    emit(log.str());
+}
+
+void Simulation::cancelTradeJourney(
+    Character& actor,
+    Runtime& runtime,
+    const char* reason)
+{
+    if(!runtime.tradeJourney.active) return;
+    runtime.pendingContext.clear();
+    clearNavigation(runtime);
+    runtime.tradeJourney.clear();
+
+    std::ostringstream log;
+    log<<actor.name<<" cancelled inter-settlement trade journey";
+    if(reason!=nullptr && reason[0]!='\0') log<<" ("<<reason<<")";
+    emit(log.str());
+}
+
 bool Simulation::advancePendingContext(
     Character& actor,
     Runtime& runtime)
 {
     PendingContextAction& pending=runtime.pendingContext;
     if(!pending.active()) return false;
+
+    if(pending.kind==ContextActionKind::Trade
+       && runtime.tradeJourney.active
+       && contextActionExpired(pending,world_.minute)){
+        if(runtime.tradeJourney.returning){
+            pending.clear();
+            clearNavigation(runtime);
+            runtime.tradeJourney.legStartedMinute=world_.minute;
+        }else{
+            transitionTradeJourneyToReturn(
+                actor,runtime,"outbound trade leg timed out");
+        }
+        return false;
+    }
 
     GridPos target=runtime.pos;
     int arrivalRadius=0;
@@ -1402,6 +1524,7 @@ void Simulation::clearRuntimeActivity(Runtime& r){
     r.repeatCount=0;
     r.consecutiveFailures=0;
     r.pendingContext.clear();
+    r.tradeJourney.clear();
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
@@ -1457,6 +1580,7 @@ void Simulation::advanceHouseholdMigration()
         });
         if(urgentNeed>=ruleset_.utilityAI.urgentThreshold
            || runtime.pendingContext.active()
+           || runtime.tradeJourney.active
            || (!runtime.plan.empty() && runtime.goal!=Goal::Idle)){
             return;
         }
@@ -3334,27 +3458,69 @@ void Simulation::step(){
             beginPlan(c,r);
         }
 
+        if(!criticalPreempted
+           && r.tradeJourney.active
+           && !r.pendingContext.active()
+           && r.plan.empty()){
+            const double urgentNeed=std::max({
+                c.needs.hunger,
+                c.needs.thirst,
+                c.needs.sleep,
+                c.needs.bladder,
+                c.needs.hygiene
+            });
+            if(urgentNeed<ruleset_.utilityAI.urgentThreshold){
+                resumeTradeJourney(c,r);
+            }
+        }
+
         if(r.pendingContext.active()){
             if(!world_.externalPhysicalExecution){
                 advancePendingContext(c,r);
                 if(r.pendingContext.active() && r.navigationRouteFailed){
-                    emit(c.name+" context action route failed");
+                    if(r.pendingContext.kind==ContextActionKind::Trade
+                       && r.tradeJourney.active){
+                        if(r.tradeJourney.returning){
+                            emit(c.name+" trade return route failed; retrying from current position");
+                            r.pendingContext.clear();
+                            clearNavigation(r);
+                            r.tradeJourney.legStartedMinute=world_.minute;
+                        }else{
+                            transitionTradeJourneyToReturn(
+                                c,r,"outbound trade route failed");
+                        }
+                    }else{
+                        emit(c.name+" context action route failed");
+                        r.pendingContext.clear();
+                        clearNavigation(r);
+                        r.penaltyUntilMinute=std::max(
+                            r.penaltyUntilMinute,
+                            world_.minute+5);
+                    }
+                }
+                continue;
+            }
+
+            if(contextActionExpired(r.pendingContext,world_.minute)){
+                if(r.pendingContext.kind==ContextActionKind::Trade
+                   && r.tradeJourney.active){
+                    if(r.tradeJourney.returning){
+                        emit(c.name+" trade return timed out; retrying");
+                        r.pendingContext.clear();
+                        clearNavigation(r);
+                        r.tradeJourney.legStartedMinute=world_.minute;
+                    }else{
+                        transitionTradeJourneyToReturn(
+                            c,r,"outbound trade leg timed out");
+                    }
+                }else{
+                    emit(c.name+" context action timed out");
                     r.pendingContext.clear();
                     clearNavigation(r);
                     r.penaltyUntilMinute=std::max(
                         r.penaltyUntilMinute,
                         world_.minute+5);
                 }
-                continue;
-            }
-
-            if(contextActionExpired(r.pendingContext,world_.minute)){
-                emit(c.name+" context action timed out");
-                r.pendingContext.clear();
-                clearNavigation(r);
-                r.penaltyUntilMinute=std::max(
-                    r.penaltyUntilMinute,
-                    world_.minute+5);
             }
             continue;
         }
