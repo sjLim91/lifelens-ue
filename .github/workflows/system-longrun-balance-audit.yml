@@ -1,0 +1,164 @@
+name: LifeLens 전 시스템 장기 밸런스 감사
+
+on:
+  push:
+    branches:
+      - audit/long-run-balance-causal-20261005
+    paths:
+      - 'Source/LifeLensCore/harness/system_balance_audit.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - 'Tools/long_run_balance_audit.py'
+      - '.github/workflows/system-longrun-balance-audit.yml'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: '최대 시뮬레이션 일수'
+        required: false
+        default: '1000'
+      checkpoints:
+        description: '체크포인트'
+        required: false
+        default: '1,7,30,100,365,1000'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-system-longrun-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  longrun:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [4242001, 874213954, 1357911, 2718281, 3141592]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Release 구성
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: 전 시스템 감사기 빌드
+        run: cmake --build build --target ll_system_balance_audit --parallel 2
+
+      - name: 1·7·30·100·365·1000일 감사
+        shell: bash
+        run: |
+          set -euo pipefail
+          DAYS="${{ github.event_name == 'workflow_dispatch' && inputs.days || '1000' }}"
+          CHECKPOINTS="${{ github.event_name == 'workflow_dispatch' && inputs.checkpoints || '1,7,30,100,365,1000' }}"
+          OUT="audit-results/seed-${{ matrix.seed }}"
+          mkdir -p "$OUT/snapshots"
+          /usr/bin/time -v -o "$OUT/resource-usage.txt" \
+            ./build/ll_system_balance_audit \
+              --seed '${{ matrix.seed }}' \
+              --days "$DAYS" \
+              --checkpoints "$CHECKPOINTS" \
+              --snapshot-directory "$OUT/snapshots" \
+            | tee "$OUT/audit.log"
+
+      - name: Seed 단위 machine-readable 결과
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "audit-results/seed-${{ matrix.seed }}/audit.log" ]; then
+            BASE_SHA="$(git merge-base HEAD origin/main)"
+            python3 Tools/long_run_balance_audit.py report \
+              --logs "audit-results/seed-${{ matrix.seed }}/audit.log" \
+              --out-dir "audit-results/seed-${{ matrix.seed }}/report" \
+              --base-sha "$BASE_SHA" \
+              --head-sha "$GITHUB_SHA"
+          fi
+
+      - name: Seed 감사 산출물 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: system-audit-seed-${{ matrix.seed }}
+          path: audit-results/seed-${{ matrix.seed }}
+          if-no-files-found: warn
+          retention-days: 30
+
+  determinism:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 감사기 빌드
+        run: |
+          cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target ll_system_balance_audit --parallel 2
+
+      - name: 동일 seed 반복 실행
+        shell: bash
+        run: |
+          set -euo pipefail
+          for RUN in a b; do
+            mkdir -p "determinism/$RUN/snapshots"
+            ./build/ll_system_balance_audit \
+              --seed 4242001 \
+              --days 100 \
+              --checkpoints '1,7,30,100' \
+              --snapshot-directory "determinism/$RUN/snapshots" \
+              > "determinism/$RUN/audit.log"
+          done
+          python3 Tools/long_run_balance_audit.py determinism \
+            --first determinism/a/audit.log \
+            --second determinism/b/audit.log \
+            --snapshot-a determinism/a/snapshots/day-100.llsave \
+            --snapshot-b determinism/b/snapshots/day-100.llsave \
+            | tee determinism/result.txt
+
+      - name: 결정론 증거 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: system-audit-determinism
+          path: determinism
+          retention-days: 30
+
+  aggregate:
+    needs: [longrun, determinism]
+    if: always() && needs.longrun.result == 'success' && needs.determinism.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Seed 산출물 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          pattern: system-audit-seed-*
+          path: combined
+          merge-multiple: true
+
+      - name: Seed 비교·통합 보고서 생성
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA="$(git merge-base HEAD origin/main)"
+          python3 Tools/long_run_balance_audit.py report \
+            --logs combined/seed-*/audit.log \
+            --out-dir aggregate-report \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$GITHUB_SHA"
+          echo '--- LONG RUN SUMMARY START ---'
+          cat aggregate-report/long-run-balance-audit.md
+          echo '--- LONG RUN SUMMARY END ---'
+
+      - name: 통합 JSON·CSV·Markdown 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: system-longrun-balance-audit-report
+          path: aggregate-report
+          retention-days: 30
