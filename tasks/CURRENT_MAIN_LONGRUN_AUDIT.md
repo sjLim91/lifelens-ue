@@ -1,3 +1,18 @@
+## R11 trade-journey persistence trigger — 2026-10-05
+
+- source product head: `662e1602863040d147cfdd7831bc2d0e82413320` (#642 candidate)
+- audit branch: `fix/p0-c6-trade-journey-r11-20261005`
+- purpose: verify physical inter-settlement trade mission completion after persisted TradeJourneyState.
+- seeds: 874213954, 4242001.
+- checkpoints: 100 / 365 / 1000 days.
+- acceptance focus:
+  - trade departures must produce actual exchange evidence when a valid journey is scheduled.
+  - exchanged journeys must physically return; returns must no longer remain zero because survival preemption erased context.
+  - critical survival still preempts trade; survival is never subordinated to trade.
+  - no accidental migration or new facility/chunk runaway attributable to trade persistence.
+  - record living/family/settlement/chunk/facility metrics against current-main control.
+- this audit trigger branch is evidence-only and must not be merged.
+
 ## 2026-10-04 R10 current-main reconciliation
 
 - #626/#635 premature split blocker: **NO LONGER REPRODUCING on current main**.
