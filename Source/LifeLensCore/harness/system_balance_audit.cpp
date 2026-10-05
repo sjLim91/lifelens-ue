@@ -89,9 +89,11 @@ struct ResidentAudit {
     std::array<std::uint64_t,5> urgentMinutes{};
     std::array<std::uint64_t,5> urgentEntries{};
     std::array<bool,5> urgentNow{};
+    std::array<std::uint64_t,2> criticalMinutes{};
+    std::array<std::uint64_t,2> criticalEntries{};
+    std::array<bool,2> criticalNow{};
     std::array<std::uint64_t,5> saturatedMinutes{};
     std::array<std::uint64_t,5> travelDistance{};
-    std::array<std::uint64_t,5> completedSurvival{};
     std::array<std::uint64_t,static_cast<std::size_t>(TimeBucket::Count)> time{};
     GridPos previousPosition{};
     bool hasPreviousPosition=false;
@@ -248,6 +250,11 @@ void observeResidentMinute(Simulation& sim,Character& c,ResidentAudit& a){
         if(u){++a.urgentMinutes[i];if(!a.urgentNow[i])++a.urgentEntries[i];}
         a.urgentNow[i]=u;if(n[i]>=0.999)++a.saturatedMinutes[i];
     }
+    for(std::size_t i=0;i<2;++i){
+        const bool critical=n[i]>=CriticalSurvivalPreemptThreshold;
+        if(critical){++a.criticalMinutes[i];if(!a.criticalNow[i])++a.criticalEntries[i];}
+        a.criticalNow[i]=critical;
+    }
     GridPos pos{};const bool hasPos=sim.runtimePosition(c.id,pos);
     const auto p=sim.observeResidentPresentation(c.id);
     if(hasPos&&a.hasPreviousPosition&&p.kind==PresentationActionKind::Physical&&p.phase==PresentationActionPhase::Moving){
@@ -365,17 +372,22 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     const auto civ=sim.observeCivilizationWorld(64);const auto society=sim.observeSocietyWorld();
     std::array<std::uint64_t,static_cast<std::size_t>(TimeBucket::Count)> tb{};
     std::array<std::array<std::uint64_t,NeedHistogramBins>,5> hist{};
-    std::array<double,5> needSum{};std::array<std::uint64_t,5> needObs{},urgent{},entries{},sat{},travel{},completed{};
+    std::array<double,5> needSum{};std::array<std::uint64_t,5> needObs{},urgent{},entries{},sat{},travel{};
+    std::array<std::uint64_t,2> criticalMinutes{},criticalEntries{};
     int capable=0,dependent=0;double pathogenSum=0,illnessSum=0,immunitySum=0;int livingHealth=0;
     for(const auto&c:w.characters){
         if(c.alive){if(lifeStageProfile(c.lifeStage).canWork)++capable;else ++dependent;
             pathogenSum+=c.health.pathogenLoad;illnessSum+=c.health.illnessSeverity;immunitySum+=c.health.immunity01;++livingHealth;}
         auto it=residents.find(c.id);if(it==residents.end())continue;const auto&a=it->second;
         for(std::size_t b=0;b<tb.size();++b)tb[b]+=a.time[b];
-        for(std::size_t n=0;n<5;++n){needSum[n]+=a.needSum[n];needObs[n]+=a.observedMinutes;urgent[n]+=a.urgentMinutes[n];entries[n]+=a.urgentEntries[n];sat[n]+=a.saturatedMinutes[n];travel[n]+=a.travelDistance[n];completed[n]+=a.completedSurvival[n];for(int k=0;k<NeedHistogramBins;++k)hist[n][k]+=a.needHistogram[n][k];}
+        for(std::size_t i=0;i<2;++i){criticalMinutes[i]+=a.criticalMinutes[i];criticalEntries[i]+=a.criticalEntries[i];}
+        for(std::size_t n=0;n<5;++n){needSum[n]+=a.needSum[n];needObs[n]+=a.observedMinutes;urgent[n]+=a.urgentMinutes[n];entries[n]+=a.urgentEntries[n];sat[n]+=a.saturatedMinutes[n];travel[n]+=a.travelDistance[n];for(int k=0;k<NeedHistogramBins;++k)hist[n][k]+=a.needHistogram[n][k];}
     }
     auto survival=deceasedSurvivalDays(w);double avgSurv=survival.empty()?0:std::accumulate(survival.begin(),survival.end(),0.0)/survival.size();
     int sanitationActive=0,sanitationUses=0;for(const auto&s:w.primitiveSanitationSites){if(s.active)++sanitationActive;sanitationUses+=s.useCount;}
+    int contaminatedWaterNodes=0,exposureResidents=0;double maxWaterContamination=0.0;
+    for(const auto&node:w.resourceNodes){if(node.material!=MaterialKind::Water||node.quantity<=0)continue;GridPos access{};if(!resolveCivilizationResourceAccessGridPosition(w,node.id,access))continue;const double contamination=w.environmentalResidues.exposureAt(access);maxWaterContamination=std::max(maxWaterContamination,contamination);if(contamination>0.01)++contaminatedWaterNodes;}
+    for(const auto&c:w.characters)if(c.health.lastExposureMinute>=0)++exposureResidents;
     int opFacilities=0,unusedOp=0,damaged=0,ruined=0,constructed=0,totalUses=0;
     std::array<int,7> facilityKinds{};
     for(const auto&f:w.facilities){if(f.state==FacilityState::Operational){++opFacilities;if(f.usageCount==0)++unusedOp;}if(f.state==FacilityState::Ruined)++ruined;if(f.durability<0.999&&f.state!=FacilityState::Ruined)++damaged;if(f.completedMinute>=0)++constructed;totalUses+=f.usageCount;++facilityKinds[static_cast<std::size_t>(f.kind)];}
@@ -456,13 +468,20 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     for(const auto&kv:rt.firstKnownMinute){
         const auto use=rt.firstUseMinute.find(kv.first);std::cout<<"AUDIT_KNOWLEDGE seed="<<seed<<" day="<<day<<" technique="<<static_cast<int>(kv.first)<<" discoveredMinute="<<kv.second<<" firstUseMinute="<<(use==rt.firstUseMinute.end()?-1:use->second)<<" lagMinutes="<<(use==rt.firstUseMinute.end()?-1:std::max(0,use->second-kv.second))<<"\n";
     }
+    std::cout<<"AUDIT_OBSERVABILITY seed="<<seed<<" day="<<day<<" migrationTime=event_or_assignment_only institutionEconomyTime=coordination_not_exclusive materialTradeTransfer=not_authoritatively_exposed spoilLoss=not_authoritatively_exposed"<<"\\n";
     std::cout<<"AUDIT_EVENTS seed="<<seed<<" day="<<day<<" preemptions="<<ev.preemptions<<" routeFailures="<<ev.routeFailures<<" timeouts="<<ev.timeouts
       <<" socialEvents="<<ev.socialEvents<<" civilizationEvents="<<ev.civilizationEvents<<" firstCritical="<<ev.firstCritical<<" firstIllness="<<ev.firstIllness
       <<" firstDeath="<<ev.firstDeath<<" firstBirth="<<ev.firstBirth<<" firstMarriage="<<ev.firstMarriage<<" firstPregnancy="<<ev.firstPregnancy
       <<" firstSecondSettlement="<<ev.firstSecondSettlement<<" firstChunkGrowth="<<ev.firstChunkGrowth<<" firstTradeDeparture="<<ev.firstTradeDeparture
       <<" firstTradeExchange="<<ev.firstTradeExchange<<" firstTradeReturn="<<ev.firstTradeReturn<<"\n";
     for(const auto&kv:residents){
-        const auto&a=kv.second;std::cout<<"AUDIT_RESIDENT_TIME seed="<<seed<<" day="<<day<<" resident="<<kv.first<<" observedMinutes="<<a.observedMinutes;
+        const auto&a=kv.second;
+        const std::array<const char*,5> residentNeedNames{{"hunger","thirst","fatigue","bladder","hygiene"}};
+        for(std::size_t i=0;i<5;++i)std::cout<<"AUDIT_RESIDENT_NEED seed="<<seed<<" day="<<day<<" resident="<<kv.first<<" need="<<residentNeedNames[i]
+          <<" avg="<<(a.observedMinutes?a.needSum[i]/a.observedMinutes:0.0)<<" p90="<<percentile(a.needHistogram[i],0.90)<<" p99="<<percentile(a.needHistogram[i],0.99)
+          <<" urgentEntries="<<a.urgentEntries[i]<<" urgentMinutes="<<a.urgentMinutes[i]<<" criticalEntries="<<(i<2?a.criticalEntries[i]:0)<<" criticalMinutes="<<(i<2?a.criticalMinutes[i]:0)
+          <<" saturatedMinutes="<<a.saturatedMinutes[i]<<" travelDistance="<<a.travelDistance[i]<<"\\n";
+        std::cout<<"AUDIT_RESIDENT_TIME seed="<<seed<<" day="<<day<<" resident="<<kv.first<<" observedMinutes="<<a.observedMinutes;
         for(std::size_t i=0;i<a.time.size();++i)std::cout<<" "<<TimeBucketNames[i]<<"Min="<<a.time[i];
         std::cout<<"\n";
     }
@@ -506,7 +525,6 @@ int main(int argc,char**argv){
     for(int m=1;m<=days*MinutesPerDay;++m){
         sim.step();
         for(auto&c:sim.world().characters){auto&a=residents[c.id];if(c.alive)observeResidentMinute(sim,c,a);else if(a.deathMinute<0)observeResidentMinute(sim,c,a);}
-        for(auto&kv:residents)for(std::size_t i=0;i<5;++i)kv.second.completedSurvival[i]=ev.survivalCompletions[i];
         observeCivilizationEvents(sim,residents,flows,ev,rt);
         if(m%60==0)sampleHourly(sim,flows,ev,rt);
         if(m%MinutesPerDay==0)updateFamilyTimeline(sim,ev);
