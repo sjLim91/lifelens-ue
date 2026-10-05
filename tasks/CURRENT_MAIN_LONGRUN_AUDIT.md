@@ -1,3 +1,17 @@
+## R11-B trade-journey final trigger — 2026-10-05
+
+- source product head: `1052c173eba16f4364f9e01d31ed57ad70490fcb` (#642 candidate)
+- audit branch: `fix/p0-c6-trade-journey-r11b-20261005`
+- includes active TradeJourney exclusion from local immediate exchange so agreed cargo cannot be mutated during survival preemption.
+- seeds: 874213954, 4242001.
+- checkpoints: 100 / 365 / 1000 days.
+- acceptance focus:
+  - departures must yield real exchanges when a valid journey is scheduled.
+  - exchanged journeys must physically return.
+  - critical survival still preempts and resumes.
+  - no accidental migration or runaway caused by journey persistence.
+- evidence-only branch; do not merge.
+
 ## 2026-10-04 R10 current-main reconciliation
 
 - #626/#635 premature split blocker: **NO LONGER REPRODUCING on current main**.
