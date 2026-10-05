@@ -75,6 +75,32 @@ struct TradeJourneyState {
     void clear(){ *this=TradeJourneyState{}; }
 };
 
+inline bool validTradeJourneyMaterial(MaterialKind material)
+{
+    switch(material){
+        case MaterialKind::Stone:
+        case MaterialKind::Flint:
+        case MaterialKind::Wood:
+        case MaterialKind::Fiber:
+        case MaterialKind::Clay:
+        case MaterialKind::Water:
+        case MaterialKind::PlantFood:
+        case MaterialKind::Bone:
+        case MaterialKind::Hide:
+        case MaterialKind::CopperOre:
+        case MaterialKind::TinOre:
+        case MaterialKind::IronOre:
+        case MaterialKind::Charcoal:
+        case MaterialKind::CopperMetal:
+        case MaterialKind::TinMetal:
+        case MaterialKind::Bronze:
+            return true;
+        case MaterialKind::Unknown:
+        default:
+            return false;
+    }
+}
+
 inline bool validTradeJourneyState(const TradeJourneyState& journey)
 {
     if(!journey.active) return true;
@@ -85,10 +111,8 @@ inline bool validTradeJourneyState(const TradeJourneyState& journey)
         && journey.originSettlement!=0
         && journey.destinationSettlement!=0
         && journey.originSettlement!=journey.destinationSettlement
-        && validMaterialKind(journey.firstGives)
-        && journey.firstGives!=MaterialKind::Unknown
-        && validMaterialKind(journey.secondGives)
-        && journey.secondGives!=MaterialKind::Unknown
+        && validTradeJourneyMaterial(journey.firstGives)
+        && validTradeJourneyMaterial(journey.secondGives)
         && journey.firstGives!=journey.secondGives
         && journey.quantityEach>0
         && journey.legStartedMinute>=0
