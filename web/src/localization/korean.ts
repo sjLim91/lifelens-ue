@@ -905,3 +905,12 @@ export function formatCognitionState(value: string): string {
 export function formatCognitiveContext(value: string): string {
   return translated('인지문맥', value, KOREAN_COGNITIVE_CONTEXT_LABELS, KOREAN_SHADOW_LABELS.unknown);
 }
+
+export function formatCognitiveProvider(value: string): string {
+  return translated('인지제공자', value, {
+    'local-openai-compatible': '무료 로컬 호환 모델',
+    'free-local-test': '무료 로컬 검증 제공자',
+    'free-local-fixture': '무료 로컬 검증 제공자',
+    'deterministic-free-local-fixture': '결정적 로컬 검증 제공자',
+  }, '로컬 제공자');
+}

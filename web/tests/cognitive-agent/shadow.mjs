@@ -4,7 +4,7 @@ import { source } from './compile.mjs';
 const { ShadowObserver, SHADOW_BUDGET } = await source('cognition/shadow-observer.ts');
 const { CognitionScheduler } = await source('cognition/cognition-scheduler.ts');
 const { LocalCognitionProvider } = await source('cognition/local-cognition-provider.ts');
-const { parseCognitiveProposal } = await source('cognition/cognitive-contract.ts');
+const { parseCognitiveProposal, parseCognitiveRequest } = await source('cognition/cognitive-contract.ts');
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
 const proposal = request => ({ actor: request.actor, intent: request.allowedIntents[0], priority: .6, targetResident: null, rationale: '현재 욕구와 기억을 확인했습니다.' });
 const request = (actor, minute) => ({ actor, minute, trigger: 'Reflection', needs: { hunger: .6 }, personality: { empathy: .8 }, emotion: { joy: .4 }, memories: [], beliefs: [], relationships: [], allowedIntents: ['ImproveFoodSecurity'] });
@@ -52,6 +52,27 @@ await test('invalid JSON/schema/extra properties fail closed with observable rej
   }
   const req = request('1', 100);
   assert.throws(() => parseCognitiveProposal({ ...proposal(req), inventedTruth: true }, req));
+});
+await test('malformed nested Core context fails closed and unavailable context attempts are throttled', async () => {
+  const base = request('1', 100);
+  assert.throws(() => parseCognitiveRequest({ ...base, relationships: [{ target: '2' }] }));
+  assert.throws(() => parseCognitiveRequest({ ...base, memories: [{}] }));
+  assert.throws(() => parseCognitiveRequest({ ...base, beliefs: [{ subject: '2' }] }));
+  const f = fixture();
+  let attempts = 0;
+  f.source.cognitiveRequest = () => { attempts++; return null; };
+  f.enable();
+  for (let i = 0; i < 100; i++) await f.controller.sample('1');
+  assert.equal(attempts, 1); assert.equal(f.controller.getSnapshot().status, 'context_unavailable');
+  f.advance(); await f.controller.sample('1'); assert.equal(attempts, 2); f.controller.dispose();
+});
+await test('local model configuration survives panel remount but is never persisted after dispose', () => {
+  const f = fixture();
+  assert.equal(f.controller.configure('https://cloud.example', 'paid'), false);
+  assert.equal(f.controller.configure('http://user:password@localhost', 'free'), false);
+  assert.equal(f.controller.configure('http://localhost:8080', 'free-local-model'), true);
+  assert.deepEqual(f.controller.getSnapshot().configuration, { baseUrl: 'http://localhost:8080', model: 'free-local-model' });
+  f.controller.dispose(); assert.equal(f.controller.getSnapshot().configuration, null);
 });
 await test('timeout settles an abort-ignoring provider; provider exceptions are optional failures', async () => {
   for (const [reason, provider] of [

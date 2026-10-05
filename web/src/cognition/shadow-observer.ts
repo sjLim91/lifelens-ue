@@ -32,6 +32,7 @@ export interface ShadowSnapshot {
   pendingActor: string | null;
   status: 'disabled' | 'ready' | 'pending' | 'configuration_error' | 'context_unavailable' | 'stale';
   records: readonly ShadowRecord[];
+  configuration: { baseUrl: string; model: string } | null;
 }
 const identity = (world: WorldOverview): string => JSON.stringify([
   world.worldSeed, world.populationSeed, world.generationVersion,
@@ -41,7 +42,7 @@ const living = (resident: Resident): boolean => resident.alive === true;
 export class ShadowObserver {
   private state: ShadowSnapshot = {
     enabled: false, automatic: false, suspended: false,
-    pendingActor: null, status: 'disabled', records: [],
+    pendingActor: null, status: 'disabled', records: [], configuration: null,
   };
   private readonly listeners = new Set<() => void>();
   private source: ShadowSource | null = null;
@@ -81,6 +82,7 @@ export class ShadowObserver {
       return false;
     }
     this.setProvider(new LocalCognitionProvider({ baseUrl, model: model.trim() }));
+    this.update({ configuration: { baseUrl, model: model.trim() } });
     return true;
   }
   // Uses the same free-local abstraction; injection also permits deterministic tests.
@@ -125,7 +127,7 @@ export class ShadowObserver {
     this.scheduler = null;
     this.source = null;
     this.provider = null;
-    this.update({ enabled: false, status: 'disabled' });
+    this.update({ enabled: false, automatic: false, status: 'disabled', configuration: null });
   }
   // Called by the existing Core refresh cadence, never by the renderer frame loop.
   observe(world: WorldOverview, residents: readonly Resident[], selected: string | null): void {
@@ -149,7 +151,7 @@ export class ShadowObserver {
       this.scheduler?.reset();
       this.update({ pendingActor: null, status: 'ready' });
     }
-    if (this.state.automatic && selected && minute - this.lastSampleMinute >= SHADOW_BUDGET.cadenceMinutes) {
+    if (this.state.automatic && selected && liveIds.has(selected) && minute - this.lastSampleMinute >= SHADOW_BUDGET.cadenceMinutes) {
       void this.sample(selected);
     }
   }
@@ -157,6 +159,7 @@ export class ShadowObserver {
     if (!this.state.enabled || this.state.suspended || this.disposed
       || !this.source || !this.scheduler || this.state.pendingActor
       || this.now() - this.lastCall < SHADOW_BUDGET.cadenceMs) return;
+    this.lastCall = this.now();
     const source = this.source;
     let request: CognitiveRequestDto | null;
     let resident: Resident | undefined;
@@ -178,7 +181,6 @@ export class ShadowObserver {
     this.worldIdentity = key;
     this.observedMinute = request.minute;
     const epoch = this.epoch;
-    this.lastCall = this.now();
     this.lastSampleMinute = request.minute;
     this.update({ pendingActor: actor, status: 'pending' });
     let result = await this.scheduler.submitObserved(request);
