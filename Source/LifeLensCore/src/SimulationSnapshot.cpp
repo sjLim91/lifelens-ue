@@ -102,16 +102,14 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
             if(journey.legStartedMinute>snapshot.world.minute)
                 return fail("runtime trade journey minute is in the future");
             const Character* actor=nullptr;
-            const Character* partner=nullptr;
             for(const Character& candidate:snapshot.world.characters){
                 if(candidate.id==item.first) actor=&candidate;
-                if(candidate.id==journey.partner) partner=&candidate;
             }
             if(actor==nullptr || !actor->alive)
                 return fail("runtime trade journey actor is not living");
-            if(!journey.returning
-               && (partner==nullptr || !partner->alive))
-                return fail("runtime outbound trade journey partner is not living");
+            // The partner may have died after departure but before the
+            // traveler's next tick. That is still valid persisted truth:
+            // resumeTradeJourney() converts the outbound leg into a return.
         }
 
         const PendingContextAction& pending=item.second.pendingContext;
