@@ -215,8 +215,9 @@ void Simulation::advanceSocietyExchange()
     // simultaneously while still allowing a durable route to emerge through
     // repeated real trips.
     for(const auto& entry:runtime_){
-        if(entry.second.pendingContext.active()
-           && entry.second.pendingContext.kind==ContextActionKind::Trade){
+        if(entry.second.tradeJourney.active
+           || (entry.second.pendingContext.active()
+               && entry.second.pendingContext.kind==ContextActionKind::Trade)){
             return;
         }
     }
@@ -233,6 +234,7 @@ void Simulation::advanceSocietyExchange()
         if(runtimeIt==runtime_.end()) continue;
         const Runtime& runtime=runtimeIt->second;
         if(runtime.pendingContext.active()
+           || runtime.tradeJourney.active
            || runtime.socialActive
            || !runtime.plan.empty()){
             continue;
@@ -288,31 +290,41 @@ void Simulation::advanceSocietyExchange()
     if(traveler==nullptr || partner==nullptr) return;
 
     Runtime& runtime=travelerRuntime->second;
-    clearNavigation(runtime);
-    runtime.plan.clear();
-    runtime.actionIndex=0;
-    runtime.announced=false;
-    runtime.socialActive=false;
-    runtime.socialIntent=SocialIntent::None;
-    runtime.socialTarget=0;
-    runtime.civilizationActive=false;
 
-    PendingContextAction trade;
-    trade.token=issueContextActionToken();
-    trade.issuedMinute=world_.minute;
-    setTradeContextPayload(
-        trade,
-        TradeContextPayload{
-            mission.partner,
-            mission.score,
-            mission.originSettlement,
-            mission.destinationSettlement,
-            travelerRuntime->second.pos,
-            false
-        });
-    trade.hasSpatialTarget=true;
-    trade.targetPos=partnerRuntime->second.pos;
-    runtime.pendingContext=trade;
+    // A mission is only observable as "departed" after Core proves that the
+    // current ground graph can actually reach the partner's current position.
+    // The runtime will still retarget if the partner moves later.
+    std::vector<GridPos> initialRoute;
+    if(!buildCoreGroundRoute(
+            world_,
+            runtime.pos,
+            partnerRuntime->second.pos,
+            1,
+            initialRoute)){
+        return;
+    }
+
+    clearRuntimeActivity(runtime);
+
+    TradeJourneyState journey;
+    journey.active=true;
+    journey.partner=mission.partner;
+    journey.utility=mission.score;
+    journey.originSettlement=mission.originSettlement;
+    journey.destinationSettlement=mission.destinationSettlement;
+    journey.originPos=runtime.pos;
+    journey.firstGives=mission.exchange.firstGives;
+    journey.secondGives=mission.exchange.secondGives;
+    journey.quantityEach=mission.exchange.quantityEach;
+    journey.legStartedMinute=world_.minute;
+    journey.returning=false;
+    journey.exchanged=false;
+    runtime.tradeJourney=journey;
+
+    if(!resumeTradeJourney(*traveler,runtime)){
+        runtime.tradeJourney.clear();
+        return;
+    }
 
     std::ostringstream log;
     log<<traveler->name<<" departed settlement "
