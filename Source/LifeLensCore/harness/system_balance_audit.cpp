@@ -94,6 +94,7 @@ struct ResidentAudit {
     std::array<bool,2> criticalNow{};
     std::array<std::uint64_t,5> saturatedMinutes{};
     std::array<std::uint64_t,5> travelDistance{};
+    std::array<std::uint64_t,5> survivalGoalMinutes{};
     std::array<std::uint64_t,static_cast<std::size_t>(TimeBucket::Count)> time{};
     int lastCivilizationActivityMinute=-1;
     std::uint64_t lastExplorationContextToken=0;
@@ -133,6 +134,7 @@ struct EventAudit {
     std::array<std::uint64_t,5> deaths{}; // illness accident exposure deprivation other
     std::uint64_t explorationAttempts=0,explorationSuccess=0,criticalExploration=0,ordinaryExploration=0;
     std::uint64_t explorationDistanceSum=0,explorationDistanceMax=0;
+    std::vector<int> explorationDistances;
     int firstCritical=-1,firstIllness=-1,firstDeath=-1,firstBirth=-1,firstMarriage=-1,firstPregnancy=-1;
     int firstSecondSettlement=-1,firstChunkGrowth=-1,firstTradeDeparture=-1,firstTradeExchange=-1,firstTradeReturn=-1;
 };
@@ -226,6 +228,37 @@ TimeBucket classifyTime(Simulation& sim,const Character& c,const ResidentPresent
         default:return TimeBucket::Idle;
     }
 }
+double intPercentile(std::vector<int> values,double p){
+    if(values.empty())return 0.0;
+    std::sort(values.begin(),values.end());
+    const std::size_t index=std::min(
+        values.size()-1,
+        static_cast<std::size_t>(std::ceil(p*static_cast<double>(values.size())))-1);
+    return static_cast<double>(values[index]);
+}
+int settlementNatural(const World&w,const SettlementClusterObservation&s,MaterialKind m){
+    int total=0;
+    for(const auto&node:w.resourceNodes){
+        if(node.material!=m||node.quantity<=0)continue;
+        GridPos access{};
+        if(resolveCivilizationResourceAccessGridPosition(w,node.id,access)
+           &&settlementClusterServesPosition(s,access)){
+            total+=node.quantity;
+        }
+    }
+    return total;
+}
+int settlementStored(const World&w,const SettlementClusterObservation&s,MaterialKind m){
+    int total=0;
+    for(const auto&storage:w.storageSites){
+        GridPos pos{};
+        if(resolveCivilizationStorageGridPosition(w,storage.id,pos)
+           &&settlementClusterServesPosition(s,pos)){
+            total+=storage.inventory.count(ItemKind::RawMaterial,m);
+        }
+    }
+    return total;
+}
 int natural(const World&w,MaterialKind m){int n=0;for(const auto&x:w.resourceNodes)if(x.material==m)n+=std::max(0,x.quantity);return n;}
 int carried(const World&w,MaterialKind m){int n=0;for(const auto&c:w.characters)n+=c.civilization.inventory.count(ItemKind::RawMaterial,m);return n;}
 int stored(const World&w,MaterialKind m){int n=0;for(const auto&s:w.storageSites)n+=s.inventory.count(ItemKind::RawMaterial,m);return n;}
@@ -286,6 +319,7 @@ void observeResidentMinute(Simulation& sim,Character& c,ResidentAudit& a){
         const std::size_t gi=goalIndex(p.physicalGoal);a.travelDistance[gi]+=manhattan(a.previousPosition,pos);
     }
     if(hasPos){a.previousPosition=pos;a.hasPreviousPosition=true;}
+    if(p.kind==PresentationActionKind::Physical){++a.survivalGoalMinutes[goalIndex(p.physicalGoal)];}
     ++a.time[static_cast<std::size_t>(classifyTime(sim,c,p))];
 
     if(c.health.lastExposureMinute>=0&&a.firstExposureMinute<0)a.firstExposureMinute=c.health.lastExposureMinute;
@@ -351,9 +385,10 @@ void observeCivilizationEvents(Simulation& sim,std::map<CharacterId,ResidentAudi
                         }
                         if(d==std::numeric_limits<int>::max())d=0;
                     }
-                    ev.explorationDistanceSum+=std::max(0,d);
-                    ev.explorationDistanceMax=std::max<std::uint64_t>(
-                        ev.explorationDistanceMax,std::max(0,d));
+                    d=std::max(0,d);
+                    ev.explorationDistanceSum+=d;
+                    ev.explorationDistanceMax=std::max<std::uint64_t>(ev.explorationDistanceMax,d);
+                    ev.explorationDistances.push_back(d);
                 }
             }
             if(a.technique!=TechniqueId::None&&a.success){
@@ -448,7 +483,7 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     const auto civ=sim.observeCivilizationWorld(64);const auto society=sim.observeSocietyWorld();
     std::array<std::uint64_t,static_cast<std::size_t>(TimeBucket::Count)> tb{};
     std::array<std::array<std::uint64_t,NeedHistogramBins>,5> hist{};
-    std::array<double,5> needSum{};std::array<std::uint64_t,5> needObs{},urgent{},entries{},sat{},travel{};
+    std::array<double,5> needSum{};std::array<std::uint64_t,5> needObs{},urgent{},entries{},sat{},travel{},survivalGoalMinutes{};
     std::array<std::uint64_t,2> criticalMinutes{},criticalEntries{};
     int capable=0,dependent=0;double pathogenSum=0,illnessSum=0,immunitySum=0;int livingHealth=0;
     int firstCriticalNeed=-1;
@@ -459,8 +494,9 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
         for(std::size_t b=0;b<tb.size();++b)tb[b]+=a.time[b];
         if(a.firstCriticalNeedMinute>=0&&(firstCriticalNeed<0||a.firstCriticalNeedMinute<firstCriticalNeed))firstCriticalNeed=a.firstCriticalNeedMinute;
         for(std::size_t i=0;i<2;++i){criticalMinutes[i]+=a.criticalMinutes[i];criticalEntries[i]+=a.criticalEntries[i];}
-        for(std::size_t n=0;n<5;++n){needSum[n]+=a.needSum[n];needObs[n]+=a.observedMinutes;urgent[n]+=a.urgentMinutes[n];entries[n]+=a.urgentEntries[n];sat[n]+=a.saturatedMinutes[n];travel[n]+=a.travelDistance[n];for(int k=0;k<NeedHistogramBins;++k)hist[n][k]+=a.needHistogram[n][k];}
+        for(std::size_t n=0;n<5;++n){needSum[n]+=a.needSum[n];needObs[n]+=a.observedMinutes;urgent[n]+=a.urgentMinutes[n];entries[n]+=a.urgentEntries[n];sat[n]+=a.saturatedMinutes[n];travel[n]+=a.travelDistance[n];survivalGoalMinutes[n]+=a.survivalGoalMinutes[n];for(int k=0;k<NeedHistogramBins;++k)hist[n][k]+=a.needHistogram[n][k];}
     }
+    int activePartnerships=0;for(const auto&pair:sim.romances().all())if(pair.active())++activePartnerships;
     auto survival=deceasedSurvivalDays(w);double avgSurv=survival.empty()?0:std::accumulate(survival.begin(),survival.end(),0.0)/survival.size();
     int sanitationActive=0,sanitationUses=0;for(const auto&s:w.primitiveSanitationSites){if(s.active)++sanitationActive;sanitationUses+=s.useCount;}
     int contaminatedWaterNodes=0,exposureResidents=0;double maxWaterContamination=0.0;
@@ -482,7 +518,7 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     const std::uint64_t totalTime=std::accumulate(tb.begin(),tb.end(),std::uint64_t{0});
     std::cout<<"AUDIT_CHECKPOINT seed="<<seed<<" day="<<day<<" minute="<<w.minute
       <<" totalPopulation="<<ov.totalResidents<<" living="<<ov.livingResidents<<" deceased="<<ov.deceasedResidents
-      <<" births="<<(ov.totalResidents>=4?ov.totalResidents-4:0)<<" pregnancies="<<ov.activePregnancies<<" married="<<ov.marriedCouples
+      <<" births="<<(ov.totalResidents>=4?ov.totalResidents-4:0)<<" pregnancies="<<ov.activePregnancies<<" married="<<ov.marriedCouples<<" activePartnerships="<<activePartnerships
       <<" households="<<ov.households<<" baby="<<ov.lifeStages.baby<<" toddler="<<ov.lifeStages.toddler<<" child="<<ov.lifeStages.child
       <<" teen="<<ov.lifeStages.teen<<" youngAdult="<<ov.lifeStages.youngAdult<<" adult="<<ov.lifeStages.adult<<" middleAge="<<ov.lifeStages.middleAge<<" elder="<<ov.lifeStages.elderly
       <<" capableWorkers="<<capable<<" dependents="<<dependent<<" dependentWorkerRatio="<<std::fixed<<std::setprecision(6)<<(capable?static_cast<double>(dependent)/capable:static_cast<double>(dependent))
@@ -503,6 +539,13 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
           <<" saturatedMinutes="<<sat[i]<<" travelDistance="<<travel[i]
           <<" completions="<<ev.survivalCompletions[i]<<" avgTravelPerCompletion="<<(ev.survivalCompletions[i]?static_cast<double>(travel[i])/ev.survivalCompletions[i]:0.0)<<"\n";
     }
+    const std::array<const char*,5> survivalNames{{"Eat","Drink","Sleep","UseToilet","Wash"}};
+    for(std::size_t i=0;i<survivalNames.size();++i){
+        std::cout<<"AUDIT_SURVIVAL_ACTION seed="<<seed<<" day="<<day<<" action="<<survivalNames[i]
+          <<" starts="<<ev.survivalStarts[i]<<" completions="<<ev.survivalCompletions[i]
+          <<" minutes="<<survivalGoalMinutes[i]<<" travelDistance="<<travel[i]
+          <<" avgTravelPerCompletion="<<(ev.survivalCompletions[i]?static_cast<double>(travel[i])/ev.survivalCompletions[i]:0.0)<<"\n";
+    }
     for(std::size_t i=0;i<AuditedMaterials.size();++i){
         const auto m=AuditedMaterials[i];const auto&f=flows[i];
         const SocietyDemandSignal demand=observeSocietyMaterialDemand(w,m);
@@ -520,7 +563,8 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     std::cout<<"\n";
     std::cout<<"AUDIT_WORLD_GROWTH seed="<<seed<<" day="<<day<<" explorationAttempts="<<ev.explorationAttempts<<" explorationSuccess="<<ev.explorationSuccess
       <<" ordinaryExploration="<<ev.ordinaryExploration<<" criticalExploration="<<ev.criticalExploration<<" explorationMeanDistance="<<(ev.explorationSuccess?static_cast<double>(ev.explorationDistanceSum)/ev.explorationSuccess:0.0)
-      <<" explorationMaxDistance="<<ev.explorationDistanceMax<<" maxDistanceFromSettlement="<<maxLivedDistance
+      <<" explorationP50Distance="<<intPercentile(ev.explorationDistances,0.50)<<" explorationP90Distance="<<intPercentile(ev.explorationDistances,0.90)
+      <<" explorationP95Distance="<<intPercentile(ev.explorationDistances,0.95)<<" explorationMaxDistance="<<ev.explorationDistanceMax<<" maxDistanceFromSettlement="<<maxLivedDistance
       <<" chunks="<<w.generatedNaturalChunks.size()<<" materializedAfterStart="<<(w.generatedNaturalChunks.size()>=rt.initialChunkCount?w.generatedNaturalChunks.size()-rt.initialChunkCount:0)<<" chunkMinX="<<minX<<" chunkMaxX="<<maxX<<" chunkMinY="<<minY<<" chunkMaxY="<<maxY
       <<" chunksLast1d="<<newly1<<" chunksLast7d="<<newly7<<" chunksLast30d="<<newly30<<" usedChunks="<<usedChunks
       <<" discoveredResourceNodes="<<discoveredNodes<<" usedDiscoveredResourceNodes="<<usedDiscoveredNodes<<" discoveryFollowupRate="<<(discoveredNodes?static_cast<double>(usedDiscoveredNodes)/discoveredNodes:0.0)<<"\n";
@@ -531,11 +575,23 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
       <<" migrationPressureMax="<<ev.migrationPressureMax<<" migrationAssignmentTransitions="<<ev.migrationAssignmentTransitions<<" tradeDepartures="<<ev.tradeDepartures<<" tradeArrivals="<<ev.tradeArrivals
       <<" tradeExchanges="<<ev.tradeExchanges<<" tradeReturns="<<ev.tradeReturns<<" tradeFailed="<<ev.tradeFailed<<" tradeCancelled="<<ev.tradeCancelled
       <<" tradeRoutes="<<trade.routeCount<<" activeTradeRoutes="<<trade.activeRouteCount<<" tradeEvidence="<<trade.exchangeEvidenceCount<<"\n";
-    for(const auto&s:net.settlements)std::cout<<"AUDIT_SETTLEMENT_DETAIL seed="<<seed<<" day="<<day<<" id="<<s.id<<" residents="<<s.residentCount<<" facilities="<<s.facilityCount<<" operationalFacilities="<<s.operationalFacilityCount<<" plannedFacilities="<<s.plannedFacilityCount<<" storages="<<s.storageSiteCount<<" active="<<(s.active?1:0)<<" established="<<(s.established?1:0)<<"\n";
+    for(const auto&s:net.settlements){
+        std::cout<<"AUDIT_SETTLEMENT_DETAIL seed="<<seed<<" day="<<day<<" id="<<s.id
+          <<" residents="<<s.residentCount<<" facilities="<<s.facilityCount
+          <<" operationalFacilities="<<s.operationalFacilityCount<<" plannedFacilities="<<s.plannedFacilityCount
+          <<" storages="<<s.storageSiteCount<<" active="<<(s.active?1:0)<<" established="<<(s.established?1:0)
+          <<" foodNatural="<<settlementNatural(w,s,MaterialKind::PlantFood)<<" foodStored="<<settlementStored(w,s,MaterialKind::PlantFood)
+          <<" waterNatural="<<settlementNatural(w,s,MaterialKind::Water)<<" waterStored="<<settlementStored(w,s,MaterialKind::Water)
+          <<" woodNatural="<<settlementNatural(w,s,MaterialKind::Wood)<<" woodStored="<<settlementStored(w,s,MaterialKind::Wood)
+          <<" stoneNatural="<<settlementNatural(w,s,MaterialKind::Stone)<<" stoneStored="<<settlementStored(w,s,MaterialKind::Stone)
+          <<" fiberNatural="<<settlementNatural(w,s,MaterialKind::Fiber)<<" fiberStored="<<settlementStored(w,s,MaterialKind::Fiber)
+          <<" clayNatural="<<settlementNatural(w,s,MaterialKind::Clay)<<" clayStored="<<settlementStored(w,s,MaterialKind::Clay)<<"\n";
+    }
     std::cout<<"AUDIT_HEALTH seed="<<seed<<" day="<<day<<" pathogenAvg="<<(livingHealth?pathogenSum/livingHealth:0.0)<<" illnessAvg="<<(livingHealth?illnessSum/livingHealth:0.0)
       <<" immunityAvg="<<(livingHealth?immunitySum/livingHealth:0.0)<<" illnessIncidence="<<ev.illnesses<<" recoveries="<<ev.recoveries<<" careEvents="<<ev.careEvents
       <<" deathsIllness="<<ev.deaths[0]<<" deathsAccident="<<ev.deaths[1]<<" deathsExposure="<<ev.deaths[2]<<" deathsDeprivation="<<ev.deaths[3]<<" deathsOther="<<ev.deaths[4]
-      <<" sanitationSites="<<w.primitiveSanitationSites.size()<<" activeSanitationSites="<<sanitationActive<<" sanitationUses="<<sanitationUses
+      <<" sanitationSites="<<w.primitiveSanitationSites.size()<<" activeSanitationSites="<<sanitationActive
+      <<" sanitationCoveragePerLiving="<<(ov.livingResidents?static_cast<double>(sanitationActive)/ov.livingResidents:0.0)<<" sanitationUses="<<sanitationUses
       <<" humanWasteResidues="<<w.environmentalResidues.all().size()
       <<" contaminationExposureResidents="<<exposureResidents<<" contaminatedWaterNodes="<<contaminatedWaterNodes
       <<" maxWaterContamination="<<maxWaterContamination<<"\n";
@@ -549,13 +605,15 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     std::cout<<"AUDIT_CIVILIZATION seed="<<seed<<" day="<<day<<" knownTechniqueTypes="<<civ.uniqueKnownTechniqueTypes<<" reproducibleTechniqueTypes="<<civ.uniqueReproducibleTechniqueTypes
       <<" techniqueFacts="<<civ.techniqueFactCount<<" teachingReceipts="<<civ.transmissionReceiptCount<<" lostTechnologies="<<civ.lostTechnologyCount
       <<" commonTechnologies="<<civ.commonTechnologyCount<<" establishedTechnologies="<<civ.establishedTechnologyCount<<" specializedResidents="<<society.specializedResidentCount
+      <<" educators="<<society.educatorCount<<" producers="<<society.producerCount<<" caregivers="<<society.caregiverCount<<" storekeepers="<<society.storekeeperCount
       <<" activeInstitutions="<<society.activeInstitutionCount<<" institutionMemberships="<<society.institutionMembershipCount<<" apprenticeship="<<society.apprenticeshipCount
+      <<" tradePartnerships="<<society.tradePartnershipCount<<" coordinatedResidents="<<society.coordinatedResidentCount<<" sharedContributions="<<society.sharedContributionFactCount
       <<" barterExchangeFacts="<<society.exchangeFactCount<<" durableRecords="<<society.durableRecordFactCount<<" recordMedia="<<society.recordMediaUnits
       <<" discoveredTracked="<<rt.firstKnownMinute.size()<<" usedKnowledge="<<usedKnowledge<<" neverUsedKnowledge="<<neverUsed<<"\n";
     for(const auto&kv:rt.firstKnownMinute){
         const auto use=rt.firstUseMinute.find(kv.first);std::cout<<"AUDIT_KNOWLEDGE seed="<<seed<<" day="<<day<<" technique="<<static_cast<int>(kv.first)<<" discoveredMinute="<<kv.second<<" firstUseMinute="<<(use==rt.firstUseMinute.end()?-1:use->second)<<" lagMinutes="<<(use==rt.firstUseMinute.end()?-1:std::max(0,use->second-kv.second))<<"\n";
     }
-    std::cout<<"AUDIT_OBSERVABILITY seed="<<seed<<" day="<<day<<" migrationTime=event_or_assignment_only institutionEconomyTime=coordination_not_exclusive materialTradeTransfer=not_authoritatively_exposed spoilLoss=not_authoritatively_exposed"<<"\n";
+    std::cout<<"AUDIT_OBSERVABILITY seed="<<seed<<" day="<<day<<" migrationTime=event_or_assignment_only institutionEconomyTime=coordination_not_exclusive materialTradeTransfer=not_authoritatively_exposed spoilLoss=not_authoritatively_exposed facilityAbandonment=not_authoritatively_exposed migrationTime=event_or_assignment_only"<<"\n";
     std::cout<<"AUDIT_EVENTS seed="<<seed<<" day="<<day<<" preemptions="<<ev.preemptions<<" routeFailures="<<ev.routeFailures<<" timeouts="<<ev.timeouts
       <<" socialEvents="<<ev.socialEvents<<" civilizationEvents="<<ev.civilizationEvents<<" firstCriticalNeed="<<firstCriticalNeed
       <<" firstCriticalPreemption="<<ev.firstCritical<<" firstCritical="<<ev.firstCritical<<" firstIllness="<<ev.firstIllness
