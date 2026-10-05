@@ -3,7 +3,16 @@ import {
   type CognitiveProposalDto,
   type CognitiveRequestDto,
 } from './cognitive-contract';
-import type { CognitiveProvider } from './cognitive-provider';
+import { CognitiveProviderError, type CognitiveProvider } from './cognitive-provider';
+
+export type CognitionStatus = 'validated' | 'rejected' | 'timeout' | 'error' | 'cancelled' | 'stale' | 'busy' | 'unavailable';
+export type CognitionReason = 'invalid_json' | 'invalid_schema' | 'http_error' | 'malformed_response' | 'provider_error' | 'no_proposal' | 'context_error' | 'target_unavailable' | CognitionStatus;
+export interface CognitionOutcome {
+  status: CognitionStatus;
+  reason: CognitionReason;
+  proposal: CognitiveProposalDto | null;
+}
+const outcome = (status: CognitionStatus, reason: CognitionReason = status): CognitionOutcome => ({ status, reason, proposal: null });
 
 export interface CognitionSchedulerConfig {
   maxConcurrent: number;
@@ -15,7 +24,7 @@ export interface CognitionSchedulerConfig {
 interface QueueItem {
   sequence: number;
   request: CognitiveRequestDto;
-  resolve: (proposal: CognitiveProposalDto | null) => void;
+  resolve: (result: CognitionOutcome) => void;
 }
 
 function validPositiveInteger(value: number): boolean {
@@ -52,21 +61,19 @@ export class CognitionScheduler {
     }
   }
 
-  submit(
-    request: CognitiveRequestDto,
-  ): Promise<CognitiveProposalDto | null> {
-    if (this.disposed || request.allowedIntents.length === 0) {
-      return Promise.resolve(null);
-    }
+  submit(request: CognitiveRequestDto): Promise<CognitiveProposalDto | null> {
+    return this.submitObserved(request).then((result) => result.proposal);
+  }
 
+  submitObserved(request: CognitiveRequestDto): Promise<CognitionOutcome> {
+    if (this.disposed) return Promise.resolve(outcome('cancelled'));
+    if (request.allowedIntents.length === 0) return Promise.resolve(outcome('rejected', 'invalid_schema'));
     const canStart = this.active < this.config.maxConcurrent;
     if (!canStart && this.queue.length >= this.config.maxQueued) {
-      return Promise.resolve(null);
+      return Promise.resolve(outcome('busy'));
     }
-
     const sequence = ++this.sequence;
     this.latestByActor.set(request.actor, sequence);
-
     return new Promise((resolve) => {
       this.queue.push({ sequence, request, resolve });
       this.pump();
@@ -78,7 +85,7 @@ export class CognitionScheduler {
     this.latestByActor.clear();
     for (const controller of this.activeControllers) controller.abort();
     while (this.queue.length > 0) {
-      this.queue.shift()?.resolve(null);
+      this.queue.shift()?.resolve(outcome('cancelled'));
     }
   }
 
@@ -107,54 +114,49 @@ export class CognitionScheduler {
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     let onAbort: (() => void) | undefined;
-    const abortedResult = new Promise<null>((resolve) => {
-      onAbort = () => resolve(null);
+    let timedOut = false;
+    const abortedResult = new Promise<CognitionOutcome>((resolve) => {
+      onAbort = () => resolve(outcome(timedOut ? 'timeout' : 'cancelled'));
       controller.signal.addEventListener('abort', onAbort, { once: true });
     });
     const providerResult = Promise.resolve()
       .then(() => this.provider.reason(item.request, controller.signal))
-      .catch(() => null);
-
-    const timeoutResult = new Promise<null>((resolve) => {
+      .then((proposal): CognitionOutcome => proposal === null
+        ? outcome('unavailable', 'no_proposal')
+        : { status: 'validated', reason: 'validated', proposal })
+      .catch((error: unknown): CognitionOutcome => error instanceof CognitiveProviderError
+        ? outcome(error.reason === 'invalid_json' || error.reason === 'invalid_schema' ? 'rejected' : 'error', error.reason)
+        : outcome('error', 'provider_error'));
+    const timeoutResult = new Promise<CognitionOutcome>((resolve) => {
       timer = setTimeout(() => {
+        timedOut = true;
         controller.abort();
-        resolve(null);
+        resolve(outcome('timeout'));
       }, this.config.timeoutMs);
     });
-
-    let proposal: CognitiveProposalDto | null = null;
     try {
-      proposal = await Promise.race([providerResult, timeoutResult, abortedResult]);
-
+      let result = await Promise.race([providerResult, timeoutResult, abortedResult]);
       if (this.disposed || controller.signal.aborted) {
-        proposal = null;
+        result = outcome(timedOut ? 'timeout' : 'cancelled');
       } else if (this.latestByActor.get(item.request.actor) !== item.sequence) {
-        proposal = null;
+        result = outcome('stale');
       } else {
         const now = this.simulationMinute();
-        if (
-          !Number.isFinite(now)
-          || now < item.request.minute
-          || now - item.request.minute
-            > this.config.staleAfterSimulationMinutes
-        ) {
-          proposal = null;
+        if (!Number.isFinite(now) || now < item.request.minute
+          || now - item.request.minute > this.config.staleAfterSimulationMinutes) {
+          result = outcome('stale');
         }
       }
-
-      if (proposal !== null) {
+      if (result.proposal !== null) {
         try {
-          proposal = parseCognitiveProposal(proposal, item.request);
+          result = { ...result, proposal: parseCognitiveProposal(result.proposal, item.request) };
         } catch {
-          proposal = null;
+          result = outcome('rejected', 'invalid_schema');
         }
       }
-
-      item.resolve(proposal);
+      item.resolve(result);
     } catch {
-      // A failed context reader must settle the caller just like provider
-      // failure, and must not leak an unhandled execute() rejection.
-      item.resolve(null);
+      item.resolve(outcome('error', 'context_error'));
     } finally {
       if (timer !== undefined) clearTimeout(timer);
       if (onAbort) controller.signal.removeEventListener('abort', onAbort);

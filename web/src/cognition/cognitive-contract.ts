@@ -169,6 +169,31 @@ export function parseCognitiveRequest(
     'cognitive request relationships',
   ) as unknown as CognitiveRelationshipDto[];
 
+  const validateEntries = (entries: unknown[], strings: string[], numbers: string[]): void => {
+    for (const entry of entries) {
+      const fields = record(entry);
+      for (const key of strings) {
+        if (typeof fields[key] !== 'string' || (fields[key] as string).length > 1024) {
+          throw new Error('cognitive context string is invalid');
+        }
+      }
+      for (const key of numbers) {
+        if (typeof fields[key] !== 'number' || !Number.isFinite(fields[key])) {
+          throw new Error('cognitive context number is invalid');
+        }
+      }
+    }
+  };
+  validateEntries(memories, ['who', 'what', 'where'], ['minute', 'recallScore', 'confidence', 'importance', 'emotionValence', 'emotionIntensity']);
+  for (const memory of memories) {
+    if (!Array.isArray(memory.tags) || memory.tags.length > MAX_COGNITIVE_CONTEXT_ENTRIES
+      || memory.tags.some((tag) => typeof tag !== 'string' || tag.length > 128)) {
+      throw new Error('cognitive memory tags are invalid');
+    }
+  }
+  validateEntries(beliefs, ['subject', 'proposition'], ['stance', 'confidence', 'lastUpdatedMinute']);
+  validateEntries(relationships, ['target'], ['socialBond', 'affection', 'trust', 'respect', 'conflict', 'fear', 'grudge']);
+
   if (
     !Array.isArray(candidate.allowedIntents)
     || candidate.allowedIntents.length > COGNITIVE_INTENTS.length
@@ -207,6 +232,9 @@ export function parseCognitiveProposal(
   request: CognitiveRequestDto,
 ): CognitiveProposalDto {
   const candidate = record(value);
+  if (Object.keys(candidate).some((key) => !['actor', 'intent', 'priority', 'targetResident', 'rationale'].includes(key))) {
+    throw new Error('cognitive proposal contains an unknown field');
+  }
 
   if (candidate.actor !== request.actor) {
     throw new Error('cognitive proposal actor mismatch');

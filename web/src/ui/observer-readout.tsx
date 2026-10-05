@@ -1,3 +1,4 @@
+import { CognitiveShadowPanel } from './cognitive-shadow-panel';
 import type { Resident } from '../runtime/core-types';
 import type { ObserverSnapshot } from '../state/observer-store';
 import {
@@ -267,6 +268,7 @@ export function SelectedResidentReadout({
       </p>
 
       <ResidentNeeds needs={resident.needs} />
+      <CognitiveShadowPanel resident={resident} residents={residents} />
 
       {showMigrationPressure ? (
         <div className="focused-life-section">
@@ -568,5 +570,6 @@ export function ResidentReadout({
     </>
   );
 }
+
 
 

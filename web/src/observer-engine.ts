@@ -1,3 +1,4 @@
+import { shadowObserver } from './cognition/shadow-observer';
 import { CharacterLayer } from './character-layer';
 import { LifeLensCoreBridge } from './runtime/core-bridge';
 import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
@@ -41,7 +42,9 @@ function requireCanvas(selector: string): HTMLCanvasElement {
   return element;
 }
 
-export function startObserverEngine(): void {
+export function startObserverEngine(): () => void {
+  let stopped = false;
+  let ownedCore: LifeLensCoreBridge | null = null;
   const canvas = requireCanvas('#worldCanvas');
   const threeWorldCanvas = requireCanvas('#threeWorldCanvas');
   const characterCanvas = requireCanvas('#characterCanvas');
@@ -100,7 +103,7 @@ export function startObserverEngine(): void {
     : OBSERVER_CAMERA_CONTRACT.defaultDesktopZoom;
   let localPanX = 0;
   let localPanZ = 0;
-  new CameraInput(canvas, {
+  const cameraInput = new CameraInput(canvas, {
     initialAngle: angle,
     initialElevation: elevation,
     initialZoom: zoom,
@@ -236,6 +239,7 @@ export function startObserverEngine(): void {
       followResidents,
     });
     const selectedResidentId = observerStore.getSnapshot().selectedResidentId;
+    shadowObserver.observe(snapshot.overview, residentSnapshot, selectedResidentId);
     threeWorldRenderer?.setSelectedResident(selectedResidentId);
     if (snapshot.terrainStaticChanged) {
       threeWorldRenderer?.setTerrain(terrain);
@@ -283,6 +287,7 @@ export function startObserverEngine(): void {
     const requestedSeed = seed.trim();
     const effectiveSeed = requestedSeed || generateWorldSeed();
     worldSession.createWorld(effectiveSeed);
+    shadowObserver.resetWorld();
     centerX = 0;
     centerY = 0;
     followResidents = false;
@@ -435,6 +440,7 @@ export function startObserverEngine(): void {
 
     const totalMinutes = requestedDays * MINUTES_PER_DAY;
     fastForwardRunning = true;
+    shadowObserver.suspend(true);
     simulationClock?.stop();
     threeWorldRenderer?.breakFootTrafficContinuity();
 
@@ -485,9 +491,11 @@ export function startObserverEngine(): void {
       console.error('LifeLens day fast-forward failed', error);
     } finally {
       fastForwardRunning = false;
+      if (!stopped) shadowObserver.suspend(false);
+      else ownedCore?.dispose();
       threeWorldRenderer?.breakFootTrafficContinuity();
       simulationClock?.resetAccumulator();
-      simulationClock?.start();
+      if (!stopped) simulationClock?.start();
     }
   }
   
@@ -518,7 +526,7 @@ export function startObserverEngine(): void {
     simulationClock.start();
   }
   
-  observerActions.bind({
+  const unbindActions = observerActions.bind({
     createWorld,
     setSimulationSpeed,
     fastForwardDays,
@@ -532,18 +540,23 @@ export function startObserverEngine(): void {
     clearObservationFocus: () => observerStore.clearObservationFocus(),
   });
   
-  new ResizeObserver(resizeCanvas).observe(canvas);
+  const resizeObserver = new ResizeObserver(resizeCanvas);
+  resizeObserver.observe(canvas);
   
   async function boot(): Promise<void> {
     observerStore.setRuntime('loading');
   
     try {
       const core = await LifeLensCoreBridge.connect();
+      if (stopped) { core.dispose(); return; }
+      ownedCore = core;
+      shadowObserver.attach(core);
       worldSession = new WorldSession(core, residentContinuity);
       observerStore.setRuntime('ready');
       createWorld('');
       startSimulationClock();
     } catch (error) {
+      if (stopped) return;
       const message = error instanceof Error ? error.message : String(error);
       console.error('LifeLensCore boot failed', error);
       observerStore.setRuntime('error', message);
@@ -552,4 +565,16 @@ export function startObserverEngine(): void {
   }
   
   void boot();
+  return () => {
+    stopped = true;
+    shadowObserver.dispose();
+    simulationClock?.stop();
+    unbindActions();
+    resizeObserver.disconnect();
+    cameraInput.dispose();
+    threeWorldRenderer?.dispose();
+    // Yielded fast-forward work retains its Core until it finishes.
+    if (!fastForwardRunning) ownedCore?.dispose();
+    worldSession = null;
+  };
   }
