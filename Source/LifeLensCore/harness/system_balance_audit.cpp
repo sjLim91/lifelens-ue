@@ -95,6 +95,8 @@ struct ResidentAudit {
     std::array<std::uint64_t,5> saturatedMinutes{};
     std::array<std::uint64_t,5> travelDistance{};
     std::array<std::uint64_t,static_cast<std::size_t>(TimeBucket::Count)> time{};
+    int lastCivilizationActivityMinute=-1;
+    std::uint64_t lastExplorationContextToken=0;
     GridPos previousPosition{};
     bool hasPreviousPosition=false;
     int illnessMinutes=0;
@@ -148,6 +150,7 @@ struct WorldRuntimeAudit {
         [](const ChunkCoord&a,const ChunkCoord&b){return a.x<b.x || (a.x==b.x && a.y<b.y);}
     };
     std::uint64_t repairObservations=0;
+    std::size_t initialChunkCount=0;
 };
 
 int needBin(double v){
@@ -186,23 +189,39 @@ TimeBucket classifyTime(Simulation& sim,const Character& c,const ResidentPresent
         case PresentationActionKind::KnowledgeTeaching:return TimeBucket::TeachingLearning;
         case PresentationActionKind::Trade:return TimeBucket::Trade;
         case PresentationActionKind::Civilization:{
-            if(p.facilityId!=0){
-                return p.facilityKind==FacilityKind::CultivatedPlot
-                    ? TimeBucket::Cultivation:TimeBucket::ConstructionRepair;
+            switch(p.facilityAction){
+                case FacilityBuildAction::Plan:
+                case FacilityBuildAction::DeliverMaterial:
+                case FacilityBuildAction::Work:
+                case FacilityBuildAction::Repair:
+                    return TimeBucket::ConstructionRepair;
+                case FacilityBuildAction::Plant:
+                case FacilityBuildAction::Water:
+                case FacilityBuildAction::Tend:
+                case FacilityBuildAction::Harvest:
+                    return TimeBucket::Cultivation;
+                case FacilityBuildAction::Fuel:
+                case FacilityBuildAction::Ignite:
+                case FacilityBuildAction::CollectCharcoal:
+                case FacilityBuildAction::LoadSmeltCharge:
+                case FacilityBuildAction::CollectMetal:
+                    return TimeBucket::Production;
+                case FacilityBuildAction::None:
+                default: break;
             }
-            const auto a=sim.observeResidentCivilizationActivity(c.id);
-            switch(a.kind){
-                case CivilizationActivityKind::Gather:return TimeBucket::Gather;
-                case CivilizationActivityKind::Store:
-                case CivilizationActivityKind::Retrieve:return TimeBucket::Storage;
-                case CivilizationActivityKind::Explore:return TimeBucket::Exploration;
-                case CivilizationActivityKind::Experiment:
-                case CivilizationActivityKind::Craft:return TimeBucket::Production;
-                case CivilizationActivityKind::None:return TimeBucket::Production;
+            switch(p.civilizationIntent){
+                case CivilizationIntent::Gather:return TimeBucket::Gather;
+                case CivilizationIntent::Store:
+                case CivilizationIntent::Retrieve:return TimeBucket::Storage;
+                case CivilizationIntent::Explore:return TimeBucket::Exploration;
+                case CivilizationIntent::Experiment:
+                case CivilizationIntent::Craft:return TimeBucket::Production;
+                case CivilizationIntent::None:
+                default:return TimeBucket::Production;
             }
-            return TimeBucket::Production;
         }
-        case PresentationActionKind::None:default:return TimeBucket::Idle;
+        case PresentationActionKind::None:
+        default:return TimeBucket::Idle;
     }
 }
 int natural(const World&w,MaterialKind m){int n=0;for(const auto&x:w.resourceNodes)if(x.material==m)n+=std::max(0,x.quantity);return n;}
@@ -284,53 +303,87 @@ void observeCivilizationEvents(Simulation& sim,std::map<CharacterId,ResidentAudi
     std::array<MaterialFlow,AuditedMaterials.size()>& flows,EventAudit& ev,WorldRuntimeAudit& rt){
     const int minute=sim.world().minute;
     for(const auto&c:sim.world().characters){
-        const auto a=sim.observeResidentCivilizationActivity(c.id);
-        if(!a.active||a.minute!=minute)continue;
-        const auto mi=materialIndex(a.material);
-        if(a.kind==CivilizationActivityKind::Gather&&a.success){
-            if(mi<flows.size())flows[mi].gathered+=std::max(0,a.quantity);
-        }else if(a.kind==CivilizationActivityKind::Store&&a.success){
-            if(mi<flows.size())flows[mi].stored+=std::max(0,a.quantity);
-        }else if(a.kind==CivilizationActivityKind::Retrieve&&a.success){
-            if(mi<flows.size())flows[mi].retrieved+=std::max(0,a.quantity);
-        }else if(a.kind==CivilizationActivityKind::Craft&&a.success){
-            if(mi<flows.size())flows[mi].produced+=std::max(0,a.quantity);
-        }else if(a.kind==CivilizationActivityKind::Explore){
-            ++ev.explorationAttempts;if(a.success)++ev.explorationSuccess;
-            const bool critical=c.needs.hunger>=CriticalSurvivalPreemptThreshold||c.needs.thirst>=CriticalSurvivalPreemptThreshold;
+        ResidentAudit& resident=residents[c.id];
+        const auto p=sim.observeResidentPresentation(c.id);
+        if(p.kind==PresentationActionKind::Civilization
+           && p.civilizationIntent==CivilizationIntent::Explore
+           && p.contextActionToken!=0
+           && p.contextActionToken!=resident.lastExplorationContextToken){
+            resident.lastExplorationContextToken=p.contextActionToken;
+            ++ev.explorationAttempts;
+            const bool critical=
+                c.needs.hunger>=CriticalSurvivalPreemptThreshold
+                || c.needs.thirst>=CriticalSurvivalPreemptThreshold;
             if(critical)++ev.criticalExploration;else ++ev.ordinaryExploration;
-            GridPos pos{};if(sim.runtimePosition(c.id,pos)){
-                int d=0;const auto net=sim.observeSettlementNetwork();
-                if(!net.settlements.empty()){
-                    d=std::numeric_limits<int>::max();
-                    for(const auto&s:net.settlements)d=std::min(d,settlementClusterServiceDistance(s,pos));
-                    if(d==std::numeric_limits<int>::max())d=0;
+        }
+
+        const auto a=sim.observeResidentCivilizationActivity(c.id);
+        if(a.active && a.minute>=0 && a.minute!=resident.lastCivilizationActivityMinute){
+            resident.lastCivilizationActivityMinute=a.minute;
+            const auto mi=materialIndex(a.material);
+            if(a.kind==CivilizationActivityKind::Gather&&a.success){
+                if(mi<flows.size())flows[mi].gathered+=std::max(0,a.quantity);
+            }else if(a.kind==CivilizationActivityKind::Store&&a.success){
+                if(mi<flows.size())flows[mi].stored+=std::max(0,a.quantity);
+            }else if(a.kind==CivilizationActivityKind::Retrieve&&a.success){
+                if(mi<flows.size())flows[mi].retrieved+=std::max(0,a.quantity);
+            }else if(a.kind==CivilizationActivityKind::Craft&&a.success){
+                if(mi<flows.size())flows[mi].produced+=std::max(0,a.quantity);
+            }else if(a.kind==CivilizationActivityKind::Explore&&a.success){
+                ++ev.explorationSuccess;
+                GridPos pos{};
+                if(sim.runtimePosition(c.id,pos)){
+                    int d=0;
+                    const auto net=sim.observeSettlementNetwork();
+                    if(!net.settlements.empty()){
+                        d=std::numeric_limits<int>::max();
+                        for(const auto&s:net.settlements){
+                            d=std::min(d,settlementClusterServiceDistance(s,pos));
+                        }
+                        if(d==std::numeric_limits<int>::max())d=0;
+                    }
+                    ev.explorationDistanceSum+=std::max(0,d);
+                    ev.explorationDistanceMax=std::max<std::uint64_t>(
+                        ev.explorationDistanceMax,std::max(0,d));
                 }
-                ev.explorationDistanceSum+=std::max(0,d);ev.explorationDistanceMax=std::max<std::uint64_t>(ev.explorationDistanceMax,std::max(0,d));
+            }
+            if(a.technique!=TechniqueId::None&&a.success){
+                const auto civ=sim.observeResidentCivilization(c.id);
+                for(const auto&t:civ.techniques){
+                    if(t.technique==a.technique&&t.successfulUses>0
+                       &&!rt.firstUseMinute.count(a.technique)){
+                        rt.firstUseMinute[a.technique]=a.minute;
+                    }
+                }
             }
         }
-        if(a.technique!=TechniqueId::None&&a.success){
-            const auto obs=sim.observeResidentCivilization(c.id);
-            for(const auto&t:obs.techniques)if(t.technique==a.technique&&t.successfulUses>0&&!rt.firstUseMinute.count(a.technique))rt.firstUseMinute[a.technique]=minute;
+
+        if(p.kind==PresentationActionKind::Parenting
+           &&p.parentingAction==ParentingAction::HealthCare
+           &&p.targetResidentId!=0){
+            auto it=residents.find(p.targetResidentId);
+            if(it!=residents.end()&&it->second.firstCareMinute<0){
+                it->second.firstCareMinute=minute;
+            }
         }
-    }
-    for(const auto&c:sim.world().characters){
-        const auto p=sim.observeResidentPresentation(c.id);
-        if(p.kind==PresentationActionKind::Parenting&&p.parentingAction==ParentingAction::HealthCare&&p.targetResidentId!=0){
-            auto it=residents.find(p.targetResidentId);if(it!=residents.end()&&it->second.firstCareMinute<0)it->second.firstCareMinute=minute;
-        }
+
         if(minute%60!=0) continue;
         const auto civ=sim.observeResidentCivilization(c.id);
         for(const auto&t:civ.techniques){
-            if(t.technique!=TechniqueId::None&&!rt.firstKnownMinute.count(t.technique))rt.firstKnownMinute[t.technique]=t.learnedMinute>=0?t.learnedMinute:minute;
-            if(t.successfulUses>0&&!rt.firstUseMinute.count(t.technique))rt.firstUseMinute[t.technique]=minute;
+            if(t.technique!=TechniqueId::None&&!rt.firstKnownMinute.count(t.technique)){
+                rt.firstKnownMinute[t.technique]=t.learnedMinute>=0?t.learnedMinute:minute;
+            }
+            if(t.successfulUses>0&&!rt.firstUseMinute.count(t.technique)){
+                rt.firstUseMinute[t.technique]=minute;
+            }
         }
     }
 }
 void sampleHourly(Simulation& sim,std::array<MaterialFlow,AuditedMaterials.size()>& flows,EventAudit&ev,WorldRuntimeAudit&rt){
     const World&w=sim.world();
     for(std::size_t i=0;i<AuditedMaterials.size();++i){
-        if(natural(w,AuditedMaterials[i])+carried(w,AuditedMaterials[i])+stored(w,AuditedMaterials[i])<=0)flows[i].shortageSampleMinutes+=60;
+        const SocietyDemandSignal demand=observeSocietyMaterialDemand(w,AuditedMaterials[i]);
+        if(demand.deficitUnits>0)flows[i].shortageSampleMinutes+=60;
     }
     for(const auto&f:w.facilities){
         auto &prev=rt.facilities[f.id];
@@ -421,15 +474,20 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     for(std::size_t i=0;i<5;++i){
         std::cout<<"AUDIT_NEED seed="<<seed<<" day="<<day<<" need="<<nn[i]<<" avg="<<(needObs[i]?needSum[i]/needObs[i]:0)
           <<" p50="<<percentile(hist[i],0.50)<<" p90="<<percentile(hist[i],0.90)<<" p95="<<percentile(hist[i],0.95)<<" p99="<<percentile(hist[i],0.99)
-          <<" urgentEntries="<<entries[i]<<" urgentMinutes="<<urgent[i]<<" saturatedMinutes="<<sat[i]<<" travelDistance="<<travel[i]
+          <<" urgentEntries="<<entries[i]<<" urgentMinutes="<<urgent[i]
+          <<" criticalEntries="<<(i<2?criticalEntries[i]:0)<<" criticalMinutes="<<(i<2?criticalMinutes[i]:0)
+          <<" saturatedMinutes="<<sat[i]<<" travelDistance="<<travel[i]
           <<" completions="<<ev.survivalCompletions[i]<<" avgTravelPerCompletion="<<(ev.survivalCompletions[i]?static_cast<double>(travel[i])/ev.survivalCompletions[i]:0.0)<<"\n";
     }
     for(std::size_t i=0;i<AuditedMaterials.size();++i){
         const auto m=AuditedMaterials[i];const auto&f=flows[i];
+        const SocietyDemandSignal demand=observeSocietyMaterialDemand(w,m);
         std::cout<<"AUDIT_RESOURCE seed="<<seed<<" day="<<day<<" material="<<materialLabel(m)
           <<" accessibleWorld="<<natural(w,m)<<" carried="<<carried(w,m)<<" stored="<<stored(w,m)
+          <<" desiredUnits="<<demand.desiredUnits<<" societyAvailableUnits="<<demand.availableUnits<<" deficitUnits="<<demand.deficitUnits<<" demand01="<<demand.demand01
           <<" gathered="<<f.gathered<<" produced="<<f.produced<<" consumed="<<f.consumed<<" constructionConsumed="<<f.constructionConsumed
-          <<" storedFlow="<<f.stored<<" retrievedFlow="<<f.retrieved<<" tradedTransfer="<<f.tradedTransfer<<" shortageSampleMinutes="<<f.shortageSampleMinutes<<"\n";
+          <<" storedFlow="<<f.stored<<" retrievedFlow="<<f.retrieved<<" tradedTransfer="<<f.tradedTransfer
+          <<" spoiledLostObserved=-1 shortageSampleMinutes="<<f.shortageSampleMinutes<<"\n";
     }
     std::cout<<"AUDIT_FACILITY seed="<<seed<<" day="<<day<<" total="<<w.facilities.size()<<" operational="<<opFacilities<<" damaged="<<damaged<<" ruined="<<ruined
       <<" constructed="<<constructed<<" repairObservations="<<rt.repairObservations<<" totalUses="<<totalUses<<" unusedOperational="<<unusedOp
@@ -439,7 +497,7 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     std::cout<<"AUDIT_WORLD_GROWTH seed="<<seed<<" day="<<day<<" explorationAttempts="<<ev.explorationAttempts<<" explorationSuccess="<<ev.explorationSuccess
       <<" ordinaryExploration="<<ev.ordinaryExploration<<" criticalExploration="<<ev.criticalExploration<<" explorationMeanDistance="<<(ev.explorationSuccess?static_cast<double>(ev.explorationDistanceSum)/ev.explorationSuccess:0.0)
       <<" explorationMaxDistance="<<ev.explorationDistanceMax<<" maxDistanceFromSettlement="<<maxLivedDistance
-      <<" chunks="<<w.generatedNaturalChunks.size()<<" chunkMinX="<<minX<<" chunkMaxX="<<maxX<<" chunkMinY="<<minY<<" chunkMaxY="<<maxY
+      <<" chunks="<<w.generatedNaturalChunks.size()<<" materializedAfterStart="<<(w.generatedNaturalChunks.size()>=rt.initialChunkCount?w.generatedNaturalChunks.size()-rt.initialChunkCount:0)<<" chunkMinX="<<minX<<" chunkMaxX="<<maxX<<" chunkMinY="<<minY<<" chunkMaxY="<<maxY
       <<" chunksLast1d="<<newly1<<" chunksLast7d="<<newly7<<" chunksLast30d="<<newly30<<" usedChunks="<<usedChunks
       <<" discoveredResourceNodes="<<discoveredNodes<<" usedDiscoveredResourceNodes="<<usedDiscoveredNodes<<" discoveryFollowupRate="<<(discoveredNodes?static_cast<double>(usedDiscoveredNodes)/discoveredNodes:0.0)<<"\n";
     std::cout<<"AUDIT_SETTLEMENT seed="<<seed<<" day="<<day<<" settlements="<<net.settlementCount<<" activeSettlements="<<net.activeSettlementCount
@@ -452,7 +510,9 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
       <<" immunityAvg="<<(livingHealth?immunitySum/livingHealth:0.0)<<" illnessIncidence="<<ev.illnesses<<" recoveries="<<ev.recoveries<<" careEvents="<<ev.careEvents
       <<" deathsIllness="<<ev.deaths[0]<<" deathsAccident="<<ev.deaths[1]<<" deathsExposure="<<ev.deaths[2]<<" deathsDeprivation="<<ev.deaths[3]<<" deathsOther="<<ev.deaths[4]
       <<" sanitationSites="<<w.primitiveSanitationSites.size()<<" activeSanitationSites="<<sanitationActive<<" sanitationUses="<<sanitationUses
-      <<" humanWasteResidues="<<w.environmentalResidues.all().size()<<"\n";
+      <<" humanWasteResidues="<<w.environmentalResidues.all().size()
+      <<" contaminationExposureResidents="<<exposureResidents<<" contaminatedWaterNodes="<<contaminatedWaterNodes
+      <<" maxWaterContamination="<<maxWaterContamination<<"\n";
     for(const auto&kv:residents){
         const auto&a=kv.second;
         std::cout<<"AUDIT_HEALTH_CHAIN seed="<<seed<<" day="<<day<<" resident="<<kv.first<<" firstExposure="<<a.firstExposureMinute<<" firstPathogen="<<a.firstPathogenMinute
@@ -502,6 +562,7 @@ int main(int argc,char**argv){
     if(!snapshotDir.empty())std::filesystem::create_directories(snapshotDir);
     std::map<CharacterId,ResidentAudit> residents;for(const auto&c:sim.world().characters)residents[c.id];
     std::array<MaterialFlow,AuditedMaterials.size()> flows{};EventAudit ev{};WorldRuntimeAudit rt{};
+    rt.initialChunkCount=sim.world().generatedNaturalChunks.size();
     for(const auto&ch:sim.world().generatedNaturalChunks)rt.seenChunks.insert(ch.coord);
     sim.onEvent([&](const std::string&line){
         const int minute=sim.world().minute;
