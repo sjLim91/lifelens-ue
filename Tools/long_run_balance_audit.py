@@ -100,6 +100,14 @@ def derive(records: list[dict[str, Any]]) -> dict[str, Any]:
     days = sorted({int(r["day"]) for r in records if "day" in r})
 
     findings: list[dict[str, Any]] = []
+    observability = by_kind(records, "AUDIT_OBSERVABILITY")
+    if observability:
+        findings.append(issue("P3","authoritative-observability-gaps",
+            "일부 요구 지표는 현재 Core read-model이 minute/material 단위 authority를 직접 노출하지 않아 event/assignment evidence로만 측정",
+            1,
+            "migration 전용 minute phase, material별 inter-settlement transfer, explicit spoil/loss event가 별도 authority DTO로 노출되지 않음",
+            "Web 추론이나 임의 계산으로 메우지 않는 것이 simulation truth 계약에 맞음",
+            "진단 정밀도",seeds,"LifeLensCore observer/read-model layer","하","낮음"))
     extinct = [s for s in seeds if (s, max(days, default=0)) in checkpoints and int(checkpoints[(s,max(days))].get("living",0)) == 0]
     if extinct:
         findings.append(issue("P0","population-extinction",
