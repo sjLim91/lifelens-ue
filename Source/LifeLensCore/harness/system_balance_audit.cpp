@@ -100,6 +100,7 @@ struct ResidentAudit {
     GridPos previousPosition{};
     bool hasPreviousPosition=false;
     int illnessMinutes=0;
+    int firstCriticalNeedMinute=-1;
     int firstExposureMinute=-1;
     int firstPathogenMinute=-1;
     int firstIllnessMinute=-1;
@@ -123,7 +124,8 @@ struct MaterialFlow {
 struct EventAudit {
     std::uint64_t preemptions=0,routeFailures=0,timeouts=0;
     std::uint64_t socialEvents=0,civilizationEvents=0;
-    std::uint64_t migrationStarts=0,migrationAssignmentTransitions=0;
+    std::uint64_t migrationStarts=0,migrationAssignmentTransitions=0,migrationCandidateSamples=0;
+    double migrationPressureSum=0.0,migrationPressureMax=0.0;
     std::uint64_t tradeDepartures=0,tradeArrivals=0,tradeExchanges=0,tradeReturns=0,tradeFailed=0,tradeCancelled=0;
     std::uint64_t illnesses=0,recoveries=0,careEvents=0;
     std::array<std::uint64_t,5> survivalStarts{};
@@ -271,7 +273,11 @@ void observeResidentMinute(Simulation& sim,Character& c,ResidentAudit& a){
     }
     for(std::size_t i=0;i<2;++i){
         const bool critical=n[i]>=CriticalSurvivalPreemptThreshold;
-        if(critical){++a.criticalMinutes[i];if(!a.criticalNow[i])++a.criticalEntries[i];}
+        if(critical){
+            ++a.criticalMinutes[i];
+            if(!a.criticalNow[i])++a.criticalEntries[i];
+            if(a.firstCriticalNeedMinute<0)a.firstCriticalNeedMinute=sim.world().minute;
+        }
         a.criticalNow[i]=critical;
     }
     GridPos pos{};const bool hasPos=sim.runtimePosition(c.id,pos);
@@ -302,6 +308,9 @@ void observeResidentMinute(Simulation& sim,Character& c,ResidentAudit& a){
 void observeCivilizationEvents(Simulation& sim,std::map<CharacterId,ResidentAudit>& residents,
     std::array<MaterialFlow,AuditedMaterials.size()>& flows,EventAudit& ev,WorldRuntimeAudit& rt){
     const int minute=sim.world().minute;
+    if(ev.firstChunkGrowth<0 && sim.world().generatedNaturalChunks.size()>rt.initialChunkCount){
+        ev.firstChunkGrowth=minute;
+    }
     for(const auto&c:sim.world().characters){
         ResidentAudit& resident=residents[c.id];
         const auto p=sim.observeResidentPresentation(c.id);
@@ -396,6 +405,20 @@ void sampleHourly(Simulation& sim,std::array<MaterialFlow,AuditedMaterials.size(
             rt.delivered[key]=r.delivered;
         }
     }
+    SettlementPopulation migrationPopulation;
+    for(const auto&c:w.characters){
+        if(!c.alive)continue;
+        GridPos pos{};
+        if(sim.runtimePosition(c.id,pos))migrationPopulation[c.id]=pos;
+    }
+    const HouseholdMigrationPlan migration=
+        chooseHouseholdMigrationPlan(w,sim.households(),migrationPopulation);
+    if(migration.available){
+        ++ev.migrationCandidateSamples;
+        ev.migrationPressureSum+=migration.consensusPressure01;
+        ev.migrationPressureMax=std::max(ev.migrationPressureMax,migration.consensusPressure01);
+    }
+
     const auto net=sim.observeSettlementNetwork();
     for(const auto&c:w.characters){
         if(!c.alive)continue;GridPos p{};if(!sim.runtimePosition(c.id,p))continue;
@@ -405,7 +428,6 @@ void sampleHourly(Simulation& sim,std::array<MaterialFlow,AuditedMaterials.size(
         rt.settlementAssignment[c.id]=now;
     }
     if(net.activeSettlementCount>=2&&ev.firstSecondSettlement<0)ev.firstSecondSettlement=w.minute;
-    if(w.generatedNaturalChunks.size()>1&&ev.firstChunkGrowth<0)ev.firstChunkGrowth=w.minute;
 }
 void updateFamilyTimeline(const Simulation&sim,EventAudit&ev){
     for(const auto&c:sim.world().characters)for(const auto&e:c.lifeHistory){
@@ -429,11 +451,13 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     std::array<double,5> needSum{};std::array<std::uint64_t,5> needObs{},urgent{},entries{},sat{},travel{};
     std::array<std::uint64_t,2> criticalMinutes{},criticalEntries{};
     int capable=0,dependent=0;double pathogenSum=0,illnessSum=0,immunitySum=0;int livingHealth=0;
+    int firstCriticalNeed=-1;
     for(const auto&c:w.characters){
         if(c.alive){if(lifeStageProfile(c.lifeStage).canWork)++capable;else ++dependent;
             pathogenSum+=c.health.pathogenLoad;illnessSum+=c.health.illnessSeverity;immunitySum+=c.health.immunity01;++livingHealth;}
         auto it=residents.find(c.id);if(it==residents.end())continue;const auto&a=it->second;
         for(std::size_t b=0;b<tb.size();++b)tb[b]+=a.time[b];
+        if(a.firstCriticalNeedMinute>=0&&(firstCriticalNeed<0||a.firstCriticalNeedMinute<firstCriticalNeed))firstCriticalNeed=a.firstCriticalNeedMinute;
         for(std::size_t i=0;i<2;++i){criticalMinutes[i]+=a.criticalMinutes[i];criticalEntries[i]+=a.criticalEntries[i];}
         for(std::size_t n=0;n<5;++n){needSum[n]+=a.needSum[n];needObs[n]+=a.observedMinutes;urgent[n]+=a.urgentMinutes[n];entries[n]+=a.urgentEntries[n];sat[n]+=a.saturatedMinutes[n];travel[n]+=a.travelDistance[n];for(int k=0;k<NeedHistogramBins;++k)hist[n][k]+=a.needHistogram[n][k];}
     }
@@ -502,7 +526,9 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
       <<" discoveredResourceNodes="<<discoveredNodes<<" usedDiscoveredResourceNodes="<<usedDiscoveredNodes<<" discoveryFollowupRate="<<(discoveredNodes?static_cast<double>(usedDiscoveredNodes)/discoveredNodes:0.0)<<"\n";
     std::cout<<"AUDIT_SETTLEMENT seed="<<seed<<" day="<<day<<" settlements="<<net.settlementCount<<" activeSettlements="<<net.activeSettlementCount
       <<" inhabited="<<life.inhabitedCount<<" declining="<<life.decliningCount<<" abandoned="<<life.abandonedCount<<" migrationStarts="<<ev.migrationStarts
-      <<" migrationAssignmentTransitions="<<ev.migrationAssignmentTransitions<<" tradeDepartures="<<ev.tradeDepartures<<" tradeArrivals="<<ev.tradeArrivals
+      <<" migrationCandidateSamples="<<ev.migrationCandidateSamples
+      <<" migrationPressureMean="<<(ev.migrationCandidateSamples?ev.migrationPressureSum/static_cast<double>(ev.migrationCandidateSamples):0.0)
+      <<" migrationPressureMax="<<ev.migrationPressureMax<<" migrationAssignmentTransitions="<<ev.migrationAssignmentTransitions<<" tradeDepartures="<<ev.tradeDepartures<<" tradeArrivals="<<ev.tradeArrivals
       <<" tradeExchanges="<<ev.tradeExchanges<<" tradeReturns="<<ev.tradeReturns<<" tradeFailed="<<ev.tradeFailed<<" tradeCancelled="<<ev.tradeCancelled
       <<" tradeRoutes="<<trade.routeCount<<" activeTradeRoutes="<<trade.activeRouteCount<<" tradeEvidence="<<trade.exchangeEvidenceCount<<"\n";
     for(const auto&s:net.settlements)std::cout<<"AUDIT_SETTLEMENT_DETAIL seed="<<seed<<" day="<<day<<" id="<<s.id<<" residents="<<s.residentCount<<" facilities="<<s.facilityCount<<" operationalFacilities="<<s.operationalFacilityCount<<" plannedFacilities="<<s.plannedFacilityCount<<" storages="<<s.storageSiteCount<<" active="<<(s.active?1:0)<<" established="<<(s.established?1:0)<<"\n";
@@ -531,7 +557,8 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     }
     std::cout<<"AUDIT_OBSERVABILITY seed="<<seed<<" day="<<day<<" migrationTime=event_or_assignment_only institutionEconomyTime=coordination_not_exclusive materialTradeTransfer=not_authoritatively_exposed spoilLoss=not_authoritatively_exposed"<<"\n";
     std::cout<<"AUDIT_EVENTS seed="<<seed<<" day="<<day<<" preemptions="<<ev.preemptions<<" routeFailures="<<ev.routeFailures<<" timeouts="<<ev.timeouts
-      <<" socialEvents="<<ev.socialEvents<<" civilizationEvents="<<ev.civilizationEvents<<" firstCritical="<<ev.firstCritical<<" firstIllness="<<ev.firstIllness
+      <<" socialEvents="<<ev.socialEvents<<" civilizationEvents="<<ev.civilizationEvents<<" firstCriticalNeed="<<firstCriticalNeed
+      <<" firstCriticalPreemption="<<ev.firstCritical<<" firstCritical="<<ev.firstCritical<<" firstIllness="<<ev.firstIllness
       <<" firstDeath="<<ev.firstDeath<<" firstBirth="<<ev.firstBirth<<" firstMarriage="<<ev.firstMarriage<<" firstPregnancy="<<ev.firstPregnancy
       <<" firstSecondSettlement="<<ev.firstSecondSettlement<<" firstChunkGrowth="<<ev.firstChunkGrowth<<" firstTradeDeparture="<<ev.firstTradeDeparture
       <<" firstTradeExchange="<<ev.firstTradeExchange<<" firstTradeReturn="<<ev.firstTradeReturn<<"\n";
