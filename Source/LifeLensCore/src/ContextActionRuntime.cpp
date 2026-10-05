@@ -370,6 +370,19 @@ bool Simulation::completeContextAction(
         case ContextActionKind::Trade: {
             TradeContextPayload trade=
                 tradeContextPayload(pending);
+            TradeJourneyState* journey=
+                runtime.tradeJourney.active
+                    ? &runtime.tradeJourney
+                    : nullptr;
+
+            if(journey!=nullptr){
+                trade.partner=journey->partner;
+                trade.utility=journey->utility;
+                trade.originSettlement=journey->originSettlement;
+                trade.destinationSettlement=journey->destinationSettlement;
+                trade.originPos=journey->originPos;
+                trade.returning=journey->returning;
+            }
 
             if(trade.returning){
                 if(!contextActionNearTarget(
@@ -382,6 +395,7 @@ bool Simulation::completeContextAction(
                    <<" returned from inter-settlement trade to settlement "
                    <<trade.originSettlement;
                 emit(log.str());
+                if(journey!=nullptr) journey->clear();
                 completed=true;
                 break;
             }
@@ -389,7 +403,12 @@ bool Simulation::completeContextAction(
             Character* partner=findContextCharacter(
                 world_,trade.partner);
             if(partner==nullptr || !partner->alive || partner->id==actor.id){
-                pending.clear();
+                if(journey!=nullptr){
+                    transitionTradeJourneyToReturn(
+                        actor,runtime,"trade partner unavailable at destination");
+                }else{
+                    pending.clear();
+                }
                 return false;
             }
             const auto partnerRuntime=runtime_.find(partner->id);
@@ -399,14 +418,29 @@ bool Simulation::completeContextAction(
                 return false;
             }
 
-            SocietyExchangePlan exchange=
-                bestMutualExchangePlan(actor,*partner,relationships_);
-            if(!exchange.valid()){
-                pending.clear();
-                return false;
+            SocietyExchangePlan exchange;
+            if(journey!=nullptr){
+                exchange=tradeJourneyExchangePlan(actor.id,*journey);
+            }else{
+                // Backward-compatible continuation for a pre-extension
+                // snapshot that persisted an old pending Trade but no journey.
+                exchange=bestMutualExchangePlan(
+                    actor,*partner,relationships_);
+                if(exchange.valid() && exchange.first!=actor.id){
+                    exchange=reversedSocietyExchangePlan(exchange);
+                }
             }
-            if(exchange.first!=actor.id){
-                exchange=reversedSocietyExchangePlan(exchange);
+
+            if(!exchange.valid()
+               || exchange.first!=actor.id
+               || exchange.second!=partner->id){
+                if(journey!=nullptr){
+                    transitionTradeJourneyToReturn(
+                        actor,runtime,"agreed exchange is no longer valid");
+                }else{
+                    pending.clear();
+                }
+                return false;
             }
 
             if(hasSocietyTradePartnership(
@@ -423,7 +457,12 @@ bool Simulation::completeContextAction(
             }
             if(trade.utility<InterSettlementTradeMissionThreshold
                || !executeMutualExchange(actor,*partner,exchange)){
-                pending.clear();
+                if(journey!=nullptr){
+                    transitionTradeJourneyToReturn(
+                        actor,runtime,"agreed exchange could not execute");
+                }else{
+                    pending.clear();
+                }
                 return false;
             }
 
@@ -474,11 +513,22 @@ bool Simulation::completeContextAction(
             }
             emit(log.str());
 
-            // The trade is not complete until the carrier returns. This keeps
-            // a trading journey from accidentally becoming migration and makes
-            // the route physically observable in both directions.
+            // The trade is not complete until the carrier returns. Persist the
+            // journey phase independently from the currently-running context
+            // action so survival may preempt without erasing the obligation.
+            if(journey!=nullptr){
+                journey->exchanged=true;
+                journey->returning=true;
+                journey->legStartedMinute=world_.minute;
+                trade.partner=journey->partner;
+                trade.utility=journey->utility;
+                trade.originSettlement=journey->originSettlement;
+                trade.destinationSettlement=journey->destinationSettlement;
+                trade.originPos=journey->originPos;
+            }
             trade.returning=true;
             setTradeContextPayload(pending,trade);
+            pending.issuedMinute=world_.minute;
             pending.hasSpatialTarget=true;
             pending.targetPos=trade.originPos;
             clearNavigation(runtime);
