@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <unordered_set>
+#include <vector>
 
 #include "SimulationSnapshot.h"
 
@@ -21,17 +22,22 @@ void writeTradeJourneySnapshotExtension(
         sizeof(TradeJourneySnapshotExtensionMagic));
     w.u32(TradeJourneySnapshotExtensionVersion);
 
-    std::uint32_t activeCount=0;
+    std::vector<CharacterId> activeActors;
+    activeActors.reserve(snapshot.runtime.size());
     for(const auto& entry:snapshot.runtime){
-        if(entry.second.tradeJourney.active) ++activeCount;
+        if(entry.second.tradeJourney.active){
+            activeActors.push_back(entry.first);
+        }
     }
-    w.u32(activeCount);
+    std::sort(activeActors.begin(),activeActors.end());
+    w.u32(static_cast<std::uint32_t>(activeActors.size()));
 
-    for(const auto& entry:snapshot.runtime){
-        const TradeJourneyState& journey=entry.second.tradeJourney;
-        if(!journey.active) continue;
+    for(const CharacterId actor:activeActors){
+        const auto runtime=snapshot.runtime.find(actor);
+        if(runtime==snapshot.runtime.end()) return;
+        const TradeJourneyState& journey=runtime->second.tradeJourney;
 
-        w.u64(entry.first);
+        w.u64(actor);
         w.u64(journey.partner);
         w.real(journey.utility);
         w.u64(journey.originSettlement);
