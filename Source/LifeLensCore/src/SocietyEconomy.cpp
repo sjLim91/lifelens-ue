@@ -160,6 +160,7 @@ void Simulation::advanceSocietyExchange()
         const auto firstRuntime=runtime_.find(first.id);
         if(firstRuntime==runtime_.end()
            || firstRuntime->second.pendingContext.active()
+           || firstRuntime->second.tradeJourney.active
            || firstRuntime->second.socialActive) continue;
 
         for(std::size_t j=i+1;j<world_.characters.size();++j){
@@ -168,6 +169,7 @@ void Simulation::advanceSocietyExchange()
             const auto secondRuntime=runtime_.find(second.id);
             if(secondRuntime==runtime_.end()
                || secondRuntime->second.pendingContext.active()
+               || secondRuntime->second.tradeJourney.active
                || secondRuntime->second.socialActive) continue;
 
             const int distance=manhattan(
