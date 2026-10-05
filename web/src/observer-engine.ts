@@ -277,7 +277,9 @@ export function startObserverEngine(): void {
   }
   
   function createWorld(seed: string): void {
-    if (!worldSession) return;
+    // UI button disabling alone does not cover keyboard/programmatic actions
+    // while the chunked fast-forward loop yields to the browser.
+    if (!worldSession || fastForwardRunning) return;
     const requestedSeed = seed.trim();
     const effectiveSeed = requestedSeed || generateWorldSeed();
     worldSession.createWorld(effectiveSeed);
@@ -291,9 +293,13 @@ export function startObserverEngine(): void {
     characterLayer?.clearResidents();
     simulationClock?.resetAccumulator();
     observerStore.resetWorld();
+    const newWorldSpeed = observerStore.getSnapshot().simulationSpeed;
+    simulationClock?.setSpeed(newWorldSpeed);
+    threeWorldRenderer?.setSimulationSpeed(newWorldSpeed);
     threeWorldRenderer?.resetSocialEvents();
     threeWorldRenderer?.setSelectedResident(null);
     threeWorldRenderer?.setSelectedHumanTrace(null);
+    threeWorldRenderer?.setSelectedSettlement(null);
     refresh();
   }
 
