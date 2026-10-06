@@ -280,6 +280,66 @@ int main()
     assert(rawWaterUnitCount(directActor.civilization.inventory)==0);
     assert(simpleContainerCount(directActor.civilization.inventory)==0);
 
+    // A live Water node elsewhere in the materialized world is knowledge, not
+    // an immediate local Drink affordance. When urgent thirst has no reachable
+    // settlement-local source, keep acquiring/exploring Water instead of
+    // committing to an unbounded cross-world Physical Drink walk.
+    SimulationRuleset remoteWaterRules=DefaultSimulationRuleset;
+    remoteWaterRules.needs.hungerPerMinute=0.0;
+    remoteWaterRules.needs.thirstPerMinute=0.0;
+    remoteWaterRules.needs.sleepPerMinute=0.0;
+    remoteWaterRules.needs.bladderPerMinute=0.0;
+    remoteWaterRules.needs.hygienePerMinute=0.0;
+    Simulation remoteWater(
+        9123406,0,CurrentWorldGenerationVersion,remoteWaterRules);
+    remoteWater.setupDemo();
+    remoteWater.world().minute=1;
+    remoteWater.world().characters.resize(1);
+    remoteWater.world().resourceNodes.clear();
+    remoteWater.world().storageSites.clear();
+    remoteWater.world().generatedNaturalChunks.clear();
+
+    Character& remoteActor=remoteWater.world().characters.front();
+    const CharacterId remoteActorId=remoteActor.id;
+    while(remoteActor.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Water,1)) {}
+    while(remoteActor.civilization.inventory.remove(
+        ItemKind::SimpleContainer,MaterialKind::Unknown,1,true)) {}
+    remoteActor.needs={0.01,0.95,0.01,0.01,0.01};
+
+    GridPos remoteStart{};
+    assert(remoteWater.runtimePosition(remoteActorId,remoteStart));
+    ResourceNode remoteWaterNode;
+    remoteWaterNode.id=991206;
+    remoteWaterNode.material=MaterialKind::Water;
+    remoteWaterNode.quantity=20;
+    remoteWaterNode.maxQuantity=20;
+    remoteWaterNode.pos={
+        remoteStart.x+SettlementServiceRadiusGrid+20,
+        remoteStart.y};
+    remoteWater.world().resourceNodes.push_back(remoteWaterNode);
+
+    bool sawLocalWaterExplore=false;
+    bool sawRemoteDirectDrink=false;
+    for(int minute=0;minute<10 && !sawLocalWaterExplore;++minute){
+        remoteWater.step();
+        const ResidentPresentationObservation observed=
+            remoteWater.observeResidentPresentation(remoteActorId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Civilization
+           && observed.civilizationIntent==CivilizationIntent::Explore
+           && observed.civilizationMaterial==MaterialKind::Water){
+            sawLocalWaterExplore=true;
+        }
+        if(observed.active
+           && observed.kind==PresentationActionKind::Physical
+           && observed.physicalGoal==Goal::Drink){
+            sawRemoteDirectDrink=true;
+        }
+    }
+    assert(sawLocalWaterExplore);
+    assert(!sawRemoteDirectDrink);
+
     // An urgent hygiene need with no usable water is an acquisition problem,
     // not a reason to idle or socialize. Start between the 15-minute
     // civilization ticks: the resident must request real stored Water at the
