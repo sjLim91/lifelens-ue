@@ -99,7 +99,9 @@ bool validatePendingDesignatedAreaTarget(const World& world,const PendingContext
     return pending.hasSpatialTarget
         && activePrimitiveSanitationSite(world.primitiveSanitationSites)==nullptr
         && world.environmentalResidues.exposureAt(pending.targetPos)
-            < PrimitiveSanitationCleanSiteExposureLimit;
+            < PrimitiveSanitationCleanSiteExposureLimit
+        && primitiveSanitationCandidateProtectsKnownWater(
+            world,pending.targetPos);
 }
 
 CivilizationExecutionResult establishPendingDesignatedSanitationArea(
@@ -111,8 +113,10 @@ CivilizationExecutionResult establishPendingDesignatedSanitationArea(
     if(!actor.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return result;
     if(activePrimitiveSanitationSite(world.primitiveSanitationSites)!=nullptr) return result;
-    if(world.environmentalResidues.exposureAt(targetPos)>=PrimitiveSanitationCleanSiteExposureLimit)
+    if(world.environmentalResidues.exposureAt(targetPos)>=PrimitiveSanitationCleanSiteExposureLimit
+       || !primitiveSanitationCandidateProtectsKnownWater(world,targetPos)){
         return result;
+    }
 
     PrimitiveSanitationSite site;
     site.id=nextPrimitiveSanitationSiteId(world.primitiveSanitationSites);
