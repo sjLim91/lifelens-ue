@@ -75,6 +75,68 @@ int main()
     assert(establishedSite->pos.y==established.sanitationSitePos.y);
     assert(establishedSite->useCount==0);
 
+    // Persistent sanitation cannot be established where its HumanWaste
+    // influence radius overlaps an actual Core drinking access point. The
+    // selector must discard the otherwise preferred clean site and choose a
+    // different physically safe candidate rather than relying on lower disease
+    // probability after contamination has already happened.
+    World waterProtectedWorld(8188);
+    waterProtectedWorld.minute=600;
+    waterProtectedWorld.resourceNodes.clear();
+    waterProtectedWorld.primitiveSanitationSites.clear();
+    Character waterBuilder=builder;
+    waterBuilder.id=31;
+    waterBuilder.civilization.character=waterBuilder.id;
+    const GridPos waterReference{0,0};
+    const PrimitiveSanitationOpportunity unconstrained=
+        evaluateDesignatedSanitationSiteCreationOpportunity(
+            waterProtectedWorld.seed,waterBuilder,
+            waterProtectedWorld.environmentalResidues,
+            waterProtectedWorld.minute,waterReference);
+    assert(unconstrained.siteAvailable);
+
+    ResourceNode drinkingWater;
+    drinkingWater.id=8188001;
+    drinkingWater.material=MaterialKind::Water;
+    drinkingWater.quantity=20;
+    drinkingWater.maxQuantity=20;
+    drinkingWater.pos=unconstrained.suggestedSite;
+    waterProtectedWorld.resourceNodes.push_back(drinkingWater);
+
+    GridPos drinkingAccess{};
+    assert(resolveCivilizationResourceAccessGridPosition(
+        waterProtectedWorld,drinkingWater.id,drinkingAccess));
+    assert(!primitiveSanitationCandidateProtectsKnownWater(
+        waterProtectedWorld,unconstrained.suggestedSite));
+
+    const auto protectsWater=[&](GridPos candidate){
+        return primitiveSanitationCandidateProtectsKnownWater(
+            waterProtectedWorld,candidate);
+    };
+    const PrimitiveSanitationOpportunity constrained=
+        evaluateDesignatedSanitationSiteCreationOpportunity(
+            waterProtectedWorld.seed,waterBuilder,
+            waterProtectedWorld.environmentalResidues,
+            waterProtectedWorld.minute,waterReference,
+            protectsWater);
+    assert(constrained.siteAvailable);
+    assert(protectsWater(constrained.suggestedSite));
+    assert(
+        manhattan(constrained.suggestedSite,drinkingAccess)
+        >primitiveSanitationResidueRadiusTiles(
+            PrimitiveSanitationSiteKind::DesignatedArea));
+
+    const PrimitiveSanitationSiteCreationResult protectedSite=
+        establishDesignatedSanitationArea(
+            waterProtectedWorld.seed,waterBuilder,
+            waterProtectedWorld.environmentalResidues,
+            waterProtectedWorld.primitiveSanitationSites,
+            waterProtectedWorld.minute,waterReference,
+            SettlementServiceRadiusGrid,
+            protectsWater);
+    assert(protectedSite.established);
+    assert(protectsWater(protectedSite.pos));
+
     // An active site suppresses duplicate establishment. The civilization
     // layer must not multiply facilities merely because several residents know
     // the same technique.
