@@ -97,3 +97,5 @@ jobs:
           path: longrun-manual.log
           if-no-files-found: ignore
           retention-days: 14
+
+# off-cadence social bootstrap long-run validation 2026-10-06
