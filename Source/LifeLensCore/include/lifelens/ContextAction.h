@@ -348,11 +348,7 @@ inline bool resolveCivilizationContextTarget(
             if(decision.experiment==ExperimentKind::DesignateSanitationArea){
                 const PrimitiveSanitationOpportunity opportunity=evaluatePrimitiveSanitationOpportunity(
                     world.seed,actor,world.environmentalResidues,world.minute,
-                    authoritativePosition,
-                    [&](GridPos candidate){
-                        return primitiveSanitationCandidateProtectsKnownWater(
-                            world,candidate);
-                    });
+                    authoritativePosition);
                 if(!opportunity.siteAvailable) return false;
                 outTarget=opportunity.suggestedSite;
                 return true;
