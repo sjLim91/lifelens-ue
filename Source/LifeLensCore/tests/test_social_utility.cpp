@@ -453,7 +453,8 @@ int main()
             outgoingRelationships,
             {0,0},
             0.99,
-            &localPopulation);
+            &localPopulation,
+            true);
     assert(localBootstrap.kind==UnifiedDecisionKind::Social);
     assert(localBootstrap.social.intent==SocialIntent::Approach);
     assert(localBootstrap.social.target==unfamiliar.id);
@@ -467,10 +468,10 @@ int main()
             0.99,
             0.14,
             &localPopulation);
-    assert(localUnifiedBootstrap.kind==UnifiedDecisionKind::Social);
-    assert(
-        localUnifiedBootstrap.social.intent
-        ==SocialIntent::Approach);
+    // The regular 15-minute unified cadence keeps the historical
+    // threshold/civilization competition. First-contact bootstrap is reserved
+    // for the cheaper off-cadence social probe in Simulation.
+    assert(localUnifiedBootstrap.kind!=UnifiedDecisionKind::Social);
 
     SettlementPopulation remotePopulation=localPopulation;
     remotePopulation[unfamiliar.id]={
@@ -484,7 +485,8 @@ int main()
             outgoingRelationships,
             {0,0},
             0.0,
-            &remotePopulation);
+            &remotePopulation,
+            true);
     assert(remoteDecision.kind==UnifiedDecisionKind::Physical);
     assert(remoteDecision.physicalGoal==Goal::Idle);
 
