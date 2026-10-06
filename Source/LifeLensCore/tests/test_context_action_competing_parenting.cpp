@@ -98,6 +98,9 @@ int main(){
     childPit.establishedBy=escortParent;
     childPit.establishedMinute=escortedSnapshot.world.minute;
     childPit.active=true;
+    childPit.improvementWork=DugSanitationPitWorkRequired;
+    childPit.improvedBy=escortParent;
+    childPit.improvedMinute=escortedSnapshot.world.minute;
     escortedSnapshot.world.primitiveSanitationSites.clear();
     escortedSnapshot.world.primitiveSanitationSites.push_back(childPit);
 
