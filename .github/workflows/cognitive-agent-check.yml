@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -27,5 +29,31 @@ jobs:
       - name: Local-only provider, schema, queue, timeout and stale-response regression
         run: node tests/cognitive-agent/run.mjs
         working-directory: web
+      - name: Resident detail Korean Shadow observation UI
+        run: node tests/cognitive-agent/shadow-ui.mjs
+        working-directory: web
+      - name: World lifecycle regression
+        run: node tests/runtime-resilience/world-lifecycle.mjs
+        working-directory: web
       - run: npm run build
         working-directory: web
+
+
+  shadow-core-invariance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Emscripten
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y emscripten
+      - name: Build unchanged production Core WASM
+        run: python Tools/build_web_client.py
+      - name: Shadow ON/OFF exact production Core comparison
+        run: node web/tests/cognitive-agent/shadow-core.mjs

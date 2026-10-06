@@ -4,7 +4,7 @@ import {
   type CognitiveProposalDto,
   type CognitiveRequestDto,
 } from './cognitive-contract';
-import type { CognitiveProvider } from './cognitive-provider';
+import { CognitiveProviderError, type CognitiveProvider } from './cognitive-provider';
 
 export interface LocalCognitionProviderConfig {
   baseUrl: string;
@@ -20,6 +20,7 @@ export function isLoopbackCognitionUrl(value: string): boolean {
   try {
     const url = new URL(value);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+    if (url.username || url.password) return false;
     const host = url.hostname.toLowerCase();
     return host === 'localhost'
       || host === '127.0.0.1'
@@ -47,6 +48,7 @@ export async function discoverLocalCognitionModels(
   const endpoint = new URL('v1/models', normalized).toString();
   const response = await fetcher(endpoint, {
     method: 'GET',
+    redirect: 'error',
     headers: {
       'accept': 'application/json',
     },
@@ -91,6 +93,7 @@ export function cognitiveSystemPrompt(): string {
     'Return only JSON matching the schema.',
     'Do not provide hidden chain-of-thought.',
     'Keep rationale short and state only the decision-relevant reason.',
+    'Write the short rationale in Korean.',
   ].join(' ');
 }
 
@@ -121,6 +124,7 @@ export class LocalCognitionProvider implements CognitiveProvider {
 
     const response = await this.fetcher(this.endpoint, {
       method: 'POST',
+      redirect: 'error',
       headers: {
         'content-type': 'application/json',
       },
@@ -151,27 +155,30 @@ export class LocalCognitionProvider implements CognitiveProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`local cognition HTTP ${response.status}`);
+      throw new CognitiveProviderError('http_error', `local cognition HTTP ${response.status}`);
     }
 
-    const payload = await response.json() as {
+    let payload: {
       choices?: Array<{
         message?: {
           content?: unknown;
         };
       }>;
     };
-    const content = payload.choices?.[0]?.message?.content;
-    if (typeof content !== 'string' || content.length === 0) {
-      throw new Error('local cognition response is missing JSON content');
+    try { payload = await response.json(); }
+    catch { throw new CognitiveProviderError('invalid_json', 'local cognition response is not valid JSON'); }
+    const content = payload?.choices?.[0]?.message?.content;
+    if (typeof content !== 'string' || content.length === 0 || content.length > 8192) {
+      throw new CognitiveProviderError('malformed_response', 'local cognition response is missing JSON content');
     }
 
     let parsed: unknown;
     try {
       parsed = JSON.parse(content);
     } catch {
-      throw new Error('local cognition response is not valid JSON');
+      throw new CognitiveProviderError('invalid_json', 'local cognition response is not valid JSON');
     }
-    return parseCognitiveProposal(parsed, request);
+    try { return parseCognitiveProposal(parsed, request); }
+    catch { throw new CognitiveProviderError('invalid_schema', 'local cognition proposal violates the Core request contract'); }
   }
 }
