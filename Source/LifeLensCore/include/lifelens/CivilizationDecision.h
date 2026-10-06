@@ -202,6 +202,35 @@ inline GridPos civilizationSanitationReferencePosition(const World& world)
         : GridPos{};
 }
 
+inline bool primitiveSanitationCandidateProtectsKnownWater(
+    const World& world,
+    GridPos candidate,
+    PrimitiveSanitationSiteKind kind=PrimitiveSanitationSiteKind::DesignatedArea)
+{
+    // Human-waste contamination is spatial. A persistent sanitation site is
+    // invalid when the residue it produces can overlap an actual Core drinking
+    // access point. The buffer is therefore the authoritative residue radius,
+    // not an independently tuned settlement-distance constant.
+    const int residueRadius=
+        primitiveSanitationResidueRadiusTiles(kind);
+    for(const ResourceNode& node:world.resourceNodes){
+        if(node.id==0
+           || node.material!=MaterialKind::Water
+           || node.quantity<=0){
+            continue;
+        }
+        GridPos waterAccess{};
+        if(!resolveCivilizationResourceAccessGridPosition(
+                world,node.id,waterAccess)){
+            continue;
+        }
+        if(manhattan(candidate,waterAccess)<=residueRadius){
+            return false;
+        }
+    }
+    return true;
+}
+
 inline int inventoryUnitCount(const Inventory& inventory)
 {
     int total=0;
@@ -2401,7 +2430,11 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
        && canEstablishDesignatedSanitationArea(
            world.seed,self,world.environmentalResidues,
            world.primitiveSanitationSites,world.minute,sanitationReference,
-           SettlementServiceRadiusGrid)){
+           SettlementServiceRadiusGrid,
+           [&](GridPos candidate){
+               return primitiveSanitationCandidateProtectsKnownWater(
+                   world,candidate);
+           })){
         CivilizationUtilityDecision sanitation;
         sanitation.intent=CivilizationIntent::Craft;
         sanitation.technique=TechniqueId::DesignatedSanitationArea;
@@ -3690,7 +3723,11 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
             if(decision.technique==TechniqueId::DesignatedSanitationArea){
                 const PrimitiveSanitationSiteCreationResult site=establishDesignatedSanitationArea(
                     world.seed,self,world.environmentalResidues,world.primitiveSanitationSites,
-                    world.minute,sanitationReference,SettlementServiceRadiusGrid);
+                    world.minute,sanitationReference,SettlementServiceRadiusGrid,
+                    [&](GridPos candidate){
+                        return primitiveSanitationCandidateProtectsKnownWater(
+                            world,candidate);
+                    });
                 if(!site.established) return result;
                 result.executed=true;
                 result.success=true;
