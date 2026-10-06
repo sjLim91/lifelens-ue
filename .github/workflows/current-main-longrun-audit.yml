@@ -5,8 +5,10 @@ on:
     branches:
       - audit/current-main-longrun-20261002
       - 'fix/p0-*'
+      - 'audit/system-balance-*'
     paths:
       - 'Source/LifeLensCore/**'
+      - 'Tools/audit_system_balance.py'
       - '.github/workflows/current-main-longrun-audit.yml'
       - 'docs/SIMULATION_BALANCE_CONTRACT_V2.md'
       - 'tasks/CURRENT_MAIN_LONGRUN_AUDIT.md'
@@ -22,7 +24,7 @@ on:
       checkpoints:
         description: '쉼표 구분 체크포인트'
         required: false
-        default: '100,365,1000'
+        default: '1,7,30,100,365,1000'
       seed:
         description: 'World seed'
         required: false
@@ -33,7 +35,7 @@ permissions:
 
 concurrency:
   group: lifelens-current-main-longrun-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   longrun-audit:
@@ -43,7 +45,7 @@ jobs:
       matrix:
         seed: [874213954, 4242001]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
 
     steps:
       - name: 소스 체크아웃
@@ -55,24 +57,29 @@ jobs:
       - name: 장기 계측기 빌드
         run: cmake --build build --target ll_balance_audit --parallel 2
 
-      - name: 100·365·1000일 통합 계측
+      - name: 전 시스템 장기 계측 및 대표 seed 결정론 비교
         run: |
-          set -o pipefail
-          /usr/bin/time -v ./build/ll_balance_audit             --seed '${{ matrix.seed }}'             --days 1000             --checkpoints '100,365,1000'             2>&1 | tee "longrun-${{ matrix.seed }}.log"
+          python3 Tools/audit_system_balance.py run \
+            --executable ./build/ll_balance_audit \
+            --output longrun-results \
+            --seeds '${{ matrix.seed }}' \
+            --days 1000 --checkpoints '1,7,30,100,365,1000' \
+            --workers 1 \
+            --determinism-seed '${{ matrix.seed == 874213954 && '874213954' || '' }}'
 
-      - name: 계측 로그 업로드
+      - name: 사건·계측·재개 기록 업로드
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: longrun-audit-${{ matrix.seed }}
-          path: longrun-${{ matrix.seed }}.log
-          if-no-files-found: ignore
-          retention-days: 14
+          path: longrun-results/
+          if-no-files-found: error
+          retention-days: 30
 
   manual-audit:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
 
     steps:
       - name: 소스 체크아웃
@@ -84,16 +91,21 @@ jobs:
       - name: 장기 계측기 빌드
         run: cmake --build build --target ll_balance_audit --parallel 2
 
-      - name: 수동 장기 계측
+      - name: 수동 전 시스템 계측
         run: |
-          set -o pipefail
-          /usr/bin/time -v ./build/ll_balance_audit             --seed '${{ inputs.seed }}'             --days '${{ inputs.days }}'             --checkpoints '${{ inputs.checkpoints }}'             2>&1 | tee longrun-manual.log
+          python3 Tools/audit_system_balance.py run \
+            --executable ./build/ll_balance_audit \
+            --output longrun-results \
+            --seeds '${{ inputs.seed }}' \
+            --days '${{ inputs.days }}' \
+            --checkpoints '${{ inputs.checkpoints }}' \
+            --workers 1 --determinism-seed '${{ inputs.seed }}'
 
-      - name: 계측 로그 업로드
+      - name: 사건·계측·재개 기록 업로드
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: longrun-audit-manual
-          path: longrun-manual.log
-          if-no-files-found: ignore
-          retention-days: 14
+          path: longrun-results/
+          if-no-files-found: error
+          retention-days: 30
