@@ -1,7 +1,7 @@
 #include <cstddef>
 #include <iostream>
 #include <string>
-#include "lifelens/LifeStage.h"
+#include "lifelens/LifeStage.h"\n#include "lifelens/CoreNavigation.h"
 #include "lifelens/Simulation.h"
 using namespace lifelens;
 #define CHECK(x) do { if(!(x)){ std::cerr << "check failed line " << __LINE__ << '\n'; return 1; } } while(false)
@@ -46,6 +46,185 @@ int main(){
     CHECK(!sim.observePendingContextAction(second.actor).active);
     CHECK(!sim.completeExternalContextAction(second.actor,second.token,childPos));
     CHECK(sim.world().environmentalResidues.all().size()==residueBefore+1);
+
+    // With real sanitation infrastructure, autonomous ToiletAssist is a
+    // two-stage physical action: reach the child, then escort the dependent
+    // through Core navigation to the site. The child must move continuously
+    // with the caregiver; waste is deposited at the site rather than at home.
+    Simulation escorted(50505);
+    escorted.setupNewGame();
+    SimulationStateSnapshot escortedSnapshot=escorted.captureSnapshot();
+    CHECK(escortedSnapshot.world.characters.size()>=2);
+    const CharacterId escortParent=escortedSnapshot.world.characters[0].id;
+    const CharacterId escortOtherParent=escortedSnapshot.world.characters[1].id;
+
+    for(auto& resident:escortedSnapshot.world.characters){
+        resident.needs={0.05,0.05,0.05,0.05,0.05};
+        if(resident.id!=escortParent) resident.alive=false;
+    }
+
+    const GridPos escortHome=escortedSnapshot.runtime[escortParent].pos;
+    GridPos sanitationTarget{};
+    bool foundSanitationTarget=false;
+    for(int radius=4;
+        radius<=std::min(12,SettlementServiceRadiusGrid)
+            && !foundSanitationTarget;
+        ++radius){
+        const GridPos candidates[4]={
+            {escortHome.x+radius,escortHome.y},
+            {escortHome.x-radius,escortHome.y},
+            {escortHome.x,escortHome.y+radius},
+            {escortHome.x,escortHome.y-radius}
+        };
+        for(const GridPos candidate:candidates){
+            std::vector<GridPos> route;
+            if(coreGroundTraversable(escortedSnapshot.world,candidate)
+               && buildCoreGroundRoute(
+                    escortedSnapshot.world,
+                    escortHome,candidate,0,route)
+               && route.size()>=2){
+                sanitationTarget=candidate;
+                foundSanitationTarget=true;
+                break;
+            }
+        }
+    }
+    CHECK(foundSanitationTarget);
+
+    PrimitiveSanitationSite childPit;
+    childPit.id=7001;
+    childPit.kind=PrimitiveSanitationSiteKind::DugPit;
+    childPit.pos=sanitationTarget;
+    childPit.establishedBy=escortParent;
+    childPit.establishedMinute=escortedSnapshot.world.minute;
+    childPit.active=true;
+    childPit.improvementWork=DugSanitationPitWorkRequired;
+    childPit.improvedBy=escortParent;
+    childPit.improvedMinute=escortedSnapshot.world.minute;
+    escortedSnapshot.world.primitiveSanitationSites.clear();
+    escortedSnapshot.world.primitiveSanitationSites.push_back(childPit);
+
+    Character escortedChild;
+    escortedChild.id=7002;
+    escortedChild.name="EscortedBaby";
+    escortedChild.sex=Sex::Female;
+    escortedChild.alive=true;
+    escortedChild.hasBirthMinute=true;
+    escortedChild.birthMinute=escortedSnapshot.world.minute;
+    escortedChild.lifeStage=LifeStage::Baby;
+    escortedChild.parentIds={escortParent,escortOtherParent};
+    escortedChild.civilization.character=escortedChild.id;
+    escortedChild.needs={0.01,0.01,0.01,0.99,0.01};
+    escortedChild.development.attachment=0.90;
+    escortedChild.development.confidence=0.80;
+    escortedChild.development.socialSkill=0.20;
+    escortedChild.development.emotionalSecurity=0.90;
+    escortedChild.development.health=1.0;
+    applyLifeStageProfile(escortedChild,LifeStage::Baby);
+    escortedSnapshot.world.characters.push_back(escortedChild);
+
+    SimulationRuntimeSnapshot escortedChildRuntime;
+    escortedChildRuntime.pos=escortHome;
+    escortedSnapshot.runtime.emplace(
+        escortedChild.id,escortedChildRuntime);
+    CHECK(escortedSnapshot.genealogy.registerBirth(
+        escortedChild.id,escortParent,escortOtherParent));
+
+    auto& escortToChild=escortedSnapshot.relationships.getOrCreate(
+        escortParent,escortedChild.id);
+    escortToChild.affection=0.95;
+    escortToChild.commitment=0.95;
+    escortToChild.comfort=0.95;
+    auto& childToEscort=escortedSnapshot.relationships.getOrCreate(
+        escortedChild.id,escortParent);
+    childToEscort.affection=0.95;
+    childToEscort.comfort=0.95;
+
+    std::string escortedError;
+    CHECK(escorted.restoreSnapshot(
+        escortedSnapshot,&escortedError));
+    CHECK(escortedError.empty());
+
+    Character* liveEscortedChild=
+        findCharacter(escorted,escortedChild.id);
+    CHECK(liveEscortedChild!=nullptr);
+    const double escortedBladderBefore=
+        liveEscortedChild->needs.bladder;
+    GridPos previousEscortedChildPos=escortHome;
+    bool dependentMoved=false;
+    bool assistedAtPit=false;
+
+    for(int minute=0;minute<180 && !assistedAtPit;++minute){
+        escorted.step();
+
+        GridPos currentChildPos{};
+        GridPos currentParentPos{};
+        CHECK(escorted.runtimePosition(
+            escortedChild.id,currentChildPos));
+        CHECK(escorted.runtimePosition(
+            escortParent,currentParentPos));
+
+        const int dx=std::abs(
+            currentChildPos.x-previousEscortedChildPos.x);
+        const int dy=std::abs(
+            currentChildPos.y-previousEscortedChildPos.y);
+        CHECK(dx<=1 && dy<=1);
+
+        if(currentChildPos.x!=escortHome.x
+           || currentChildPos.y!=escortHome.y){
+            dependentMoved=true;
+            CHECK(currentChildPos.x==currentParentPos.x);
+            CHECK(currentChildPos.y==currentParentPos.y);
+        }
+        previousEscortedChildPos=currentChildPos;
+
+        assistedAtPit=
+            liveEscortedChild->needs.bladder
+                <escortedBladderBefore;
+    }
+
+    CHECK(dependentMoved);
+    CHECK(assistedAtPit);
+    GridPos finalEscortedChildPos{};
+    GridPos finalEscortParentPos{};
+    CHECK(escorted.runtimePosition(
+        escortedChild.id,finalEscortedChildPos));
+    CHECK(escorted.runtimePosition(
+        escortParent,finalEscortParentPos));
+    CHECK(finalEscortedChildPos.x==sanitationTarget.x);
+    CHECK(finalEscortedChildPos.y==sanitationTarget.y);
+    CHECK(finalEscortParentPos.x==sanitationTarget.x);
+    CHECK(finalEscortParentPos.y==sanitationTarget.y);
+
+    const PrimitiveSanitationSite* usedPit=
+        findPrimitiveSanitationSite(
+            escorted.world().primitiveSanitationSites,
+            childPit.id);
+    CHECK(usedPit!=nullptr);
+    CHECK(usedPit->useCount==1);
+
+    bool foundChildWasteAtPit=false;
+    bool foundChildWasteAtHome=false;
+    for(const auto& residue:escorted.world().environmentalResidues.all()){
+        if(residue.kind!=EnvironmentalResidueKind::HumanWaste
+           || residue.sourceCharacter!=escortedChild.id){
+            continue;
+        }
+        if(residue.pos.x==sanitationTarget.x
+           && residue.pos.y==sanitationTarget.y){
+            foundChildWasteAtPit=true;
+            CHECK(
+                residue.radiusTiles
+                ==primitiveSanitationResidueRadiusTiles(
+                    PrimitiveSanitationSiteKind::DugPit));
+        }
+        if(residue.pos.x==escortHome.x
+           && residue.pos.y==escortHome.y){
+            foundChildWasteAtHome=true;
+        }
+    }
+    CHECK(foundChildWasteAtPit);
+    CHECK(!foundChildWasteAtHome);
     // If both biological parents are unavailable, a living adult in the same
     // household can provide temporary dependent care without rewriting genealogy.
     Simulation fallback(30303); fallback.setupNewGame();

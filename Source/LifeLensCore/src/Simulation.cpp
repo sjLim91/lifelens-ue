@@ -1025,12 +1025,39 @@ bool Simulation::advancePendingContext(
         case ContextActionKind::Parenting: {
             const auto childRuntime=runtime_.find(pending.parentingTarget);
             if(childRuntime==runtime_.end()) return false;
-            if(!pending.hasSpatialTarget){
+
+            // Dependent ToiletAssist has two physical phases when real
+            // sanitation infrastructure is available:
+            //   1) reach the child;
+            //   2) escort/carry the child to the nearby sanitation site.
+            // sanitationSiteId is the phase marker and the authoritative site
+            // identity. With no reachable site, the historical outdoor
+            // fallback completes at the child's actual location.
+            if(pending.parentingAction==ParentingAction::ToiletAssist
+               && pending.sanitationSiteId!=0){
+                const PrimitiveSanitationSite* site=
+                    findPrimitiveSanitationSite(
+                        world_.primitiveSanitationSites,
+                        pending.sanitationSiteId);
+                if(site==nullptr || !site->active){
+                    pending.sanitationSiteId=0;
+                    pending.hasSpatialTarget=true;
+                    pending.targetPos=childRuntime->second.pos;
+                    clearNavigation(runtime);
+                    return false;
+                }
                 pending.hasSpatialTarget=true;
-                pending.targetPos=childRuntime->second.pos;
+                pending.targetPos=site->pos;
+                target=site->pos;
+                arrivalRadius=0;
+            }else{
+                if(!pending.hasSpatialTarget){
+                    pending.hasSpatialTarget=true;
+                    pending.targetPos=childRuntime->second.pos;
+                }
+                target=pending.targetPos;
+                arrivalRadius=1;
             }
-            target=pending.targetPos;
-            arrivalRadius=1;
             requiresMovement=true;
             break;
         }
@@ -1041,8 +1068,59 @@ bool Simulation::advancePendingContext(
     }
 
     if(requiresMovement){
-        if(!advanceNavigation(actor.id,runtime,target,arrivalRadius)){
-            return false;
+        const bool arrived=
+            advanceNavigation(actor.id,runtime,target,arrivalRadius);
+
+        if(pending.kind==ContextActionKind::Parenting
+           && pending.parentingAction==ParentingAction::ToiletAssist
+           && pending.sanitationSiteId!=0){
+            const auto childRuntime=runtime_.find(pending.parentingTarget);
+            if(childRuntime==runtime_.end()) return false;
+            // The child accompanies the caregiver through the same Core path.
+            // This is deliberately one runtime step at a time; no waste or
+            // dependent is teleported to the sanitation site.
+            childRuntime->second.pos=runtime.pos;
+        }
+
+        if(!arrived) return false;
+    }
+
+    // Once the caregiver has physically reached the child, prefer an actual
+    // nearby sanitation site for ToiletAssist. The route is validated before
+    // entering the escort phase. No site means the existing outdoor fallback.
+    if(pending.kind==ContextActionKind::Parenting
+       && pending.parentingAction==ParentingAction::ToiletAssist
+       && pending.sanitationSiteId==0){
+        const auto childRuntime=runtime_.find(pending.parentingTarget);
+        if(childRuntime==runtime_.end()) return false;
+        if(contextActionNearTarget(runtime.pos,childRuntime->second.pos,1)){
+            std::vector<GridPos> sanitationRoute;
+            const PrimitiveSanitationSite* site=
+                nearestActivePrimitiveSanitationSite(
+                    world_.primitiveSanitationSites,
+                    runtime.pos,
+                    SettlementServiceRadiusGrid,
+                    [&](GridPos candidate){
+                        sanitationRoute.clear();
+                        return (sameGridPos(runtime.pos,candidate)
+                                || coreGroundTraversable(world_,candidate))
+                            && buildCoreGroundRoute(
+                                world_,runtime.pos,candidate,0,
+                                sanitationRoute);
+                    });
+            if(site!=nullptr && !sameGridPos(runtime.pos,site->pos)){
+                pending.sanitationSiteId=site->id;
+                pending.hasSpatialTarget=true;
+                pending.targetPos=site->pos;
+                // Start a fresh bounded movement phase after the child pickup.
+                pending.issuedMinute=world_.minute;
+                childRuntime->second.pos=runtime.pos;
+                clearNavigation(runtime);
+                return false;
+            }
+            if(site!=nullptr){
+                pending.sanitationSiteId=site->id;
+            }
         }
     }
 
@@ -1078,6 +1156,8 @@ bool Simulation::advancePendingContext(
         }
     }
     if(pending.kind==ContextActionKind::Parenting
+       && !(pending.parentingAction==ParentingAction::ToiletAssist
+            && pending.sanitationSiteId!=0)
        && retargetMovingResident(pending.parentingTarget)){
         return false;
     }
