@@ -58,6 +58,15 @@ inline double socialClamp01(double value) {
 inline constexpr double SocialFirstContactFamiliarityHorizon=0.12;
 inline constexpr double SocialFirstContactBondHorizon=0.10;
 
+inline bool socialRelationshipNeedsFirstContact(
+    const Relationship* relation)
+{
+    const double familiarity=relation ? relation->familiarity : 0.0;
+    const double bond=relation ? relation->socialBond() : 0.0;
+    return familiarity<SocialFirstContactFamiliarityHorizon
+        && bond<SocialFirstContactBondHorizon;
+}
+
 inline double firstContactInitiative(
     const Relationship* relation,
     const TraitProfile& traits,
@@ -256,33 +265,65 @@ inline double scoreComfortIntent(
     return socialClamp01(distress * std::max(0.0, willingness));
 }
 
-inline SocialUtilityDecision chooseSocialUtilityDecision(
+inline SocialUtilityDecision chooseSocialUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
-    const RelationshipBook& relationships) {
-
+    const RelationshipBook& relationships,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population)
+{
     SocialUtilityDecision best;
 
-    for (const auto& candidate : world.characters) {
-        if (candidate.id == self.id) continue;
+    for(const auto& candidate:world.characters){
+        if(candidate.id==self.id || !candidate.alive) continue;
 
-        const std::array<std::pair<SocialIntent, double>, 4> scores = {{
-            {SocialIntent::Approach, scoreApproachIntent(world, self, candidate.id, relationships)},
-            {SocialIntent::Avoid, scoreAvoidIntent(world, self, candidate.id, relationships)},
-            {SocialIntent::Repair, scoreRepairIntent(self, candidate.id, relationships)},
-            {SocialIntent::Comfort, scoreComfortIntent(self, candidate, relationships)}
+        // Social intent is local physical opportunity, not omniscient global
+        // awareness. This becomes a required authority boundary once Earth can
+        // host multiple isolated origin groups in the same World.
+        if(population!=nullptr){
+            const auto targetPosition=population->find(candidate.id);
+            if(targetPosition==population->end()
+               || manhattan(
+                    targetPosition->second,
+                    authoritativePosition)>SettlementServiceRadiusGrid){
+                continue;
+            }
+        }
+
+        const std::array<std::pair<SocialIntent,double>,4> scores={{
+            {SocialIntent::Approach,
+                scoreApproachIntent(
+                    world,self,candidate.id,relationships)},
+            {SocialIntent::Avoid,
+                scoreAvoidIntent(
+                    world,self,candidate.id,relationships)},
+            {SocialIntent::Repair,
+                scoreRepairIntent(
+                    self,candidate.id,relationships)},
+            {SocialIntent::Comfort,
+                scoreComfortIntent(
+                    self,candidate,relationships)}
         }};
 
-        for (const auto& entry : scores) {
-            if (entry.second > best.utility) {
-                best.intent = entry.first;
-                best.target = candidate.id;
-                best.utility = entry.second;
+        for(const auto& entry:scores){
+            if(entry.second>best.utility){
+                best.intent=entry.first;
+                best.target=candidate.id;
+                best.utility=entry.second;
             }
         }
     }
 
     return best;
+}
+
+inline SocialUtilityDecision chooseSocialUtilityDecision(
+    const World& world,
+    const Character& self,
+    const RelationshipBook& relationships)
+{
+    return chooseSocialUtilityDecisionAtPosition(
+        world,self,relationships,GridPos{},nullptr);
 }
 
 inline double civilizationDispositionAffinity(
@@ -802,22 +843,50 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
         world,self,reference);
 }
 
-inline UnifiedUtilityDecision choosePhysicalSocialUtilityDecision(
+inline bool socialDecisionIsFirstContact(
+    const Character& self,
+    const RelationshipBook& relationships,
+    const SocialUtilityDecision& social)
+{
+    if(social.intent!=SocialIntent::Approach
+       || social.target==0
+       || social.target==self.id){
+        return false;
+    }
+    return socialRelationshipNeedsFirstContact(
+        relationships.find(self.id,social.target));
+}
+
+inline UnifiedUtilityDecision choosePhysicalSocialUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
     const RelationshipBook& relationships,
-    double minimumSocialUtility = 0.18)
+    GridPos authoritativePosition,
+    double minimumSocialUtility,
+    const SettlementPopulation* population)
 {
     const auto physical=bestPhysicalUtility(world,self);
     const SocialUtilityDecision social=
-        chooseSocialUtilityDecision(world,self,relationships);
+        chooseSocialUtilityDecisionAtPosition(
+            world,self,relationships,authoritativePosition,population);
+    const bool localFirstContact=
+        population!=nullptr
+        && socialDecisionIsFirstContact(
+            self,relationships,social);
 
     UnifiedUtilityDecision decision;
     decision.physicalGoal=physical.first;
     decision.social=social;
 
+    // A brand-new local relationship has no bond/trust/memory evidence yet, so
+    // requiring the same absolute utility floor as an established relationship
+    // creates a bootstrap deadlock: no first interaction -> no relationship
+    // evidence -> no future interaction. For an actually nearby stranger only,
+    // let the personality-derived Approach score compete directly with ordinary
+    // Physical utility. Urgent survival can still win naturally.
     if(social.intent!=SocialIntent::None
-       && social.utility>=minimumSocialUtility
+       && (social.utility>=minimumSocialUtility
+           || (localFirstContact && social.utility>0.0))
        && social.utility>physical.second*1.05){
         decision.kind=UnifiedDecisionKind::Social;
         decision.utility=social.utility;
@@ -826,6 +895,19 @@ inline UnifiedUtilityDecision choosePhysicalSocialUtilityDecision(
         decision.utility=physical.second;
     }
     return decision;
+}
+
+inline UnifiedUtilityDecision choosePhysicalSocialUtilityDecision(
+    const World& world,
+    const Character& self,
+    const RelationshipBook& relationships,
+    double minimumSocialUtility = 0.18)
+{
+    // Compatibility callers without authoritative resident positions retain the
+    // historical threshold. Production scheduling uses the position-aware path.
+    return choosePhysicalSocialUtilityDecisionAtPosition(
+        world,self,relationships,GridPos{},
+        minimumSocialUtility,nullptr);
 }
 
 inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
@@ -840,8 +922,14 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     const HouseholdBook* households=nullptr) {
 
     UnifiedUtilityDecision decision=
-        choosePhysicalSocialUtilityDecision(
-            world,self,relationships,minimumSocialUtility);
+        choosePhysicalSocialUtilityDecisionAtPosition(
+            world,self,relationships,authoritativePosition,
+            minimumSocialUtility,population);
+    const bool localFirstContact=
+        population!=nullptr
+        && decision.kind==UnifiedDecisionKind::Social
+        && socialDecisionIsFirstContact(
+            self,relationships,decision.social);
 
     const CivilizationUtilityDecision survivalProvision =
         urgentSurvivalProvisionDecisionAtPosition(
@@ -870,7 +958,8 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     // Survival is still dominant. Civilization competes only while all Needs
     // are below the urgent threshold, and must beat the existing winner by a
     // margin rather than constantly interrupting life/social behavior.
-    if (maximumResidentNeed(self) < 0.74 &&
+    if (!localFirstContact &&
+        maximumResidentNeed(self) < 0.74 &&
         civilization.intent != CivilizationIntent::None &&
         civilization.utility >= minimumCivilizationUtility &&
         civilization.utility > decision.utility * 1.08) {
