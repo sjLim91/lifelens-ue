@@ -812,6 +812,7 @@ int main(int argc,char** argv)
     std::uint64_t seed=874213954;
     std::string checkpointArg="1,7,30,100,365,1000";
     std::string auditDirectory;
+    bool auditProbeOnly=false;
     bool sleepDiagnostics=false;
     std::string sleepTracePath,loadSnapshot,snapshotDirectory;
     int traceStart=0,traceEnd=std::numeric_limits<int>::max();
@@ -819,7 +820,9 @@ int main(int argc,char** argv)
 
     for(int i=1;i<argc;++i){
         const std::string arg=argv[i];
-        if(arg=="--audit-directory" && i+1<argc){
+        if(arg=="--audit-probe-only"){
+            auditProbeOnly=true;
+        }else if(arg=="--audit-directory" && i+1<argc){
             auditDirectory=argv[++i];
         }else if(arg=="--days" && i+1<argc){
             days=std::max(1,std::atoi(argv[++i]));
@@ -863,6 +866,11 @@ int main(int argc,char** argv)
         sim.world().characters.size();
 
     lifelens::audit::SystemBalanceAudit systemAudit(sim,auditDirectory);
+    if(auditProbeOnly){
+        if(loadSnapshot.empty()){std::cerr<<"--audit-probe-only requires --load-snapshot\n";return 1;}
+        systemAudit.probePlanning();
+        return systemAudit.finish() ? 0 : 2;
+    }
     EventMetrics events;
     sim.onEvent([&](const std::string& line){
         systemAudit.event(line);

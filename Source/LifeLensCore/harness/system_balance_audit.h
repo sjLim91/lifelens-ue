@@ -125,7 +125,10 @@ class SystemBalanceAudit {
         failed=true;auto j=base("invariant_failure");j.add("severity","P0");j.add("error",error);j.add("resident",idString(id));emit(j);
     }
     CharacterId actorFor(const std::string& line)const{
-        for(const auto& c:sim.world().characters)if(line.compare(0,c.name.size()+1,c.name+" ")==0)return c.id;
+        // Simulation::emit adds its authoritative calendar prefix before invoking callbacks.
+        const auto close=line.find("] ");
+        const std::size_t start=line.rfind("[Day ",0)==0 && close!=std::string::npos ? close+2 : 0;
+        for(const auto& c:sim.world().characters)if(line.compare(start,c.name.size()+1,c.name+" ")==0)return c.id;
         return 0;
     }
     int budgetCategory(const ResidentPresentationObservation& p)const{
@@ -184,6 +187,31 @@ public:
         j.add("scope","elapsed since this invocation; loaded snapshot does not restore metric accumulators");emit(j);
     }
     bool active()const{return enabled;}
+    void probePlanning(){
+        if(!enabled)throw std::runtime_error("--audit-probe-only requires --audit-directory");
+        const auto snapshot=sim.captureSnapshot();SettlementPopulation population;
+        for(const auto& entry:snapshot.runtime)population[entry.first]=entry.second.pos;
+        std::vector<std::uint8_t> before,after;std::string error;
+        if(!encodeSimulationSnapshot(snapshot,before,&error))throw std::runtime_error(error);
+        for(const auto& c:sim.world().characters){
+            if(!c.alive || requiresDirectCare(c.lifeStage))continue;
+            const auto runtime=snapshot.runtime.find(c.id);if(runtime==snapshot.runtime.end())continue;
+            const auto physical=bestPhysicalUtility(sim.world(),c);
+            const auto social=chooseSocialUtilityDecision(sim.world(),c,sim.relationships());
+            const auto provision=urgentSurvivalProvisionDecisionAtPosition(sim.world(),c,runtime->second.pos);
+            const auto unified=chooseUnifiedUtilityDecisionAtPosition(sim.world(),c,sim.relationships(),runtime->second.pos,.18,.14,
+                &population,&sim.socialKnowledge(),&sim.households());
+            auto j=base("planning_probe");j.add("resident",idString(c.id));j.add("physical_goal",goalName(physical.first));j.add("physical_utility",physical.second);
+            j.add("social_intent",socialIntentName(social.intent));j.add("social_target",idString(social.target));j.add("social_utility",social.utility);
+            j.add("provision_intent",civilizationIntentName(provision.intent));j.add("provision_material",materialName(provision.material));j.add("provision_utility",provision.utility);
+            j.add("unified_kind",int(unified.kind));j.add("unified_utility",unified.utility);
+            j.add("civilization_intent",civilizationIntentName(unified.civilization.intent));j.add("civilization_utility",unified.civilization.utility);
+            j.add("max_need",maximumResidentNeed(c));j.add("penalty_until_minute",runtime->second.penaltyUntilMinute);
+            j.add("plan_size",runtime->second.plan.size());j.add("pending_context_kind",int(runtime->second.pendingContext.kind));
+            j.add("scope","pure candidate evaluation at saved checkpoint, not proof of an executed planning boundary");emit(j);
+        }
+        if(!encodeSimulationSnapshot(sim.captureSnapshot(),after,&error) || before!=after)invariant("planning probe mutated authoritative snapshot");
+    }
     void event(const std::string& line){
         if(!enabled)return;
         ++eventSequence;eventHash=hashBytes(eventHash,std::to_string(sim.world().minute)+":"+line+"\n");

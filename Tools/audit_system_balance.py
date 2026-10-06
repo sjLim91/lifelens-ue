@@ -54,10 +54,38 @@ def normalized_record(record):
     return {key: value for key, value in record.items() if key not in PERFORMANCE_FIELDS}
 
 
+def validate_evidence(directory):
+    names, failures = {}, []
+    for record in read_jsonl(directory / "metrics.jsonl"):
+        if record["type"] == "resident":
+            names[record["name"]] = record["id"]
+            if sum(record["activity_minutes"].values()) != record["observed_minutes"]:
+                failures.append({"error": "activity partition does not equal observed resident minutes", "resident": record["id"]})
+    for event in read_jsonl(directory / "events.jsonl"):
+        message = event["message"]
+        if message.startswith("[Day ") and "] " in message:
+            message = message.split("] ", 1)[1]
+        for name, actor in names.items():
+            if message.startswith(name + " ") and event["resident"] != actor:
+                failures.append({"error": "named Core event attributed to wrong resident", "sequence": event["sequence"], "expected": actor, "actual": event["resident"]})
+                break
+    atomic_json(directory / "evidence_validation.json", {"passed": not failures, "failures": failures})
+    return not failures
+
+
 def compare(first, second):
     """Full streamed metric/event comparison plus byte-identical save files."""
     from itertools import zip_longest
     issues = []
+    for directory in (first, second):
+        completion = None
+        for record in read_jsonl(directory / "metrics.jsonl"):
+            if record["type"] == "complete":
+                completion = record
+            if record["type"] == "invariant_failure":
+                issues.append({"directory": str(directory), "error": "Core invariant failed", "record": record})
+        if completion is None or completion.get("invariant_failed"):
+            issues.append({"directory": str(directory), "error": "successful completion marker missing"})
     for filename in ("metrics.jsonl", "events.jsonl"):
         for index, (a, b) in enumerate(zip_longest(read_jsonl(first / filename), read_jsonl(second / filename)), 1):
             if a is None or b is None or normalized_record(a) != normalized_record(b):
@@ -151,8 +179,14 @@ def run_one(executable, directory, seed, days, checkpoints, resume):
     if resume and manifest_path.exists():
         prior = json.loads(manifest_path.read_text())
         if prior.get("identity") == identity and prior.get("status") == "complete":
-            summary = summarize(directory)
-            if summary["complete"]:
+            required = [directory / "metrics.jsonl", directory / "events.jsonl"]
+            snapshots = prior.get("snapshot_sha256", {})
+            intact = bool(snapshots) and all(path.is_file() for path in required)
+            intact = intact and all((directory / "snapshots" / name).is_file() and
+                                    digest(directory / "snapshots" / name) == expected for name, expected in snapshots.items())
+            if intact:
+                summary = summarize(directory)
+            if intact and summary["complete"] and not summary["invariants"]:
                 print(f"RESUME_SKIP {seed} {directory}", flush=True)
                 return prior
     state = {"identity": identity, "status": "running", "started_utc_epoch": time.time()}
@@ -170,7 +204,8 @@ def run_one(executable, directory, seed, days, checkpoints, resume):
         summary = summarize(directory)
         expected = sorted({int(c) for c in checkpoints.split(",") if 0 < int(c) <= days} | {days})
         actual = [c["day"] for c in summary["checkpoints"]]
-        state["status"] = "complete" if code == 0 and summary["complete"] and actual == expected else "failed"
+        evidence_valid = validate_evidence(directory)
+        state["status"] = "complete" if code == 0 and summary["complete"] and actual == expected and evidence_valid else "failed"
         state["snapshot_sha256"] = {p.name: digest(p) for p in (directory / "snapshots").glob("*.llsave")}
     except BaseException:
         state["status"] = "interrupted"
