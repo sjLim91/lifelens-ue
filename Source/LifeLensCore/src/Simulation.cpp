@@ -55,99 +55,6 @@ bool nearestNaturalWaterAccess(
     return found;
 }
 
-bool naturalWaterReachableBeforeThirstSaturation(
-    const World& world,
-    const Character& resident,
-    const SimulationRuleset& ruleset,
-    GridPos from,
-    GridPos& outAccess)
-{
-    if(!nearestNaturalWaterAccess(world,from,outAccess)) return false;
-
-    std::vector<GridPos> route;
-    if(!buildCoreGroundRoute(world,from,outAccess,0,route)) return false;
-
-    const int healthMovementPenalty=
-        static_cast<int>(std::lround(
-            2.0*(1.0-healthFunctionalCapacity01(resident.health))));
-    const int maximumGroundStepIntervalMinutes=std::max(
-        1,
-        static_cast<int>(std::ceil(
-            1.0+CoreNavigationContract::WeatherFrictionWeight))
-        +healthMovementPenalty);
-    const int interactionMinutes=
-        emergencyUseDurationTicks(Goal::Drink);
-    const double conservativeCompletionMinutes=
-        static_cast<double>(
-            route.size()*static_cast<std::size_t>(
-                maximumGroundStepIntervalMinutes)
-            +std::max(0,interactionMinutes));
-
-    const EnvironmentalConsequenceProfile environment=
-        deriveEnvironmentalConsequences(
-            deriveDynamicEnvironment(
-                world.genesisIdentity(),
-                chunkCoordForGrid(from),
-                world.minute));
-    const double thirstRate=
-        ruleset.needs.thirstPerMinute
-            *std::max(0.0,resident.metabolism)
-        +std::max(
-            0.0,
-            environment.perMinuteNeedsDelta.thirst);
-
-    if(thirstRate<=1e-12) return true;
-    if(resident.needs.thirst>=1.0-1e-12) return false;
-
-    const double minutesUntilSaturation=
-        std::max(
-            0.0,
-            (1.0-resident.needs.thirst)/thirstRate);
-    return conservativeCompletionMinutes<=minutesUntilSaturation;
-}
-
-CivilizationUtilityDecision urgentLocalWaterFrontierDecision(
-    const World& world,
-    const Character& resident,
-    const SimulationRuleset& ruleset,
-    GridPos authoritativePosition)
-{
-    CivilizationUtilityDecision result;
-    const double waterNeed=
-        provisionNeedForMaterial(resident,MaterialKind::Water);
-    if(waterNeed<UrgentSurvivalProvisionThreshold
-       || portableWaterCount(resident.civilization.inventory)>0){
-        return result;
-    }
-
-    // A natural source is an immediate Physical Drink/Wash affordance only
-    // while it belongs to the resident's current reachable living envelope.
-    // A source known somewhere else in the materialized world must not make a
-    // dehydrated resident commit to an unbounded cross-world Drink walk.
-    GridPos survivableAccess{};
-    if(naturalWaterReachableBeforeThirstSaturation(
-            world,resident,ruleset,
-            authoritativePosition,survivableAccess)){
-        return result;
-    }
-
-    const ResourceExplorationOpportunity opportunity=
-        waterNeed>=CriticalSurvivalPreemptThreshold
-            ? chooseCriticalResourceExplorationOpportunity(
-                world,resident.id,MaterialKind::Water,
-                authoritativePosition)
-            : chooseResourceExplorationOpportunity(
-                world,resident.id,MaterialKind::Water,
-                authoritativePosition);
-    if(!opportunity.available) return result;
-
-    result.intent=CivilizationIntent::Explore;
-    result.utility=std::clamp(0.82+0.18*waterNeed,0.0,1.0);
-    result.material=MaterialKind::Water;
-    result.item=ItemKind::RawMaterial;
-    return result;
-}
-
 ResourceNode* naturalWaterNodeAtAccess(
     World& world,
     GridPos access)
@@ -1370,6 +1277,58 @@ bool Simulation::preemptForCriticalSurvival(
         const bool activeDrink=
             r.goal==Goal::Drink && thirstCritical;
         if(activeEat || activeDrink){
+            // A critical resident already walking to a known Water source
+            // normally keeps that survival commitment. Reconsider only when
+            // Core can prove that a Water-specific frontier is physically
+            // closer than the remaining route to the current source. This
+            // avoids both cross-world Drink lock-in and repeated speculative
+            // exploration: nearby direct Water remains authoritative.
+            if(activeDrink
+               && r.navigationHasTarget
+               && !r.navigationArrived){
+                const ResourceExplorationOpportunity opportunity=
+                    chooseCriticalResourceExplorationOpportunity(
+                        world_,character.id,MaterialKind::Water,r.pos);
+                if(opportunity.available){
+                    std::vector<GridPos> currentRoute;
+                    std::vector<GridPos> frontierRoute;
+                    const bool currentReachable=
+                        buildCoreGroundRoute(
+                            world_,r.pos,r.navigationTarget,
+                            r.navigationArrivalRadius,currentRoute);
+                    const bool frontierReachable=
+                        buildCoreGroundRoute(
+                            world_,r.pos,opportunity.target,0,frontierRoute);
+                    if(frontierReachable
+                       && (!currentReachable
+                           || frontierRoute.size()<currentRoute.size())){
+                        emit(
+                            character.name
+                            +" redirected critical water search to a nearer frontier");
+                        cancelRuntimeActivityForCriticalReplan(character,r);
+
+                        PendingContextAction pending;
+                        pending.token=issueContextActionToken();
+                        pending.kind=ContextActionKind::Civilization;
+                        pending.issuedMinute=world_.minute;
+                        pending.civilization.intent=
+                            CivilizationIntent::Explore;
+                        pending.civilization.utility=
+                            std::clamp(
+                                0.82+0.18*character.needs.thirst,
+                                0.0,1.0);
+                        pending.civilization.material=
+                            MaterialKind::Water;
+                        pending.civilization.item=
+                            ItemKind::RawMaterial;
+                        pending.hasSpatialTarget=true;
+                        pending.targetPos=opportunity.target;
+                        r.pendingContext=pending;
+                        return true;
+                    }
+                }
+            }
+
             const double activeNeed=activeEat
                 ? character.needs.hunger
                 : character.needs.thirst;
@@ -2012,16 +1971,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     // hygiene, so a very dirty resident with no usable water should start a
     // real Retrieve/Explore action at the normal five-minute planning boundary
     // instead of waiting for the 15-minute civilization cadence.
-    CivilizationUtilityDecision urgentProvision=
+    const CivilizationUtilityDecision urgentProvision=
         urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
-    if(urgentProvision.intent==CivilizationIntent::None){
-        const CivilizationUtilityDecision localWaterFrontier=
-            urgentLocalWaterFrontierDecision(
-                world_,c,ruleset_,r.pos);
-        if(localWaterFrontier.intent!=CivilizationIntent::None){
-            urgentProvision=localWaterFrontier;
-        }
-    }
     const bool urgentProvisionRequired=
         urgentProvision.intent!=CivilizationIntent::None;
     const double urgentProvisionNeed=
