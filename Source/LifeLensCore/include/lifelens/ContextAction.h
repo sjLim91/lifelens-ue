@@ -348,7 +348,11 @@ inline bool resolveCivilizationContextTarget(
             if(decision.experiment==ExperimentKind::DesignateSanitationArea){
                 const PrimitiveSanitationOpportunity opportunity=evaluatePrimitiveSanitationOpportunity(
                     world.seed,actor,world.environmentalResidues,world.minute,
-                    authoritativePosition);
+                    authoritativePosition,
+                    [&](GridPos candidate){
+                        return primitiveSanitationCandidateProtectsKnownWater(
+                            world,candidate);
+                    });
                 if(!opportunity.siteAvailable) return false;
                 outTarget=opportunity.suggestedSite;
                 return true;
@@ -555,7 +559,11 @@ inline bool resolveCivilizationContextTarget(
             if(decision.technique==TechniqueId::DesignatedSanitationArea){
                 const PrimitiveSanitationOpportunity opportunity=evaluateDesignatedSanitationSiteCreationOpportunity(
                     world.seed,actor,world.environmentalResidues,world.minute,
-                    authoritativePosition);
+                    authoritativePosition,
+                    [&](GridPos candidate){
+                        return primitiveSanitationCandidateProtectsKnownWater(
+                            world,candidate);
+                    });
                 if(!opportunity.siteAvailable) return false;
                 outTarget=opportunity.suggestedSite;
                 return true;
