@@ -97,3 +97,5 @@ jobs:
           path: longrun-manual.log
           if-no-files-found: ignore
           retention-days: 14
+
+# P1 social bootstrap long-run validation trigger 2026-10-06
