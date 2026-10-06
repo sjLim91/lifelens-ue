@@ -88,6 +88,26 @@ int main()
     assert(overview.activeCouples==0);
     assert(overview.activePregnancies==0);
 
+    // Production NEW GAME must not remain in a permanent social bootstrap
+    // deadlock. Founders still begin as strangers, but when survival is calm
+    // at least one real local first-contact action must be able to complete
+    // through the normal scheduler rather than relying on the social demo or a
+    // test-preseeded relationship.
+    Simulation socialBootstrap(874213954);
+    socialBootstrap.setupNewGame();
+    socialBootstrap.runMinutes(6*60);
+    bool sawProductionSocial=false;
+    for(const std::string& line:socialBootstrap.logs()){
+        if(line.find(" -> Approach ")!=std::string::npos
+           || line.find(" -> Comfort ")!=std::string::npos
+           || line.find(" -> Repair ")!=std::string::npos
+           || line.find(" -> Avoid ")!=std::string::npos){
+            sawProductionSocial=true;
+            break;
+        }
+    }
+    assert(sawProductionSocial);
+
     // Same WorldSeed must reproduce the exact founder set and initial state.
     Simulation sameSeed(874213954);
     sameSeed.setupNewGame();
