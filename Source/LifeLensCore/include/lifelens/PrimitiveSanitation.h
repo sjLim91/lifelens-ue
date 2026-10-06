@@ -180,8 +180,7 @@ inline PrimitiveSanitationOpportunity evaluatePrimitiveSanitationOpportunity(
     const Character& character,
     const EnvironmentalResidueField& field,
     int currentMinute,
-    GridPos referencePosition={},
-    const std::function<bool(GridPos)>& candidateAllowed={})
+    GridPos referencePosition={})
 {
     PrimitiveSanitationOpportunity result;
     result.problemRecognized=hasRecognizedSanitationProblem(character);
@@ -189,12 +188,9 @@ inline PrimitiveSanitationOpportunity evaluatePrimitiveSanitationOpportunity(
 
     result.problemConfidence=recognizedSanitationProblemConfidence(character);
     result.suggestedSite=chooseLowExposureOutdoorReliefPosition(
-        worldSeed,character,field,currentMinute,referencePosition,
-        candidateAllowed);
+        worldSeed,character,field,currentMinute,referencePosition);
     result.siteExposure=field.exposureAt(result.suggestedSite);
-    result.siteAvailable=
-        result.siteExposure<PrimitiveSanitationCleanSiteExposureLimit
-        && (!candidateAllowed || candidateAllowed(result.suggestedSite));
+    result.siteAvailable=result.siteExposure<PrimitiveSanitationCleanSiteExposureLimit;
     return result;
 }
 
