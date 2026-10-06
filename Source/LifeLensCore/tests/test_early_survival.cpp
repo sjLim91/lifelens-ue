@@ -256,6 +256,64 @@ int main()
     assert(rawWaterUnitCount(directActor.civilization.inventory)==0);
     assert(simpleContainerCount(directActor.civilization.inventory)==0);
 
+    // Critical thirst keeps a nearby known Water source, but it may abandon
+    // an already-started long Drink walk when Core can prove that a Water
+    // frontier is physically closer. This is a replanning contract, not a
+    // global distance cutoff on direct drinking.
+    Simulation remoteWater(9123406);
+    remoteWater.setupNewGame();
+    remoteWater.world().characters.resize(1);
+    remoteWater.world().resourceNodes.clear();
+    remoteWater.world().storageSites.clear();
+    remoteWater.world().generatedNaturalChunks.clear();
+
+    Character& remoteActor=remoteWater.world().characters.front();
+    const CharacterId remoteActorId=remoteActor.id;
+    while(remoteActor.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Water,1)) {}
+    while(remoteActor.civilization.inventory.remove(
+        ItemKind::SimpleContainer,MaterialKind::Unknown,1,true)) {}
+    remoteActor.needs={0.01,0.95,0.01,0.01,0.01};
+
+    GridPos remoteStart{};
+    assert(remoteWater.runtimePosition(remoteActorId,remoteStart));
+    ResourceNode remoteWaterNode;
+    remoteWaterNode.id=991206;
+    remoteWaterNode.material=MaterialKind::Water;
+    remoteWaterNode.quantity=20;
+    remoteWaterNode.maxQuantity=20;
+    remoteWaterNode.pos={
+        remoteStart.x+WorldChunkSpanGridCells*8,
+        remoteStart.y};
+    remoteWater.world().resourceNodes.push_back(remoteWaterNode);
+
+    bool sawRemoteDrink=false;
+    for(int minute=0;minute<10 && !sawRemoteDrink;++minute){
+        remoteWater.step();
+        const ResidentPresentationObservation observed=
+            remoteWater.observeResidentPresentation(remoteActorId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Physical
+           && observed.physicalGoal==Goal::Drink){
+            sawRemoteDrink=true;
+        }
+    }
+    assert(sawRemoteDrink);
+
+    bool reroutedToCloserWaterFrontier=false;
+    for(int minute=0;minute<10 && !reroutedToCloserWaterFrontier;++minute){
+        remoteWater.step();
+        const ResidentPresentationObservation observed=
+            remoteWater.observeResidentPresentation(remoteActorId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Civilization
+           && observed.civilizationIntent==CivilizationIntent::Explore
+           && observed.civilizationMaterial==MaterialKind::Water){
+            reroutedToCloserWaterFrontier=true;
+        }
+    }
+    assert(reroutedToCloserWaterFrontier);
+
     directActor.needs={0.01,0.01,0.01,0.01,0.93};
     const double directHygieneBefore=directActor.needs.hygiene;
     const int waterUnitsBeforeDirectWash=
@@ -279,70 +337,6 @@ int main()
         < waterUnitsBeforeDirectWash);
     assert(rawWaterUnitCount(directActor.civilization.inventory)==0);
     assert(simpleContainerCount(directActor.civilization.inventory)==0);
-
-    // A live Water node elsewhere in the materialized world is knowledge, not
-    // an immediate local Drink affordance. When urgent thirst has no reachable
-    // settlement-local source, keep acquiring/exploring Water instead of
-    // committing to an unbounded cross-world Physical Drink walk.
-    SimulationRuleset remoteWaterRules=DefaultSimulationRuleset;
-    remoteWaterRules.needs.hungerPerMinute=0.0;
-    // Keep the authoritative thirst rate: this regression proves that an
-    // already-urgent resident rejects a source that cannot be reached before
-    // hard thirst saturation, rather than relying on an arbitrary radius.
-    remoteWaterRules.needs.thirstPerMinute=
-        DefaultSimulationRuleset.needs.thirstPerMinute;
-    remoteWaterRules.needs.sleepPerMinute=0.0;
-    remoteWaterRules.needs.bladderPerMinute=0.0;
-    remoteWaterRules.needs.hygienePerMinute=0.0;
-    Simulation remoteWater(
-        9123406,0,CurrentWorldGenerationVersion,remoteWaterRules);
-    remoteWater.setupDemo();
-    remoteWater.world().minute=1;
-    remoteWater.world().characters.resize(1);
-    remoteWater.world().resourceNodes.clear();
-    remoteWater.world().storageSites.clear();
-    remoteWater.world().generatedNaturalChunks.clear();
-
-    Character& remoteActor=remoteWater.world().characters.front();
-    const CharacterId remoteActorId=remoteActor.id;
-    while(remoteActor.civilization.inventory.remove(
-        ItemKind::RawMaterial,MaterialKind::Water,1)) {}
-    while(remoteActor.civilization.inventory.remove(
-        ItemKind::SimpleContainer,MaterialKind::Unknown,1,true)) {}
-    remoteActor.needs={0.01,0.95,0.01,0.01,0.01};
-
-    GridPos remoteStart{};
-    assert(remoteWater.runtimePosition(remoteActorId,remoteStart));
-    ResourceNode remoteWaterNode;
-    remoteWaterNode.id=991206;
-    remoteWaterNode.material=MaterialKind::Water;
-    remoteWaterNode.quantity=20;
-    remoteWaterNode.maxQuantity=20;
-    remoteWaterNode.pos={
-        remoteStart.x+SettlementServiceRadiusGrid+20,
-        remoteStart.y};
-    remoteWater.world().resourceNodes.push_back(remoteWaterNode);
-
-    bool sawLocalWaterExplore=false;
-    bool sawRemoteDirectDrink=false;
-    for(int minute=0;minute<10 && !sawLocalWaterExplore;++minute){
-        remoteWater.step();
-        const ResidentPresentationObservation observed=
-            remoteWater.observeResidentPresentation(remoteActorId);
-        if(observed.active
-           && observed.kind==PresentationActionKind::Civilization
-           && observed.civilizationIntent==CivilizationIntent::Explore
-           && observed.civilizationMaterial==MaterialKind::Water){
-            sawLocalWaterExplore=true;
-        }
-        if(observed.active
-           && observed.kind==PresentationActionKind::Physical
-           && observed.physicalGoal==Goal::Drink){
-            sawRemoteDirectDrink=true;
-        }
-    }
-    assert(sawLocalWaterExplore);
-    assert(!sawRemoteDirectDrink);
 
     // An urgent hygiene need with no usable water is an acquisition problem,
     // not a reason to idle or socialize. Start between the 15-minute
