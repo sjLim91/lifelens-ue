@@ -115,3 +115,5 @@ jobs:
           path: longrun-results/
           if-no-files-found: error
           retention-days: 30
+
+# designated-only sanitation v2 long-run validation 2026-10-06
