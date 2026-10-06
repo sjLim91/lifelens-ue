@@ -970,6 +970,7 @@ int main(int argc,char** argv)
     const auto start=std::chrono::steady_clock::now();
 
     for(int minute=1;minute<=totalMinutes;++minute){
+        systemAudit.beforeStep();
         sim.step();
         systemAudit.minute();
         if(minute%MinutesPerDay==0) systemAudit.sample(minute/MinutesPerDay,false);

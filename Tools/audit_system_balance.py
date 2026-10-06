@@ -57,6 +57,8 @@ def normalized_record(record):
 def validate_evidence(directory):
     names, failures = {}, []
     for record in read_jsonl(directory / "metrics.jsonl"):
+        if record["type"] == "exploration_start" and record.get("token") == "0":
+            failures.append({"error": "completed-result presentation counted as exploration attempt", "minute": record["minute"]})
         if record["type"] == "resident":
             names[record["name"]] = record["id"]
             if sum(record["activity_minutes"].values()) != record["observed_minutes"]:
@@ -146,7 +148,7 @@ def summarize(directory):
         "invariants": invariants, "complete": bool(completions), "latest_entities": list(latest.values()),
         "measurement_limits": {
             "critical_band": "0.90 is Core critical provision threshold; other Needs use same observational band, not an AI threshold change",
-            "activity": "exclusive post-tick Core presentation category; independent romance/family/institution/economy actions are not separable in this read model",
+            "activity": "exclusive active Core commitment category; retained completed-result presentation is excluded and final active tick included; independent romance/family/institution/economy actions are not separable",
             "failed_retry": "inactive minutes inside Core penaltyUntilMinute; excludes failed work that still has active presentation",
             "zero_stock": "living carried + global stored raw material; natural direct water, containers and dead inventory excluded; zero does not prove shortage",
             "resource_flows": "gross production/consumption/spoilage/trade flows unavailable; inventory deltas cannot identify all causes",

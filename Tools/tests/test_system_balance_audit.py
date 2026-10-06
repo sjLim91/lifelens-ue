@@ -61,6 +61,10 @@ class DeterministicEvidenceTest(unittest.TestCase):
         (self.first / "events.jsonl").write_text(json.dumps(event) + "\n")
         self.assertTrue(AUDIT.validate_evidence(self.first))
 
+    def test_zero_token_exploration_is_not_a_live_attempt(self):
+        (self.first / "metrics.jsonl").write_text(json.dumps({"type": "exploration_start", "token": "0", "minute": 10}) + "\n")
+        self.assertFalse(AUDIT.validate_evidence(self.first))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -99,6 +99,7 @@ struct ResidentAudit {
 class SystemBalanceAudit {
     Simulation& sim; std::ofstream records,events;
     std::map<CharacterId,ResidentAudit> residents;
+    std::map<CharacterId,ResidentPresentationObservation> tickStartPresentation;
     std::set<CharacterId> founders;
     std::array<NeedStats,5> needs; std::array<std::uint64_t,16> zeroStock{},zeroStreak{},longestZero{};
     std::array<std::uint64_t,16> gathered{},stored{},retrieved{};
@@ -187,6 +188,16 @@ public:
         j.add("scope","elapsed since this invocation; loaded snapshot does not restore metric accumulators");emit(j);
     }
     bool active()const{return enabled;}
+    void beforeStep(){
+        if(!enabled)return;
+        for(const auto& c:sim.world().characters)if(c.alive){
+            auto p=sim.observeResidentPresentation(c.id);
+            // Completed-result presentation is retained by Core until the next plan.
+            // It is authoritative presentation, but not an active action commitment.
+            if(p.kind!=PresentationActionKind::Physical && p.contextActionToken==0)p.active=false;
+            tickStartPresentation[c.id]=p;
+        }
+    }
     void probePlanning(){
         if(!enabled)throw std::runtime_error("--audit-probe-only requires --audit-directory");
         const auto snapshot=sim.captureSnapshot();SettlementPopulation population;
@@ -265,6 +276,9 @@ public:
         for(const auto& c:w.characters){
             auto p=sim.observeResidentPresentation(c.id);
             if(!c.alive){if(p.active)invariant("dead resident has active presentation",c.id);continue;}
+            if(p.kind!=PresentationActionKind::Physical && p.contextActionToken==0)p.active=false;
+            // Include the final tick when a real commitment completed/failed inside step().
+            if(!p.active && tickStartPresentation.count(c.id) && tickStartPresentation[c.id].active)p=tickStartPresentation[c.id];
             auto& r=residents[c.id];++r.observations;GridPos pos{};const bool hasPos=sim.runtimePosition(c.id,pos);
             const auto distance=r.positioned&&hasPos?manhattan(r.previous,pos):0;
             const std::array<double,5> v={c.needs.hunger,c.needs.thirst,c.needs.sleep,c.needs.bladder,c.needs.hygiene};
@@ -308,7 +322,7 @@ public:
             r.previousTrade=trading;
             if(c.health.lastExposureMinute!=r.lastExposure && c.health.lastExposureMinute>=0){++r.waterExposureEntries;r.lastExposure=c.health.lastExposureMinute;}
             if(c.health.illnessSeverity>=.18)++r.illMinutes;
-            const bool exploring=p.active&&p.kind==PresentationActionKind::Civilization&&p.civilizationIntent==CivilizationIntent::Explore;
+            const bool exploring=p.active&&p.contextActionToken!=0&&p.kind==PresentationActionKind::Civilization&&p.civilizationIntent==CivilizationIntent::Explore;
             if(exploring && p.contextActionToken!=r.lastContextToken){
                 if(r.explorationStart>=0)endExploration(c.id,false);
                 r.lastContextToken=p.contextActionToken;r.explorationStart=w.minute;r.explorationOrigin=pos;
