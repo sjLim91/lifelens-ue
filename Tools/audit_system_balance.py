@@ -9,6 +9,7 @@ import csv
 import hashlib
 import json
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -124,6 +125,7 @@ def percentages(checkpoint):
 def summarize(directory):
     checkpoints, first_signals, invariants, completions = [], [], [], []
     latest = {}
+    resident_needs = {}
     with (directory / "metrics.csv").open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
         writer.writerow(["seed", "day", "minute", "scope", "entity", "metric", "value"])
@@ -132,6 +134,8 @@ def summarize(directory):
             for metric, value in flatten(record):
                 writer.writerow([record.get("seed"), record.get("day"), record.get("minute"), record["type"], entity, metric,
                                  "unavailable" if value is None else value])
+            if record["type"] == "resident":
+                resident_needs[(record["day"], record["id"])] = record["needs"]
             if record["type"] == "checkpoint":
                 derived = {**record, "activity_percent": percentages(record)}
                 if checkpoints:
@@ -176,6 +180,37 @@ def summarize(directory):
             "causality": "timeline order is evidence; causal attribution also requires the relevant Core implementation",
         },
     }
+    # Older observer distributions interleaved residents when counting temporal runs.
+    # Reconstruct temporal aggregates from authoritative per-resident observations.
+    for checkpoint in checkpoints:
+        observations = [value for (day, _), value in resident_needs.items() if day == checkpoint["day"]]
+        if observations:
+            checkpoint["needs"] = {name: {**value,
+                "critical_entries": sum(item[name]["critical_entries"] for item in observations),
+                "longest_critical_streak": max(item[name]["longest_critical_streak"] for item in observations)}
+                for name, value in checkpoint["needs"].items()}
+    final_day = checkpoints[-1]["day"] if checkpoints else None
+    summary["current_entities"] = [record for record in latest.values() if record.get("day") == final_day]
+    legacy = []
+    log = directory / "core.log"
+    if log.is_file():
+        for line in log.read_text(encoding="utf-8").splitlines():
+            scope = line.split(" ", 1)[0]
+            if scope not in {"EVENTS", "HEALTH", "SETTLEMENT", "STATE_GROWTH", "WORLD"}:
+                continue
+            value = {"scope": scope}
+            for key, raw in re.findall(r"(\w+)=([^ ]+)", line):
+                try:
+                    value[key] = float(raw) if "." in raw else int(raw)
+                except ValueError:
+                    value[key] = raw
+            if scope == "EVENTS":
+                value["completion_ratio"] = {need: value.get("done" + need, 0) / value["starts" + need]
+                    if value.get("starts" + need) else None for need in ("Eat", "Drink", "Sleep", "Toilet", "Wash")}
+            legacy.append(value)
+    summary["legacy_checkpoint_metrics"] = legacy
+    summary["measurement_limits"]["temporal_aggregate"] = "sum resident critical entries and maximum resident streak; never concatenate resident timelines"
+    summary["measurement_limits"]["need_resolution"] = "observed multi-tick sessions only; instantaneous Eat completions require raw Core events/core.log counters; no session observation is not zero completion"
     atomic_json(directory / "summary.json", summary)
     lines = ["# 전 시스템 장기 계측 요약", "", "Core 수치 변경 없이 관찰한 결과. 인과 판정에는 events.jsonl과 Core 코드가 함께 필요하다.", "",
              "| day | living/total | births | generation depth | chunks | facilities | survival % | social % | family % | civilization % | idle % | retry % |",

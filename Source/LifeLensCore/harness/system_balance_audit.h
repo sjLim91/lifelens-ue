@@ -246,7 +246,11 @@ public:
         if(contains("preempted") && tradeDeparted.count(actor)){
             ++eventCounts["trade_survival_preemption"];r.tradeWasPreempted=true;
         }
-        if(contains("route failed") || contains("timed out")){if(line==r.lastFailure)++r.retries;r.lastFailure=line;}
+        if(contains("route failed") || contains("timed out")){
+            const auto close=line.find("] ");
+            const auto failure=line.rfind("[Day ",0)==0 && close!=std::string::npos?line.substr(close+2):line;
+            if(failure==r.lastFailure)++r.retries;r.lastFailure=failure;
+        }
         if(contains("departed settlement")&&contains("to trade with")){
             tradeDeparted[actor]=sim.world().minute;++tradeMissions[actor];
         }
@@ -414,7 +418,13 @@ public:
         Json counts;for(const auto& e:eventCounts)counts.add(e.first,e.second);j.raw("event_counts",counts.str());
         Json budget;std::array<std::uint64_t,22> totals{};for(const auto& r:residents)for(int i=0;i<22;++i)totals[i]+=r.second.budget[i];
         for(int i=0;i<22;++i)budget.add(BudgetNames[i],totals[i]);j.raw("activity_minutes",budget.str());
-        Json n;for(int i=0;i<5;++i)n.raw(NeedNames[i],needs[i].json());j.raw("needs",n.str());
+        Json n;for(int i=0;i<5;++i){
+            // Distribution pools resident samples; temporal runs cannot concatenate residents.
+            auto aggregate=needs[i];aggregate.entries=0;aggregate.longest=0;
+            for(const auto& resident:residents){aggregate.entries+=resident.second.needs[i].entries;
+                aggregate.longest=std::max(aggregate.longest,resident.second.needs[i].longest);}
+            n.raw(NeedNames[i],aggregate.json());
+        }j.raw("needs",n.str());
         j.add("exploration_attempts",explorationAttempts);j.add("exploration_success",explorationSuccess);
         j.add("critical_exploration",criticalExploration);j.add("exploration_completed_travel_grid",explorationTravel);
         j.add("discovered_resource_nodes",newResourceNodes.size());j.add("subsequently_depleted_discovered_nodes",usedNewResourceNodes.size());
