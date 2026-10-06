@@ -286,7 +286,11 @@ int main()
     // committing to an unbounded cross-world Physical Drink walk.
     SimulationRuleset remoteWaterRules=DefaultSimulationRuleset;
     remoteWaterRules.needs.hungerPerMinute=0.0;
-    remoteWaterRules.needs.thirstPerMinute=0.0;
+    // Keep the authoritative thirst rate: this regression proves that an
+    // already-urgent resident rejects a source that cannot be reached before
+    // hard thirst saturation, rather than relying on an arbitrary radius.
+    remoteWaterRules.needs.thirstPerMinute=
+        DefaultSimulationRuleset.needs.thirstPerMinute;
     remoteWaterRules.needs.sleepPerMinute=0.0;
     remoteWaterRules.needs.bladderPerMinute=0.0;
     remoteWaterRules.needs.hygienePerMinute=0.0;
