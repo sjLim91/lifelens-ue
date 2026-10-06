@@ -425,5 +425,70 @@ int main()
     assert(strangerPhysicalSocial.social.intent==strangerDecision.social.intent);
     assert(strangerPhysicalSocial.utility==strangerDecision.utility);
 
+    // Production scheduling owns authoritative runtime positions. A genuinely
+    // local first-contact opportunity must be able to bootstrap even when an
+    // absolute established-relationship threshold would reject it; the same
+    // person outside the local settlement envelope must not be considered at
+    // all. This is also the isolation contract required by future Multi-Origin
+    // Earth worlds.
+    SettlementPopulation localPopulation;
+    localPopulation[outgoing.id]={0,0};
+    localPopulation[unfamiliar.id]={1,0};
+
+    const UnifiedUtilityDecision thresholdBlockedCompatibility=
+        choosePhysicalSocialUtilityDecision(
+            outgoingStrangerWorld,
+            outgoingStrangerWorld.characters[0],
+            outgoingRelationships,
+            0.99);
+    assert(
+        thresholdBlockedCompatibility.kind
+        ==UnifiedDecisionKind::Physical);
+
+    traceRelation.familiarity=0.02;
+    const UnifiedUtilityDecision localBootstrap=
+        choosePhysicalSocialUtilityDecisionAtPosition(
+            outgoingStrangerWorld,
+            outgoingStrangerWorld.characters[0],
+            outgoingRelationships,
+            {0,0},
+            0.99,
+            &localPopulation,
+            true);
+    assert(localBootstrap.kind==UnifiedDecisionKind::Social);
+    assert(localBootstrap.social.intent==SocialIntent::Approach);
+    assert(localBootstrap.social.target==unfamiliar.id);
+
+    const UnifiedUtilityDecision localUnifiedBootstrap=
+        chooseUnifiedUtilityDecisionAtPosition(
+            outgoingStrangerWorld,
+            outgoingStrangerWorld.characters[0],
+            outgoingRelationships,
+            {0,0},
+            0.99,
+            0.14,
+            &localPopulation);
+    // The regular 15-minute unified cadence keeps the historical
+    // threshold/civilization competition. First-contact bootstrap is reserved
+    // for the cheaper off-cadence social probe in Simulation.
+    assert(localUnifiedBootstrap.kind!=UnifiedDecisionKind::Social);
+
+    SettlementPopulation remotePopulation=localPopulation;
+    remotePopulation[unfamiliar.id]={
+        SettlementServiceRadiusGrid+1,
+        0
+    };
+    const UnifiedUtilityDecision remoteDecision=
+        choosePhysicalSocialUtilityDecisionAtPosition(
+            outgoingStrangerWorld,
+            outgoingStrangerWorld.characters[0],
+            outgoingRelationships,
+            {0,0},
+            0.0,
+            &remotePopulation,
+            true);
+    assert(remoteDecision.kind==UnifiedDecisionKind::Physical);
+    assert(remoteDecision.physicalGoal==Goal::Idle);
+
     return 0;
 }
