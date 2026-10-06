@@ -55,21 +55,61 @@ bool nearestNaturalWaterAccess(
     return found;
 }
 
-bool localReachableNaturalWaterAccess(
+bool naturalWaterReachableBeforeThirstSaturation(
     const World& world,
+    const Character& resident,
+    const SimulationRuleset& ruleset,
     GridPos from,
     GridPos& outAccess)
 {
     if(!nearestNaturalWaterAccess(world,from,outAccess)) return false;
-    if(manhattan(from,outAccess)>SettlementServiceRadiusGrid) return false;
 
     std::vector<GridPos> route;
-    return buildCoreGroundRoute(world,from,outAccess,0,route);
+    if(!buildCoreGroundRoute(world,from,outAccess,0,route)) return false;
+
+    const int healthMovementPenalty=
+        static_cast<int>(std::lround(
+            2.0*(1.0-healthFunctionalCapacity01(resident.health))));
+    const int maximumGroundStepIntervalMinutes=std::max(
+        1,
+        static_cast<int>(std::ceil(
+            1.0+CoreNavigationContract::WeatherFrictionWeight))
+        +healthMovementPenalty);
+    const int interactionMinutes=
+        emergencyUseDurationTicks(Goal::Drink);
+    const double conservativeCompletionMinutes=
+        static_cast<double>(
+            route.size()*static_cast<std::size_t>(
+                maximumGroundStepIntervalMinutes)
+            +std::max(0,interactionMinutes));
+
+    const EnvironmentalConsequenceProfile environment=
+        deriveEnvironmentalConsequences(
+            deriveDynamicEnvironment(
+                world.genesisIdentity(),
+                chunkCoordForGrid(from),
+                world.minute));
+    const double thirstRate=
+        ruleset.needs.thirstPerMinute
+            *std::max(0.0,resident.metabolism)
+        +std::max(
+            0.0,
+            environment.perMinuteNeedsDelta.thirst);
+
+    if(thirstRate<=1e-12) return true;
+    if(resident.needs.thirst>=1.0-1e-12) return false;
+
+    const double minutesUntilSaturation=
+        std::max(
+            0.0,
+            (1.0-resident.needs.thirst)/thirstRate);
+    return conservativeCompletionMinutes<=minutesUntilSaturation;
 }
 
 CivilizationUtilityDecision urgentLocalWaterFrontierDecision(
     const World& world,
     const Character& resident,
+    const SimulationRuleset& ruleset,
     GridPos authoritativePosition)
 {
     CivilizationUtilityDecision result;
@@ -84,9 +124,10 @@ CivilizationUtilityDecision urgentLocalWaterFrontierDecision(
     // while it belongs to the resident's current reachable living envelope.
     // A source known somewhere else in the materialized world must not make a
     // dehydrated resident commit to an unbounded cross-world Drink walk.
-    GridPos localAccess{};
-    if(localReachableNaturalWaterAccess(
-            world,authoritativePosition,localAccess)){
+    GridPos survivableAccess{};
+    if(naturalWaterReachableBeforeThirstSaturation(
+            world,resident,ruleset,
+            authoritativePosition,survivableAccess)){
         return result;
     }
 
@@ -1975,7 +2016,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
     if(urgentProvision.intent==CivilizationIntent::None){
         const CivilizationUtilityDecision localWaterFrontier=
-            urgentLocalWaterFrontierDecision(world_,c,r.pos);
+            urgentLocalWaterFrontierDecision(
+                world_,c,ruleset_,r.pos);
         if(localWaterFrontier.intent!=CivilizationIntent::None){
             urgentProvision=localWaterFrontier;
         }
