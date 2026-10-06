@@ -863,14 +863,16 @@ inline UnifiedUtilityDecision choosePhysicalSocialUtilityDecisionAtPosition(
     const RelationshipBook& relationships,
     GridPos authoritativePosition,
     double minimumSocialUtility,
-    const SettlementPopulation* population)
+    const SettlementPopulation* population,
+    bool allowFirstContactBootstrap=false)
 {
     const auto physical=bestPhysicalUtility(world,self);
     const SocialUtilityDecision social=
         chooseSocialUtilityDecisionAtPosition(
             world,self,relationships,authoritativePosition,population);
     const bool localFirstContact=
-        population!=nullptr
+        allowFirstContactBootstrap
+        && population!=nullptr
         && socialDecisionIsFirstContact(
             self,relationships,social);
 
@@ -907,7 +909,7 @@ inline UnifiedUtilityDecision choosePhysicalSocialUtilityDecision(
     // historical threshold. Production scheduling uses the position-aware path.
     return choosePhysicalSocialUtilityDecisionAtPosition(
         world,self,relationships,GridPos{},
-        minimumSocialUtility,nullptr);
+        minimumSocialUtility,nullptr,false);
 }
 
 inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
@@ -924,12 +926,7 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     UnifiedUtilityDecision decision=
         choosePhysicalSocialUtilityDecisionAtPosition(
             world,self,relationships,authoritativePosition,
-            minimumSocialUtility,population);
-    const bool localFirstContact=
-        population!=nullptr
-        && decision.kind==UnifiedDecisionKind::Social
-        && socialDecisionIsFirstContact(
-            self,relationships,decision.social);
+            minimumSocialUtility,population,false);
 
     const CivilizationUtilityDecision survivalProvision =
         urgentSurvivalProvisionDecisionAtPosition(
@@ -958,8 +955,7 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     // Survival is still dominant. Civilization competes only while all Needs
     // are below the urgent threshold, and must beat the existing winner by a
     // margin rather than constantly interrupting life/social behavior.
-    if (!localFirstContact &&
-        maximumResidentNeed(self) < 0.74 &&
+    if (maximumResidentNeed(self) < 0.74 &&
         civilization.intent != CivilizationIntent::None &&
         civilization.utility >= minimumCivilizationUtility &&
         civilization.utility > decision.utility * 1.08) {
