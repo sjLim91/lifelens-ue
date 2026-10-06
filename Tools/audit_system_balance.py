@@ -133,7 +133,20 @@ def summarize(directory):
                 writer.writerow([record.get("seed"), record.get("day"), record.get("minute"), record["type"], entity, metric,
                                  "unavailable" if value is None else value])
             if record["type"] == "checkpoint":
-                checkpoints.append({**record, "activity_percent": percentages(record)})
+                derived = {**record, "activity_percent": percentages(record)}
+                if checkpoints:
+                    prior = checkpoints[-1]
+                    days = record["day"] - prior["day"]
+                    resident_days = (sum(record["activity_minutes"].values()) - sum(prior["activity_minutes"].values())) / 1440
+                    derived["growth_since_previous_checkpoint"] = {
+                        "chunks_per_day": (record["chunks"] - prior["chunks"]) / days,
+                        "snapshot_bytes_per_day": (record["snapshot_bytes"] - prior["snapshot_bytes"]) / days,
+                        "net_memory_entries_per_resident_day": (record["memory_entries"] - prior["memory_entries"]) / resident_days if resident_days else None,
+                        "wall_ms_per_day": (record["elapsed_wall_ms"] - prior["elapsed_wall_ms"]) / days,
+                    }
+                else:
+                    derived["growth_since_previous_checkpoint"] = None
+                checkpoints.append(derived)
             if record["type"] in ("first_need_pressure", "invariant_failure"):
                 first_signals.append(record)
             if record["type"] == "invariant_failure":
@@ -149,6 +162,7 @@ def summarize(directory):
         "measurement_limits": {
             "critical_band": "0.90 is Core critical provision threshold; other Needs use same observational band, not an AI threshold change",
             "activity": "exclusive active Core commitment category; retained completed-result presentation is excluded and final active tick included; independent romance/family/institution/economy actions are not separable",
+            "activity_precision": "post-tick active commitment with pre-tick fallback for completion/failure; planning/preemption inside a tick is not a sub-minute profiler",
             "failed_retry": "inactive minutes inside Core penaltyUntilMinute; excludes failed work that still has active presentation",
             "zero_stock": "living carried + global stored raw material; natural direct water, containers and dead inventory excluded; zero does not prove shortage",
             "resource_flows": "gross production/consumption/spoilage/trade flows unavailable; inventory deltas cannot identify all causes",
@@ -157,6 +171,8 @@ def summarize(directory):
             "survival_days": "right-censored observation duration; founders counted from invocation start, newborns from birth",
             "generations": "Adult requires 18*365=6570 days after birth; 1000 days cannot validate adult descendant reproduction",
             "settlement_storage": "service-area membership can overlap; do not sum across settlements",
+            "entity_rows": "daily/checkpoint emission can repeat entity rows at the same day; use last row per type/day/entity/technique/need",
+            "facility_usage": "Core usageCount is not updated by every facility process; FirePit/Furnace/CultivatedPlot zero does not prove unused",
             "causality": "timeline order is evidence; causal attribution also requires the relevant Core implementation",
         },
     }

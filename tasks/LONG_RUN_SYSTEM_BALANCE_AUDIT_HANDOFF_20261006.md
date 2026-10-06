@@ -1,15 +1,34 @@
-# 전 시스템 장기 감사 재개 기록 — 2026-10-06
+# 전 시스템 장기 감사 인수인계 — 2026-10-06
 
-- 사용자 범위: 진단 전용, Core truth/규칙/수치/save schema 변경 금지. PR까지만; merge/auto-merge/배포 금지.
-- branch: audit/system-balance-causal-20261006
-- 확인한 main: 67fbf1e2c133499b2271f885ef066df30efdf665
-- 시작 시 열린 PR: 0. WORK_STATE / TEAM_BOARD는 수정하지 않는다.
-- AGENTS.md와 지정 문서 확인. CURRENT_MAIN_LONGRUN_AUDIT/WORK_STATE에는 과거 결과가 혼재하므로 새 실행과 분리한다.
-- clone 금지 준수: GitHub 연결로 개별 Core 파일을 읽고 작업한다. 로컬 경로 /workspace/Source/LifeLensCore.
-- 기존 balance_audit.cpp와 current-main-longrun-audit.yml 확장. 초기 checkpoint 1,7,30,100,365,1000.
-- 기본 seed 874213954 / 4242001. 추가 seed는 결과 다양성 확인 후 결정.
-- 현재 단계: 원본 Core 파일 수집 및 기존 계측 범위 분석. 아직 새 장기 결과 없음.
-- 재개 시 actual main/open PR/branch HEAD/Actions부터 재조회. 로컬 파일/산출물 보존 여부 확인.
-- 계획: 시간축 JSONL + checkpoint CSV/JSON/Markdown, per-resident Needs/time budget, resource/facility/chunk/health/knowledge state, causal evidence, invariant/determinism 검증.
-- 결과가 없는 항목은 0으로 대신하지 말고 unavailable/unmeasured로 명시한다.
-- 기존 --load-snapshot은 simulation만 복원하고 누적 metrics는 복원하지 않음. 재개 구간 scope를 반드시 명시하거나 원점부터 재실행한다.
+- 저장소 sjLim91/lifelens-ue, main 67fbf1e2c133499b2271f885ef066df30efdf665.
+- 브랜치 audit/system-balance-causal-20261006, Draft PR #646.
+- 클론 없이 GitHub connector로 파일 확인/브랜치/커밋/PR 생성. WORK_STATE/TEAM_BOARD 수정 없음.
+- Core truth, ruleset, deterministic contract, snapshot schema 변경 없음.
+- 기존 balance_audit.cpp 확장 + system_balance_audit.h observer + Python 재실행/JSON/CSV/결정론 driver.
+- 로컬 g++ Release 빌드, 기존 결정론/snapshot/trade/generation 테스트와 신규 7개 invariant 테스트 통과.
+- 원본 하네스와 확장 하네스 seed874 day1/7/30 save bytes 동일. day100/365 추가 비교 예정.
+- 최종 native 실행: results/full/874213954 완료1000일(1090.25초); 4242001 진행; 874213954-repeat 진행.
+- checkpoint 1,7,30,100,365,1000; 최종 바이너리 SHA256 b8f7607fb1d8ab74989997f7140761b8149624c1730701e6a2bc5692210aa6cf.
+- 진행 로그 longrun-final-driver.log, 실행 manifest 각 results/full/<seed>/run.json.
+- 재개: python Tools/audit_system_balance.py run --executable build/ll_balance_audit_final --output results/full --seeds 874213954,4242001 --days 1000 --checkpoints 1,7,30,100,365,1000 --workers 2 --determinism-seed 874213954 --resume
+- 중단 실행은 감사 누적량이 snapshot에 없으므로 처음부터 재실행. 완료 실행은 identity/hash 일치 시 건너뜀.
+- 다른 환경에서는 CMake Release 기존 ll_balance_audit 빌드 후 executable 경로 치환. GitHub Actions current-main-longrun-audit가 raw evidence/snapshot artifact 보관.
+- 최종 문서 docs/audits/LONG_RUN_SYSTEM_BALANCE_AUDIT_2026-10-06.md 작성 예정.
+
+## 이미 확인한 인과 경로/주의
+
+- Social Approach 후보 최대 약 .17, minSocialUtility .18 미달. survival 외 civilization 경쟁도 존재. 임계값 변경 금지.
+- 자연수 Drink 오염 dose → noon pathogen 축적 → illness .28 경계 이상 유지 → capacity 감소 → 이동지연. Yerin day145.1667 illness death. 회복 불가 원인을 단순 사망 label로 끝내지 않는다.
+- 1000일은 출생자 성인(18*365=6570일) 검증 불가능. 세대교체 미관찰을 실패로 단정하지 않는다.
+- Completed civilization presentation token0을 활동/탐험으로 세던 prototype 폐기. final은 active commitment만 관찰.
+- 이벤트 [Day N HH:MM] prefix 제거 후 actor 매핑. 이전 prefix prototype 사용 금지.
+- 시설 usageCount가 FirePit/Furnace/CultivatedPlot에서 갱신되지 않으므로 zero를 미사용으로 판정하지 않는다.
+- 자연자원은 materialized 전체량이며 접근가능량 아님. gross 소비/생산/spoilage/trade 흐름은 unavailable로 보고.
+- Core PR CI reuse wait 타임아웃은 같은 SHA push CTest PASS 후 failed job 재실행 요청됨. Core workflow 수정하지 않음.
+
+## 남은 작업
+
+1. 두 seed1000일 + 대표 seed 재실행 완료, byte/event/checkpoint identity 및 evidence validation.
+2. 모든 체크포인트 pure planning probe(encode before/after identity), 원본 baseline save 비교.
+3. JSON/CSV/Markdown 요약, anomaly 11필드 causal report, A–M 관측 제한과 수정 우선순위.
+4. 결과와 최종 인수인계 커밋, PR 설명 갱신/검토가능 전환. main merge/auto-merge/deploy 금지.
