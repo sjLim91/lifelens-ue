@@ -55,6 +55,58 @@ bool nearestNaturalWaterAccess(
     return found;
 }
 
+bool localReachableNaturalWaterAccess(
+    const World& world,
+    GridPos from,
+    GridPos& outAccess)
+{
+    if(!nearestNaturalWaterAccess(world,from,outAccess)) return false;
+    if(manhattan(from,outAccess)>SettlementServiceRadiusGrid) return false;
+
+    std::vector<GridPos> route;
+    return buildCoreGroundRoute(world,from,outAccess,0,route);
+}
+
+CivilizationUtilityDecision urgentLocalWaterFrontierDecision(
+    const World& world,
+    const Character& resident,
+    GridPos authoritativePosition)
+{
+    CivilizationUtilityDecision result;
+    const double waterNeed=
+        provisionNeedForMaterial(resident,MaterialKind::Water);
+    if(waterNeed<UrgentSurvivalProvisionThreshold
+       || portableWaterCount(resident.civilization.inventory)>0){
+        return result;
+    }
+
+    // A natural source is an immediate Physical Drink/Wash affordance only
+    // while it belongs to the resident's current reachable living envelope.
+    // A source known somewhere else in the materialized world must not make a
+    // dehydrated resident commit to an unbounded cross-world Drink walk.
+    GridPos localAccess{};
+    if(localReachableNaturalWaterAccess(
+            world,authoritativePosition,localAccess)){
+        return result;
+    }
+
+    const ResourceExplorationOpportunity opportunity=
+        waterNeed>=CriticalSurvivalPreemptThreshold
+            ? chooseCriticalResourceExplorationOpportunity(
+                world,resident.id,MaterialKind::Water,
+                authoritativePosition)
+            : chooseResourceExplorationOpportunity(
+                world,resident.id,MaterialKind::Water,
+                authoritativePosition);
+    if(!opportunity.available) return result;
+
+    result.intent=CivilizationIntent::Explore;
+    result.utility=std::clamp(0.82+0.18*waterNeed,0.0,1.0);
+    result.material=MaterialKind::Water;
+    result.item=ItemKind::RawMaterial;
+    return result;
+}
+
 ResourceNode* naturalWaterNodeAtAccess(
     World& world,
     GridPos access)
@@ -1919,8 +1971,15 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     // hygiene, so a very dirty resident with no usable water should start a
     // real Retrieve/Explore action at the normal five-minute planning boundary
     // instead of waiting for the 15-minute civilization cadence.
-    const CivilizationUtilityDecision urgentProvision=
+    CivilizationUtilityDecision urgentProvision=
         urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
+    if(urgentProvision.intent==CivilizationIntent::None){
+        const CivilizationUtilityDecision localWaterFrontier=
+            urgentLocalWaterFrontierDecision(world_,c,r.pos);
+        if(localWaterFrontier.intent!=CivilizationIntent::None){
+            urgentProvision=localWaterFrontier;
+        }
+    }
     const bool urgentProvisionRequired=
         urgentProvision.intent!=CivilizationIntent::None;
     const double urgentProvisionNeed=
