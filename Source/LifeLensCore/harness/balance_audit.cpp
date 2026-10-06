@@ -17,6 +17,7 @@
 #include "lifelens/Health.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
+#include "system_balance_audit.h"
 
 namespace {
 
@@ -809,7 +810,9 @@ int main(int argc,char** argv)
 {
     int days=1000;
     std::uint64_t seed=874213954;
-    std::string checkpointArg="100,365,1000";
+    std::string checkpointArg="1,7,30,100,365,1000";
+    std::string auditDirectory;
+    bool auditProbeOnly=false;
     bool sleepDiagnostics=false;
     std::string sleepTracePath,loadSnapshot,snapshotDirectory;
     int traceStart=0,traceEnd=std::numeric_limits<int>::max();
@@ -817,7 +820,11 @@ int main(int argc,char** argv)
 
     for(int i=1;i<argc;++i){
         const std::string arg=argv[i];
-        if(arg=="--days" && i+1<argc){
+        if(arg=="--audit-probe-only"){
+            auditProbeOnly=true;
+        }else if(arg=="--audit-directory" && i+1<argc){
+            auditDirectory=argv[++i];
+        }else if(arg=="--days" && i+1<argc){
             days=std::max(1,std::atoi(argv[++i]));
         }else if(arg=="--seed" && i+1<argc){
             seed=std::strtoull(argv[++i],nullptr,10);
@@ -858,8 +865,15 @@ int main(int argc,char** argv)
     const std::size_t initialPopulation=
         sim.world().characters.size();
 
+    lifelens::audit::SystemBalanceAudit systemAudit(sim,auditDirectory);
+    if(auditProbeOnly){
+        if(loadSnapshot.empty()){std::cerr<<"--audit-probe-only requires --load-snapshot\n";return 1;}
+        systemAudit.probePlanning();
+        return systemAudit.finish() ? 0 : 2;
+    }
     EventMetrics events;
     sim.onEvent([&](const std::string& line){
+        systemAudit.event(line);
         if(line.find("route failed")!=std::string::npos){
             ++events.routeFailures;
         }
@@ -956,7 +970,10 @@ int main(int argc,char** argv)
     const auto start=std::chrono::steady_clock::now();
 
     for(int minute=1;minute<=totalMinutes;++minute){
+        systemAudit.beforeStep();
         sim.step();
+        systemAudit.minute();
+        if(minute%MinutesPerDay==0) systemAudit.sample(minute/MinutesPerDay,false);
 
         for(Character& resident:sim.world().characters){
             ResidentMetrics& item=
@@ -976,6 +993,7 @@ int main(int argc,char** argv)
 
         if(checkpointIndex<checkpoints.size()
            && minute>=checkpoints[checkpointIndex]*MinutesPerDay){
+            systemAudit.sample(checkpoints[checkpointIndex],true);
             emitCheckpoint(
                 sim,
                 seed,
@@ -1009,6 +1027,5 @@ int main(int argc,char** argv)
         <<" days="<<days
         <<" checkpoints="<<checkpoints.size()
         <<"\n";
-    return 0;
+    return systemAudit.finish() ? 0 : 2;
 }
-
