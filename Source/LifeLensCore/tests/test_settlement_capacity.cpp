@@ -325,6 +325,18 @@ int main()
         resident.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Water,3,0.5,1.0});
         resident.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::PlantFood,3,0.5,1.0});
     }
+    // This fixture verifies settlement capacity, not NEW GAME first-contact.
+    // External execution deliberately does not complete unrelated Social
+    // contexts here, so make the four fixture residents already acquainted and
+    // keep this test focused on the sleeping-place planning contract.
+    for(const Character& first:liveWorld.characters){
+        for(const Character& second:liveWorld.characters){
+            if(first.id==second.id) continue;
+            live.relationships().getOrCreate(
+                first.id,second.id).familiarity=
+                    SocialFirstContactFamiliarityHorizon+0.01;
+        }
+    }
     bool additionalPlan=false;
     for(int minute=0;minute<31 && !additionalPlan;++minute){
         live.step();
