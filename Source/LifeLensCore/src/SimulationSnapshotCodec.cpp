@@ -6,6 +6,7 @@
 #include "lifelens/SocialKnowledgeSnapshotCodec.h"
 #include "lifelens/WorldGenerationSnapshotCodec.h"
 #include "lifelens/HealthSnapshotCodec.h"
+#include "lifelens/TradeJourneySnapshotCodec.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -210,6 +211,15 @@ bool encodeSimulationSnapshot(
     writeHealthSnapshotExtension(healthExtension,snapshot.world);
     body.insert(body.end(),healthExtension.bytes.begin(),healthExtension.bytes.end());
 
+    // Trade journey persistence is an optional tail extension. The base v8
+    // body and every earlier extension remain byte-layout compatible.
+    Writer tradeJourneyExtension;
+    writeTradeJourneySnapshotExtension(tradeJourneyExtension,snapshot);
+    body.insert(
+        body.end(),
+        tradeJourneyExtension.bytes.begin(),
+        tradeJourneyExtension.bytes.end());
+
     outBytes=std::move(body);
     if(error) error->clear();
     return true;
@@ -292,12 +302,33 @@ bool decodeSimulationSnapshot(
     const bool hasHealthExtension=
         healthMarker!=bytes.end() && healthMarker>rulesetMarker;
 
+    const auto tradeJourneyMarker=std::find_end(
+        rulesetMarker,bytes.end(),
+        TradeJourneySnapshotExtensionMagic,
+        TradeJourneySnapshotExtensionMagic
+            +sizeof(TradeJourneySnapshotExtensionMagic));
+    const bool hasTradeJourneyExtension=
+        tradeJourneyMarker!=bytes.end()
+        && tradeJourneyMarker>rulesetMarker
+        && (!hasHealthExtension || tradeJourneyMarker>healthMarker);
+
+    const auto rulesetEnd=
+        hasHealthExtension
+            ? healthMarker
+            : (hasTradeJourneyExtension ? tradeJourneyMarker : bytes.end());
     std::vector<std::uint8_t> rulesetBytes(
-        rulesetMarker,
-        hasHealthExtension ? healthMarker : bytes.end());
+        rulesetMarker,rulesetEnd);
+
     std::vector<std::uint8_t> healthBytes;
     if(hasHealthExtension){
-        healthBytes.assign(healthMarker,bytes.end());
+        healthBytes.assign(
+            healthMarker,
+            hasTradeJourneyExtension ? tradeJourneyMarker : bytes.end());
+    }
+
+    std::vector<std::uint8_t> tradeJourneyBytes;
+    if(hasTradeJourneyExtension){
+        tradeJourneyBytes.assign(tradeJourneyMarker,bytes.end());
     }
 
     SimulationStateSnapshot decoded;
@@ -356,6 +387,16 @@ bool decodeSimulationSnapshot(
             return false;
         }
         if(!validatePopulationHealthForCodec(decoded.world,error)) return false;
+    }
+
+    if(hasTradeJourneyExtension){
+        Reader tradeJourneyReader(tradeJourneyBytes);
+        if(!readTradeJourneySnapshotExtension(
+                tradeJourneyReader,decoded)
+           || !tradeJourneyReader.done()){
+            setError(error,"invalid trade journey snapshot extension");
+            return false;
+        }
     }
 
     outSnapshot=std::move(decoded);

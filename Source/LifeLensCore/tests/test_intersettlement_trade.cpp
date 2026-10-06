@@ -421,6 +421,20 @@ int main()
         CHECK(payload.originPos.x==runtimeOrigin.x);
         CHECK(payload.originPos.y==runtimeOrigin.y);
 
+        const TradeJourneyState journey=
+            runtime->second.tradeJourney;
+        CHECK(journey.active);
+        CHECK(journey.partner==secondId);
+        CHECK(journey.originSettlement==runtimeOriginSettlement);
+        CHECK(journey.destinationSettlement==runtimeDestinationSettlement);
+        CHECK(journey.originPos.x==runtimeOrigin.x);
+        CHECK(journey.originPos.y==runtimeOrigin.y);
+        CHECK(journey.firstGives==MaterialKind::Wood);
+        CHECK(journey.secondGives==MaterialKind::Stone);
+        CHECK(journey.quantityEach==1);
+        CHECK(!journey.returning);
+        CHECK(!journey.exchanged);
+
         std::vector<std::uint8_t> bytes;
         CHECK(encodeSimulationSnapshot(
             inFlight,bytes,&error));
@@ -441,6 +455,101 @@ int main()
         CHECK(decodedPayload.originPos.x==payload.originPos.x);
         CHECK(decodedPayload.originPos.y==payload.originPos.y);
         CHECK(decodedPayload.returning==payload.returning);
+
+        const TradeJourneyState& decodedJourney=
+            decodedRuntime->second.tradeJourney;
+        CHECK(decodedJourney.active);
+        CHECK(decodedJourney.partner==journey.partner);
+        CHECK(decodedJourney.utility==journey.utility);
+        CHECK(decodedJourney.originSettlement==journey.originSettlement);
+        CHECK(decodedJourney.destinationSettlement==journey.destinationSettlement);
+        CHECK(decodedJourney.originPos.x==journey.originPos.x);
+        CHECK(decodedJourney.originPos.y==journey.originPos.y);
+        CHECK(decodedJourney.firstGives==journey.firstGives);
+        CHECK(decodedJourney.secondGives==journey.secondGives);
+        CHECK(decodedJourney.quantityEach==journey.quantityEach);
+        CHECK(decodedJourney.legStartedMinute==journey.legStartedMinute);
+        CHECK(!decodedJourney.returning);
+        CHECK(!decodedJourney.exchanged);
+
+        std::vector<std::uint8_t> reencoded;
+        CHECK(encodeSimulationSnapshot(
+            decoded,reencoded,&error));
+        CHECK(reencoded==bytes);
+
+        // Survival may preempt the currently-running Trade context, but the
+        // durable journey must survive. Once the urgent survival work has
+        // finished, an idle runtime resumes the exact same journey.
+        Simulation preemptedSimulation(
+            decoded.world.seed,
+            decoded.world.populationSeed,
+            decoded.world.generationVersion,
+            decoded.ruleset);
+        CHECK(preemptedSimulation.restoreSnapshot(
+            decoded,&error));
+        CHECK(error.empty());
+
+        Character* preemptedActor=nullptr;
+        for(Character& resident:preemptedSimulation.world().characters){
+            if(resident.id==firstId){
+                preemptedActor=&resident;
+                break;
+            }
+        }
+        CHECK(preemptedActor!=nullptr);
+        preemptedActor->needs.hunger=0.99;
+        preemptedSimulation.step();
+
+        SimulationStateSnapshot afterPreempt=
+            preemptedSimulation.captureSnapshot();
+        auto afterPreemptRuntime=
+            afterPreempt.runtime.find(firstId);
+        CHECK(afterPreemptRuntime!=afterPreempt.runtime.end());
+        CHECK(afterPreemptRuntime->second.tradeJourney.active);
+        CHECK(!afterPreemptRuntime->second.tradeJourney.returning);
+        CHECK(afterPreemptRuntime->second.tradeJourney.partner==secondId);
+
+        for(Character& resident:afterPreempt.world.characters){
+            if(resident.id!=firstId) continue;
+            resident.needs.hunger=0.05;
+            resident.needs.thirst=0.05;
+            resident.needs.sleep=0.05;
+            resident.needs.bladder=0.05;
+            resident.needs.hygiene=0.05;
+        }
+        afterPreemptRuntime->second.goal=Goal::Idle;
+        afterPreemptRuntime->second.plan.clear();
+        afterPreemptRuntime->second.actionIndex=0;
+        afterPreemptRuntime->second.pendingContext.clear();
+        afterPreemptRuntime->second.navigationRoute.clear();
+        afterPreemptRuntime->second.navigationRouteIndex=0;
+        afterPreemptRuntime->second.navigationHasTarget=false;
+        afterPreemptRuntime->second.navigationArrived=false;
+        afterPreemptRuntime->second.navigationRouteFailed=false;
+        afterPreemptRuntime->second.penaltyUntilMinute=0;
+
+        CHECK(preemptedSimulation.restoreSnapshot(
+            afterPreempt,&error));
+        CHECK(error.empty());
+        preemptedSimulation.step();
+
+        const PendingContextActionObservation resumedTrade=
+            preemptedSimulation.observePendingContextAction(firstId);
+        CHECK(resumedTrade.active);
+        CHECK(resumedTrade.kind==ContextActionKind::Trade);
+        CHECK(resumedTrade.targetResident==secondId);
+        const SimulationStateSnapshot resumedSnapshot=
+            preemptedSimulation.captureSnapshot();
+        const auto resumedRuntime=
+            resumedSnapshot.runtime.find(firstId);
+        CHECK(resumedRuntime!=resumedSnapshot.runtime.end());
+        CHECK(resumedRuntime->second.tradeJourney.active);
+        CHECK(
+            resumedRuntime->second.tradeJourney.firstGives
+            ==MaterialKind::Wood);
+        CHECK(
+            resumedRuntime->second.tradeJourney.secondGives
+            ==MaterialKind::Stone);
     }
 
     GridPos firstPosition{};
@@ -497,6 +606,82 @@ int main()
                 tradeContextPayload(
                     runtime->second.pendingContext);
             CHECK(payload.returning);
+            CHECK(runtime->second.tradeJourney.active);
+            CHECK(runtime->second.tradeJourney.returning);
+            CHECK(runtime->second.tradeJourney.exchanged);
+            CHECK(
+                runtime->second.tradeJourney.firstGives
+                ==MaterialKind::Wood);
+            CHECK(
+                runtime->second.tradeJourney.secondGives
+                ==MaterialKind::Stone);
+
+            std::vector<std::uint8_t> returnBytes;
+            CHECK(encodeSimulationSnapshot(
+                duringReturn,returnBytes,&error));
+            CHECK(error.empty());
+            SimulationStateSnapshot returnDecoded;
+            CHECK(decodeSimulationSnapshot(
+                returnBytes,returnDecoded,&error));
+            CHECK(error.empty());
+            const auto returnDecodedRuntime=
+                returnDecoded.runtime.find(firstId);
+            CHECK(returnDecodedRuntime!=returnDecoded.runtime.end());
+            CHECK(returnDecodedRuntime->second.tradeJourney.active);
+            CHECK(returnDecodedRuntime->second.tradeJourney.returning);
+            CHECK(returnDecodedRuntime->second.tradeJourney.exchanged);
+
+            std::vector<std::uint8_t> returnReencoded;
+            CHECK(encodeSimulationSnapshot(
+                returnDecoded,returnReencoded,&error));
+            CHECK(returnReencoded==returnBytes);
+
+            Simulation returnA(
+                returnDecoded.world.seed,
+                returnDecoded.world.populationSeed,
+                returnDecoded.world.generationVersion,
+                returnDecoded.ruleset);
+            Simulation returnB(
+                returnDecoded.world.seed,
+                returnDecoded.world.populationSeed,
+                returnDecoded.world.generationVersion,
+                returnDecoded.ruleset);
+            CHECK(returnA.restoreSnapshot(returnDecoded,&error));
+            CHECK(error.empty());
+            CHECK(returnB.restoreSnapshot(returnDecoded,&error));
+            CHECK(error.empty());
+
+            bool restoredReturned=false;
+            for(int restoreMinute=0;
+                restoreMinute<contextActionTimeoutMinutes(
+                    ContextActionKind::Trade)+120;
+                ++restoreMinute){
+                returnA.step();
+                returnB.step();
+
+                const auto aSnapshot=returnA.captureSnapshot();
+                const auto aRuntime=aSnapshot.runtime.find(firstId);
+                CHECK(aRuntime!=aSnapshot.runtime.end());
+                if(!aRuntime->second.tradeJourney.active){
+                    GridPos restoredPosition{};
+                    CHECK(returnA.runtimePosition(
+                        firstId,restoredPosition));
+                    CHECK(contextActionNearTarget(
+                        restoredPosition,runtimeOrigin,1));
+                    restoredReturned=true;
+                    break;
+                }
+            }
+            CHECK(restoredReturned);
+
+            std::vector<std::uint8_t> returnABytes;
+            std::vector<std::uint8_t> returnBBytes;
+            CHECK(encodeSimulationSnapshot(
+                returnA.captureSnapshot(),returnABytes,&error));
+            CHECK(encodeSimulationSnapshot(
+                returnB.captureSnapshot(),returnBBytes,&error));
+            CHECK(returnABytes==returnBBytes);
+
             returningObserved=true;
         }
 

@@ -34,6 +34,7 @@ struct SimulationRuntimeSnapshot {
     SocialIntent socialIntent=SocialIntent::None;
     CharacterId socialTarget=0;
     PendingContextAction pendingContext{};
+    TradeJourneyState tradeJourney{};
     std::vector<GridPos> navigationRoute;
     std::size_t navigationRouteIndex=0;
     GridPos navigationTarget{};
