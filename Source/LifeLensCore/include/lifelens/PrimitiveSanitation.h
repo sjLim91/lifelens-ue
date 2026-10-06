@@ -180,7 +180,8 @@ inline PrimitiveSanitationOpportunity evaluatePrimitiveSanitationOpportunity(
     const Character& character,
     const EnvironmentalResidueField& field,
     int currentMinute,
-    GridPos referencePosition={})
+    GridPos referencePosition={},
+    const std::function<bool(GridPos)>& candidateAllowed={})
 {
     PrimitiveSanitationOpportunity result;
     result.problemRecognized=hasRecognizedSanitationProblem(character);
@@ -188,9 +189,12 @@ inline PrimitiveSanitationOpportunity evaluatePrimitiveSanitationOpportunity(
 
     result.problemConfidence=recognizedSanitationProblemConfidence(character);
     result.suggestedSite=chooseLowExposureOutdoorReliefPosition(
-        worldSeed,character,field,currentMinute,referencePosition);
+        worldSeed,character,field,currentMinute,referencePosition,
+        candidateAllowed);
     result.siteExposure=field.exposureAt(result.suggestedSite);
-    result.siteAvailable=result.siteExposure<PrimitiveSanitationCleanSiteExposureLimit;
+    result.siteAvailable=
+        result.siteExposure<PrimitiveSanitationCleanSiteExposureLimit
+        && (!candidateAllowed || candidateAllowed(result.suggestedSite));
     return result;
 }
 
@@ -199,15 +203,19 @@ inline PrimitiveSanitationOpportunity evaluateDesignatedSanitationSiteCreationOp
     const Character& character,
     const EnvironmentalResidueField& field,
     int currentMinute,
-    GridPos referencePosition={})
+    GridPos referencePosition={},
+    const std::function<bool(GridPos)>& candidateAllowed={})
 {
     PrimitiveSanitationOpportunity result;
     result.problemRecognized=hasRecognizedSanitationProblem(character);
     result.problemConfidence=recognizedSanitationProblemConfidence(character);
     result.suggestedSite=chooseLowExposureOutdoorReliefPosition(
-        worldSeed,character,field,currentMinute,referencePosition);
+        worldSeed,character,field,currentMinute,referencePosition,
+        candidateAllowed);
     result.siteExposure=field.exposureAt(result.suggestedSite);
-    result.siteAvailable=result.siteExposure<PrimitiveSanitationCleanSiteExposureLimit;
+    result.siteAvailable=
+        result.siteExposure<PrimitiveSanitationCleanSiteExposureLimit
+        && (!candidateAllowed || candidateAllowed(result.suggestedSite));
     return result;
 }
 
@@ -218,14 +226,16 @@ inline bool canEstablishDesignatedSanitationArea(
     const std::vector<PrimitiveSanitationSite>& sites,
     int currentMinute,
     GridPos referencePosition={},
-    int maxExistingSiteDistance=std::numeric_limits<int>::max())
+    int maxExistingSiteDistance=std::numeric_limits<int>::max(),
+    const std::function<bool(GridPos)>& candidateAllowed={})
 {
     if(!character.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return false;
     if(activePrimitiveSanitationSiteNear(
         sites,referencePosition,maxExistingSiteDistance)!=nullptr) return false;
     return evaluateDesignatedSanitationSiteCreationOpportunity(
-        worldSeed,character,field,currentMinute,referencePosition).siteAvailable;
+        worldSeed,character,field,currentMinute,referencePosition,
+        candidateAllowed).siteAvailable;
 }
 
 struct PrimitiveSanitationSiteCreationResult {
@@ -241,16 +251,19 @@ inline PrimitiveSanitationSiteCreationResult establishDesignatedSanitationArea(
     std::vector<PrimitiveSanitationSite>& sites,
     int currentMinute,
     GridPos referencePosition={},
-    int maxExistingSiteDistance=std::numeric_limits<int>::max())
+    int maxExistingSiteDistance=std::numeric_limits<int>::max(),
+    const std::function<bool(GridPos)>& candidateAllowed={})
 {
     PrimitiveSanitationSiteCreationResult result;
     if(!canEstablishDesignatedSanitationArea(
         worldSeed,character,field,sites,currentMinute,
-        referencePosition,maxExistingSiteDistance)) return result;
+        referencePosition,maxExistingSiteDistance,
+        candidateAllowed)) return result;
 
     const PrimitiveSanitationOpportunity opportunity=
         evaluateDesignatedSanitationSiteCreationOpportunity(
-            worldSeed,character,field,currentMinute,referencePosition);
+            worldSeed,character,field,currentMinute,referencePosition,
+            candidateAllowed);
     if(!opportunity.siteAvailable) return result;
 
     PrimitiveSanitationSite site;
