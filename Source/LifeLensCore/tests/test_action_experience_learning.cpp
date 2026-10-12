@@ -1,3 +1,4 @@
+// #664 수정된 수면 안전 게이트 재감사 전용 브랜치 (Core 런타임 동일)
 #include <cassert>
 #include <cmath>
 #include <string>
