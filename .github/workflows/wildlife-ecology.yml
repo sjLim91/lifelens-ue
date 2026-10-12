@@ -1,0 +1,33 @@
+name: LifeLens Wildlife Ecology Core Foundation
+
+on:
+  push:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/WildlifeEcology.h'
+      - 'Source/LifeLensCore/tests/test_wildlife_ecology.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/wildlife-ecology.yml'
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/WildlifeEcology.h'
+      - 'Source/LifeLensCore/tests/test_wildlife_ecology.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/wildlife-ecology.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  wildlife-foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile strict C++17 Core wildlife contract
+        run: |
+          g++ -std=c++17 -O2 -Wall -Wextra -Werror -UNDEBUG \
+            -I Source/LifeLensCore/include \
+            Source/LifeLensCore/tests/test_wildlife_ecology.cpp \
+            -o /tmp/lifelens_wildlife_ecology
+      - name: 1,100-day deterministic independent wildlife test
+        run: /tmp/lifelens_wildlife_ecology
