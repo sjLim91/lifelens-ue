@@ -921,12 +921,13 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     double minimumCivilizationUtility = 0.14,
     const SettlementPopulation* population=nullptr,
     const SocialKnowledgeBook* socialKnowledge=nullptr,
-    const HouseholdBook* households=nullptr) {
+    const HouseholdBook* households=nullptr,
+    bool allowFirstContactBootstrap=false) {
 
     UnifiedUtilityDecision decision=
         choosePhysicalSocialUtilityDecisionAtPosition(
             world,self,relationships,authoritativePosition,
-            minimumSocialUtility,population,false);
+            minimumSocialUtility,population,allowFirstContactBootstrap);
 
     const CivilizationUtilityDecision survivalProvision =
         urgentSurvivalProvisionDecisionAtPosition(

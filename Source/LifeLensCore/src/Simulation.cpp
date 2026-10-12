@@ -1870,7 +1870,7 @@ bool Simulation::tryCivilizationDecision(
         havePopulation=true;
         decision=chooseUnifiedUtilityDecisionAtPosition(
             world_,c,relationships_,r.pos,0.18,0.14,&population,
-            &socialKnowledge_,&households_);
+            &socialKnowledge_,&households_,true);
     }
     if(decision.kind!=UnifiedDecisionKind::Civilization
        || decision.civilization.intent==CivilizationIntent::None){
@@ -1926,20 +1926,14 @@ bool Simulation::trySocialDecision(
         const auto population=settlementPopulation();
         decision=chooseUnifiedUtilityDecisionAtPosition(
             world_,c,relationships_,r.pos,0.18,0.14,&population,
-            &socialKnowledge_,&households_);
+            &socialKnowledge_,&households_,true);
     }else{
-        // The off-cadence social probe deliberately cannot start ordinary
-        // civilization work. The old minCivilizationUtility=2.0 call still
-        // evaluated every resource/facility candidate even though a clamped
-        // [0,1] civilization utility could never win. Preserve the one
-        // exception first: an urgent missing provision suppresses social work.
-        if(urgentSurvivalProvisionDecisionAtPosition(
-               world_,c,r.pos).intent!=CivilizationIntent::None){
-            return false;
-        }
-        const auto population=settlementPopulation();
-        decision=choosePhysicalSocialUtilityDecisionAtPosition(
-            world_,c,relationships_,r.pos,0.18,&population,true);
+        // A first contact must compete with the same settlement/civilization
+        // opportunity in the actual 15-minute scheduler. The legacy off-
+        // cadence bypass let a resident begin a social journey without ever
+        // checking civic water/sanitation capacity, and starved infrastructure.
+        // Keep the real social choice at the normal unified cadence only.
+        return false;
     }
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
 
@@ -2102,7 +2096,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         const auto population=settlementPopulation();
         cadenceDecision=chooseUnifiedUtilityDecisionAtPosition(
             world_,c,relationships_,r.pos,0.18,0.14,&population,
-            &socialKnowledge_,&households_);
+            &socialKnowledge_,&households_,true);
         sharedCadenceDecision=&cadenceDecision;
     }
 
