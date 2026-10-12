@@ -236,7 +236,40 @@ Simulation::Simulation(
     SimulationRuleset ruleset)
     :ruleset_(ruleset),world_(worldSeed,populationSeed,generationVersion){}
 
+bool Simulation::acceptCognitiveProposal(
+    const CognitiveRequest& request,
+    const CognitiveProposal& proposal,
+    const std::string& backendIdentity,
+    const std::string& rationaleDigest)
+{
+    // The caller cannot re-submit a previously valid request after the world
+    // has changed, or manufacture its own Need/Memory/Belief context.
+    if(request.actor==0 || request.minute!=world_.minute
+       || request.trigger==CognitiveTriggerKind::None)
+        return false;
+    const CognitiveRequest current=
+        observeCognitiveRequest(request.actor,request.trigger);
+    if(current.actor!=request.actor
+       || cognitiveRequestFingerprint(request)
+            !=cognitiveRequestFingerprint(current)
+       || !validateCognitiveProposal(world_,current,proposal).accepted)
+        return false;
+    AcceptedCognitiveDecision event;
+    event.actor=request.actor;
+    event.minute=world_.minute;
+    event.trigger=request.trigger;
+    event.contextFingerprint=cognitiveRequestFingerprint(current);
+    event.backendIdentity=backendIdentity;
+    event.intent=proposal.intent;
+    event.priority=proposal.priority;
+    event.target=proposal.targetResident;
+    event.rationaleDigest=rationaleDigest;
+    return appendAcceptedCognitiveDecision(
+        acceptedCognitiveDecisions_,event,world_);
+}
+
 void Simulation::setupDemo(){
+    acceptedCognitiveDecisions_.clear();
     nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
     Character c; c.id=1; c.name="DevResident"; c.personality=Personality::generate(world_.rng);
@@ -255,6 +288,7 @@ void Simulation::setupDemo(){
 }
 
 void Simulation::setupSocialDemo(){
+    acceptedCognitiveDecisions_.clear();
     nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
 
@@ -295,6 +329,7 @@ void Simulation::setupSocialDemo(){
 }
 
 void Simulation::setupNewGame(){
+    acceptedCognitiveDecisions_.clear();
     nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear();
     world_.objects.clear();
