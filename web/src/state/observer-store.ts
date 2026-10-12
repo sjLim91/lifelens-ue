@@ -371,6 +371,7 @@ class ObserverStore {
       ...this.snapshot,
       world: {},
       earthScenario: UNBOUND_EARTH_SCENARIO,
+      earthSolar: UNBOUND_EARTH_SOLAR,
       residents: [],
       terrain: null,
       environment: null,
