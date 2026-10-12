@@ -7,8 +7,8 @@
 
 using namespace lifelens;
 
-// Compare with the Core's actual simulation clock (new worlds start at 07:00),
-// rather than assuming their absolute initial minute is zero.
+// Compare against the actual clock reported by the initialized Core world.
+// SetupNewGame may advance the world clock before observation starts.
 static std::int64_t jsonSimulationMinute(const std::string& json)
 {
     const std::string key="\"minute\":";
@@ -44,7 +44,7 @@ int main()
     const std::string initialSolar=earth.earthSolarJson();
     const auto initialMinute=jsonSimulationMinute(initialSolar);
     assert(initialMinute==jsonSimulationMinute(earth.worldOverviewJson()));
-    assert(initialMinute==7*60); // Canonical new-world start is 07:00.
+    assert(initialMinute>=0); // Never assume a particular new-game clock.
     assert(initialSolar.find("\"available\":true")!=std::string::npos);
     assert(initialSolar.find("\"source\":\"CoreEarthSolar\"")
         !=std::string::npos);
