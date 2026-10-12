@@ -64,7 +64,7 @@ for(const [name,support,window] of [['ground',0,terrain],['bedding',.14,{...terr
   for(let i=0;i<100;i++){l.update(1/60);assert(bodyBounds(a).min.y>=support-.005);assert.equal(a.active,'sleep');assert.equal(a.visual.rotation.z,0);if(i===5||i===99)bake(a,name+' sleep '+i);}
   assert(a.sleepMotion.resting);const stable=bodyBounds(a).clone(),yaw=a.root.rotation.y;
   for(let i=0;i<80;i++)l.update(1/60);assert(bodyBounds(a).equals(stable));assert.equal(a.root.rotation.y,yaw);assert(a.current.equals(initial));
-  l.setResidents([resident(name,p({kind:'Physical',physicalGoal:'Eat'}))],terrain,0,0);
+  l.setResidents([resident(name,p({kind:'Physical',physicalGoal:'Eat'}),{civilization:{inventory:[{item:'RawMaterial',material:'PlantFood',quantity:1}]}})],terrain,0,0);
   let previous=a.visual.position.clone();for(let i=0;i<110;i++){l.update(1/60);assert(bodyBounds(a).min.y >= (a.sleepMotion.active ? -.005 : -.025));assert(a.visual.position.distanceTo(previous)<.3);previous.copy(a.visual.position);}
   assert(!a.sleepMotion.active);assert.equal(a.active,'consume');assert.equal(a.visual.position.length(),0);
  });
@@ -88,9 +88,9 @@ test('resource facing uses Core node center without moving from access cell',()=
  a.presentation=p({hasTargetGrid:false});assert.equal(l.interactionTargetYaw(a),null);
 });
 test('visible arrival guards interactions and preserves walk grace',()=>{
- const r=resident('arrival',p({kind:'Physical',physicalGoal:'Eat'}));l.setResidents([r],terrain,0,0);l.setResidents([{...r,gridX:80}],terrain,0,0);const a=l.actors.get('arrival');
- for(let i=0;i<5;i++){l.update(1/60);assert.equal(a.active,'walk');assert(a.current.distanceTo(a.target)>.008);}
- a.current.copy(a.target);l.update(1/60);assert.equal(a.active,'walk');
+ const r=resident('arrival',p({kind:'Physical',physicalGoal:'Eat',targetGridX:80}),{civilization:{inventory:[{item:'RawMaterial',material:'PlantFood',quantity:1}]}});l.setResidents([r],terrain,0,0);l.setResidents([{...r,gridX:80}],terrain,0,0);const a=l.actors.get('arrival');
+ for(let i=0;i<5;i++){l.update(1/60);assert.equal(a.active,'carry');assert(a.current.distanceTo(a.target)>.008);}
+ a.current.copy(a.target);l.update(1/60);assert.equal(a.active,'carry');
  for(let i=0;i<30;i++)l.update(1/60);assert.equal(a.active,'consume');
 });
 test('social facing/connector cache follows the real partner and visible arrival',()=>{
@@ -127,7 +127,7 @@ test('resident count scales once; repeated directives and updates allocate no ne
  const rs=Array.from({length:32},(_,i)=>resident('many'+i,p({kind:'Physical',physicalGoal:'Eat'})));l.setResidents(rs,terrain,0,0);
  const count=()=>{let meshes=0;for(const a of l.actors.values())a.root.traverse(o=>{if(o.isMesh)meshes++;});return [l.actors.size,meshes,[...l.actors.values()].reduce((n,a)=>n+a.mixer.stats.actions.total,0)];};
  const before=count(),downloads=loads;for(let i=0;i<10;i++){l.setResidents(rs,terrain,0,0);l.update(.016);}assert.deepEqual(count(),before);assert.equal(loads,downloads);
- assert([...l.actors.values()].every(a=>a.mixer.stats.actions.total<=20));
+ assert([...l.actors.values()].every(a=>a.mixer.stats.actions.total<=32));
  console.log('CACHE METRICS',JSON.stringify({actors:before[0],meshes:before[1],actions:before[2],actionsPerActor:rs.map(r=>l.actors.get(r.id).mixer.stats.actions.total)[0]}));
  const frames=[];for(let i=0;i<200;i++){const start=performance.now();l.update(.016);frames.push(performance.now()-start);}frames.sort((a,b)=>a-b);console.log('CPU UPDATE 32 residents ms',JSON.stringify({median:frames[100],p95:frames[190]}));
  const clone=THREE.Vector3.prototype.clone;let clones=0;THREE.Vector3.prototype.clone=function(){clones++;return clone.call(this);};try{l.update(.016);}finally{THREE.Vector3.prototype.clone=clone;}assert.equal(clones,0);
@@ -154,5 +154,6 @@ for(const both of [false,true]){
  });fallback.dispose();
 }
 console.log('Resident motion checks:',passed,'PASS');
+
 
 

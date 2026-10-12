@@ -11,11 +11,13 @@ on:
       - 'web/tests/characters/**'
       - 'web/tests/action-context/**'
       - 'web/tests/resident-motion/**'
+      - 'web/tests/procedural-motion/**'
       - 'web/package.json'
   pull_request:
     paths:
       - 'web/src/render/resident-*.ts'
       - 'web/tests/resident-motion/**'
+      - 'web/tests/procedural-motion/**'
       - '.github/workflows/character-assets-check.yml'
   workflow_dispatch:
 
@@ -49,7 +51,15 @@ jobs:
           node tests/action-context/run.mjs
           node ../Tools/extract_web_sleep_pose.mjs --check
           node tests/resident-motion/run.mjs
+          node tests/procedural-motion/run.mjs
           npm run build
+      - name: 무료 Chromium 브라우저 검증 준비
+        working-directory: web
+        run: |
+          npm install --no-save --ignore-scripts --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: 절차적 모션 데스크톱·모바일 WebGL 화면 검증
+        run: node web/tests/procedural-motion/browser-review.mjs
       - name: 실제 GLB 리그·모션 16개 포즈 검증
         run: node web/tests/characters/export-review.mjs
       - uses: actions/upload-artifact@v4
@@ -58,4 +68,8 @@ jobs:
           path: |
             web/tests/characters/review/poses.json
             web/tests/resident-motion/review/poses.json
+            web/tests/procedural-motion/review/poses.json
+            web/tests/procedural-motion/review/*.png
+            web/tests/procedural-motion/review/browser-results.json
           retention-days: 7
+

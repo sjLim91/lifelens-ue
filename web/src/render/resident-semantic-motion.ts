@@ -3,7 +3,7 @@ import { registeredProductionDirective } from './resident-production-context';
 import { PARENTING_ACTIONS } from './resident-life-presentation';
 
 export type ResidentSemanticMotion =
-  | 'idle' | 'walk' | 'carry' | 'sleep'
+  | 'idle' | 'walk' | 'run' | 'sit' | 'carry' | 'sleep'
   | 'talk' | 'comfort' | 'reconcile' | 'teach' | 'care'
   | 'interact' | 'crouch' | 'wash' | 'work' | 'consume'
   | 'gatherWood' | 'gatherMineral' | 'gatherClay' | 'gatherFiber'
@@ -97,5 +97,6 @@ export function resolveResidentSemanticMotion(
     default: return 'idle';
   }
 }
+
 
 
