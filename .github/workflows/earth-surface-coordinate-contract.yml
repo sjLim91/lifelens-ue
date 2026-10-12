@@ -1,0 +1,32 @@
+name: LifeLens Earth Surface Coordinate Contract
+
+on:
+  push:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/EarthSurfaceCoordinates.h'
+      - 'Source/LifeLensCore/tests/test_earth_surface_coordinates.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/earth-surface-coordinate-contract.yml'
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/EarthSurfaceCoordinates.h'
+      - 'Source/LifeLensCore/tests/test_earth_surface_coordinates.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/earth-surface-coordinate-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  spherical-geography:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test coordinate math in isolation from the whole simulator
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -UNDEBUG \
+            -I Source/LifeLensCore/include \
+            Source/LifeLensCore/tests/test_earth_surface_coordinates.cpp \
+            -o /tmp/lifelens_earth_surface_coordinates
+          /tmp/lifelens_earth_surface_coordinates
