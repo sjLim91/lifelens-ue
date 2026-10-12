@@ -50,8 +50,8 @@ enum class AutonomousGoalEvidenceKind {
 };
 
 // These are references into a bounded individual CognitiveRequest, not proof
-// that a belief/report is factually true. The current CognitiveMemoryEvidence
-// omits provenance (direct/reported/inferred); do not infer it from this type.
+// that a belief/report is objectively true. Memory source/witness status is
+// preserved by Core but does NOT authenticate the underlying proposition.
 struct AutonomousGoalEvidenceRef {
     AutonomousGoalEvidenceKind kind=AutonomousGoalEvidenceKind::ActorNeed;
     std::size_t index=0;
