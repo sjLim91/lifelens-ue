@@ -1,0 +1,33 @@
+name: LifeLens Wildlife Binary Persistence
+
+on:
+  push:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/WildlifePopulationCodec.h'
+      - 'Source/LifeLensCore/tests/test_wildlife_population_codec.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/wildlife-binary-persistence.yml'
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/WildlifePopulationCodec.h'
+      - 'Source/LifeLensCore/tests/test_wildlife_population_codec.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/wildlife-binary-persistence.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  wildlife-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: C++17 strict standalone binary codec
+        run: |
+          g++ -std=c++17 -O2 -Wall -Wextra -Werror -UNDEBUG \
+            -I Source/LifeLensCore/include \
+            Source/LifeLensCore/tests/test_wildlife_population_codec.cpp \
+            -o /tmp/lifelens_wildlife_snapshot
+      - name: 1000-day repeated checkpoint/replay and malformed data
+        run: /tmp/lifelens_wildlife_snapshot
