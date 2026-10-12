@@ -1410,3 +1410,56 @@ button:disabled { opacity: .33; cursor: default; }
 .earth-globe-sites button.active { border-color: #efd49a; background: #1a3442; }
 .earth-globe-sites button b { font-size: .82rem; }
 .earth-globe-sites button span { font-size: .75rem; color: #b0ceda; }
+
+
+/* Globe and local residents are observational scales of one app surface. */
+.topbar { position: relative; z-index: 2110; }
+.earth-globe-backdrop {
+  inset: 58px 0 0;
+  padding: 0;
+  display: block;
+  background: #071421;
+}
+.earth-globe-dialog {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+}
+.earth-globe-header { flex: 0 0 auto; }
+.earth-globe-stage { flex: 1 1 auto; min-height: 180px; aspect-ratio: auto; }
+.earth-globe-footer { flex: 0 0 auto; max-height: min(32vh, 280px); overflow-y: auto; }
+.earth-scale-controls {
+  display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center;
+  justify-content: center; gap: 9px; padding: 7px 10px;
+  background: #102638; border-bottom: 1px solid #2a5365;
+  font-size: .78rem; color: #b7ccdd;
+}
+.earth-scale-controls b { color: #f5d68d; }
+.earth-scale-controls button {
+  background: #203e50; border-color: #44697a; color: #e1f3fc;
+  min-width: 36px; min-height: 36px; font-size: 1.2rem;
+  border-radius: 9px;
+}
+.earth-life-region {
+  border: 1px solid #4f866f; border-radius: 10px;
+  background: #123326; padding: 12px; display: grid; gap: 8px;
+}
+.earth-life-region strong { color: #e6f7e9; font-size: .85rem; }
+.earth-life-region span { color: #a8e2c8; font-size: .75rem; }
+.earth-life-region button,.earth-start-world {
+  min-height: 44px; padding: .65rem .85rem; border-radius: 8px;
+  border: 1px solid #86a897; background: #315e4a; color: #fff;
+  font-size: .85rem; font-weight: 650;
+}
+.earth-life-unbound { color: #efcf94 !important; }
+.earth-world-error { color: #ffbdbd !important; }
+@media (max-width: 800px) {
+  .earth-globe-dialog { height: 100%; max-height: none; }
+  .earth-globe-stage { aspect-ratio: auto; flex: 1 1 auto; }
+  .earth-globe-footer { max-height: 40vh; }
+  .earth-scale-controls { gap: 5px; font-size: .67rem; }
+}

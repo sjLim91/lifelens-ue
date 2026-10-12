@@ -13,7 +13,7 @@ const output = ts.transpileModule(source, {
     target: ts.ScriptTarget.ES2022,
   },
 }).outputText;
-const {geoFromGlobeUV,formatPreviewGeoPoint} = await import(
+const {geoFromGlobeUV,globeSurfaceUnitVector,formatPreviewGeoPoint} = await import(
   `data:text/javascript;base64,${Buffer.from(output).toString('base64')}`,
 );
 assert.deepEqual(geoFromGlobeUV(0.5,0.5),{
@@ -35,4 +35,20 @@ for(const [u,v] of [
   [-0.01,0],[1.01,0.5],[0.5,-0.01],[0.5,1.01],
   [NaN,0.5],[0,Infinity],
 ]) assert.equal(geoFromGlobeUV(u,v),null);
+for (const [lat,lon,want] of [
+  [0,-180,[-1,0,0]],
+  [0,0,[1,0,0]],
+  [0,90,[0,0,-1]],
+  [90,0,[0,1,0]],
+  [-90,0,[0,-1,0]],
+]) {
+  const got=globeSurfaceUnitVector({latitudeDeg:lat,longitudeDeg:lon});
+  assert(got);
+  for(const [idx,value] of [got.x,got.y,got.z].entries()){
+    assert(Math.abs(value-want[idx])<1e-10);
+  }
+}
+assert.equal(globeSurfaceUnitVector({latitudeDeg:99,longitudeDeg:0}),null);
+assert.equal(globeSurfaceUnitVector({latitudeDeg:0,longitudeDeg:NaN}),null);
+
 console.log('Globe A/B coordinate selection contract passed');

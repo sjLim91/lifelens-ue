@@ -2,6 +2,7 @@ import type { ObservationEvent } from './observation-feed';
 
 export interface ObserverActionHandlers {
   createWorld: (seed: string) => void;
+  createEarthWorld: (latitude: number, longitude: number) => boolean;
   setSimulationSpeed: (speed: number) => void;
   fastForwardDays: (days: number) => Promise<void>;
   clearFastForwardResult: () => void;
@@ -27,6 +28,10 @@ class ObserverActions {
 
   createWorld(seed: string): void {
     this.handlers?.createWorld(seed);
+  }
+
+  createEarthWorld(latitude: number, longitude: number): boolean {
+    return this.handlers?.createEarthWorld(latitude, longitude) ?? false;
   }
 
   setSimulationSpeed(speed: number): void {
