@@ -852,6 +852,19 @@ export function formatBelief(value: string | undefined): string {
   );
 }
 
+export const KOREAN_AUTONOMOUS_GOAL_LABELS = {
+  button: 'Core 자율 목표 미리보기',
+  description: '무료 로컬 Core가 주민별로 제안한 목표입니다. 이 목표는 아직 실제 행동에 영향을 주지 않습니다.',
+  unavailable: '현재 Core 런타임에서 목표 후보를 읽을 수 없습니다.',
+  empty: '현재 생성된 목표 후보가 없습니다.',
+  simulatedTime: '시뮬레이션', minute: '분', proposal: '제안', count: '개',
+  priority: '우선도', trust: '신뢰', livelihood: '보유 재료',
+  alive: '생존 유지', unknown: '현재 표시할 수 없는 목표',
+  atMost: '이하', atLeast: '이상',
+  Hunger: '허기', Thirst: '갈증', Sleep: '피로',
+  Bladder: '배뇨', Hygiene: '위생',
+} as const;
+
 export const KOREAN_SHADOW_LABELS = {
   title: '고급 관찰 · 인지 에이전트',
   description: '로컬 모델이 Core 문맥을 읽어 제안만 생성합니다. 실제 행동과 저장 데이터에는 적용하지 않습니다.',
