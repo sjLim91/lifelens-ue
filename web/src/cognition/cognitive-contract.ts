@@ -32,8 +32,18 @@ export type CognitiveIntent = (typeof COGNITIVE_INTENTS)[number];
 
 export const MAX_COGNITIVE_CONTEXT_ENTRIES = 32 as const;
 
+export const COGNITIVE_MEMORY_SOURCES = [
+  'DirectWitness',
+  'ToldByOther',
+  'Inferred',
+] as const;
+
+export type CognitiveMemorySource = (typeof COGNITIVE_MEMORY_SOURCES)[number];
+
 export interface CognitiveMemoryDto {
   who: string;
+  source?: CognitiveMemorySource;
+  witnessed?: boolean;
   minute: number;
   recallScore: number;
   confidence: number;
@@ -189,6 +199,15 @@ export function parseCognitiveRequest(
     if (!Array.isArray(memory.tags) || memory.tags.length > MAX_COGNITIVE_CONTEXT_ENTRIES
       || memory.tags.some((tag) => typeof tag !== 'string' || tag.length > 128)) {
       throw new Error('cognitive memory tags are invalid');
+    }
+    // Preserve byte/shape compatibility for legacy Web JSON. Missing fields
+    // mean unverified origin; they are NEVER upgraded to firsthand evidence.
+    if (memory.source !== undefined
+      && !COGNITIVE_MEMORY_SOURCES.includes(memory.source)) {
+      throw new Error('cognitive memory source is invalid');
+    }
+    if (memory.witnessed !== undefined && typeof memory.witnessed !== 'boolean') {
+      throw new Error('cognitive memory witnessed flag is invalid');
     }
   }
   validateEntries(beliefs, ['subject', 'proposition'], ['stance', 'confidence', 'lastUpdatedMinute']);

@@ -145,6 +145,8 @@ void appendCognitiveRequestJson(
         first=false;
         out << "{";
         out << "\"who\":\"" << memory.who << "\",";
+        out << "\"source\":\"" << cognitiveMemorySourceName(memory.source) << "\",";
+        out << "\"witnessed\":" << (memory.witnessed ? "true" : "false") << ",";
         out << "\"minute\":" << memory.minute << ",";
         out << "\"recallScore\":"; appendDouble(out,memory.recallScore); out << ",";
         out << "\"confidence\":"; appendDouble(out,memory.confidence); out << ",";
