@@ -23,6 +23,7 @@ import {
 } from './observer-format';
 import { residentStatusText } from './resident-status';
 import { summarizeResidentMemories } from './resident-memory';
+import { deriveResidentExperienceHighlights } from './resident-experiences';
 import { ResidentNeeds } from './resident-needs';
 import { CivilizationEraBadge } from './civilization-era';
 
@@ -168,6 +169,7 @@ export function SelectedResidentReadout({
     tags,
     repeatCount,
   }));
+  const experienceHighlights=deriveResidentExperienceHighlights(resident.memories,3);
   const visibleBeliefs = beliefs.map((belief) => ({
     belief,
     subjectName: residentDisplayName(residents, belief.subject),
@@ -269,6 +271,25 @@ export function SelectedResidentReadout({
 
       <ResidentNeeds needs={resident.needs} />
       <CognitiveShadowPanel resident={resident} residents={residents} />
+      {experienceHighlights.length > 0 ? (
+        <div className="focused-life-section">
+          <h3>직접 경험으로 배운 것</h3>
+          <p className="hint">
+            이 사람의 실제 기억입니다. AI 모델의 상상이나 별도 생성된 세계 상태가 아닙니다.
+          </p>
+          {experienceHighlights.map((experience) => (
+            <div className="memory-row" key={experience.key}>
+              <span><b>{experience.title}</b> · {experience.detail}</span>
+              <small>
+                {formatDay(experience.minute)}
+                {experience.location
+                  ? ` · ${formatLocationText(experience.location)}`
+                  : ''}
+              </small>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {showMigrationPressure ? (
         <div className="focused-life-section">
