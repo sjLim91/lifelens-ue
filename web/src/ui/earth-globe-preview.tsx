@@ -107,7 +107,7 @@ export function EarthGlobePreview({
       globe.add(siteMarkers.A, siteMarkers.B);
       const actualMarkerGeometry = new THREE.SphereGeometry(0.055, 14, 10);
       const actualMarkerMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffffff, depthTest: false,
+        color: 0xffffff, depthTest: true,
       });
       const actualMarker = new THREE.Mesh(
         actualMarkerGeometry, actualMarkerMaterial,
@@ -122,9 +122,9 @@ export function EarthGlobePreview({
         const phi = (bound.longitudeDeg + 180) * Math.PI / 180;
         const latitude = bound.latitudeDeg * Math.PI / 180;
         actualMarker.position.set(
-          -Math.sin(phi) * Math.cos(latitude),
+          -Math.cos(phi) * Math.cos(latitude),
           Math.sin(latitude),
-          Math.cos(phi) * Math.cos(latitude),
+          Math.sin(phi) * Math.cos(latitude),
         ).multiplyScalar(1.40);
         actualMarker.visible = true;
       }
