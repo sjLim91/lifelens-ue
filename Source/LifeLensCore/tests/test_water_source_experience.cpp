@@ -1,3 +1,4 @@
+// 감사 브랜치: 테스트 코드 주석만 다름. production Core truth는 PR #666과 동일.
 #include <cassert>
 #include <cmath>
 #include <vector>
