@@ -5,12 +5,29 @@ import {
   type EarthLandFeatureCollection,
 } from '../earth/natural-earth-land';
 import { geoFromGlobeUV, formatPreviewGeoPoint, type EarthPreviewGeoPoint } from '../earth/globe-region-picking';
+import type { WorldOverview } from '../runtime/core-types';
+import type { CoreEarthScenarioObservation } from '../earth/core-earth-scenario';
 
-export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
+export function EarthGlobePreview({
+  onClose, onBeginEarthWorld, onEnterLife, earthScenario, world,
+}: {
+  onClose: () => void;
+  onBeginEarthWorld: (position: EarthPreviewGeoPoint) => boolean;
+  onEnterLife: () => void;
+  earthScenario: CoreEarthScenarioObservation;
+  world: WorldOverview;
+}) {
   const holder = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef<(amount: number) => void>(() => {});
+  const enterLifeRef = useRef(onEnterLife);
+  enterLifeRef.current = onEnterLife;
+  const bindingRef = useRef(earthScenario);
+  bindingRef.current = earthScenario;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSlot, setActiveSlot] = useState<'A' | 'B'>('A');
+  const [regionScale, setRegionScale] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
   const activeSlotRef = useRef<'A' | 'B'>('A');
   const [selectedSites, setSelectedSites] = useState<{
     A: EarthPreviewGeoPoint | null;
@@ -88,6 +105,29 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
       siteMarkers.A.visible = false;
       siteMarkers.B.visible = false;
       globe.add(siteMarkers.A, siteMarkers.B);
+      const actualMarkerGeometry = new THREE.SphereGeometry(0.055, 14, 10);
+      const actualMarkerMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff, depthTest: false,
+      });
+      const actualMarker = new THREE.Mesh(
+        actualMarkerGeometry, actualMarkerMaterial,
+      );
+      actualMarker.visible = false;
+      globe.add(actualMarker);
+      const bound = bindingRef.current;
+      if (bound.available === true
+          && bound.latitudeDeg !== undefined
+          && bound.longitudeDeg !== undefined) {
+        // The same spherical equirectangular mapping as SphereGeometry UV.
+        const phi = (bound.longitudeDeg + 180) * Math.PI / 180;
+        const latitude = bound.latitudeDeg * Math.PI / 180;
+        actualMarker.position.set(
+          -Math.sin(phi) * Math.cos(latitude),
+          Math.sin(latitude),
+          Math.cos(phi) * Math.cos(latitude),
+        ).multiplyScalar(1.40);
+        actualMarker.visible = true;
+      }
       // A faint outer atmosphere is presentation-only.
       const shellGeometry = new THREE.SphereGeometry(1.37, 48, 32);
       const shellMaterial = new THREE.MeshBasicMaterial({
@@ -162,11 +202,29 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
         setSelectedSites((current) => ({ ...current, [slot]: location }));
       };
       const cancel = () => { dragging = false; didDrag = true; };
+      const zoom = (change: number) => {
+        camera.position.z = THREE.MathUtils.clamp(
+          camera.position.z + change, 1.55, 6.5,
+        );
+        setRegionScale(camera.position.z < 2.8);
+        // A closer look at an arbitrary selected point must never expose
+        // a different Core settlement. Only the Core-bound surface point
+        // immediately in front of the camera can hand off to living residents.
+        if (camera.position.z > 1.8 || !actualMarker.visible) return;
+        globe.updateMatrixWorld(true);
+        const centerPicker = new THREE.Raycaster();
+        centerPicker.setFromCamera(new THREE.Vector2(0, 0), camera);
+        const hit = centerPicker.intersectObject(globe, false)[0];
+        if (!hit) return;
+        const actual = actualMarker.getWorldPosition(new THREE.Vector3()).normalize();
+        if (hit.point.clone().normalize().dot(actual) > 0.992) {
+          enterLifeRef.current();
+        }
+      };
+      zoomRef.current = zoom;
       const wheel = (event: WheelEvent) => {
         event.preventDefault();
-        camera.position.z = THREE.MathUtils.clamp(
-          camera.position.z + event.deltaY * 0.0035, 2.5, 6.5,
-        );
+        zoom(event.deltaY * 0.0035);
       };
       canvas.addEventListener('pointerdown', down);
       canvas.addEventListener('pointermove', move);
@@ -193,6 +251,9 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
         canvas.removeEventListener('pointerup', end);
         canvas.removeEventListener('pointercancel', cancel);
         canvas.removeEventListener('wheel', wheel);
+        zoomRef.current = () => {};
+        actualMarkerGeometry.dispose();
+        actualMarkerMaterial.dispose();
         siteMarkerGeometry.dispose();
         siteMarkerMaterials.A.dispose();
         siteMarkerMaterials.B.dispose();
@@ -231,14 +292,46 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
       <section className="earth-globe-dialog" role="dialog" aria-modal="true"
         aria-label="지구 자연지리 관찰 미리보기">
         <header className="earth-globe-header">
-          <div><strong>지구 자연지리 관찰</strong><span>EARTH-2 · 구체 화면 기반</span></div>
+          <div>
+            <strong>지구 → 지역 → 주민 생활</strong>
+            <span>{regionScale ? '지역 확대' : '행성 관찰'} · Core 연결 지역만 실제 생활 관찰</span>
+          </div>
           <button type="button" aria-label="지구본 닫기" onClick={onClose}>×</button>
         </header>
+        <div className="earth-scale-controls" aria-label="지구 관찰 단계">
+          <span>행성</span><span>→</span>
+          <b>{regionScale ? '지역 자연지리' : '지역'}</b>
+          <span>→</span><span>생활</span>
+          <button type="button" onClick={() => zoomRef.current(-0.55)}
+            aria-label="지구본 확대">＋</button>
+          <button type="button" onClick={() => zoomRef.current(0.55)}
+            aria-label="지구본 축소">－</button>
+        </div>
         <div ref={holder} className="earth-globe-stage">
           {loading && <span className="earth-globe-message">자연지리 지구본 준비 중…</span>}
           {error && <span className="earth-globe-message" role="alert">{error}</span>}
         </div>
         <div className="earth-globe-footer">
+          {earthScenario.available === true &&
+           earthScenario.worldSeed === String(world.worldSeed) ? (
+            <div className="earth-life-region">
+              <strong>● 현재 실제 생활 중인 지역</strong>
+              <span>{formatPreviewGeoPoint({
+                latitudeDeg: earthScenario.latitudeDeg!,
+                longitudeDeg: earthScenario.longitudeDeg!,
+              })} · 시드 #{earthScenario.worldSeed}</span>
+              <button type="button" onClick={onEnterLife}>
+                이 지역의 주민 생활로 확대
+              </button>
+              <p>이 위치에 연결된 실제 Core 주민 생활입니다.
+                지형과 날씨는 아직 해당 지구 위치에 맞게 생성되지 않았습니다.</p>
+            </div>
+          ) : (
+            <p className="earth-life-unbound">
+              현재 세계에는 지구 위치가 지정되지 않았습니다.
+              지역을 선택한 뒤 새 지구 연계 생활을 시작해야 지도에서 주민에게 들어갈 수 있습니다.
+            </p>
+          )}
           <div className="earth-globe-sites" aria-label="지구 지역 후보 좌표 선택">
             {(['A', 'B'] as const).map((slot) => (
               <button key={slot} type="button"
@@ -252,13 +345,28 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
               </button>
             ))}
           </div>
-          <p>지역 A 또는 B를 고른 뒤 지구본을 짧게 터치하면 위경도가 표시됩니다.
-            드래그로 회전 · 마우스 휠로 확대</p>
-          <p><b>선택한 좌표는 관찰용 후보입니다.</b> 주민이 이곳에 생성되거나,
-            현재 Core 세계의 위치·시드·생활환경이 바뀌지는 않습니다.</p>
-          <p><b>자연지리 미리보기:</b> 실제 대륙·해안 윤곽 자료를 보여줍니다.
-            기존 주민 시뮬레이션의 위치·날씨·바람·해류와는 아직 연결되지 않았습니다.
-            현재 바람·해류 실황을 표시하는 화면이 아닙니다.</p>
+          {selectedSites[activeSlot] && (
+            <button className="earth-start-world" type="button"
+              onClick={() => {
+                setStartError(null);
+                if (!onBeginEarthWorld(selectedSites[activeSlot]!)) {
+                  setStartError(
+                    '월드를 시작하지 못했습니다. 육지 좌표 또는 Core 연결 상태를 확인하세요.',
+                  );
+                }
+              }}>
+              선택한 지역 {activeSlot}에서 새로운 4인 생활 시작
+            </button>
+          )}
+          {startError && <p role="alert" className="earth-world-error">{startError}</p>}
+          <p>지구를 회전하고 위치를 선택하세요. 확대 버튼·휠을 사용하면 지역에 접근합니다.
+            실제 Core 거주 지역을 확대할 때만 주민 화면으로 전환됩니다.</p>
+          <p><b>A/B 좌표는 선택 후보입니다.</b> '새로운 생활 시작' 버튼을 누르기 전에는
+            주민 위치·시드·세계 상태를 변경하지 않습니다.
+            현재 신규 Earth 시작은 지역 한 곳의 주민 4명만 지원합니다.</p>
+          <p><b>지구 자연지리:</b> 실제 대륙·해안선을 보여줍니다.
+            기존 지역의 강·숲·기온·비·해류는 아직 실제 지구 데이터로 조성되지 않았고
+            현재 기상 실황도 아닙니다.</p>
           <small>Made with Natural Earth · 1:110m land · Public Domain</small>
         </div>
       </section>
