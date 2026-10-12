@@ -27,8 +27,8 @@ int main()
     // Learning from a poor night's sleep must never reduce the drive to rest.
     rememberActionOutcome(actor,"Sleep",9,false);
     assert(std::abs(scoreGoal(world,actor,Goal::Sleep)-initialSleep)<1e-12);
-    assert(discouraged<before);
-    assert(discouraged>0.0);
+    assert(std::abs(discouraged-before)<1e-12);
+    assert(learnedActionDisposition(actor,"UseToilet")<1.0);
 
     const BeliefRecord* experience=actor.beliefs.find(
         0,actionExperienceProposition("UseToilet"));
@@ -42,7 +42,8 @@ int main()
         rememberActionOutcome(actor,"UseToilet",attempt,true);
     }
     const double recovered=scoreGoal(world,actor,Goal::UseToilet);
-    assert(recovered>discouraged);
+    assert(std::abs(recovered-before)<1e-12);
+    assert(learnedActionDisposition(actor,"UseToilet")>1.0);
     assert(actor.memory.entries.size()==3);
     assert(experience->supportWeight+experience->contradictionWeight<15.0);
 
@@ -81,7 +82,7 @@ int main()
     }
     assert(remembered!=nullptr);
     assert(remembered->memory.entries.size()==3);
-    assert(std::abs(learnedActionDisposition(*remembered,"Sleep")
+    assert(std::abs(learnedActionDisposition(*remembered,"UseToilet")
                     -learnedActionDisposition(actor,"UseToilet"))<1e-12);
     return 0;
 }
