@@ -1,0 +1,36 @@
+name: LifeLens Globe Region Selection
+
+on:
+  push:
+    paths:
+      - 'web/src/earth/globe-region-picking.ts'
+      - 'web/src/ui/earth-globe-preview.tsx'
+      - 'web/src/styles.css'
+      - 'web/tests/earth-globe-regions/run.mjs'
+      - '.github/workflows/globe-region-selection.yml'
+  pull_request:
+    paths:
+      - 'web/src/earth/globe-region-picking.ts'
+      - 'web/src/ui/earth-globe-preview.tsx'
+      - 'web/src/styles.css'
+      - 'web/tests/earth-globe-regions/run.mjs'
+      - '.github/workflows/globe-region-selection.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  globe-regions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: cd web && npm install --no-audit --no-fund
+      - name: Verify UV/lat-lon date-line and coordinate selection
+        run: cd web && node tests/earth-globe-regions/run.mjs
+      - name: Typecheck and build
+        run: cd web && npm run typecheck && npm run build
