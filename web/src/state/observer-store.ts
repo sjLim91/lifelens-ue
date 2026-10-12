@@ -18,6 +18,8 @@ import {
 } from './observation-feed';
 import { visibleHumanTraces } from './human-traces';
 import { representativeSettlementForTrace } from './settlement-observation';
+import { UNBOUND_EARTH_SCENARIO,
+  type CoreEarthScenarioObservation } from '../earth/core-earth-scenario';
 import {
   INITIAL_FAST_FORWARD_STATE,
   type FastForwardState,
@@ -42,6 +44,7 @@ export interface RuntimeState {
 
 export interface ObserverSnapshot {
   world: WorldOverview;
+  earthScenario: CoreEarthScenarioObservation;
   residents: Resident[];
   terrain: TerrainWindow | null;
   environment: DynamicEnvironment | null;
@@ -64,6 +67,7 @@ type Listener = () => void;
 
 const INITIAL_STATE: ObserverSnapshot = {
   world: {},
+  earthScenario: UNBOUND_EARTH_SCENARIO,
   residents: [],
   terrain: null,
   environment: null,
@@ -360,6 +364,7 @@ class ObserverStore {
     this.snapshot = {
       ...this.snapshot,
       world: {},
+      earthScenario: UNBOUND_EARTH_SCENARIO,
       residents: [],
       terrain: null,
       environment: null,
