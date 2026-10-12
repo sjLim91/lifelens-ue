@@ -1,0 +1,32 @@
+name: LifeLens Earth Solar Geography
+
+on:
+  push:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/EarthSolarObservation.h'
+      - 'Source/LifeLensCore/tests/test_earth_solar_observation.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/earth-solar-geography.yml'
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/EarthSolarObservation.h'
+      - 'Source/LifeLensCore/tests/test_earth_solar_observation.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/earth-solar-geography.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  regional-solar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test polar/nighttime and hemisphere seasons
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -UNDEBUG \
+            -I Source/LifeLensCore/include \
+            Source/LifeLensCore/tests/test_earth_solar_observation.cpp \
+            -o /tmp/lifelens_earth_solar_observation
+          /tmp/lifelens_earth_solar_observation

@@ -188,6 +188,7 @@ lifelens_add_test(test_world_hierarchy)
 lifelens_add_test(test_earth_surface_coordinates)
 lifelens_add_test(test_earth_region_scenario)
 lifelens_add_test(test_earth_natural_land_mask)
+lifelens_add_test(test_earth_solar_observation)
 lifelens_add_test(test_web_earth_scenario_handoff)
 
 lifelens_add_test(test_world_genesis_wg1)
