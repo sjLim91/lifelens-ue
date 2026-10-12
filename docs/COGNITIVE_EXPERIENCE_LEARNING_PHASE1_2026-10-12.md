@@ -24,3 +24,9 @@ COG-3 외부 인지 수락 event persistence/replay가 준비되기 전에는 Sh
 과거 main과의 전체 snapshot hash는 경험 기억 추가에 따라 달라진다. 따라서 *같은 새 head* 반복 실행·저장 복원이 결정론적이어야 하며 생존 인원/출산 수를 고정 강제하지 않는다.
 
 관련 설계: docs/COGNITIVE_AGENT_LAYER_v1.md, docs/HUMAN_REALISM_FOUNDATION_v1.md, Issue #660.
+
+## 첫 장기감사에서 확인한 안전 게이트 실패와 교정
+
+초기 후보는 일상 수면 점수까지 경험 선호를 곱했다. exact-head Core 전수검사/1000일 결정론은 성공했지만 365일 Weather Sleep/Era 감사에서 seed 874213954의 totalSleepSaturationResidentMinutes가 46,459로 허용 상한 45,402를 초과했다. 실제 1000일 후보의 사회활동·사망·출산 등 경로도 baseline과 크게 달라졌으므로 '돌봄/사회가 좋아졌다'고 단정해서는 안 된다.
+
+**교정:** 비긴급 Wash/UseToilet 선택에만 ±10% 이력을 반영한다. Eat, Drink, Sleep은 실패 경험을 기록할 수 있지만 그 경험 때문에 신체적 필요 점수를 낮추지 않는다. 긴급 신체행동/위기 생존에서는 어떤 경험 편향도 적용하지 않는다. 동일한 테스트와 두 시드 1000일 감사를 새로운 exact head에서 다시 진행해야 한다. 설계 규칙(욕구 감소율, 수면 회복량, 질병 사망률, 사회 관계)은 수정하지 않았다.

@@ -16,44 +16,48 @@ int main()
     actor.needs.sleep=0.55;
     actor.needs.bladder=0.55;
 
-    const double before=scoreGoal(world,actor,Goal::Sleep);
-    assert(std::abs(learnedActionDisposition(actor,"Sleep")-1.0)<1e-12);
+    const double before=scoreGoal(world,actor,Goal::UseToilet);
+    const double initialSleep=scoreGoal(world,actor,Goal::Sleep);
+    assert(std::abs(learnedActionDisposition(actor,"UseToilet")-1.0)<1e-12);
 
     for(int attempt=1;attempt<=9;++attempt){
-        rememberActionOutcome(actor,"Sleep",attempt,false);
+        rememberActionOutcome(actor,"UseToilet",attempt,false);
     }
-    const double discouraged=scoreGoal(world,actor,Goal::Sleep);
+    const double discouraged=scoreGoal(world,actor,Goal::UseToilet);
+    // Learning from a poor night's sleep must never reduce the drive to rest.
+    rememberActionOutcome(actor,"Sleep",9,false);
+    assert(std::abs(scoreGoal(world,actor,Goal::Sleep)-initialSleep)<1e-12);
     assert(discouraged<before);
     assert(discouraged>0.0);
 
     const BeliefRecord* experience=actor.beliefs.find(
-        0,actionExperienceProposition("Sleep"));
+        0,actionExperienceProposition("UseToilet"));
     assert(experience && experience->contradictionCount==9);
-    assert(actor.memory.entries.size()==1);
+    assert(actor.memory.entries.size()==2);
     // Duplicate feedback during the same tick cannot forge repeated learning.
-    rememberActionOutcome(actor,"Sleep",9,false);
+    rememberActionOutcome(actor,"UseToilet",9,false);
     assert(experience->contradictionCount==9);
 
     for(int attempt=10;attempt<=38;++attempt){
-        rememberActionOutcome(actor,"Sleep",attempt,true);
+        rememberActionOutcome(actor,"UseToilet",attempt,true);
     }
-    const double recovered=scoreGoal(world,actor,Goal::Sleep);
+    const double recovered=scoreGoal(world,actor,Goal::UseToilet);
     assert(recovered>discouraged);
-    assert(actor.memory.entries.size()==2);
+    assert(actor.memory.entries.size()==3);
     assert(experience->supportWeight+experience->contradictionWeight<15.0);
 
     // Critical physical needs must dominate both success and failure bias.
-    actor.needs.sleep=DefaultSimulationRuleset.utilityAI.urgentThreshold+0.01;
-    const double criticalWithHistory=scoreGoal(world,actor,Goal::Sleep);
+    actor.needs.bladder=DefaultSimulationRuleset.utilityAI.urgentThreshold+0.01;
+    const double criticalWithHistory=scoreGoal(world,actor,Goal::UseToilet);
     Character newcomer=actor;
     newcomer.beliefs=BeliefState{};
     newcomer.memory=MemoryState{};
-    const double criticalNeutral=scoreGoal(world,newcomer,Goal::Sleep);
+    const double criticalNeutral=scoreGoal(world,newcomer,Goal::UseToilet);
     assert(std::abs(criticalWithHistory-criticalNeutral)<1e-12);
 
     // One resident's learning does not magically transfer to another.
-    assert(std::abs(learnedActionDisposition(newcomer,"Sleep")-1.0)<1e-12);
-    assert(learnedActionDisposition(actor,"Sleep")>1.0);
+    assert(std::abs(learnedActionDisposition(newcomer,"UseToilet")-1.0)<1e-12);
+    assert(learnedActionDisposition(actor,"UseToilet")>1.0);
 
     // Belief and the memory of an actual attempt survive authoritative
     // save/load, with no new binary schema or external model dependency.
@@ -76,8 +80,8 @@ int main()
         if(individual.id==founder){remembered=&individual;break;}
     }
     assert(remembered!=nullptr);
-    assert(remembered->memory.entries.size()==2);
+    assert(remembered->memory.entries.size()==3);
     assert(std::abs(learnedActionDisposition(*remembered,"Sleep")
-                    -learnedActionDisposition(actor,"Sleep"))<1e-12);
+                    -learnedActionDisposition(actor,"UseToilet"))<1e-12);
     return 0;
 }
