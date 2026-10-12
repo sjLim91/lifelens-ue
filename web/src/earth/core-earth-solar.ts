@@ -41,6 +41,7 @@ export function readCoreEarthSolar(
     || x.generationVersion !== world.generationVersion
     || x.generationVersion !== scenario.generationVersion
     || x.regionId !== scenario.regionId
+    || typeof x.minute !== 'number'
     || !Number.isSafeInteger(x.minute) || x.minute !== world.minute
     || !matches(x.latitudeDeg, scenario.latitudeDeg)
     || !matches(x.longitudeDeg, scenario.longitudeDeg)
