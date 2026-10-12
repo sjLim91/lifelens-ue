@@ -1,3 +1,4 @@
+// EARTH-0 1000일 감사 브랜치: simulation truth는 PR #674와 완전히 동일.
 #include "lifelens/EarthSurfaceCoordinates.h"
 #include <cassert>
 #include <cmath>
