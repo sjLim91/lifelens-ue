@@ -66,7 +66,10 @@ int main()
     expectRejected(sim,wrong,LiveCognitiveValidationIssue::StaleTime);
     wrong=valid;
     wrong.request.trigger=CognitiveTriggerKind::None;
-    expectRejected(sim,wrong,LiveCognitiveValidationIssue::StaleTime);
+    expectRejected(sim,wrong,LiveCognitiveValidationIssue::InvalidTrigger);
+    wrong=valid;
+    wrong.request.trigger=static_cast<CognitiveTriggerKind>(255);
+    expectRejected(sim,wrong,LiveCognitiveValidationIssue::InvalidTrigger);
     wrong=valid;
     wrong.request.actor=0;
     expectRejected(sim,wrong,LiveCognitiveValidationIssue::ActorUnavailable);
