@@ -1349,3 +1349,53 @@ button:disabled { opacity: .33; cursor: default; }
 .cognitive-shadow-record dl { display: grid; grid-template-columns: minmax(5rem, 35%) 1fr; gap: .35rem .5rem; }
 .cognitive-shadow-record dt { opacity: .75; }
 .cognitive-shadow-record dd { margin: 0; overflow-wrap: anywhere; }
+
+.earth-topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+/* Read-only Earth natural-geography preview. Existing Core/local canvas stays mounted. */
+.earth-globe-open {
+  color: #cbe9df; background: #163329; border: 1px solid #457767;
+  border-radius: 9px; padding: .45rem .72rem; cursor: pointer;
+  font-size: .8rem; font-weight: 650;
+}
+.earth-globe-open:hover { background: #23503f; }
+.earth-globe-backdrop {
+  position: fixed; inset: 0; z-index: 2100; padding: min(4vh, 24px);
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 5, 12, .87);
+}
+.earth-globe-dialog {
+  width: min(100%, 940px); max-height: 96dvh; overflow-y: auto;
+  border-radius: 16px; border: 1px solid #416274;
+  background: #081520; box-shadow: 0 20px 75px #000b;
+}
+.earth-globe-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 13px 18px; border-bottom: 1px solid #244457;
+}
+.earth-globe-header div { display: grid; gap: 3px; }
+.earth-globe-header strong { font-size: 1rem; }
+.earth-globe-header span { font-size: .7rem; color: #8fb3c2; }
+.earth-globe-header button { border-radius: 9px; font-size: 1.4rem; padding: 0 12px; }
+.earth-globe-stage {
+  width: 100%; aspect-ratio: 16 / 10; position: relative;
+  background: radial-gradient(circle at center, #183456 0%, #07111f 68%);
+  overflow: hidden;
+}
+.earth-globe-stage canvas { display: block; }
+.earth-globe-message {
+  position: absolute; inset: 0; display: flex;
+  justify-content: center; align-items: center; text-align: center;
+  color: #c4dde9; font-size: .9rem; padding: 1rem;
+}
+.earth-globe-footer { padding: 12px 18px 18px; display: grid; gap: 8px; }
+.earth-globe-footer p { margin: 0; color: #c7d8de; font-size: .8rem; line-height: 1.6; }
+.earth-globe-footer small { color: #81a5b5; font-size: .7rem; }
+@media (max-width: 800px) {
+  .earth-globe-backdrop { padding: 8px; }
+  .earth-globe-dialog { max-height: 96dvh; }
+  .earth-globe-stage { aspect-ratio: 4 / 5; }
+  .earth-globe-header { padding: 10px 12px; }
+  .earth-globe-footer { padding: 9px 12px 14px; }
+  .earth-globe-open { font-size: .7rem; padding: .38rem .55rem; }
+}

@@ -26,6 +26,7 @@ import { HumanTraceDetail, HumanTracePanel } from './ui/human-traces';
 import { WorldActivityPanel } from './ui/world-activity';
 import { SettlementDetail } from './ui/settlement-detail';
 import { FastForwardControl } from './ui/fast-forward-control';
+import { EarthGlobePreview } from './ui/earth-globe-preview';
 import { visibleHumanTraces } from './state/human-traces';
 import { formatResidentName } from './ui/observer-format';
 
@@ -40,7 +41,7 @@ type MobileModalView =
   | 'world'
   | null;
 
-function Topbar() {
+function Topbar({ onOpenGlobe }: { onOpenGlobe: () => void }) {
   const snapshot = useObserverSnapshot();
 
   return (
@@ -49,7 +50,12 @@ function Topbar() {
         <strong>라이프렌즈</strong>
         <span>실시간 관찰</span>
       </div>
-      <RuntimeBadge runtime={snapshot.runtime} />
+      <div className="earth-topbar-actions">
+        <button className="earth-globe-open" type="button" onClick={onOpenGlobe}>
+          지구본
+        </button>
+        <RuntimeBadge runtime={snapshot.runtime} />
+      </div>
     </header>
   );
 }
@@ -688,6 +694,7 @@ function MobileObserverModal({
 
 export default function App() {
   const [mobileModal, setMobileModal] = useState<MobileModalView>(null);
+  const [showEarthGlobe, setShowEarthGlobe] = useState(false);
   const snapshot = useObserverSnapshot();
 
   useEffect(() => {
@@ -720,7 +727,7 @@ export default function App() {
 
   return (
     <div id="app">
-      <Topbar />
+      <Topbar onOpenGlobe={() => setShowEarthGlobe(true)} />
       <main className="layout">
         <WorldViewport
           onOpenMenu={() => setMobileModal('menu')}
@@ -735,6 +742,7 @@ export default function App() {
         onClose={() => setMobileModal(null)}
       />
       <SettlementDetail snapshot={snapshot} />
+      {showEarthGlobe && <EarthGlobePreview onClose={() => setShowEarthGlobe(false)} />}
     </div>
   );
 }
