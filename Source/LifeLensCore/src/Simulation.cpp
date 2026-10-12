@@ -1287,6 +1287,10 @@ void Simulation::failPlan(Character& character,Runtime& r){
         stats.lastFailureWasRoute=r.navigationRouteFailed;
         if(r.goal==Goal::Sleep) closeDiagnosticSleepSession(character.id,character.needs.sleep,SleepDiagnosticEnd::Failure);
     }
+    // A real failed physical attempt becomes a bounded personal memory and
+    // influences only later non-urgent choices, never critical survival.
+    if(r.goal!=Goal::Idle) rememberActionOutcome(
+        character,goalName(r.goal),world_.minute,false);
     clearNavigation(r);
     r.plan.clear(); r.actionIndex=0; r.announced=false; r.pendingContext.clear();
     r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0;
@@ -2587,6 +2591,13 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             } break;
     }
     if(r.actionIndex>=r.plan.size()){
+        // A completed physical plan is direct personal evidence; an
+        // interrupted sleep session only counts once actually rested.
+        if(r.goal!=Goal::Idle
+           && (r.goal!=Goal::Sleep
+               || c.needs.sleep<=RestedSleepNeedTarget)){
+            rememberActionOutcome(c,goalName(r.goal),world_.minute,true);
+        }
         r.plan.clear(); r.actionIndex=0;
         if(r.civilizationActive){
             r.civilizationActive=false;

@@ -5,6 +5,7 @@
 #include <random>
 #include <utility>
 #include "Character.h"
+#include "ActionExperienceLearning.h"
 #include "ProvisionPreference.h"
 #include "SimulationRuleset.h"
 #include "World.h"
@@ -155,6 +156,11 @@ inline double scoreGoal(const World& w,const Character& c,Goal g,const UtilityAI
     double emotionBias=0.045*distress+0.020*depletion-0.015*activation;
     if(g==Goal::Sleep) emotionBias+=0.020*depletion;
     s*=std::clamp(1.0+emotionBias,0.92,1.08);
+    // Learned action preference applies only outside the urgent band. Food,
+    // water and care must never be suppressed by past failed attempts.
+    if(needForGoal(c,g)<rules.urgentThreshold){
+        s*=learnedActionDisposition(c,goalName(g));
+    }
     return s;
 }
 inline double scoreGoal(const World& w,const Character& c,Goal g) {
