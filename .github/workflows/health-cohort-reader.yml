@@ -1,0 +1,26 @@
+name: LifeLens Health Cohort Artifact Reader
+
+on:
+  push:
+    paths:
+      - 'Tools/audit_health_cohort.py'
+      - 'Tools/tests/test_health_cohort_audit.py'
+      - '.github/workflows/health-cohort-reader.yml'
+  pull_request:
+    paths:
+      - 'Tools/audit_health_cohort.py'
+      - 'Tools/tests/test_health_cohort_audit.py'
+      - '.github/workflows/health-cohort-reader.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  health-cohort-reader-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+      - name: 질병 전경로 관찰 ZIP 판독 회귀테스트
+        run: python3 -m unittest discover -s Tools/tests -p 'test_health_cohort_audit.py' -v
