@@ -979,6 +979,7 @@ export interface RuntimeClient {
   newGame(worldSeed: string, populationSeed: string, generationVersion: number): boolean;
   newEarthGame?: (seed: string, latitude: number, longitude: number, generationVersion: number) => boolean;
   earthScenarioJson?: () => string;
+  earthSolarJson?: () => string;
   runMinutes(minutes: number): void;
   worldOverviewJson(): string;
   residentRuntimeJson?: () => string;
