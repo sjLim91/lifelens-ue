@@ -51,6 +51,8 @@ int main()
     MemoryRecord shortage;
     shortage.what="food stores nearly failed";
     shortage.where="camp";
+    shortage.source=MemorySource::ToldByOther;
+    shortage.witnessed=false;
     shortage.minute=980;
     shortage.importance=0.95;
     shortage.confidence=1.0;
@@ -97,6 +99,10 @@ int main()
     assert(request.trigger==CognitiveTriggerKind::ResourceScarcity);
     assert(request.memories.size()==2);
     assert(request.memories.front().what=="food stores nearly failed");
+    assert(request.memories.front().source==MemorySource::ToldByOther);
+    assert(!request.memories.front().witnessed);
+    assert(request.memories.back().source==MemorySource::DirectWitness);
+    assert(request.memories.back().witnessed);
     assert(request.beliefs.size()==1);
     assert(request.beliefs.front().proposition=="helps with difficult work");
     assert(request.relationships.size()==1);
