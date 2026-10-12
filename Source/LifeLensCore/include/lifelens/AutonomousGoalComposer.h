@@ -141,9 +141,9 @@ inline std::vector<AutonomousGoalCandidate> composeAutonomousGoalCandidates(
         if(!std::isfinite(relation.trust) ||relation.trust<0.0
            ||relation.trust>=0.85 ||relation.target==0
            ||relation.target==request.actor) continue;
-        const Character* target=cognitiveCharacter(world,relation.target);
-        if(target==nullptr ||!target->alive) continue;
-
+        // The generator only sees a person's relationship context. It must
+        // not query hidden target vitality to change its reasoning; the
+        // authoritative validator independently checks target existence.
         const double sociability=safeAutonomousPreference(
             request.personality.sociability);
         const double empathy=safeAutonomousPreference(
