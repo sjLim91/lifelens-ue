@@ -1,5 +1,7 @@
 # LifeLens Cognitive Agent Layer v1
 
+> **2026-10-12 최신 권한 경계 계약:** [자율 인공생명 권한·책임·인과 경계 v1](architecture/AUTONOMOUS_LIFE_AUTHORITY_BOUNDARIES_v1_2026-10-12.md). 기존 본 문서는 COG 단계별 배경/상세 계약이며, 자율 목표 생성·행동 조합의 Core authority·관찰 진실·인과·저장 및 문명 비강제 원칙은 이 링크의 상위 경계를 따른다. 실제 구현 상태는 항상 최신 main과 PR/CI로 확인한다.
+
 ## 1. 목표
 
 LifeLens 주민의 전략적 사고를 `Needs/Utility AI`만으로 끝내지 않고,
