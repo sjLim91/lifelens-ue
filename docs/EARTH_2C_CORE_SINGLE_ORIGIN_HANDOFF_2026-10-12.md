@@ -19,3 +19,5 @@
 `test_web_earth_scenario_handoff`는 결속 없음/명시 입력/육해 거부/입력 오류 거부/다른 월드 독립/Reset/Legacy vs Earth observation baseline의 **일치하는 생존 인구/개인/원시지형/22분 행동 기록**을 검증.
 
 WASM, Core, Preflight, 지구 지역 주소/육해/좌표 CI 및 Snapshot 결정론 모두 통과 후 Web 지역 전환 코드를 병합.
+
+Web Observer의 기존 Local 시뮬레이션은 `generationVersion=3`을 사용한다. Earth opt-in 역시 **호출자가 전달한 정확한 generationVersion**으로 동일 Core 실행을 생성한다. 버전을 묵시적으로 선택하여 지형·주민 결정론이 바뀌는 오류를 막는다.

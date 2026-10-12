@@ -961,7 +961,8 @@ bool WebClientBridge::newGame(
 bool WebClientBridge::newEarthGame(
     const std::string& worldSeedText,
     double latitudeDeg,
-    double longitudeDeg)
+    double longitudeDeg,
+    WorldGenerationVersion generationVersion)
 {
     const EarthGeoPoint origin={latitudeDeg,longitudeDeg};
     // Do not reset or mutate the current life simulation on invalid picks,
@@ -974,7 +975,7 @@ bool WebClientBridge::newEarthGame(
     // changing procedural habitat, needs, climate, resources or initial RNG.
     // Other origin groups and real Earth terrain conditioning are separate
     // EARTH-3/4 milestones, never silently simulated by the browser.
-    if(!newGame(worldSeedText,"",CurrentWorldGenerationVersion))
+    if(!newGame(worldSeedText,"",generationVersion))
         return false;
     const World& world=simulation_->world();
     if(world.characters.empty()) return false;

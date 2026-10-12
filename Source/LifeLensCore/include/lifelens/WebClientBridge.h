@@ -32,7 +32,8 @@ public:
     bool newEarthGame(
         const std::string& worldSeedText,
         double latitudeDeg,
-        double longitudeDeg);
+        double longitudeDeg,
+        WorldGenerationVersion generationVersion);
     std::string earthScenarioJson() const;
 
     bool hasSimulation() const { return simulation_ != nullptr; }
