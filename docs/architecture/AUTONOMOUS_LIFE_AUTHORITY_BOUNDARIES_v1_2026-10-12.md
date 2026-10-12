@@ -4,9 +4,9 @@
 >
 > 확정일: 2026-10-12 (KST)
 >
-> 기준 코드: [main \`08c280acd18a660417fa2c26910dee875cd60e95\`](https://github.com/sjLim91/lifelens-ue/commit/08c280acd18a660417fa2c26910dee875cd60e95)
+> 기준 코드: [main `08c280acd18a660417fa2c26910dee875cd60e95`](https://github.com/sjLim91/lifelens-ue/commit/08c280acd18a660417fa2c26910dee875cd60e95)
 >
-> 저장소: \`sjLim91/lifelens-ue\` / 활성 제품: \`LifeLensCore (C++) -> WASM -> React/TypeScript/Three.js Web Observer\`
+> 저장소: `sjLim91/lifelens-ue` / 활성 제품: `LifeLensCore (C++) -> WASM -> React/TypeScript/Three.js Web Observer`
 >
 > **이 문서는 구현 완료 보고서가 아니다.** 아래 '확정'은 향후 변경의 설계 심사 기준이고, 제안 타입/인터페이스는 구현 전 계약 후보이다. 실제 적용 여부는 PR·코드·검증 결과로 판단한다.
 
@@ -45,7 +45,7 @@ LifeLens는 지구형 세계 안의 인공 생명체가 **자기 몸, 개별 경
 
 ## 2. 계층별 책임과 데이터 이동
 
-\`\`\`text
+```text
 Core World / Ecology / Life (only physical truth)
         |
         v bounded, actor-visible observation
@@ -70,7 +70,7 @@ Core Experience / Memory / Knowledge / Social Transmission
         +-----> next personal perception and plan
         |
         +-----> WASM read-only DTO -> React/Three.js Observer
-\`\`\`
+```
 
 **주의:** 기존 UE5 StateTree/SmartObject/Utility 패턴은 참고 또는 타 플랫폼 실행 경로일 뿐, 활성 Web 제품의 simulation authority는 LifeLensCore다. 프레젠테이션 물리 모션은 Core가 확인한 상태를 소비한다.
 
@@ -79,7 +79,7 @@ Core Experience / Memory / Knowledge / Social Transmission
 - 시드, 버전, 좌표, 청크 기준선, 지형·기상·수질, 개체 수용력, 물질 재고, 재생/소모, 에너지·위치 제약을 소유한다.
 - 관찰자나 AI의 요청으로 아직 존재하지 않는 자원을 생성하지 않는다.
 - 동물의 생물학·이동·스트레스·먹이·번식/사망은 실제 Core 상태와 시점에 따라 갱신한다.
-- 지구 결속이 아직 실제 지역별 온도·날씨·종 분포와 연결되지 않았다면 \`geographicallyConditioned=false\`, \`regionalWeatherApplied=false\` 등 미구현 상태를 유지한다.
+- 지구 결속이 아직 실제 지역별 온도·날씨·종 분포와 연결되지 않았다면 `geographicallyConditioned=false`, `regionalWeatherApplied=false` 등 미구현 상태를 유지한다.
 
 ### 2.2 Life & Action
 
@@ -91,7 +91,7 @@ Core Experience / Memory / Knowledge / Social Transmission
 ### 2.3 Autonomous Cognition
 
 - 할 일: 실제로 알고 있는 세계에서 문제/기회 탐지, **새 목표 상태** 설정, 경쟁 목표의 우선순위 결정, 가설과 실험 제안, primitive 조합 탐색.
-- 못 할 일: 직접 \`World\`/인벤토리/시설/위치/신체/기술/관계 수정, 미검증 실행 성공 선언, 실행 불가능한 행동 등록.
+- 못 할 일: 직접 `World`/인벤토리/시설/위치/신체/기술/관계 수정, 미검증 실행 성공 선언, 실행 불가능한 행동 등록.
 - 목표는 새로운 설명 문구만 만드는 것이 아니라 Core에서 검증할 수 있는 **대상·목표 상태 조건·근거·종료 조건**을 갖춰야 한다.
 - 개인의 성격·위험 성향·호기심·현재 욕구·추론된 신념에 따라 **같은 객관 세계에서도 다른 후보**가 나올 수 있어야 한다.
 
@@ -108,45 +108,45 @@ Core Experience / Memory / Knowledge / Social Transmission
 - 관계, 거래, 지식 전파, 출생과 공동 생활은 기존 Core truth를 따른다.
 - 타인의 행동을 실제로 보거나 신뢰 가능한 전언으로 접한 경우에만 학습/모방의 후보가 된다.
 - 기술명·시대상·사회적 분류는 **관찰 가능한 결과를 정리하는 라벨**이다. 라벨이 물리 효과를 자동 생성하거나 강제 순서를 정하지 않는다.
-- 다만 물리적으로 재현 불가능한 기술을 무제한 인정할 수 없으므로, 초기에는 기존 \`TechnologyRegistry\`/레시피/재료 성질을 실행 가능성 판정에 재사용한다. 장기적으로 재료·행동 조합 규칙을 확장한다.
+- 다만 물리적으로 재현 불가능한 기술을 무제한 인정할 수 없으므로, 초기에는 기존 `TechnologyRegistry`/레시피/재료 성질을 실행 가능성 판정에 재사용한다. 장기적으로 재료·행동 조합 규칙을 확장한다.
 
 ### 2.6 Observer & Analysis
 
 - Web은 Core-produced DTO를 표시한다. 추론의 제안·수락·거부·실제 실행·결과 및 학습을 **서로 다른 이벤트**로 보여 준다.
-- '사육 발생'은 실제 먹이 제공, 개체 생존, 지속적 동물 관계, 장소/시설 사용 등 Core 이벤트의 장기 조건을 보고 후행 분류할 수 있다. 이를 발생시키는 \`unlockHusbandry()\` 같은 권위 명령은 금지한다.
+- '사육 발생'은 실제 먹이 제공, 개체 생존, 지속적 동물 관계, 장소/시설 사용 등 Core 이벤트의 장기 조건을 보고 후행 분류할 수 있다. 이를 발생시키는 `unlockHusbandry()` 같은 권위 명령은 금지한다.
 - 읽기 전용 Shadow Mode 출력은 실제 행동으로 표시하거나 저장된 사건으로 취급하지 않는다.
 
 ## 3. 인터페이스 계약 후보 (아직 코드에 없음)
 
 타입 이름은 **예시·리뷰용**이며 구현 전에 현행 Core 타입과 겹침을 검토해야 한다.
 
-### 3.1 \`PerceptionFact\`
+### 3.1 `PerceptionFact`
 
-- \`actorId, observationMinute, regionId, targetId/position, sensoryChannel, factKind, observedValue, confidence, sourceEventId\`.
+- `actorId, observationMinute, regionId, targetId/position, sensoryChannel, factKind, observedValue, confidence, sourceEventId`.
 - Core가 actor의 실질적 인식 범위/물리적 접근/전달 경로를 검사한다.
 - World의 비공개 미래 결과, 멀리 떨어진 자원·오염·동물 위치 등 전지적 데이터 주입 금지.
 
-### 3.2 \`GoalSpec\`
+### 3.2 `GoalSpec`
 
-- \`goalId, actorId, createdMinute, motive, targetEntity/region, desiredStatePredicate, evidenceRefs, priority, deadline(optional), expiry, status\`.
-- \`desiredStatePredicate\`는 Core가 **읽고 평가할 수 있는 유한 typed predicate** 조합만 허용한다.
+- `goalId, actorId, createdMinute, motive, targetEntity/region, desiredStatePredicate, evidenceRefs, priority, deadline(optional), expiry, status`.
+- `desiredStatePredicate`는 Core가 **읽고 평가할 수 있는 유한 typed predicate** 조합만 허용한다.
 - 후보 목표의 **내용과 결합**은 AI가 생성할 수 있으나, Core에서 검사할 수 없는 상태 조건은 권위 목표로 수락하지 않는다.
-- 현재 고정 \`Goal\`/\`CognitiveIntentKind\`와의 호환 어댑터는 유지할 수 있다. 고정 Enum을 AI의 최종 발상 범위로 삼지 않는다.
+- 현재 고정 `Goal`/`CognitiveIntentKind`와의 호환 어댑터는 유지할 수 있다. 고정 Enum을 AI의 최종 발상 범위로 삼지 않는다.
 
-### 3.3 \`Hypothesis\` / \`PlanCandidate\`
+### 3.3 `Hypothesis` / `PlanCandidate`
 
-- 가설: \`hypothesisId, goalId, evidenceRefs, predictedOutcome, confidence, expectedCost, expectedRisk, expiry\`.
-- 계획: \`planId, actorId, goalId, orderedPrimitiveSteps, inputRefs, preconditions, abortConditions, maxSteps, maxDuration\`.
-- primitive는 \`Observe, Move, Approach, Avoid, Pick, Place, Transfer, Combine, Separate, Process, Feed, Communicate\` 등의 **예시 분류**이다. 도입한 모든 primitive가 Core 실행을 가진다는 뜻은 아니다.
+- 가설: `hypothesisId, goalId, evidenceRefs, predictedOutcome, confidence, expectedCost, expectedRisk, expiry`.
+- 계획: `planId, actorId, goalId, orderedPrimitiveSteps, inputRefs, preconditions, abortConditions, maxSteps, maxDuration`.
+- primitive는 `Observe, Move, Approach, Avoid, Pick, Place, Transfer, Combine, Separate, Process, Feed, Communicate` 등의 **예시 분류**이다. 도입한 모든 primitive가 Core 실행을 가진다는 뜻은 아니다.
 - 계획 자유도는 **실제로 등록·구현되고 검증 가능한 primitive의 조합** 범위로 제한한다. 자유 텍스트 지시/스크립트/임의 코드 실행 금지.
 - 실패 또는 조건 변경으로 중단될 수 있으며, 일부 실행 성공을 전체 목표 성공으로 자동 환산하지 않는다.
 
-### 3.4 \`ValidatedDecision\` / \`OutcomeEvent\`
+### 3.4 `ValidatedDecision` / `OutcomeEvent`
 
-- 수락 입력: \`actor/worldId, simulationMinute, generationVersion, policyVersion, contextFingerprint, providerId, acceptedGoalOrPlanId, typedPayload, decisionId\`.
-- 결과: \`decisionId, attemptId, sourceActionId, before/afterRefs, actualCost, success/failureReason, eventMinute, witness/provenance\`.
+- 수락 입력: `actor/worldId, simulationMinute, generationVersion, policyVersion, contextFingerprint, providerId, acceptedGoalOrPlanId, typedPayload, decisionId`.
+- 결과: `decisionId, attemptId, sourceActionId, before/afterRefs, actualCost, success/failureReason, eventMinute, witness/provenance`.
 - 결과 이벤트는 Core commit 이후 발행한다. 관련 자원, 물리 결과, 관계 변화는 한 권위 트랜잭션/검증된 단계적 결과에 묶인다.
-- 원인 연쇄는 \`perception -> hypothesis -> chosen plan -> accepted action -> actual outcome -> updated belief -> transmitted fact\`로 추적할 수 있어야 한다.
+- 원인 연쇄는 `perception -> hypothesis -> chosen plan -> accepted action -> actual outcome -> updated belief -> transmitted fact`로 추적할 수 있어야 한다.
 - rationale·대화 문구·LLM 출력 문자열은 **설명/후보 데이터**일 뿐 실행 권한이 없다.
 
 ## 4. 제안 → 실행의 안전 게이트 (확정 순서)
@@ -165,14 +165,14 @@ Core Experience / Memory / Knowledge / Social Transmission
 
 ## 5. 결정론 / 저장 / replay (확정)
 
-- 현재 main의 \`SimulationSnapshotVersion=3\`, \`SimulationSnapshotBinaryFormatVersion=8\` 계약을 무단 변경하지 않는다.
-- 기존 \`WorldSeed\`, \`PopulationSeed\`, \`WorldGenerationVersion\`, GUID, SimulationRuleset과 같은 정체성 및 정렬 순서를 유지한다.
+- 현재 main의 `SimulationSnapshotVersion=3`, `SimulationSnapshotBinaryFormatVersion=8` 계약을 무단 변경하지 않는다.
+- 기존 `WorldSeed`, `PopulationSeed`, `WorldGenerationVersion`, GUID, SimulationRuleset과 같은 정체성 및 정렬 순서를 유지한다.
 - Pure deterministic candidate generation이면 같은 state/input에 같은 후보를 출력해야 한다. 난수는 WorldRNG 소비 순서를 오염시키지 않도록 안정된 분리 도메인과 사건 식별자를 사용한다.
 - **로컬 LLM도 비결정론적 결과를 낼 수 있다.** temperature=0은 재현성 보증이 아니므로 채택 결정과 조건 지문을 Core 저널에 기록하고, replay/save/load 중 **이미 승인된 과거 결과를 재질의하지 않는다**.
 - stale proposal, ghost actor, 유효하지 않은 target, 월드 변경, 계획 중 자원 고갈, 중복 decisionId는 fail-closed.
 - 새 persisted field는 기존 codec의 모든 경로(캡처/검증/바이너리 encode/decode/restore/재개)와 테스트를 함께 변경한다. 호환 방식이 명확하지 않으면 Snapshot 스키마 변경 PR을 별도로 격리한다.
 - 검증 예: save/load 중간 시점, 중복 input replay, 다른 행동 타이밍, 빠른 시뮬레이션/일수 건너뛰기, long-run, 서로 다른 seed, 손상 파일 원자 거부.
-- 현재 \`#686 ECO-A2a\`의 동물 바이너리 코덱은 **독립 코덱 후보**다. 그 자체로 World Snapshot 통합을 완료한 것이 아니다. \`#667/#668 COG-3\`도 **main 미병합** 상태이며 통합 전 중복/호환성을 반드시 해결해야 한다.
+- 현재 `#686 ECO-A2a`의 동물 바이너리 코덱은 **독립 코덱 후보**다. 그 자체로 World Snapshot 통합을 완료한 것이 아니다. `#667/#668 COG-3`도 **main 미병합** 상태이며 통합 전 중복/호환성을 반드시 해결해야 한다.
 
 ## 6. 자율 동물·사냥·길들이기·사육 사례로 본 경계 (확정)
 
@@ -189,7 +189,7 @@ Core Experience / Memory / Knowledge / Social Transmission
 
 ## 7. 기술/문명 발견의 허용 범위 (확정)
 
-- 지금 존재하는 \`TechnologyRegistry\`, \`TechniqueRecipe\`, \`CivilizationIntent\`는 **기존 실행 가능성·재료·전파·호환을 보장하는 어댑터**로 재사용한다.
+- 지금 존재하는 `TechnologyRegistry`, `TechniqueRecipe`, `CivilizationIntent`는 **기존 실행 가능성·재료·전파·호환을 보장하는 어댑터**로 재사용한다.
 - 단, 고정 레지스트리는 문명 발전의 완결된 목록이 아니다. 향후 개체는 원자 affordance를 새로운 순서로 조합할 수 있어야 한다.
 - '돌을 다른 용도로 사용'하는 발상은 AI가 할 수 있다. 그러나 Core에 충돌/타격/용도/내구 변화가 구현되지 않았다면 **성공으로 확정할 수 없다**.
 - 새 물리 메커니즘/조합법이 필요하면 별도 Core primitive/물질 모델 PR로 추가하되, 주민 행동의 목적이나 시대별 발생 일정을 강제로 설정하지 않는다.
@@ -199,16 +199,16 @@ Core Experience / Memory / Knowledge / Social Transmission
 
 | 자산 | main의 현 상태 | 책임·후속 방향 |
 |---|---|---|
-| \`World\`, \`Simulation\`, \`SimulationClimate\`, \`Hydrology\`, \`NaturalWorldChunk\` | 실제 procedural world truth | 유지. verified Earth data pack 지역 conditioning은 별도 |
-| \`UtilityAI.h\` 여섯 생존 Goal, \`Planner.h\`, \`ContextAction.h\`, \`CivilizationDecision.h\` | 고정 Goal/Intent 및 Core 실행 | 생존 안전성 유지. 원자 상호작용/합성 계획 API 추가 |
-| \`Character\` Personality/Emotion/Memory/Belief, \`ActionExperienceLearning.h\` | 개체 차이·일부 행동 경험 기록 | 경험 provenance/가설별 효용·실행 방법 학습으로 확장 |
-| \`CognitiveAgent.h\` | 14개 전략 의도, read-only context, 검증 계약 | \`GoalSpec\`/가설/PlanCandidate 합성 계약 추가. 현 목록을 최종 행동 한계로 두지 않음 |
-| \`web/src/cognition\` / Shadow Mode | 무료 로컬 모델 read-only 제안, Core 행동 영향 없음 | 입력 기록/선택 결과 replay 확보 후에만 실제 동작 허용 |
-| \`CivilizationProgression.h\`, 지식 전파 | 미리 등록된 기술·전파·사회 상태 | 물리/행동 능력 검증용으로 유지, 후행 창발 분류 확장 |
-| \`WildlifeEcology.h\` ECO-A1 | 독립 개체군/먹이/번식/포식 모듈 | World/Snapshot/DTO/주민 AI 연결 미완 |
-| 지구 시나리오·\`earthSolarJson()\` | 지구본 결속과 태양 관찰 | 실제 지역 날씨/지형/종 분포 **미구현**, UI가 진실처럼 표시 금지 |
+| `World`, `Simulation`, `SimulationClimate`, `Hydrology`, `NaturalWorldChunk` | 실제 procedural world truth | 유지. verified Earth data pack 지역 conditioning은 별도 |
+| `UtilityAI.h` 여섯 생존 Goal, `Planner.h`, `ContextAction.h`, `CivilizationDecision.h` | 고정 Goal/Intent 및 Core 실행 | 생존 안전성 유지. 원자 상호작용/합성 계획 API 추가 |
+| `Character` Personality/Emotion/Memory/Belief, `ActionExperienceLearning.h` | 개체 차이·일부 행동 경험 기록 | 경험 provenance/가설별 효용·실행 방법 학습으로 확장 |
+| `CognitiveAgent.h` | 14개 전략 의도, read-only context, 검증 계약 | `GoalSpec`/가설/PlanCandidate 합성 계약 추가. 현 목록을 최종 행동 한계로 두지 않음 |
+| `web/src/cognition` / Shadow Mode | 무료 로컬 모델 read-only 제안, Core 행동 영향 없음 | 입력 기록/선택 결과 replay 확보 후에만 실제 동작 허용 |
+| `CivilizationProgression.h`, 지식 전파 | 미리 등록된 기술·전파·사회 상태 | 물리/행동 능력 검증용으로 유지, 후행 창발 분류 확장 |
+| `WildlifeEcology.h` ECO-A1 | 독립 개체군/먹이/번식/포식 모듈 | World/Snapshot/DTO/주민 AI 연결 미완 |
+| 지구 시나리오·`earthSolarJson()` | 지구본 결속과 태양 관찰 | 실제 지역 날씨/지형/종 분포 **미구현**, UI가 진실처럼 표시 금지 |
 
-현재 문서 작성과 같은 시점에 다른 PR이 병합될 수 있다. 최신 \`main\` 변경사항이 위 현황을 추월하면 **실제 코드/검증이 우선**이다.
+현재 문서 작성과 같은 시점에 다른 PR이 병합될 수 있다. 최신 `main` 변경사항이 위 현황을 추월하면 **실제 코드/검증이 우선**이다.
 
 ## 9. 미병합 작업 경계 및 병합 선행조건
 
