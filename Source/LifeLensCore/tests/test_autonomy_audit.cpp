@@ -68,6 +68,17 @@ int main()
     assert(audit.actors.at(13).observedGoalChanges==0);
     assert(audit.actors.at(7).observedFailureEvidenceDelta==1);
     assert(audit.actors.at(13).observedSuccessEvidenceDelta==1);
+    // Actual belief evidence attributed to each observed action, never
+    // mislabeled as a count of completed physical actions.
+    assert(audit.actors.at(7).observedFailureEvidenceByActionDelta[1]==1); // Drink
+    assert(audit.actors.at(13).observedSuccessEvidenceByActionDelta[2]==1); // Sleep
+    assert(audit.observedFailureEvidenceByActionDelta[1]==1);
+    assert(audit.observedSuccessEvidenceByActionDelta[2]==1);
+    assert(audit.observedFailureEvidenceByActionDelta[2]==0);
+    assert(audit.observedSuccessEvidenceByActionDelta[1]==0);
+    assert(audit.json().find("\"failureEvidenceDeltaByAction\":{\"Eat\":0,\"Drink\":1")
+           !=std::string::npos);
+    assert(audit.json().find("\"evidenceCaveat\"")!=std::string::npos);
     assert(audit.json().find("\"notInstrumented\"")!=std::string::npos);
     assert(audit.json().find("\"novelGoalCreation\"")!=std::string::npos);
     assert(audit.json().find("\"worldSeed\":\"1\"")!=std::string::npos);
@@ -75,6 +86,19 @@ int main()
     // A repeat without new accepted time is not a second experience.
     assert(!audit.observe(state));
     assert(audit.actors.at(7).observedFailureEvidenceDelta==1);
+    assert(audit.observedFailureEvidenceByActionDelta[1]==1);
+
+    // Unrecognized Core experience labels are grouped into "Other" without
+    // injecting free-form action strings into the JSON diagnostic.
+    state.world.minute=620;
+    rememberActionOutcome(state.world.characters[1],"UnlistedWorldMethod",620,false);
+    assert(audit.observe(state));
+    assert(audit.observedFailureEvidenceByActionDelta[6]==1); // Other
+    assert(audit.actors.at(7).observedFailureEvidenceByActionDelta[6]==1);
+    assert(audit.json().find("UnlistedWorldMethod")==std::string::npos);
+    const auto afterOther=audit.json();
+    assert(!audit.observe(state));
+    assert(audit.json()==afterOther);
 
     // Observe the actual Core simulation without changing its state or RNG.
     // B keeps running independently without audit snapshots. The end-state
