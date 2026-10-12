@@ -1,3 +1,14 @@
+## 2026-10-12 DONE — #700 병합·실행 미리보기 반영
+
+- 모든 exact-head CI PASS. Core CTest 119개/실패0, 3 seed × 365일 검증 PASS.
+- main merge SHA: `5203449a52960923882a5f16379a18e834ea0e62`; #700 squash 병합 완료.
+- 제품 preview source SHA: 같은 `5203449`; gh-pages publication SHA: `a74cedd544b61443dd25b3c79e894b1ac875a0ee`.
+- Web Preview https://github.com/sjLim91/lifelens-ue/actions/runs/38254855263 PASS.
+- External Preview Probe https://github.com/sjLim91/lifelens-ue/actions/runs/38254936779 PASS: launcher/index/hashed JS/WASM 200.
+- 실제 최신 제품 실행: https://sjlim91.github.io/lifelens-ue/index.html?v=5203449 .
+- 이 항목은 위의 DRAFT/검증 대기/병합 보류 기록을 대체한다. 구현 한계는 기존 보고서를 유지한다.
+- 문서 상태 동기화는 제품 코드 변경이 아니며 새 WASM 빌드나 중복 preview 배포를 요구하지 않는다.
+
 ## 2026-10-12 DRAFT — 주민 자체 키프레임·지면/손발 IK 기반
 
 - PR [#700](https://github.com/sjLim91/lifelens-ue/pull/700), `work/resident-procedural-motion-20261012`, main `bcff5d9` 기준. main 병합하지 않음.

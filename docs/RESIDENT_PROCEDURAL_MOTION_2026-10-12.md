@@ -77,3 +77,15 @@ PR 첫 HEAD의 실제 TypeScript typecheck와 runtime resilience CI PASS. Core n
 남은 범위: 임의 비리깅 단일 모델 자동 스키닝/retarget 수락, 실제 Core의 run/seat/backstep/strafe 계약, 수면 진입의 현재 clip pose와 다중 clip blend 정밀 QA, 급경사 full-body/pelvis contact, 보행 거리별 완전한 발 고정, 실제 협력 action outcome별 제스처, Android GPU/1000명·장기 전체 회귀.
 손 IK는 대상 표현 높이/본인 입으로 제한한다. object DTO에는 정확한 손잡이·좌석·발 슬롯이 없어 임의 정밀 affordance를 생성하지 않는다.
 Core만 성공/실패/중단과 상태 변화를 결정하며, renderer는 directive 종료/대상 유실에 따라 중립·회복 transition으로 전환한다. 렌더 완료를 Core에 success로 전달하는 코드가 없다.
+
+
+## 2026-10-12 DONE — #700 병합·실행 미리보기 반영
+
+- 모든 exact-head CI PASS. Core CTest 119개/실패0, 3 seed × 365일 검증 PASS.
+- main merge SHA: `5203449a52960923882a5f16379a18e834ea0e62`; #700 squash 병합 완료.
+- 제품 preview source SHA: 같은 `5203449`; gh-pages publication SHA: `a74cedd544b61443dd25b3c79e894b1ac875a0ee`.
+- Web Preview https://github.com/sjLim91/lifelens-ue/actions/runs/38254855263 PASS.
+- External Preview Probe https://github.com/sjLim91/lifelens-ue/actions/runs/38254936779 PASS: launcher/index/hashed JS/WASM 200.
+- 실제 최신 제품 실행: https://sjlim91.github.io/lifelens-ue/index.html?v=5203449 .
+- 이 항목은 위의 DRAFT/검증 대기/병합 보류 기록을 대체한다. 구현 한계는 기존 보고서를 유지한다.
+- 문서 상태 동기화는 제품 코드 변경이 아니며 새 WASM 빌드나 중복 preview 배포를 요구하지 않는다.
