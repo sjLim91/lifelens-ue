@@ -35,6 +35,7 @@ public:
         double longitudeDeg,
         WorldGenerationVersion generationVersion);
     std::string earthScenarioJson() const;
+    std::string earthSolarJson() const;
 
     bool hasSimulation() const { return simulation_ != nullptr; }
 
