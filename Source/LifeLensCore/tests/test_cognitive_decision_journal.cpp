@@ -18,6 +18,22 @@ int main()
     assert(request.actor==resident);
     assert(request.minute==sim.world().minute);
 
+    // Identical memory text from a different provenance must invalidate a
+    // previous model-context fingerprint, even when all numbers are the same.
+    CognitiveRequest evidenceRequest=request;
+    CognitiveMemoryEvidence evidence;
+    evidence.what="a resident claimed there is clean water here";
+    evidence.where="grid:1,1";
+    evidence.source=MemorySource::DirectWitness;
+    evidence.witnessed=true;
+    evidenceRequest.memories.push_back(evidence);
+    const auto directHash=cognitiveRequestFingerprint(evidenceRequest);
+    evidenceRequest.memories.back().source=MemorySource::ToldByOther;
+    const auto reportedHash=cognitiveRequestFingerprint(evidenceRequest);
+    assert(reportedHash!=directHash);
+    evidenceRequest.memories.back().witnessed=false;
+    assert(cognitiveRequestFingerprint(evidenceRequest)!=reportedHash);
+
     CognitiveProposal proposal;
     proposal.actor=resident;
     proposal.intent=CognitiveIntentKind::ImproveWaterSecurity;
