@@ -28,6 +28,8 @@ import {
 import { readResidents, readWorldOverview } from './core-response';
 import { readCoreEarthScenario, UNBOUND_EARTH_SCENARIO,
   type CoreEarthScenarioObservation } from '../earth/core-earth-scenario';
+import { readCoreEarthSolar, UNBOUND_EARTH_SOLAR,
+  type CoreEarthSolarObservation } from '../earth/core-earth-solar';
 
 interface RuntimePayload {
   js: string;
@@ -171,6 +173,21 @@ export class LifeLensCoreBridge {
       );
     } catch {
       return UNBOUND_EARTH_SCENARIO;
+    }
+  }
+
+  earthSolar(
+    overview: WorldOverview,
+    scenario: CoreEarthScenarioObservation,
+  ): CoreEarthSolarObservation {
+    if (typeof this.client.earthSolarJson !== 'function')
+      return UNBOUND_EARTH_SOLAR;
+    try {
+      return readCoreEarthSolar(
+        JSON.parse(this.client.earthSolarJson()) as unknown, overview, scenario,
+      );
+    } catch {
+      return UNBOUND_EARTH_SOLAR;
     }
   }
 
