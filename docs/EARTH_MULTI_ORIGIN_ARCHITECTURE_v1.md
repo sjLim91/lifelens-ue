@@ -919,3 +919,31 @@ They may cooperate, trade, intermarry, compete, fight, merge, separate, exchange
 Much later, the observer may pull away from the same Earth and see orbital infrastructure surrounding a planet whose history began with those small founder groups.
 
 That is the canonical long-term Earth/Multi-Origin direction for LifeLens.
+
+## 44. Earth Flow implementation addendum (2026-10-12)
+
+The Earth architecture above remains canonical **without changing any simulation design rule**.
+The user additionally requested a recognizable natural Earth and an
+earth.nullschool-like **spherical global observer with wind/ocean-current
+streamlines**, regional environmental diversity and genuine effects on how
+humans live.
+
+The implementation plan is recorded in:
+
+- [Earth environment / global flow integration roadmap](EARTH_ENVIRONMENT_FLOW_IMPLEMENTATION_ROADMAP_2026-10-12.md)
+- [EARTH-FLOW implementation issue #672](https://github.com/sjLim91/lifelens-ue/issues/672)
+- [Globe observer handoff #329](https://github.com/sjLim91/lifelens-ue/issues/329)
+- [Autonomous AI integration #670](https://github.com/sjLim91/lifelens-ue/issues/670)
+
+**Execution mapping:** EARTH-0/1 real-world geography/data identity
+→ EARTH-2 observable spherical Earth
+→ EARTH-3 geographically distinct origins (4 + 4)
+→ EARTH-4/5 regional environmental causality **plus Earth Flow overlays**
+→ EARTH-6+ migration, contact and global human history. EARTH-FLOW is not
+a substitute for actual regional climate truth and does not move climate
+authority into the browser. The Core remains authoritative and deterministic.
+
+The planet view must distinguish offline simulated climate from any
+explicitly imported observations; no paid or always-online dependency.
+All features in the linked roadmap remain **planned, not delivered** until
+their individual CI / reproducibility gates pass.
