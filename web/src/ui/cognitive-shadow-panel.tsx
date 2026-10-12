@@ -1,5 +1,6 @@
 import { useState, useSyncExternalStore } from 'react';
 import type { Resident } from '../runtime/core-types';
+import type { AutonomousGoalCondition, AutonomousGoalPreview } from '../cognition/autonomous-goal-preview';
 import { shadowObserver, type ShadowObserver, type ShadowRecord } from '../cognition/shadow-observer';
 import {
   KOREAN_SHADOW_LABELS as L, formatCognitiveIntent, formatCognitionState,
@@ -14,6 +15,30 @@ function numericSummary(values: Record<string, number>): string {
 function residentName(residents: Resident[], id: string): string {
   const resident = residents.find((entry) => entry.id === id);
   return resident ? formatResidentName(resident.name) : L.unavailable;
+}
+
+const NEED_NAME: Record<string, string> = {
+  Hunger: '허기', Thirst: '갈증', Sleep: '피로', Bladder: '배뇨',
+  Hygiene: '위생',
+};
+function formatAutonomousCondition(
+  condition: AutonomousGoalCondition,
+  residents: Resident[],
+): string {
+  const threshold = condition.threshold.toFixed(2);
+  const relation = condition.operator === 'AtMost' ? '이하' : '이상';
+  switch (condition.metric) {
+    case 'ActorNeed':
+      return `${NEED_NAME[condition.need] ?? condition.need} ${threshold} ${relation}`;
+    case 'RelationshipTrust':
+      return `${residentName(residents, condition.targetResident)} 신뢰 ${threshold} ${relation}`;
+    case 'KnownResidentAlive':
+      return `${residentName(residents, condition.targetResident)} 생존 유지`;
+    case 'ActorRawMaterialCount':
+      return `보유 재료 #${condition.materialCode} ${threshold} ${relation}`;
+    default:
+      return '현재 표시할 수 없는 목표';
+  }
 }
 function RecordDetails({ record, residents }: { record: ShadowRecord; residents: Resident[] }) {
   const { context, outcome } = record;
@@ -49,12 +74,54 @@ export function CognitiveShadowPanel({ resident, residents, controller = shadowO
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const [endpoint, setEndpoint] = useState(state.configuration?.baseUrl ?? 'http://127.0.0.1:8080');
   const [model, setModel] = useState(state.configuration?.model ?? '');
+  const [inspectedActor, setInspectedActor] = useState<string | null>(null);
+  const [coreGoalPreview, setCoreGoalPreview] = useState<AutonomousGoalPreview | null>(null);
+  const shownGoals = inspectedActor === resident.id
+    && coreGoalPreview?.actor === resident.id ? coreGoalPreview : null;
   const records = state.records.filter((record) => record.actor === resident.id);
   // Keep the most recent validated proposal visible even after a provider failure.
   const latest = records.find((record) => record.outcome.status === 'validated') ?? records[0];
   return <details className="cognitive-shadow-panel">
     <summary>{L.title}</summary>
     <p className="hint">{L.description}</p>
+    <section className="autonomous-goal-preview">
+      <button
+        type="button"
+        disabled={resident.alive !== true}
+        onClick={() => {
+          setInspectedActor(resident.id);
+          setCoreGoalPreview(controller.inspectCoreAutonomousGoals(resident.id));
+        }}
+      >
+        Core 자율 목표 미리보기
+      </button>
+      <p className="hint">
+        무료 로컬 Core가 주민별로 제안한 목표입니다. 아래 목표는 아직 실제 행동에 영향을 주지 않습니다.
+      </p>
+      {inspectedActor === resident.id && (
+        shownGoals ? (
+          <div role="status" className="cognitive-shadow-record">
+            <p>시뮬레이션 {shownGoals.minute}분 · 제안 {shownGoals.candidates.length}개</p>
+            {shownGoals.candidates.length > 0 ? (
+              <ol>
+                {shownGoals.candidates.map((goal, index) => (
+                  <li key={index}>
+                    <strong>우선도 {Math.round(goal.priority * 100)}%</strong>
+                    {' · '}
+                    {goal.conditions.map(condition =>
+                      formatAutonomousCondition(condition, residents)).join(' + ')}
+                  </li>
+                ))}
+              </ol>
+            ) : <p>현재 생성된 목표 후보가 없습니다.</p>}
+          </div>
+        ) : (
+          <p role="status" className="hint">
+            현재 Core 런타임에서 목표 후보를 읽을 수 없습니다.
+          </p>
+        )
+      )}
+    </section>
     <form onSubmit={(event) => {
       event.preventDefault();
       if (controller.configure(endpoint, model)) controller.setEnabled(true);
