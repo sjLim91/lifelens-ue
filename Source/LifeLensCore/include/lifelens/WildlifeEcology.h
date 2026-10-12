@@ -186,6 +186,12 @@ inline WildlifeAnimal wildlifeCreateAnimal(
         origin.x+static_cast<int>(offset%WildlifeCellsPerChunk),
         origin.y+static_cast<int>((offset>>16U)%WildlifeCellsPerChunk)
     };
+    // Fish are confined to the verified Core fresh-water source chunk.
+    // Water-body swimming/pathfinding is a separate ECO-A2 spatial gate.
+    if(s==WildlifeSpecies::FreshwaterFish){
+        animal.position={origin.x+WildlifeCellsPerChunk/2,
+                         origin.y+WildlifeCellsPerChunk/2};
+    }
     animal.ageDays=adult
         ? wildlifeMaturityDays(s)+static_cast<int>((offset>>32U)%37U)
         : 0;
@@ -244,17 +250,45 @@ inline WildlifeStepResult stepWildlifeDay(
         const bool fish=animal.species==WildlifeSpecies::FreshwaterFish;
         animal.hunger01=std::min(1.0,animal.hunger01+(predator?0.20:fish?0.085:0.12));
         bool ate=false;
+        bool pursuedPrey=false;
         if(predator){
-            auto prey=std::find_if(state.animals.begin(),state.animals.end(),
-                [](const WildlifeAnimal& other){
-                    return other.alive && (other.species==WildlifeSpecies::Hare
-                        ||other.species==WildlifeSpecies::Deer);
-                });
-            if(prey!=state.animals.end()
-                && wildlifeRoll(state,animal.id,targetDay,0x50524544415445ULL)<0.22){
-                prey->alive=false;
-                ++report.predationDeaths;
-                ate=true;
+            WildlifeAnimal* prey=nullptr;
+            int nearestDistance=std::numeric_limits<int>::max();
+            for(auto& candidate:state.animals){
+                if(!candidate.alive
+                   ||(candidate.species!=WildlifeSpecies::Hare
+                      &&candidate.species!=WildlifeSpecies::Deer)) continue;
+                const int distance=std::abs(candidate.position.x-animal.position.x)
+                    +std::abs(candidate.position.y-animal.position.y);
+                if(distance<nearestDistance
+                   ||(distance==nearestDistance
+                      &&(prey==nullptr || candidate.id<prey->id))){
+                    nearestDistance=distance;
+                    prey=&candidate;
+                }
+            }
+            // A wolf may smell nearby prey, but cannot hunt at infinite range.
+            // Spatial chase is still limited to one step per axis and remains
+            // inside the same chunk until verified multi-chunk pathing exists.
+            if(prey!=nullptr && nearestDistance<=12){
+                pursuedPrey=true;
+                const int dx=(prey->position.x>animal.position.x)
+                    -(prey->position.x<animal.position.x);
+                const int dy=(prey->position.y>animal.position.y)
+                    -(prey->position.y<animal.position.y);
+                animal.position.x+=dx;
+                animal.position.y+=dy;
+                if(dx!=0 || dy!=0) ++report.moved;
+                const int afterDistance=
+                    std::abs(prey->position.x-animal.position.x)
+                    +std::abs(prey->position.y-animal.position.y);
+                if(afterDistance<=2
+                   &&wildlifeRoll(state,animal.id,targetDay,
+                        0x50524544415445ULL)<0.40){
+                    prey->alive=false;
+                    ++report.predationDeaths;
+                    ate=true;
+                }
             }
         }else{
             const double chance=fish?0.68:std::clamp(
@@ -270,6 +304,7 @@ inline WildlifeStepResult stepWildlifeDay(
             ++report.naturalDeaths;
             continue;
         }
+        if(fish || pursuedPrey) continue;
         const std::uint64_t choice=wildlifeHash(
             state.worldSeed,state.habitat.coord,
             animal.id,static_cast<std::uint64_t>(targetDay),0x4d4f5645ULL);
