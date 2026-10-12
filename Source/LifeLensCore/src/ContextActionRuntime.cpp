@@ -764,7 +764,21 @@ bool Simulation::completeContextAction(
 
     if(!completed) return false;
 
-    pending.clear();
+    const bool sanitationNeedsPhysicalReturn=
+        pending.kind==ContextActionKind::Parenting
+        && pending.parentingAction==ParentingAction::ToiletAssist
+        && pending.sanitationSiteId!=0
+        && pending.civilization.hasFacilityTarget
+        && pending.civilization.quantity==0;
+    if(sanitationNeedsPhysicalReturn){
+        pending.civilization.quantity=2;
+        pending.hasSpatialTarget=true;
+        pending.targetPos=pending.civilization.facilityTargetPos;
+        pending.issuedMinute=world_.minute;
+        emit(actor.name+" escorting dependent home after sanitation");
+    }else{
+        pending.clear();
+    }
     runtime.goal=Goal::Idle;
     runtime.plan={{ActionType::Idle,0,5}};
     runtime.actionIndex=0;

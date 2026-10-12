@@ -197,6 +197,36 @@ int main(){
     CHECK(finalEscortParentPos.x==sanitationTarget.x);
     CHECK(finalEscortParentPos.y==sanitationTarget.y);
 
+    // Sanitation service finishes at the pit, but the dependent must not
+    // remain there. A persisted escort phase walks them both back to pickup.
+    CHECK(escorted.observePendingContextAction(escortParent).active);
+    CHECK(escorted.captureSnapshot().runtime.at(escortParent)
+          .pendingContext.civilization.quantity==2);
+    const SimulationStateSnapshot duringReturn=escorted.captureSnapshot();
+    Simulation resumedEscort(50505);
+    CHECK(resumedEscort.restoreSnapshot(duringReturn,&escortedError));
+    CHECK(escortedError.empty());
+    bool homeReturned=false;
+    for(int minute=0;minute<180 && !homeReturned;++minute){
+        escorted.step();
+        resumedEscort.step();
+        GridPos parentPos{}, childPos{}, resumedParent{}, resumedChild{};
+        CHECK(escorted.runtimePosition(escortParent,parentPos));
+        CHECK(escorted.runtimePosition(escortedChild.id,childPos));
+        CHECK(resumedEscort.runtimePosition(escortParent,resumedParent));
+        CHECK(resumedEscort.runtimePosition(escortedChild.id,resumedChild));
+        CHECK(parentPos.x==resumedParent.x && parentPos.y==resumedParent.y);
+        CHECK(childPos.x==resumedChild.x && childPos.y==resumedChild.y);
+        CHECK(std::abs(childPos.x-previousEscortedChildPos.x)<=1);
+        CHECK(std::abs(childPos.y-previousEscortedChildPos.y)<=1);
+        CHECK(childPos.x==parentPos.x && childPos.y==parentPos.y);
+        previousEscortedChildPos=childPos;
+        homeReturned=!escorted.observePendingContextAction(escortParent).active
+            && childPos.x==escortHome.x && childPos.y==escortHome.y;
+    }
+    CHECK(homeReturned);
+    CHECK(!resumedEscort.observePendingContextAction(escortParent).active);
+
     const PrimitiveSanitationSite* usedPit=
         findPrimitiveSanitationSite(
             escorted.world().primitiveSanitationSites,

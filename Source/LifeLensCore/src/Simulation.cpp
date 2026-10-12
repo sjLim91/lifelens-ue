@@ -923,6 +923,34 @@ bool Simulation::advancePendingContext(
     PendingContextAction& pending=runtime.pendingContext;
     if(!pending.active()) return false;
 
+    // A dependent returning from sanitation remains under the caregiver's
+    // physical escort. It is persisted using parenting-tagged, already-encoded
+    // civilization payload slots (no snapshot binary layout change).
+    if(pending.kind==ContextActionKind::Parenting
+       && pending.parentingAction==ParentingAction::ToiletAssist
+       && pending.sanitationSiteId!=0
+       && pending.civilization.quantity==2){
+        const auto childRuntime=runtime_.find(pending.parentingTarget);
+        const Character* child=findFamilyCharacter(world_,pending.parentingTarget);
+        if(childRuntime==runtime_.end() || child==nullptr || !child->alive){
+            pending.clear();
+            clearNavigation(runtime);
+            return false;
+        }
+        const bool arrived=advanceNavigation(
+            actor.id,runtime,pending.targetPos,0);
+        // The child is carried through the very same Core movement steps,
+        // including detours and persisted in-progress navigation routes.
+        childRuntime->second.pos=runtime.pos;
+        if(arrived){
+            emit(actor.name+" returned "+child->name+
+                 " safely from assisted sanitation care");
+            pending.clear();
+            clearNavigation(runtime);
+        }
+        return arrived;
+    }
+
     if(pending.kind==ContextActionKind::Trade
        && runtime.tradeJourney.active
        && contextActionExpired(pending,world_.minute)){
@@ -1110,6 +1138,9 @@ bool Simulation::advancePendingContext(
                     });
             if(site!=nullptr && !sameGridPos(runtime.pos,site->pos)){
                 pending.sanitationSiteId=site->id;
+                pending.civilization.hasFacilityTarget=true;
+                pending.civilization.facilityTargetPos=childRuntime->second.pos;
+                pending.civilization.quantity=0;
                 pending.hasSpatialTarget=true;
                 pending.targetPos=site->pos;
                 // Start a fresh bounded movement phase after the child pickup.
