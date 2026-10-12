@@ -14,6 +14,7 @@
 #include "lifelens/HumanTraceReadModel.h"
 #include "lifelens/SimulationClimate.h"
 #include "lifelens/EarthNaturalLandMask.h"
+#include "lifelens/EarthSolarObservation.h"
 #include "lifelens/TraitsPreferences.h"
 
 namespace lifelens {
@@ -1030,6 +1031,41 @@ std::string WebClientBridge::earthScenarioJson() const
     out<<"\"terrainGeographicallyConditioned\":false,";
     out<<"\"metricScaleProvisional\":true,";
     out<<"\"snapshotPersistence\":false";
+    out<<"}";
+    return out.str();
+}
+
+std::string WebClientBridge::earthSolarJson() const
+{
+    if(!simulation_ || !earthScenario_ || !activeEarthOriginRegionId_)
+        return "{\"available\":false}";
+    const World& world=simulation_->world();
+    const auto* binding=earthScenario_->forRegion(
+        world,activeEarthOriginRegionId_);
+    if(binding==nullptr) return "{\"available\":false}";
+
+    EarthSolarObservation solar{};
+    if(!earthSolarObservationAt(
+            binding->geographicOrigin,world.minute,solar))
+        return "{\"available\":false}";
+
+    std::ostringstream out;
+    out<<std::setprecision(15);
+    out<<"{\"available\":true,";
+    out<<"\"source\":\"CoreEarthSolar\",";
+    out<<"\"worldSeed\":\""<<world.seed<<"\",";
+    out<<"\"generationVersion\":"<<world.generationVersion<<",";
+    out<<"\"regionId\":\""<<binding->regionId<<"\",";
+    out<<"\"minute\":"<<world.minute<<",";
+    out<<"\"latitudeDeg\":"<<binding->geographicOrigin.latitudeDeg<<",";
+    out<<"\"longitudeDeg\":"<<binding->geographicOrigin.longitudeDeg<<",";
+    out<<"\"localSolarHour\":"<<solar.localSolarHour<<",";
+    out<<"\"solarElevationDeg\":"<<solar.solarElevationDeg<<",";
+    out<<"\"daylightHours\":"<<solar.daylightHours<<",";
+    out<<"\"sunlightAboveHorizon\":"
+       <<(solar.sunlightAboveHorizon?"true":"false")<<",";
+    out<<"\"sunshinePotential01\":"<<solar.sunshinePotential01<<",";
+    out<<"\"regionalWeatherApplied\":false";
     out<<"}";
     return out.str();
 }
