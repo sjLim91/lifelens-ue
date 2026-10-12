@@ -47,6 +47,11 @@ public:
     std::string cognitiveRequestJson(
         const std::string& residentIdText,
         const std::string& triggerText) const;
+    // Observational only. These locally composed goals never execute or
+    // authorize behavior; all data derives from bounded Core cognition.
+    std::string autonomousGoalCandidatesJson(
+        const std::string& residentIdText,
+        const std::string& triggerText) const;
     std::string dynamicEnvironmentJson(
         int centerChunkX,
         int centerChunkY) const;
