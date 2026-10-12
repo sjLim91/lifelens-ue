@@ -13,6 +13,7 @@
 #include "lifelens/Hydrology.h"
 #include "lifelens/HumanTraceReadModel.h"
 #include "lifelens/SimulationClimate.h"
+#include "lifelens/EarthNaturalLandMask.h"
 #include "lifelens/TraitsPreferences.h"
 
 namespace lifelens {
@@ -936,6 +937,10 @@ bool WebClientBridge::newGame(
     const std::string& populationSeedText,
     WorldGenerationVersion generationVersion)
 {
+    // Every ordinary/legacy new game explicitly unlinks any prior Earth
+    // scenario; observers must not reuse a previous world's globe marker.
+    earthScenario_.reset();
+    activeEarthOriginRegionId_=0;
     worldSeed_ = normalizeWorldSeed(
         parseUnsigned64(worldSeedText, 1));
     populationSeed_ = populationSeedText.empty()
@@ -951,6 +956,81 @@ bool WebClientBridge::newGame(
         generationVersion_);
     simulation_->setupNewGame();
     return true;
+}
+
+bool WebClientBridge::newEarthGame(
+    const std::string& worldSeedText,
+    double latitudeDeg,
+    double longitudeDeg)
+{
+    const EarthGeoPoint origin={latitudeDeg,longitudeDeg};
+    // Do not reset or mutate the current life simulation on invalid picks,
+    // including water/unknown one-degree coastline cells.
+    if(!earthValidGeo(origin)
+       ||earthNaturalLandClassAt(origin)!=EarthNaturalLandClass::Land)
+        return false;
+
+    // This creates an explicit single-origin observer mapping without
+    // changing procedural habitat, needs, climate, resources or initial RNG.
+    // Other origin groups and real Earth terrain conditioning are separate
+    // EARTH-3/4 milestones, never silently simulated by the browser.
+    if(!newGame(worldSeedText,"",CurrentWorldGenerationVersion))
+        return false;
+    const World& world=simulation_->world();
+    if(world.characters.empty()) return false;
+
+    GridPos foundingGrid=world.initialStartRegionCenterGrid();
+    // Bind the origin to the same live founder area observed by the Core.
+    // The generated world remains the existing standard LifeLens world.
+    GridPos firstResident{};
+    if(simulation_->runtimePosition(world.characters.front().id,firstResident))
+        foundingGrid=firstResident;
+
+    const WorldGenesisIdentity identity=world.genesisIdentity();
+    const SurfaceRegionCoord region=surfaceRegionCoordForChunk(
+        chunkCoordForGrid(foundingGrid));
+    auto catalog=std::make_unique<EarthScenarioGeoCatalog>(
+        identity,EarthLandMaskVersion,"natural-earth");
+    // Temporary explicit visualization-scale contract only. The Core grid
+    // presently has no real physical meters-per-cell authority.
+    constexpr double PrototypeMetersPerGridCell=25.0;
+    auto binding=makeEarthRegionScenarioBinding(
+        identity,region,origin,foundingGrid,
+        PrototypeMetersPerGridCell,EarthLandMaskVersion,"natural-earth");
+    if(catalog->add(binding)!=EarthScenarioBindingStatus::Accepted)
+        return false;
+    activeEarthOriginRegionId_=binding.regionId;
+    earthScenario_=std::move(catalog);
+    return true;
+}
+
+std::string WebClientBridge::earthScenarioJson() const
+{
+    if(!simulation_ || !earthScenario_ || !activeEarthOriginRegionId_)
+        return "{\"available\":false}";
+    const World& world=simulation_->world();
+    const auto* binding=earthScenario_->forRegion(
+        world,activeEarthOriginRegionId_);
+    if(binding==nullptr) return "{\"available\":false}";
+
+    std::ostringstream out;
+    out<<std::setprecision(15);
+    out<<"{\"available\":true,";
+    out<<"\"worldSeed\":\""<<world.seed<<"\",";
+    out<<"\"generationVersion\":"<<world.generationVersion<<",";
+    out<<"\"regionId\":\""<<binding->regionId<<"\",";
+    out<<"\"latitudeDeg\":"<<binding->geographicOrigin.latitudeDeg<<",";
+    out<<"\"longitudeDeg\":"<<binding->geographicOrigin.longitudeDeg<<",";
+    out<<"\"originGridX\":"<<binding->localGridOrigin.x<<",";
+    out<<"\"originGridY\":"<<binding->localGridOrigin.y<<",";
+    out<<"\"earthDataVersion\":\""<<binding->earthDataVersion<<"\",";
+    out<<"\"source\":\"CoreEarthScenario\",";
+    out<<"\"singleOrigin\":true,";
+    out<<"\"terrainGeographicallyConditioned\":false,";
+    out<<"\"metricScaleProvisional\":true,";
+    out<<"\"snapshotPersistence\":false";
+    out<<"}";
+    return out.str();
 }
 
 void WebClientBridge::runMinutes(int minutes)

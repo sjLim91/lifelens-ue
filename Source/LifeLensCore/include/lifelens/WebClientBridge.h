@@ -6,6 +6,7 @@
 #include <string>
 
 #include "Simulation.h"
+#include "EarthRegionScenario.h"
 
 namespace lifelens {
 
@@ -24,6 +25,15 @@ public:
         const std::string& populationSeedText = "",
         WorldGenerationVersion generationVersion =
             CurrentWorldGenerationVersion);
+
+    // Explicit opt-in: anchors the *existing* local Core simulation to a
+    // natural-Earth location for observer navigation. Its terrain/climate is
+    // still procedural; it does NOT simulate geographically conditioned land.
+    bool newEarthGame(
+        const std::string& worldSeedText,
+        double latitudeDeg,
+        double longitudeDeg);
+    std::string earthScenarioJson() const;
 
     bool hasSimulation() const { return simulation_ != nullptr; }
 
@@ -58,6 +68,8 @@ public:
 
 private:
     std::unique_ptr<Simulation> simulation_;
+    std::unique_ptr<EarthScenarioGeoCatalog> earthScenario_;
+    SurfaceRegionId activeEarthOriginRegionId_=0;
     WorldSeed worldSeed_ = 1;
     PopulationSeed populationSeed_ = 0;
     WorldGenerationVersion generationVersion_ =
