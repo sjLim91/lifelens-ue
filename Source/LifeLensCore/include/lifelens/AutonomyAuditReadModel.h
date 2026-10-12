@@ -84,6 +84,7 @@ struct AutonomyCheckpoint {
     std::uint64_t knowledgeContextPending=0;
     std::uint64_t tradeContextPending=0;
     std::size_t socialFacts=0;
+    std::size_t acceptedCognitiveDecisionsStored=0;
     std::size_t directKnowledgeReceipts=0;
     std::size_t transmittedKnowledgeReceipts=0;
     std::vector<AutonomyResidentCheckpoint> residents;
@@ -98,6 +99,8 @@ inline AutonomyCheckpoint observeAutonomyCheckpoint(
     observation.generationVersion=snapshot.world.generationVersion;
     observation.minute=snapshot.world.minute;
     observation.socialFacts=snapshot.socialKnowledge.facts().size();
+    observation.acceptedCognitiveDecisionsStored=
+        snapshot.acceptedCognitiveDecisions.size();
     for(const KnowledgeReceipt& receipt:snapshot.socialKnowledge.receipts()){
         if(receipt.source==MemorySource::DirectWitness){
             ++observation.directKnowledgeReceipts;
@@ -164,6 +167,8 @@ struct AutonomyActorAudit {
     std::uint64_t observedGoalChanges=0;
     std::uint64_t observedSuccessEvidenceDelta=0;
     std::uint64_t observedFailureEvidenceDelta=0;
+    std::uint64_t observedAcceptedCognitiveDecisions=0;
+    int lastAcceptedCognitiveDecisionMinute=-1;
     std::array<std::uint64_t,AutonomyExperienceActionCount> observedSuccessEvidenceByActionDelta{};
     std::array<std::uint64_t,AutonomyExperienceActionCount> observedFailureEvidenceByActionDelta{};
     std::array<std::uint64_t,AutonomyExperienceActionCount> lastSuccessEvidenceByAction{};
@@ -196,6 +201,8 @@ struct AutonomyAuditSeries {
     std::array<std::uint64_t,AutonomyExperienceActionCount> observedSuccessEvidenceByActionDelta{};
     std::array<std::uint64_t,AutonomyExperienceActionCount> observedFailureEvidenceByActionDelta{};
     std::size_t lastKnowledgeFacts=0;
+    std::size_t lastAcceptedCognitiveDecisionsStored=0;
+    std::uint64_t observedAcceptedCognitiveDecisions=0;
     std::size_t lastDirectKnowledgeReceipts=0;
     std::size_t lastTransmittedKnowledgeReceipts=0;
     std::map<CharacterId,AutonomyActorAudit> actors;
@@ -232,6 +239,24 @@ struct AutonomyAuditSeries {
         sampledKnowledgeContext+=current.knowledgeContextPending;
         sampledTradeContext+=current.tradeContextPending;
         lastKnowledgeFacts=current.socialFacts;
+        lastAcceptedCognitiveDecisionsStored=
+            current.acceptedCognitiveDecisionsStored;
+        // B2: observe true Core accepted inputs, not Shadow proposals
+        // or evidence that an accepted proposal actually executed.
+        // The first checkpoint initializes baselines, without counting
+        // old retained inputs as newly accepted events.
+        for(const AcceptedCognitiveDecision& decision:
+            snapshot.acceptedCognitiveDecisions){
+            auto& actor=actors[decision.actor];
+            actor.id=decision.actor;
+            if(checkpoints>1
+               &&decision.minute>actor.lastAcceptedCognitiveDecisionMinute){
+                ++actor.observedAcceptedCognitiveDecisions;
+                ++observedAcceptedCognitiveDecisions;
+            }
+            if(decision.minute>actor.lastAcceptedCognitiveDecisionMinute)
+                actor.lastAcceptedCognitiveDecisionMinute=decision.minute;
+        }
         lastDirectKnowledgeReceipts=current.directKnowledgeReceipts;
         lastTransmittedKnowledgeReceipts=current.transmittedKnowledgeReceipts;
 
@@ -329,6 +354,10 @@ struct AutonomyAuditSeries {
         writeEvidenceByActionJson(out,observedSuccessEvidenceByActionDelta);
         out<<",\"failureEvidenceDeltaByAction\":";
         writeEvidenceByActionJson(out,observedFailureEvidenceByActionDelta);
+        out<<",\"acceptedCognitiveDecisionsStoredLast\":"
+           <<lastAcceptedCognitiveDecisionsStored;
+        out<<",\"observedAcceptedCognitiveDecisions\":"
+           <<observedAcceptedCognitiveDecisions;
         out<<",\"lastSocialFacts\":"<<lastKnowledgeFacts;
         out<<",\"lastDirectKnowledgeReceipts\":"<<lastDirectKnowledgeReceipts;
         out<<",\"lastTransmittedKnowledgeReceipts\":"<<lastTransmittedKnowledgeReceipts;
@@ -340,6 +369,8 @@ struct AutonomyAuditSeries {
             out<<"{\"actorId\":\""<<id<<"\"";
             out<<",\"observedSamples\":"<<actor.observedSamples;
             out<<",\"observedGoalChanges\":"<<actor.observedGoalChanges;
+            out<<",\"observedAcceptedCognitiveDecisions\":"
+               <<actor.observedAcceptedCognitiveDecisions;
             out<<",\"physicalSuccessEvidenceDelta\":"<<actor.observedSuccessEvidenceDelta;
             out<<",\"physicalFailureEvidenceDelta\":"<<actor.observedFailureEvidenceDelta;
             out<<",\"successEvidenceDeltaByAction\":";
@@ -356,9 +387,10 @@ struct AutonomyAuditSeries {
         // Never conflate sampled goal-state with actual events or capability.
         out<<",\"notInstrumented\":["
            <<"\"novelGoalCreation\",\"hypothesisGeneration\","
-           <<"\"composedPrimitivePlans\",\"acceptedCognitionEvents\","
+           <<"\"composedPrimitivePlans\",\"acceptedCognitionExecutionEffects\","
            <<"\"causalMethodLearning\",\"emergentCivilization\"]";
         out<<",\"evidenceCaveat\":\"Per-action deltas are observed belief evidence, not executed-action counts\"";
+        out<<",\"acceptedCognitionCaveat\":\"Newly observed Core-accepted decisions in retained journal, not execution effects\"";
         out<<",\"samplingCaveat\":\"Snapshots are observations, not all completed actions\"";
         out<<"}";
         return out.str();

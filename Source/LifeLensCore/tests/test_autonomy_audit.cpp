@@ -61,6 +61,17 @@ int main()
     state.runtime[13].pendingContext.kind=ContextActionKind::Civilization;
     rememberActionOutcome(state.world.characters[1],"Drink",610,false);
     rememberActionOutcome(state.world.characters[0],"Sleep",610,true);
+    // Genuine typed Core-accepted input journal, never a simulated action.
+    AcceptedCognitiveDecision accepted;
+    accepted.actor=7;
+    accepted.minute=610;
+    accepted.trigger=CognitiveTriggerKind::Reflection;
+    accepted.contextFingerprint=42;
+    accepted.backendIdentity="test-local";
+    accepted.intent=CognitiveIntentKind::ImproveWaterSecurity;
+    accepted.priority=0.75;
+    accepted.rationaleDigest="test-digest";
+    state.acceptedCognitiveDecisions.push_back(accepted);
     assert(audit.observe(state));
     assert(audit.checkpoints==2);
     assert(audit.sampledCivilizationContext==1);
@@ -68,6 +79,10 @@ int main()
     assert(audit.actors.at(13).observedGoalChanges==0);
     assert(audit.actors.at(7).observedFailureEvidenceDelta==1);
     assert(audit.actors.at(13).observedSuccessEvidenceDelta==1);
+    assert(audit.observedAcceptedCognitiveDecisions==1);
+    assert(audit.actors.at(7).observedAcceptedCognitiveDecisions==1);
+    assert(audit.actors.at(13).observedAcceptedCognitiveDecisions==0);
+    assert(audit.lastAcceptedCognitiveDecisionsStored==1);
     // Actual belief evidence attributed to each observed action, never
     // mislabeled as a count of completed physical actions.
     assert(audit.actors.at(7).observedFailureEvidenceByActionDelta[1]==1); // Drink
@@ -92,13 +107,43 @@ int main()
     // injecting free-form action strings into the JSON diagnostic.
     state.world.minute=620;
     rememberActionOutcome(state.world.characters[1],"UnlistedWorldMethod",620,false);
+    AcceptedCognitiveDecision acceptedOther=accepted;
+    acceptedOther.actor=13;
+    acceptedOther.minute=620;
+    acceptedOther.contextFingerprint=77;
+    state.acceptedCognitiveDecisions.push_back(acceptedOther);
     assert(audit.observe(state));
     assert(audit.observedFailureEvidenceByActionDelta[6]==1); // Other
     assert(audit.actors.at(7).observedFailureEvidenceByActionDelta[6]==1);
+    assert(audit.observedAcceptedCognitiveDecisions==2);
+    assert(audit.actors.at(13).observedAcceptedCognitiveDecisions==1);
+    assert(audit.lastAcceptedCognitiveDecisionsStored==2);
+    assert(audit.json().find("\"observedAcceptedCognitiveDecisions\":2")
+           !=std::string::npos);
+    assert(audit.json().find("acceptedCognitionExecutionEffects")
+           !=std::string::npos);
+    assert(audit.json().find("acceptedCognitionEvents")==std::string::npos);
     assert(audit.json().find("UnlistedWorldMethod")==std::string::npos);
     const auto afterOther=audit.json();
     assert(!audit.observe(state));
     assert(audit.json()==afterOther);
+
+    // Restored audit observation starts from a baseline; retained history
+    // must never be miscounted as new decisions. New minute is counted once.
+    AutonomyAuditSeries resumed;
+    assert(resumed.observe(state));
+    assert(resumed.lastAcceptedCognitiveDecisionsStored==2);
+    assert(resumed.observedAcceptedCognitiveDecisions==0);
+    state.world.minute=630;
+    AcceptedCognitiveDecision later=accepted;
+    later.minute=630;
+    later.contextFingerprint=88;
+    state.acceptedCognitiveDecisions.push_back(later);
+    assert(resumed.observe(state));
+    assert(resumed.observedAcceptedCognitiveDecisions==1);
+    assert(audit.observe(state));
+    assert(audit.observedAcceptedCognitiveDecisions==3);
+    assert(audit.actors.at(7).observedAcceptedCognitiveDecisions==2);
 
     // Observe the actual Core simulation without changing its state or RNG.
     // B keeps running independently without audit snapshots. The end-state
