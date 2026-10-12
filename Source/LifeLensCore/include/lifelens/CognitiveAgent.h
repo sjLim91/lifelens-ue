@@ -120,8 +120,22 @@ inline bool cognitiveIntentTargetsResident(CognitiveIntentKind intent)
     }
 }
 
+inline const char* cognitiveMemorySourceName(MemorySource source)
+{
+    switch(source){
+        case MemorySource::DirectWitness: return "DirectWitness";
+        case MemorySource::ToldByOther: return "ToldByOther";
+        case MemorySource::Inferred: return "Inferred";
+        default: return "Inferred";
+    }
+}
+
 struct CognitiveMemoryEvidence {
     CharacterId who=0;
+    // Provenance is a property of a resident's memory, not World truth.
+    // Do not collapse firsthand observation, hearsay and inference.
+    MemorySource source=MemorySource::Inferred;
+    bool witnessed=false;
     int minute=0;
     double recallScore=0.0;
     double confidence=0.0;
@@ -277,6 +291,8 @@ inline CognitiveRequest buildCognitiveRequest(
     for(const MemoryRecord& memory:actor.memory.entries){
         CognitiveMemoryEvidence evidence;
         evidence.who=memory.who;
+        evidence.source=memory.source;
+        evidence.witnessed=memory.witnessed;
         evidence.minute=memory.minute;
         evidence.recallScore=memory.recallScore(currentMinute);
         evidence.confidence=memory.effectiveConfidence(currentMinute);
