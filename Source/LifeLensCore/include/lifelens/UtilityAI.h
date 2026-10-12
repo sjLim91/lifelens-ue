@@ -156,16 +156,9 @@ inline double scoreGoal(const World& w,const Character& c,Goal g,const UtilityAI
     double emotionBias=0.045*distress+0.020*depletion-0.015*activation;
     if(g==Goal::Sleep) emotionBias+=0.020*depletion;
     s*=std::clamp(1.0+emotionBias,0.92,1.08);
-    // A failure to eat, drink or sleep is not a preference to stop doing
-    // those things. Experience may reorder optional hygiene and toileting,
-    // never the physiological food/water/rest priority. All urgent body needs
-    // remain untouched by a learned disposition.
-    const bool optionalPhysicalChoice=
-        g==Goal::Wash || g==Goal::UseToilet;
-    if(optionalPhysicalChoice
-       && needForGoal(c,g)<rules.urgentThreshold){
-        s*=learnedActionDisposition(c,goalName(g));
-    }
+    // Failed methods are NOT failed physiological needs.
+    // Preserve the entire physical Need scoring contract. Learned outcomes
+    // influence real alternative methods/places instead (COG-L2).
     return s;
 }
 inline double scoreGoal(const World& w,const Character& c,Goal g) {
