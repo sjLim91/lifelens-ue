@@ -48,6 +48,23 @@ int main()
     assert(reflection.find("\"CooperateWithResident\"")!=std::string::npos);
     assert(reflection.find("\"MigrateHousehold\"")!=std::string::npos);
 
+    // B3c read-only local goals use the very same bounded Core cognition.
+    // Re-reading proposals must never advance time or change the world.
+    const auto beforeGoalRead=bridge.worldOverviewJson();
+    const auto goals=bridge.autonomousGoalCandidatesJson(actor,"Reflection");
+    assert(goals!="null");
+    assert(goals.find("\"available\":true")!=std::string::npos);
+    assert(goals.find("\"actor\":\""+actor+"\"")!=std::string::npos);
+    assert(goals.find("\"source\":\"CoreLocalGoalComposer\"")
+           !=std::string::npos);
+    assert(goals.find("\"affectsSimulation\":false")!=std::string::npos);
+    assert(goals.find("\"candidates\":[")!=std::string::npos);
+    assert(bridge.autonomousGoalCandidatesJson(actor,"Reflection")==goals);
+    assert(bridge.worldOverviewJson()==beforeGoalRead);
+    assert(bridge.autonomousGoalCandidatesJson("0","Reflection")=="null");
+    assert(bridge.autonomousGoalCandidatesJson(actor,"None")=="null");
+    assert(bridge.autonomousGoalCandidatesJson("not-an-id","Reflection")=="null");
+
     const std::string scarcity=
         bridge.cognitiveRequestJson(actor,"ResourceScarcity");
     assert(scarcity.find(
