@@ -224,6 +224,7 @@ export function startObserverEngine(): () => void {
     observerStore.update({
       world: snapshot.overview,
       earthScenario: snapshot.earthScenario,
+      earthSolar: snapshot.earthSolar,
       residents: residentSnapshot,
       terrain,
       environment: snapshot.environment,
