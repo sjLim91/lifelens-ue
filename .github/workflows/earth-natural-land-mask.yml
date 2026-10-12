@@ -1,0 +1,30 @@
+name: LifeLens Earth Natural Land Mask Contract
+
+on:
+  push:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/EarthNaturalLandMask.h'
+      - 'Source/LifeLensCore/tests/test_earth_natural_land_mask.cpp'
+      - '.github/workflows/earth-natural-land-mask.yml'
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/EarthNaturalLandMask.h'
+      - 'Source/LifeLensCore/tests/test_earth_natural_land_mask.cpp'
+      - '.github/workflows/earth-natural-land-mask.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  public-domain-natural-earth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test Core Natural Earth classification without simulation mutation
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -UNDEBUG \
+            -I Source/LifeLensCore/include \
+            Source/LifeLensCore/tests/test_earth_natural_land_mask.cpp \
+            -o /tmp/lifelens_earth_natural_land
+          /tmp/lifelens_earth_natural_land
