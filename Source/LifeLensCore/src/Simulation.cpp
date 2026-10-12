@@ -1,4 +1,5 @@
 #include "lifelens/Simulation.h"
+#include "lifelens/WaterSourceExperience.h"
 #include "lifelens/CoreNavigation.h"
 #include "lifelens/CultivationProgression.h"
 #include "lifelens/FamilyProgression.h"
@@ -22,37 +23,25 @@ Character* findFamilyCharacter(World& world,CharacterId id)
 
 bool nearestNaturalWaterAccess(
     const World& world,
+    const Character& resident,
     GridPos from,
     GridPos& outAccess)
 {
-    bool found=false;
-    int bestDistance=std::numeric_limits<int>::max();
-    ResourceNodeId bestId=0;
-
+    std::vector<ExperiencedWaterAccess> candidates;
+    candidates.reserve(world.resourceNodes.size());
     for(const ResourceNode& node:world.resourceNodes){
         if(node.id==0
            || node.material!=MaterialKind::Water
-           || node.quantity<=0){
-            continue;
-        }
-
+           || node.quantity<=0) continue;
         GridPos access{};
         if(!resolveCivilizationResourceAccessGridPosition(
-                world,node.id,access)){
-            continue;
-        }
-
-        const int distance=manhattan(from,access);
-        if(!found
-           || distance<bestDistance
-           || (distance==bestDistance && node.id<bestId)){
-            found=true;
-            bestDistance=distance;
-            bestId=node.id;
-            outAccess=access;
-        }
+                world,node.id,access)) continue;
+        candidates.push_back({node.id,access});
     }
-    return found;
+    // Only actual existing resource nodes may be selected. Navigation,
+    // consumption and contamination remain under the original Core rules.
+    return chooseExperiencedWaterAccess(
+        resident,from,world.minute,candidates,outAccess);
 }
 
 ResourceNode* naturalWaterNodeAtAccess(
@@ -2193,7 +2182,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     if((chosen==Goal::Drink || chosen==Goal::Wash)
        && portableWaterCount(c.civilization.inventory)<=0){
         GridPos waterAccess{};
-        if(!nearestNaturalWaterAccess(world_,r.pos,waterAccess)){
+        if(!nearestNaturalWaterAccess(world_,c,r.pos,waterAccess)){
             failPlan(c,r);
             return;
         }
