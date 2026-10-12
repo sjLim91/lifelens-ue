@@ -129,6 +129,13 @@ export function EarthGlobePreview({
             direction.x, direction.y, direction.z,
           ).multiplyScalar(1.40);
           actualMarker.visible = true;
+          // Reopening the globe after a local visit centers the *actual*
+          // Core-authorized region, not the observer-only A/B preview pin.
+          // In XYZ Euler order, yaw acts first, then pitch levels the site.
+          globe.rotation.y = -Math.atan2(direction.x, direction.z);
+          globe.rotation.x = Math.atan2(
+            direction.y, Math.hypot(direction.x, direction.z),
+          );
         }
       }
       // A faint outer atmosphere is presentation-only.
