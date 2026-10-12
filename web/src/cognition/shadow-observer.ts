@@ -1,4 +1,5 @@
 import type { CognitiveRequestDto } from './cognitive-contract';
+import type { AutonomousGoalPreview } from './autonomous-goal-preview';
 import type { CognitiveProvider } from './cognitive-provider';
 import { CognitionScheduler, type CognitionOutcome } from './cognition-scheduler';
 import { LocalCognitionProvider, isLoopbackCognitionUrl } from './local-cognition-provider';
@@ -9,6 +10,9 @@ export interface ShadowSource {
   worldOverview(): WorldOverview;
   residentRuntime(): ResidentsPayload;
   cognitiveRequest(actor: string, trigger: 'Reflection'): CognitiveRequestDto | null;
+  autonomousGoalCandidates?(
+    actor: string, trigger: 'Reflection',
+  ): AutonomousGoalPreview | null;
 }
 export const SHADOW_BUDGET = Object.freeze({
   maxConcurrent: 1, maxQueued: 0, timeoutMs: 6000,
@@ -74,6 +78,17 @@ export class ShadowObserver {
     this.disposed = false;
     this.source = source;
     this.replaceScheduler();
+  }
+
+  // Does not require a local LLM, enable Shadow Mode, schedule ticks or
+  // mutate Core. All results originate from the optional read-only WASM API.
+  inspectCoreAutonomousGoals(actor: string): AutonomousGoalPreview | null {
+    if (this.disposed || !this.source || !actor) return null;
+    try {
+      return this.source.autonomousGoalCandidates?.(actor, 'Reflection') ?? null;
+    } catch {
+      return null;
+    }
   }
   configure(baseUrl: string, model: string): boolean {
     if (!isLoopbackCognitionUrl(baseUrl) || !model.trim() || model.length > 200) {

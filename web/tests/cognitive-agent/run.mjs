@@ -6,6 +6,7 @@ const {
   parseCognitiveProposal,
   parseCognitiveRequest,
 }=await source('cognition/cognitive-contract.ts');
+const { parseAutonomousGoalPreview } = await source('cognition/autonomous-goal-preview.ts');
 const {
   LocalCognitionProvider,
   discoverLocalCognitionModels,
@@ -145,6 +146,58 @@ await test('Core bridge reads optional cognitive ABI and fails closed on corrupt
 
   const oldRuntime=new LifeLensCoreBridge(baseClient);
   assert.equal(oldRuntime.cognitiveRequest('9','Reflection'),null);
+});
+
+await test('Core local goal candidates are bounded, truthful read-only previews',()=>{
+  const preview={
+    available:true,
+    actor:'9',
+    minute:140,
+    source:'CoreLocalGoalComposer',
+    affectsSimulation:false,
+    candidates:[{
+      priority:0.73,
+      expiresMinute:1580,
+      conditions:[{
+        metric:'ActorNeed',need:'Thirst',materialCode:0,
+        targetResident:'0',operator:'AtMost',threshold:0.35,
+      }],
+      evidence:[{kind:'ActorNeed',index:0}],
+    }],
+  };
+  assert.deepEqual(parseAutonomousGoalPreview(preview),preview);
+
+  const client={
+    newGame:()=>true,runMinutes:()=>{},
+    worldOverviewJson:()=>JSON.stringify({available:true,minute:140,livingResidents:1}),
+    residentsJson:()=>JSON.stringify({available:true,residents:[]}),
+    terrainWindowJson:()=>JSON.stringify({available:false,centerChunkX:0,centerChunkY:0,chunks:[]}),
+    autonomousGoalCandidatesJson:(_actor,trigger)=>{
+      assert.equal(trigger,'Reflection');
+      // Deliberately return another actor's data to test bridge authority.
+      return JSON.stringify(preview);
+    },
+  };
+  const bridge=new LifeLensCoreBridge(client);
+  assert.deepEqual(bridge.autonomousGoalCandidates('9'),preview);
+  assert.equal(bridge.autonomousGoalCandidates('2'),null,
+    'unrelated resident ID cannot import someone else\'s goal preview');
+  const oldRuntime={...client};
+  delete oldRuntime.autonomousGoalCandidatesJson;
+  assert.equal(new LifeLensCoreBridge(oldRuntime).autonomousGoalCandidates('9'),null);
+  assert.throws(()=>parseAutonomousGoalPreview({...preview,affectsSimulation:true}),/read-only/);
+  assert.throws(()=>parseAutonomousGoalPreview({...preview,source:'web-fake'}),/read-only/);
+  assert.throws(()=>parseAutonomousGoalPreview({...preview,actor:'not-an-id'}),/identifier/);
+  assert.throws(()=>parseAutonomousGoalPreview({...preview,candidates:Array(7).fill(preview.candidates[0])}),/candidate/);
+  assert.throws(()=>parseAutonomousGoalPreview({
+    ...preview,candidates:[{...preview.candidates[0],priority:Number.NaN}],
+  }),/number/);
+  assert.throws(()=>parseAutonomousGoalPreview({
+    ...preview,candidates:[{
+      ...preview.candidates[0],
+      conditions:[{...preview.candidates[0].conditions[0],metric:'SpawnFacility'}],
+    }],
+  }),/predicate/);
 });
 
 await test('Core request parser is bounded and rejects malformed runtime context',()=>{

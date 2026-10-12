@@ -1,4 +1,5 @@
 #include "lifelens/WebClientBridge.h"
+#include "lifelens/AutonomousGoalComposer.h"
 
 #include <algorithm>
 #include <charconv>
@@ -1855,6 +1856,95 @@ std::string WebClientBridge::cognitiveRequestJson(
 
     std::ostringstream out;
     appendCognitiveRequestJson(out,request);
+    return out.str();
+}
+
+std::string WebClientBridge::autonomousGoalCandidatesJson(
+    const std::string& residentIdText,
+    const std::string& triggerText) const
+{
+    if(!simulation_) return "null";
+
+    const CharacterId actor=
+        static_cast<CharacterId>(parseUnsigned64(residentIdText,0));
+    CognitiveTriggerKind trigger=CognitiveTriggerKind::None;
+    if(actor==0 || !parseCognitiveTriggerName(triggerText,trigger))
+        return "null";
+
+    const CognitiveRequest request=
+        simulation_->observeCognitiveRequest(actor,trigger);
+    if(request.actor!=actor || request.trigger==CognitiveTriggerKind::None)
+        return "null";
+
+    const auto goals=composeAutonomousGoalCandidates(
+        simulation_->world(),request,MaxComposedAutonomousGoals);
+    const auto metricName=[](AutonomousGoalMetric metric)->const char*{
+        switch(metric){
+            case AutonomousGoalMetric::ActorNeed: return "ActorNeed";
+            case AutonomousGoalMetric::ActorRawMaterialCount: return "ActorRawMaterialCount";
+            case AutonomousGoalMetric::RelationshipTrust: return "RelationshipTrust";
+            case AutonomousGoalMetric::KnownResidentAlive: return "KnownResidentAlive";
+            default: return "Unknown";
+        }
+    };
+    const auto needName=[](AutonomousNeedKind need)->const char*{
+        switch(need){
+            case AutonomousNeedKind::Hunger: return "Hunger";
+            case AutonomousNeedKind::Thirst: return "Thirst";
+            case AutonomousNeedKind::Sleep: return "Sleep";
+            case AutonomousNeedKind::Bladder: return "Bladder";
+            case AutonomousNeedKind::Hygiene: return "Hygiene";
+            default: return "Unknown";
+        }
+    };
+    const auto evidenceName=[](AutonomousGoalEvidenceKind evidence)->const char*{
+        switch(evidence){
+            case AutonomousGoalEvidenceKind::ActorNeed: return "ActorNeed";
+            case AutonomousGoalEvidenceKind::Remembered: return "Remembered";
+            case AutonomousGoalEvidenceKind::Believed: return "Believed";
+            case AutonomousGoalEvidenceKind::Related: return "Related";
+            default: return "Unknown";
+        }
+    };
+
+    std::ostringstream out;
+    out<<"{\"available\":true,\"actor\":\""<<request.actor<<"\",";
+    out<<"\"minute\":"<<request.minute<<",";
+    out<<"\"source\":\"CoreLocalGoalComposer\",";
+    out<<"\"affectsSimulation\":false,\"candidates\":[";
+    bool firstGoal=true;
+    for(const auto& goal:goals){
+        if(!firstGoal) out<<",";
+        firstGoal=false;
+        out<<"{\"priority\":";
+        appendDouble(out,goal.priority);
+        out<<",\"expiresMinute\":"<<goal.expiresMinute<<",\"conditions\":[";
+        bool firstCondition=true;
+        for(const auto& condition:goal.desiredState){
+            if(!firstCondition) out<<",";
+            firstCondition=false;
+            out<<"{\"metric\":\""<<metricName(condition.metric)<<"\",";
+            out<<"\"need\":\""<<needName(condition.need)<<"\",";
+            out<<"\"materialCode\":"<<static_cast<int>(condition.material)<<",";
+            out<<"\"targetResident\":\""<<condition.targetResident<<"\",";
+            out<<"\"operator\":\""
+               <<(condition.comparison==AutonomousGoalCompare::AtMost
+                  ?"AtMost":"AtLeast")<<"\",";
+            out<<"\"threshold\":";
+            appendDouble(out,condition.threshold);
+            out<<"}";
+        }
+        out<<"],\"evidence\":[";
+        bool firstEvidence=true;
+        for(const auto& evidence:goal.evidence){
+            if(!firstEvidence) out<<",";
+            firstEvidence=false;
+            out<<"{\"kind\":\""<<evidenceName(evidence.kind)
+               <<"\",\"index\":"<<evidence.index<<"}";
+        }
+        out<<"]}";
+    }
+    out<<"]}";
     return out.str();
 }
 

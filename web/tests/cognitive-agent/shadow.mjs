@@ -30,6 +30,27 @@ function fixture(provider = { name: 'free-local-test', reason: async req => prop
     enable: () => controller.setEnabled(true),
   };
 }
+await test('local Core goal inspection works with Shadow OFF and cannot change World',()=>{
+  const f=fixture();
+  const baseline=JSON.stringify([f.world,f.residents]);
+  let hits=0;
+  const preview={available:true,actor:'1',minute:100,source:'CoreLocalGoalComposer',
+    affectsSimulation:false,candidates:[]};
+  f.source.autonomousGoalCandidates=(actor,trigger)=>{
+    hits++;
+    assert.equal(actor,'1');
+    assert.equal(trigger,'Reflection');
+    return preview;
+  };
+  assert.equal(f.controller.getSnapshot().enabled,false);
+  assert.deepEqual(f.controller.inspectCoreAutonomousGoals('1'),preview);
+  assert.equal(hits,1);
+  assert.equal(f.reads(),0,'no provider inference or CognitiveRequest read');
+  assert.equal(JSON.stringify([f.world,f.residents]),baseline);
+  f.controller.dispose();
+  assert.equal(f.controller.inspectCoreAutonomousGoals('1'),null);
+});
+
 await test('Shadow OFF/no provider leaves Core running; ON reads only Core capabilities', async () => {
   const f = fixture();
   const before = JSON.stringify([f.world, f.residents]);
