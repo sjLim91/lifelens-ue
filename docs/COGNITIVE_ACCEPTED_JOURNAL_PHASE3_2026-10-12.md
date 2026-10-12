@@ -13,3 +13,7 @@
 **미구현:** 이 PR은 받아들인 외부 제안을 실제 목표 점수에 반영하지 않는다. COG-4에서 journal recording을 실제 입력 path와 연결하고, snapshot replay/되묻기 금지를 통합 검증한 이후에만 연결한다.
 
 참고 #664 개인 행동 경험, #666 실제 공간 경험에 의한 수원 선택, #660 인간다운 결과. 학습/선택/외형에 대한 사용자의 자율 개발 위임은 simulation truth·기존 설계·determinism 한계 내에서 적용한다.
+
+## 정확한 문맥 동일성
+
+`cognitiveRequestFingerprint`는 Core가 제공하는 resident, world minute, trigger, Need, 성격, 감정, 허용 intent, 정렬된 기억/신념/관계 문맥 전체를 고정 필드 순서와 IEEE754 값으로 FNV-1a 처리한다. 외부 모델·브라우저가 임의 fingerprint를 보내도 Core가 실제 `CognitiveRequest`와 비교하여 거부한다. 이는 개인정보/보안용 암호학적 인증이 아니라 **결정론적 문맥 동일성**을 위한 식별자다.

@@ -3,6 +3,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <iomanip>
+#include <sstream>
 #include <string>
 #include <vector>
 #include "CognitiveAgent.h"
@@ -51,6 +53,78 @@ inline double cognitivePriorityFromBits(std::uint64_t bits)
     double value=0.0;
     std::memcpy(&value,&bits,sizeof(value));
     return value;
+}
+
+// Context identity belongs to Core, never to the external language model.
+// Use explicit typed fields (not padding bytes/locale strings) and stable
+// FNV-1a ordering so replay on another platform receives the same identity.
+inline std::string cognitiveRequestFingerprint(const CognitiveRequest& request)
+{
+    std::uint64_t hash=14695981039346656037ULL;
+    const auto u64=[&hash](std::uint64_t value){
+        for(int i=0;i<8;++i){
+            hash^=static_cast<unsigned char>((value>>(i*8))&0xffU);
+            hash*=1099511628211ULL;
+        }
+    };
+    const auto number=[&](double value){
+        u64(cognitivePriorityBits(value));
+    };
+    const auto string=[&](const std::string& value){
+        u64(value.size());
+        for(unsigned char c:value){
+            hash^=c;hash*=1099511628211ULL;
+        }
+    };
+    u64(request.actor);
+    u64(static_cast<std::uint64_t>(request.minute));
+    u64(static_cast<std::uint64_t>(request.trigger));
+    for(double value:{
+        request.needs.hunger,request.needs.thirst,request.needs.sleep,
+        request.needs.bladder,request.needs.hygiene,
+        request.personality.introversion,request.personality.conscientiousness,
+        request.personality.openness,request.personality.agreeableness,
+        request.personality.emotionalStability,request.personality.empathy,
+        request.personality.impulsiveness,request.personality.riskTolerance,
+        request.personality.ambition,request.personality.patience,
+        request.personality.sociability,request.personality.curiosity,
+        request.personality.orderliness,request.personality.adaptability,
+        request.emotion.joy,request.emotion.sadness,request.emotion.anger,
+        request.emotion.fear,request.emotion.embarrassment,
+        request.emotion.pride,request.emotion.jealousy,request.emotion.affection,
+        request.emotion.anxiety,request.emotion.relief,request.emotion.grief,
+        request.emotion.valence,request.emotion.arousal
+    }) number(value);
+    u64(request.allowedIntents.size());
+    for(const auto intent:request.allowedIntents){
+        u64(static_cast<std::uint64_t>(intent));
+    }
+    u64(request.memories.size());
+    for(const auto& memory:request.memories){
+        u64(memory.who);u64(static_cast<std::uint64_t>(memory.minute));
+        number(memory.recallScore);number(memory.confidence);
+        number(memory.importance);number(memory.emotionValence);
+        number(memory.emotionIntensity);string(memory.what);
+        string(memory.where);u64(memory.tags.size());
+        for(const auto& tag:memory.tags) string(tag);
+    }
+    u64(request.beliefs.size());
+    for(const auto& belief:request.beliefs){
+        u64(belief.subject);string(belief.proposition);
+        number(belief.stance);number(belief.confidence);
+        u64(static_cast<std::uint64_t>(belief.lastUpdatedMinute));
+    }
+    u64(request.relationships.size());
+    for(const auto& relation:request.relationships){
+        u64(relation.target);
+        number(relation.socialBond);number(relation.affection);
+        number(relation.trust);number(relation.respect);
+        number(relation.conflict);number(relation.fear);
+        number(relation.grudge);
+    }
+    std::ostringstream out;
+    out<<"ctx-v1-"<<std::hex<<std::setw(16)<<std::setfill('0')<<hash;
+    return out.str();
 }
 
 inline bool isAcceptedCognitionMemory(const MemoryRecord& memory)
@@ -127,7 +201,8 @@ inline CognitiveJournalWriteResult recordAcceptedCognitiveProposal(
     if(actor.id==0 || actor.id!=request.actor
        || request.minute!=world.minute
        || request.minute<0
-       || contextFingerprint.empty() || backendIdentity.empty()
+       || contextFingerprint!=cognitiveRequestFingerprint(request)
+       || backendIdentity.empty()
        || contextFingerprint.size()>MaxCognitionProvenanceFieldLength
        || backendIdentity.size()>MaxCognitionProvenanceFieldLength
        || rationaleDigest.size()>MaxCognitionProvenanceFieldLength) {

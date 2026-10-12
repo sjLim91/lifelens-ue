@@ -17,6 +17,11 @@ int main()
     const CognitiveRequest request=sim.observeCognitiveRequest(
         actor.id,CognitiveTriggerKind::ResourceScarcity);
     assert(!request.allowedIntents.empty());
+    const std::string context=cognitiveRequestFingerprint(request);
+    assert(context==cognitiveRequestFingerprint(request));
+    CognitiveRequest changed=request;
+    changed.personality.curiosity+=0.01;
+    assert(context!=cognitiveRequestFingerprint(changed));
     CognitiveProposal proposal;
     proposal.actor=actor.id;
     proposal.intent=CognitiveIntentKind::ImproveWaterSecurity;
@@ -25,11 +30,11 @@ int main()
 
     assert(recordAcceptedCognitiveProposal(
         sim.world(),actor,request,proposal,
-        "context-424","free-local-provider","sha256-rationale")
+        context,"free-local-provider","sha256-rationale")
         ==CognitiveJournalWriteResult::Recorded);
     assert(recordAcceptedCognitiveProposal(
         sim.world(),actor,request,proposal,
-        "context-424","free-local-provider","different-rationale")
+        context,"free-local-provider","different-rationale")
         ==CognitiveJournalWriteResult::AlreadyRecorded);
 
     auto journal=observeAcceptedCognitionJournal(actor);
@@ -68,7 +73,7 @@ int main()
     assert(recovered!=nullptr);
     journal=observeAcceptedCognitionJournal(*recovered);
     assert(journal.size()==1);
-    assert(journal[0].contextFingerprint=="context-424");
+    assert(journal[0].contextFingerprint==context);
     assert(cognitivePriorityBits(journal[0].priority)
         ==cognitivePriorityBits(proposal.priority));
     // An accepted event remains present and replayable after Core save/load.
@@ -76,7 +81,7 @@ int main()
     Character& replay=world.characters[0];
     assert(recordAcceptedCognitiveProposal(
         world,replay,request,proposal,
-        "context-424","free-local-provider","sha256-rationale")
+        context,"free-local-provider","sha256-rationale")
         ==CognitiveJournalWriteResult::AlreadyRecorded);
 
     // One resident's journal does not appear in another resident's memory.
@@ -89,7 +94,7 @@ int main()
         next.minute=world.minute;
         assert(recordAcceptedCognitiveProposal(
             world,replay,next,proposal,
-            "context-"+std::to_string(i),"local","digest")
+            cognitiveRequestFingerprint(next),"local","digest")
             ==CognitiveJournalWriteResult::Recorded);
     }
     assert(observeAcceptedCognitionJournal(replay).size()
