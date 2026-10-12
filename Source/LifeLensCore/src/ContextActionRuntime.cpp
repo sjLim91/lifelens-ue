@@ -694,11 +694,60 @@ bool Simulation::completeContextAction(
             runtime.pos=resolvedPosition;
             if(pending.parentingAction==ParentingAction::ToiletAssist){
                 childRuntime->second.pos=resolvedPosition;
+
+                PrimitiveSanitationSite* sanitationSite=nullptr;
+                if(pending.sanitationSiteId!=0){
+                    sanitationSite=findPrimitiveSanitationSite(
+                        world_.primitiveSanitationSites,
+                        pending.sanitationSiteId);
+                    if(sanitationSite==nullptr
+                       || !sanitationSite->active
+                       || !sameGridPosition(
+                            sanitationSite->pos,resolvedPosition)){
+                        pending.clear();
+                        return false;
+                    }
+                    if(!recordPrimitiveSanitationSiteUse(
+                            world_.primitiveSanitationSites,
+                            sanitationSite->id,
+                            resolvedPosition)){
+                        pending.clear();
+                        return false;
+                    }
+                }
+
+                const PrimitiveSanitationSiteKind sanitationKind=
+                    sanitationSite!=nullptr
+                        ? sanitationSite->kind
+                        : PrimitiveSanitationSiteKind::DesignatedArea;
+                const double residueIntensity=
+                    sanitationSite!=nullptr
+                        ? primitiveSanitationResidueIntensity(
+                            sanitationKind)
+                        : DefaultPhysiologyBalance
+                            .outdoorToiletResidueIntensity;
+                const int residueRadius=
+                    sanitationSite!=nullptr
+                        ? primitiveSanitationResidueRadiusTiles(
+                            sanitationKind)
+                        : DefaultPhysiologyBalance
+                            .outdoorToiletResidueRadiusTiles;
+
                 const auto& residue=world_.environmentalResidues.deposit(
-                    EnvironmentalResidueKind::HumanWaste,resolvedPosition,child->id,
-                    world_.minute,1.0,0.42,3);
-                emit(child->name+" left sanitation residue id="+std::to_string(residue.id)+
-                     " during assisted toilet care");
+                    EnvironmentalResidueKind::HumanWaste,
+                    resolvedPosition,
+                    child->id,
+                    world_.minute,
+                    1.0,
+                    residueIntensity,
+                    residueRadius);
+                emit(
+                    child->name
+                    +" left sanitation residue id="
+                    +std::to_string(residue.id)
+                    +(sanitationSite!=nullptr
+                        ? " during assisted toilet care via sanitation site"
+                        : " during assisted toilet care"));
             }
             emit(actor.name+" cared for "+child->name+" -> "+
                  std::string(contextParentingActionName(pending.parentingAction))
@@ -715,7 +764,21 @@ bool Simulation::completeContextAction(
 
     if(!completed) return false;
 
-    pending.clear();
+    const bool sanitationNeedsPhysicalReturn=
+        pending.kind==ContextActionKind::Parenting
+        && pending.parentingAction==ParentingAction::ToiletAssist
+        && pending.sanitationSiteId!=0
+        && pending.civilization.hasFacilityTarget
+        && pending.civilization.quantity==0;
+    if(sanitationNeedsPhysicalReturn){
+        pending.civilization.quantity=2;
+        pending.hasSpatialTarget=true;
+        pending.targetPos=pending.civilization.facilityTargetPos;
+        pending.issuedMinute=world_.minute;
+        emit(actor.name+" escorting dependent home after sanitation");
+    }else{
+        pending.clear();
+    }
     runtime.goal=Goal::Idle;
     runtime.plan={{ActionType::Idle,0,5}};
     runtime.actionIndex=0;
