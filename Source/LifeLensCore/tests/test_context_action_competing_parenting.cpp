@@ -1,7 +1,8 @@
 #include <cstddef>
 #include <iostream>
 #include <string>
-#include "lifelens/LifeStage.h"\n#include "lifelens/CoreNavigation.h"
+#include "lifelens/LifeStage.h"
+#include "lifelens/CoreNavigation.h"
 #include "lifelens/Simulation.h"
 using namespace lifelens;
 #define CHECK(x) do { if(!(x)){ std::cerr << "check failed line " << __LINE__ << '\n'; return 1; } } while(false)
