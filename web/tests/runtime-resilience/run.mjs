@@ -117,10 +117,15 @@ try {
     'core-earth-scenario',
     readFileSync(join(root,'src/earth/core-earth-scenario.ts'),'utf8'),
   );
+  compile(
+    'core-earth-solar',
+    readFileSync(join(root,'src/earth/core-earth-solar.ts'),'utf8'),
+  );
   const bridgeSource=readFileSync(join(root,'src/runtime/core-bridge.ts'),'utf8')
     .replaceAll('import.meta.env.BASE_URL',"'./'")
     .replaceAll('../cognition/cognitive-contract','./cognitive-contract')
-    .replaceAll('../earth/core-earth-scenario','./core-earth-scenario');
+    .replaceAll('../earth/core-earth-scenario','./core-earth-scenario')
+    .replaceAll('../earth/core-earth-solar','./core-earth-solar');
   const {LifeLensCoreBridge}=compile('core-bridge',bridgeSource);
   await test('bridge propagates corrupt overview instead of fabricating empty state', () => {
     const bridge=new LifeLensCoreBridge({worldOverviewJson:()=>'{'});

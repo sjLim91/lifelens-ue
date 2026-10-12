@@ -14,10 +14,12 @@ import type {
 } from './core-types';
 import type { ResidentContinuity } from './resident-continuity';
 import type { CoreEarthScenarioObservation } from '../earth/core-earth-scenario';
+import type { CoreEarthSolarObservation } from '../earth/core-earth-solar';
 
 export interface WorldSessionSnapshot {
   overview: WorldOverview;
   earthScenario: CoreEarthScenarioObservation;
+  earthSolar: CoreEarthSolarObservation;
   residents: Resident[];
   // Full Core records, including deceased residents, for explicit captures.
   // The render-facing list above remains filtered by ResidentContinuity.
@@ -130,6 +132,9 @@ export class WorldSession {
     // implement the new optional Earth observation capability yet.
     const earthScenario = typeof this.core.earthScenario === 'function'
       ? this.core.earthScenario(overview)
+      : { available: false };
+    const earthSolar = typeof this.core.earthSolar === 'function'
+      ? this.core.earthSolar(overview, earthScenario)
       : { available: false };
     let freshResidentDetails = false;
     let residentRuntimePayload = this.core.residentRuntime();
@@ -365,6 +370,7 @@ export class WorldSession {
     return {
       overview,
       earthScenario,
+      earthSolar,
       residents,
       residentDetails: this.residentDetailSnapshot,
       terrain,

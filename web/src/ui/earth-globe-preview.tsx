@@ -8,14 +8,16 @@ import { geoFromGlobeUV, globeSurfaceUnitVector,
   formatPreviewGeoPoint, type EarthPreviewGeoPoint } from '../earth/globe-region-picking';
 import type { WorldOverview } from '../runtime/core-types';
 import type { CoreEarthScenarioObservation } from '../earth/core-earth-scenario';
+import { formatSolarHour, type CoreEarthSolarObservation } from '../earth/core-earth-solar';
 
 export function EarthGlobePreview({
-  onClose, onBeginEarthWorld, onEnterLife, earthScenario, world,
+  onClose, onBeginEarthWorld, onEnterLife, earthScenario, earthSolar, world,
 }: {
   onClose: () => void;
   onBeginEarthWorld: (position: EarthPreviewGeoPoint) => boolean;
   onEnterLife: () => void;
   earthScenario: CoreEarthScenarioObservation;
+  earthSolar: CoreEarthSolarObservation;
   world: WorldOverview;
 }) {
   const holder = useRef<HTMLDivElement>(null);
@@ -375,6 +377,14 @@ export function EarthGlobePreview({
                 latitudeDeg: earthScenario.latitudeDeg!,
                 longitudeDeg: earthScenario.longitudeDeg!,
               })} · 시드 #{earthScenario.worldSeed}</span>
+              {earthSolar.available === true && (
+                <div className="earth-solar-observation" aria-label="실제 지구 지역 태양 관찰">
+                  <strong>이 지역의 태양</strong>
+                  <span>현지 태양시 {formatSolarHour(earthSolar.localSolarHour!)} · {earthSolar.sunlightAboveHorizon ? '해가 떠 있음' : '해가 지평선 아래'}</span>
+                  <span>태양 고도 {earthSolar.solarElevationDeg!.toFixed(1)}° · 일조 {earthSolar.daylightHours!.toFixed(1)}시간</span>
+                  <small>Core 지구 좌표·시뮬레이션 시간 기준의 천문 관찰값입니다. 지역 실제 날씨에는 아직 적용되지 않았습니다.</small>
+                </div>
+              )}
               <button type="button" onClick={onEnterLife}>
                 이 지역의 주민 생활로 확대
               </button>

@@ -1463,3 +1463,17 @@ button:disabled { opacity: .33; cursor: default; }
   .earth-globe-footer { max-height: 40vh; }
   .earth-scale-controls { gap: 5px; font-size: .67rem; }
 }
+
+/* Earth-5C: read-only local astronomical information from Core (not weather). */
+.earth-solar-observation {
+  display: grid;
+  gap: .35rem;
+  margin: .55rem 0 .75rem;
+  padding: .8rem;
+  border: 1px solid rgba(177, 204, 169, .34);
+  border-radius: 10px;
+  background: rgba(17, 31, 38, .73);
+}
+.earth-solar-observation strong { color: #f1dfaa; font-size: .81rem; }
+.earth-solar-observation span { color: #d3e5e0; font-size: .75rem; line-height: 1.45; }
+.earth-solar-observation small { color: #98b4ac; font-size: .68rem; line-height: 1.45; }

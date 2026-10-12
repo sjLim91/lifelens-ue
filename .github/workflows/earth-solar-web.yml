@@ -1,0 +1,48 @@
+name: LifeLens Earth Solar Web Observation
+
+on:
+  push:
+    paths:
+      - 'web/src/earth/core-earth-solar.ts'
+      - 'web/src/ui/earth-globe-preview.tsx'
+      - 'web/src/runtime/core-bridge.ts'
+      - 'web/src/runtime/core-types.ts'
+      - 'web/src/runtime/world-session.ts'
+      - 'web/src/state/observer-store.ts'
+      - 'web/src/observer-engine.ts'
+      - 'web/src/App.tsx'
+      - 'web/tests/earth-solar-observation/run.mjs'
+      - '.github/workflows/earth-solar-web.yml'
+  pull_request:
+    paths:
+      - 'web/src/earth/core-earth-solar.ts'
+      - 'web/src/ui/earth-globe-preview.tsx'
+      - 'web/src/runtime/core-bridge.ts'
+      - 'web/src/runtime/core-types.ts'
+      - 'web/src/runtime/world-session.ts'
+      - 'web/src/state/observer-store.ts'
+      - 'web/src/observer-engine.ts'
+      - 'web/src/App.tsx'
+      - 'web/tests/earth-solar-observation/run.mjs'
+      - '.github/workflows/earth-solar-web.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  earth-solar-observation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Web
+        run: cd web && npm install --no-audit --no-fund
+      - name: Contract validation
+        run: cd web && node tests/earth-solar-observation/run.mjs
+      - name: Web Typecheck
+        run: cd web && npm run typecheck
+      - name: Production Build
+        run: cd web && npm run build

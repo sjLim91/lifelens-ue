@@ -20,6 +20,8 @@ import { visibleHumanTraces } from './human-traces';
 import { representativeSettlementForTrace } from './settlement-observation';
 import { UNBOUND_EARTH_SCENARIO,
   type CoreEarthScenarioObservation } from '../earth/core-earth-scenario';
+import { UNBOUND_EARTH_SOLAR,
+  type CoreEarthSolarObservation } from '../earth/core-earth-solar';
 import {
   INITIAL_FAST_FORWARD_STATE,
   type FastForwardState,
@@ -45,6 +47,7 @@ export interface RuntimeState {
 export interface ObserverSnapshot {
   world: WorldOverview;
   earthScenario: CoreEarthScenarioObservation;
+  earthSolar: CoreEarthSolarObservation;
   residents: Resident[];
   terrain: TerrainWindow | null;
   environment: DynamicEnvironment | null;
@@ -68,6 +71,7 @@ type Listener = () => void;
 const INITIAL_STATE: ObserverSnapshot = {
   world: {},
   earthScenario: UNBOUND_EARTH_SCENARIO,
+  earthSolar: UNBOUND_EARTH_SOLAR,
   residents: [],
   terrain: null,
   environment: null,
@@ -168,6 +172,8 @@ class ObserverStore {
     this.snapshot = {
       ...this.snapshot,
       ...patch,
+      earthSolar: patch.world && patch.earthSolar === undefined
+        ? UNBOUND_EARTH_SOLAR : patch.earthSolar ?? this.snapshot.earthSolar,
       selectedResidentId,
       selectedSettlementId: !worldChanged && nextCivilization.available === true
         && nextCivilization.settlements?.some(entry => entry.id === this.snapshot.selectedSettlementId)
@@ -365,6 +371,7 @@ class ObserverStore {
       ...this.snapshot,
       world: {},
       earthScenario: UNBOUND_EARTH_SCENARIO,
+      earthSolar: UNBOUND_EARTH_SOLAR,
       residents: [],
       terrain: null,
       environment: null,

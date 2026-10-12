@@ -752,6 +752,7 @@ export default function App() {
       {showEarthGlobe && (
         <EarthGlobePreview
           earthScenario={snapshot.earthScenario}
+          earthSolar={snapshot.earthSolar}
           world={snapshot.world}
           onClose={() => setShowEarthGlobe(false)}
           onEnterLife={() => {
