@@ -68,6 +68,34 @@ int main()
     eco.moisture01=0.81;
     eco.carryingCapacity={{22,10,3,22}};
 
+    // Spatial truth: a predator at the other end of the chunk may not
+    // magically kill prey without chasing into range.
+    {
+        auto distant=startWildlifePopulation(identity,eco);
+        distant.animals.erase(std::remove_if(
+            distant.animals.begin(),distant.animals.end(),
+            [](const WildlifeAnimal& a){
+                return a.species!=WildlifeSpecies::Hare
+                    &&a.species!=WildlifeSpecies::Wolf;
+            }),distant.animals.end());
+        // Keep exactly one prey and one predator for this independent check.
+        int seenHare=0,seenWolf=0;
+        distant.animals.erase(std::remove_if(
+            distant.animals.begin(),distant.animals.end(),
+            [&](const WildlifeAnimal& animal){
+                if(animal.species==WildlifeSpecies::Hare) return ++seenHare>1;
+                return ++seenWolf>1;
+            }),distant.animals.end());
+        assert(distant.animals.size()==2);
+        distant.animals[0].position={0,0};
+        distant.animals[1].position={31,31};
+        const auto preyId=distant.animals[0].id;
+        const auto result=stepWildlifeDay(distant,1);
+        assert(result.predationDeaths==0);
+        assert(std::any_of(distant.animals.begin(),distant.animals.end(),
+            [&](const WildlifeAnimal& animal){return animal.id==preyId;}));
+    }
+
     auto a=startWildlifePopulation(identity,eco);
     auto b=startWildlifePopulation(identity,eco);
     auto otherPopulationSeed=startWildlifePopulation(alternativePopulationSeed,eco);
@@ -107,6 +135,10 @@ int main()
             assert(animal.alive && animal.hunger01>=0 && animal.hunger01<1);
             assert(animal.position.x>=0 && animal.position.x<WildlifeCellsPerChunk);
             assert(animal.position.y>=0 && animal.position.y<WildlifeCellsPerChunk);
+            if(animal.species==WildlifeSpecies::FreshwaterFish){
+                assert(animal.position.x==WildlifeCellsPerChunk/2);
+                assert(animal.position.y==WildlifeCellsPerChunk/2);
+            }
         }
         assert(a.animals.size()<=static_cast<std::size_t>(22+10+3+22));
     }
