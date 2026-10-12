@@ -3,7 +3,8 @@ import type { Resident } from '../runtime/core-types';
 import type { AutonomousGoalCondition, AutonomousGoalPreview } from '../cognition/autonomous-goal-preview';
 import { shadowObserver, type ShadowObserver, type ShadowRecord } from '../cognition/shadow-observer';
 import {
-  KOREAN_SHADOW_LABELS as L, formatCognitiveIntent, formatCognitionState,
+  KOREAN_AUTONOMOUS_GOAL_LABELS as G, KOREAN_SHADOW_LABELS as L,
+  formatCognitiveIntent, formatCognitionState,
   formatCognitiveContext, formatCognitiveProvider, formatMemoryText, formatBelief, formatResidentName,
 } from '../localization/korean';
 import { residentStatusText } from './resident-status';
@@ -17,27 +18,23 @@ function residentName(residents: Resident[], id: string): string {
   return resident ? formatResidentName(resident.name) : L.unavailable;
 }
 
-const NEED_NAME: Record<string, string> = {
-  Hunger: '허기', Thirst: '갈증', Sleep: '피로', Bladder: '배뇨',
-  Hygiene: '위생',
-};
 function formatAutonomousCondition(
   condition: AutonomousGoalCondition,
   residents: Resident[],
 ): string {
   const threshold = condition.threshold.toFixed(2);
-  const relation = condition.operator === 'AtMost' ? '이하' : '이상';
+  const relation = condition.operator === 'AtMost' ? G.atMost : G.atLeast;
   switch (condition.metric) {
     case 'ActorNeed':
-      return `${NEED_NAME[condition.need] ?? condition.need} ${threshold} ${relation}`;
+      return `${G[condition.need]} ${threshold} ${relation}`;
     case 'RelationshipTrust':
-      return `${residentName(residents, condition.targetResident)} 신뢰 ${threshold} ${relation}`;
+      return `${residentName(residents, condition.targetResident)} ${G.trust} ${threshold} ${relation}`;
     case 'KnownResidentAlive':
-      return `${residentName(residents, condition.targetResident)} 생존 유지`;
+      return `${residentName(residents, condition.targetResident)} ${G.alive}`;
     case 'ActorRawMaterialCount':
-      return `보유 재료 #${condition.materialCode} ${threshold} ${relation}`;
+      return `${G.livelihood} #${condition.materialCode} ${threshold} ${relation}`;
     default:
-      return '현재 표시할 수 없는 목표';
+      return G.unknown;
   }
 }
 function RecordDetails({ record, residents }: { record: ShadowRecord; residents: Resident[] }) {
@@ -93,31 +90,31 @@ export function CognitiveShadowPanel({ resident, residents, controller = shadowO
           setCoreGoalPreview(controller.inspectCoreAutonomousGoals(resident.id));
         }}
       >
-        Core 자율 목표 미리보기
+        {G.button}
       </button>
       <p className="hint">
-        무료 로컬 Core가 주민별로 제안한 목표입니다. 아래 목표는 아직 실제 행동에 영향을 주지 않습니다.
+        {G.description}
       </p>
       {inspectedActor === resident.id && (
         shownGoals ? (
           <div role="status" className="cognitive-shadow-record">
-            <p>시뮬레이션 {shownGoals.minute}분 · 제안 {shownGoals.candidates.length}개</p>
+            <p>{G.simulatedTime} {shownGoals.minute}{G.minute} · {G.proposal} {shownGoals.candidates.length}{G.count}</p>
             {shownGoals.candidates.length > 0 ? (
               <ol>
                 {shownGoals.candidates.map((goal, index) => (
                   <li key={index}>
-                    <strong>우선도 {Math.round(goal.priority * 100)}%</strong>
+                    <strong>{G.priority} {Math.round(goal.priority * 100)}%</strong>
                     {' · '}
                     {goal.conditions.map(condition =>
                       formatAutonomousCondition(condition, residents)).join(' + ')}
                   </li>
                 ))}
               </ol>
-            ) : <p>현재 생성된 목표 후보가 없습니다.</p>}
+            ) : <p>{G.empty}</p>}
           </div>
         ) : (
           <p role="status" className="hint">
-            현재 Core 런타임에서 목표 후보를 읽을 수 없습니다.
+            {G.unavailable}
           </p>
         )
       )}
