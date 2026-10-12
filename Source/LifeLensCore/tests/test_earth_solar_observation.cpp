@@ -22,8 +22,8 @@ int main()
     assert(near(equinox.localSolarHour,12));
     assert(near(equinox.daylightHours,12));
     // At noon, annualPhase includes 0.5 simulation day so the sun is
-    // about 0.02 degrees past the equinox, not exactly at declination zero.
-    assert(equinox.solarElevationDeg>89.9);
+    // about 0.20 degrees past the equinox, not at exact declination zero.
+    assert(equinox.solarElevationDeg>89.5 && equinox.solarElevationDeg<90.0);
     assert(equinox.sunlightAboveHorizon);
 
     // At the same UTC minute, longitude changes local solar time only,
