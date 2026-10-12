@@ -1,0 +1,31 @@
+name: LifeLens Core Live Cognition Admission
+
+on:
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/CognitiveLiveIngressValidation.h'
+      - 'Source/LifeLensCore/tests/test_cognitive_live_ingress.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/cognitive-live-ingress.yml'
+  push:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/CognitiveLiveIngressValidation.h'
+      - 'Source/LifeLensCore/tests/test_cognitive_live_ingress.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/cognitive-live-ingress.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  live-ingress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Core
+        run: cmake -S Source/LifeLensCore -B /tmp/lifelens-cog-ingress -DCMAKE_BUILD_TYPE=Release
+      - name: Build live proposal admission regression
+        run: cmake --build /tmp/lifelens-cog-ingress --target test_cognitive_live_ingress -j2
+      - name: Spoofed context + cross-world + snapshot truth tests
+        run: ctest --test-dir /tmp/lifelens-cog-ingress -R '^test_cognitive_live_ingress$' --output-on-failure
