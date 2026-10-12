@@ -1,3 +1,4 @@
+// 감사용: Core 시뮬레이션 truth는 #674 head와 같으며 test 주석만 다름.
 #include "lifelens/EarthSurfaceCoordinates.h"
 #include <cassert>
 #include <cmath>
