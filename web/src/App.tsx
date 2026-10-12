@@ -29,6 +29,7 @@ import { FastForwardControl } from './ui/fast-forward-control';
 import { EarthGlobePreview } from './ui/earth-globe-preview';
 import { visibleHumanTraces } from './state/human-traces';
 import { formatResidentName } from './ui/observer-format';
+import type { EarthPreviewGeoPoint } from './earth/globe-region-picking';
 
 type MobileModalView =
   | 'menu'
@@ -41,7 +42,10 @@ type MobileModalView =
   | 'world'
   | null;
 
-function Topbar({ onOpenGlobe }: { onOpenGlobe: () => void }) {
+function Topbar({ onOpenGlobe, globeOpen }: {
+  onOpenGlobe: () => void;
+  globeOpen: boolean;
+}) {
   const snapshot = useObserverSnapshot();
 
   return (
@@ -52,7 +56,7 @@ function Topbar({ onOpenGlobe }: { onOpenGlobe: () => void }) {
       </div>
       <div className="earth-topbar-actions">
         <button className="earth-globe-open" type="button" onClick={onOpenGlobe}>
-          지구본
+          {globeOpen ? '주민 관찰' : '지구 관찰'}
         </button>
         <RuntimeBadge runtime={snapshot.runtime} />
       </div>
@@ -727,7 +731,10 @@ export default function App() {
 
   return (
     <div id="app">
-      <Topbar onOpenGlobe={() => setShowEarthGlobe(true)} />
+      <Topbar
+        globeOpen={showEarthGlobe}
+        onOpenGlobe={() => setShowEarthGlobe(open => !open)}
+      />
       <main className="layout">
         <WorldViewport
           onOpenMenu={() => setMobileModal('menu')}
@@ -742,7 +749,28 @@ export default function App() {
         onClose={() => setMobileModal(null)}
       />
       <SettlementDetail snapshot={snapshot} />
-      {showEarthGlobe && <EarthGlobePreview onClose={() => setShowEarthGlobe(false)} />}
+      {showEarthGlobe && (
+        <EarthGlobePreview
+          earthScenario={snapshot.earthScenario}
+          world={snapshot.world}
+          onClose={() => setShowEarthGlobe(false)}
+          onEnterLife={() => {
+            if (snapshot.earthScenario.available !== true) return;
+            observerActions.recenterObserver();
+            setShowEarthGlobe(false);
+          }}
+          onBeginEarthWorld={(location: EarthPreviewGeoPoint) => {
+            if (!window.confirm(
+              '현재 세계를 종료하고 선택한 지구 위치에서 새로운 4인 생활을 시작할까요? 지역의 지형·기후는 아직 실제 지구 환경으로 변환되지 않습니다.',
+            )) return false;
+            const created = observerActions.createEarthWorld(
+              location.latitudeDeg, location.longitudeDeg,
+            );
+            if (created) setShowEarthGlobe(false);
+            return created;
+          }}
+        />
+      )}
     </div>
   );
 }
