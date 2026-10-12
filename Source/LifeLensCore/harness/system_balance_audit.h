@@ -315,6 +315,37 @@ public:
                 j.add("pending_water_dose_before_tick",r.previousHealth.pendingWaterContaminationDose);
                 j.add("immunity_before_tick",r.previousHealth.immunity01);j.add("care_knowledge_before_tick",r.previousHealth.careKnowledge01);
                 j.add("local_residue_exposure_after_tick",w.environmentalResidues.exposureAt(pos));
+                // Read-only physical provenance. This is the strongest single
+                // residue contributor at the actual resident location, *not*
+                // a proof of which pathogen caused the illness.
+                j.add("position_x",pos.x);j.add("position_y",pos.y);
+                EnvironmentalResidueId strongestResidue=0;
+                CharacterId strongestResidueSource=0;
+                int strongestResidueDistance=-1;
+                double strongestResidueContribution=0.0;
+                double strongestResidueAmount=0.0;
+                for(const auto& residue:w.environmentalResidues.all()){
+                    const int distance=manhattan(pos,residue.pos);
+                    if(distance>residue.radiusTiles) continue;
+                    const double contribution=residue.intensity*std::max(
+                        0.0,1.0-static_cast<double>(distance)
+                            /static_cast<double>(residue.radiusTiles+1));
+                    if(contribution>strongestResidueContribution
+                       || (contribution==strongestResidueContribution
+                           && contribution>0.0
+                           && (strongestResidue==0 || residue.id<strongestResidue))){
+                        strongestResidue=residue.id;
+                        strongestResidueSource=residue.sourceCharacter;
+                        strongestResidueDistance=distance;
+                        strongestResidueContribution=contribution;
+                        strongestResidueAmount=residue.amount;
+                    }
+                }
+                j.add("top_residue_id",idString(strongestResidue));
+                j.add("top_residue_source",idString(strongestResidueSource));
+                j.add("top_residue_distance",strongestResidueDistance);
+                j.add("top_residue_contribution",strongestResidueContribution);
+                j.add("top_residue_amount",strongestResidueAmount);
                 j.add("genetic_health_potential",c.genetics.healthPotential);j.add("physical_health",c.lifeCondition.physicalHealth);
                 j.add("hunger",c.needs.hunger);j.add("thirst",c.needs.thirst);j.add("sleep",c.needs.sleep);j.add("hygiene",c.needs.hygiene);
                 j.add("sanitation_knowledge",c.civilization.knowledge.knowsAtLeast(TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)?1:0);
