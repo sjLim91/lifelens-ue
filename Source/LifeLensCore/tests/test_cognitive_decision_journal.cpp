@@ -1,3 +1,4 @@
+// COG-3 Core저널 observer-only 1000일 증거(생산 소스 PR #667 동일)
 #include <cassert>
 #include <cmath>
 #include <string>
