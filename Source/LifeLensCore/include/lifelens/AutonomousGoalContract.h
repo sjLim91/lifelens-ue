@@ -170,7 +170,8 @@ inline bool autonomousGoalPredicateValid(
                 });
             if(!salient) return false; // do not leak arbitrary residents
             if(predicate.metric==AutonomousGoalMetric::KnownResidentAlive)
-                return predicate.threshold==1.0;
+                return predicate.threshold==1.0
+                    &&predicate.comparison==AutonomousGoalCompare::AtLeast;
             return predicate.threshold>=0.0 &&predicate.threshold<=1.0;
         }
         default: return false;
@@ -317,8 +318,15 @@ inline std::optional<bool> autonomousGoalSatisfiedByTruth(
     const RelationshipBook& relationships,
     const AutonomousGoalCandidate& goal)
 {
-    if(goal.desiredState.empty()) return std::nullopt;
+    if(goal.actor==0
+       ||goal.desiredState.empty()
+       ||goal.desiredState.size()>MaxAutonomousGoalPredicates)
+        return std::nullopt;
     for(const auto& predicate:goal.desiredState){
+        if(!std::isfinite(predicate.threshold)
+           ||(predicate.comparison!=AutonomousGoalCompare::AtMost
+              &&predicate.comparison!=AutonomousGoalCompare::AtLeast))
+            return std::nullopt;
         const auto value=autonomousGoalTruthValue(
             world,relationships,goal.actor,predicate);
         if(!value ||!std::isfinite(*value)) return std::nullopt;
