@@ -1906,8 +1906,9 @@ bool Simulation::trySocialDecision(
                world_,c,r.pos).intent!=CivilizationIntent::None){
             return false;
         }
-        decision=choosePhysicalSocialUtilityDecision(
-            world_,c,relationships_,0.18);
+        const auto population=settlementPopulation();
+        decision=choosePhysicalSocialUtilityDecisionAtPosition(
+            world_,c,relationships_,r.pos,0.18,&population,true);
     }
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
 
