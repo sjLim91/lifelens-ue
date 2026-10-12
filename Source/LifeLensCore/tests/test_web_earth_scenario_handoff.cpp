@@ -1,10 +1,21 @@
 #include "lifelens/WebClientBridge.h"
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <string>
 
 using namespace lifelens;
+
+// Compare with the Core's actual simulation clock (new worlds start at 07:00),
+// rather than assuming their absolute initial minute is zero.
+static std::int64_t jsonSimulationMinute(const std::string& json)
+{
+    const std::string key="\"minute\":";
+    const auto pos=json.find(key);
+    assert(pos!=std::string::npos);
+    return std::stoll(json.substr(pos+key.size()));
+}
 
 int main()
 {
@@ -31,6 +42,9 @@ int main()
     assert(earth.newEarthGame(Seed,37.0,127.0,3));
     const std::string binding=earth.earthScenarioJson();
     const std::string initialSolar=earth.earthSolarJson();
+    const auto initialMinute=jsonSimulationMinute(initialSolar);
+    assert(initialMinute==jsonSimulationMinute(earth.worldOverviewJson()));
+    assert(initialMinute==7*60); // Canonical new-world start is 07:00.
     assert(initialSolar.find("\"available\":true")!=std::string::npos);
     assert(initialSolar.find("\"source\":\"CoreEarthSolar\"")
         !=std::string::npos);
@@ -60,7 +74,11 @@ int main()
     legacy.runMinutes(22);
     earth.runMinutes(22);
     assert(earth.earthSolarJson()!=initialSolar);
-    assert(earth.earthSolarJson().find("\"minute\":22")!=std::string::npos);
+    // Advancing 22 minutes must preserve the real Core clock at both endpoints.
+    const auto progressedMinute=jsonSimulationMinute(earth.earthSolarJson());
+    assert(progressedMinute==initialMinute+22);
+    assert(progressedMinute==jsonSimulationMinute(earth.worldOverviewJson()));
+    assert(progressedMinute==jsonSimulationMinute(legacy.worldOverviewJson()));
     assert(earth.worldOverviewJson()==legacy.worldOverviewJson());
     assert(earth.residentsJson()==legacy.residentsJson());
 
