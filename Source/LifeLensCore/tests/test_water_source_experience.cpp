@@ -1,3 +1,4 @@
+// 감사용 브랜치: 실제 Core 로직은 #666 exact head와 같음.
 #include <cassert>
 #include <cmath>
 #include <vector>
