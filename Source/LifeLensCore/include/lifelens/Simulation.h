@@ -115,6 +115,16 @@ public:
     SocialKnowledgeBook& socialKnowledge(){return socialKnowledge_;}
     const SocialKnowledgeBook& socialKnowledge() const{return socialKnowledge_;}
     const std::vector<std::string>& logs() const{return logs_;}
+    const std::vector<AcceptedCognitiveDecision>& acceptedCognitiveDecisions() const {
+        return acceptedCognitiveDecisions_;
+    }
+    // Validates a typed local-model proposal against the *current* Core view.
+    // Acceptance only records an input; it does not execute or bias goals yet.
+    bool acceptCognitiveProposal(
+        const CognitiveRequest& request,
+        const CognitiveProposal& proposal,
+        const std::string& backendIdentity,
+        const std::string& rationaleDigest);
     std::vector<SocialCommunicationObservation> observeRecentSocialEvents(
         std::size_t maxEvents=32) const {
         return recentSocialCommunicationTail(recentSocialEvents_,maxEvents);
@@ -289,6 +299,7 @@ private:
     PregnancyBook pregnancies_;
     BirthBook births_;
     SocialKnowledgeBook socialKnowledge_;
+    std::vector<AcceptedCognitiveDecision> acceptedCognitiveDecisions_;
     std::unordered_map<CharacterId,Runtime> runtime_;
     // Health fatalities are computed and consumed inside the same daily Core
     // transition. They are runtime transition state, never a second save truth.

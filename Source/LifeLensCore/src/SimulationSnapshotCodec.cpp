@@ -7,6 +7,7 @@
 #include "lifelens/WorldGenerationSnapshotCodec.h"
 #include "lifelens/HealthSnapshotCodec.h"
 #include "lifelens/TradeJourneySnapshotCodec.h"
+#include "lifelens/CognitiveJournalSnapshotCodec.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -220,6 +221,20 @@ bool encodeSimulationSnapshot(
         tradeJourneyExtension.bytes.begin(),
         tradeJourneyExtension.bytes.end());
 
+    // Empty journal adds zero bytes, preserving byte-exact snapshots from
+    // simulations that never received an externally accepted thought.
+    if(!snapshot.acceptedCognitiveDecisions.empty()){
+        if(!validCognitiveDecisionJournal(
+               snapshot.acceptedCognitiveDecisions,snapshot.world)){
+            setError(error,"invalid accepted cognition journal");
+            return false;
+        }
+        Writer cognitionExtension;
+        writeCognitiveJournalSnapshotExtension(cognitionExtension,snapshot);
+        body.insert(body.end(),cognitionExtension.bytes.begin(),
+                    cognitionExtension.bytes.end());
+    }
+
     outBytes=std::move(body);
     if(error) error->clear();
     return true;
@@ -312,6 +327,16 @@ bool decodeSimulationSnapshot(
         && tradeJourneyMarker>rulesetMarker
         && (!hasHealthExtension || tradeJourneyMarker>healthMarker);
 
+    const auto cognitionMarker=std::find_end(
+        tradeJourneyMarker!=bytes.end() ? tradeJourneyMarker : rulesetMarker,
+        bytes.end(),CognitiveJournalSnapshotExtensionMagic,
+        CognitiveJournalSnapshotExtensionMagic
+            +sizeof(CognitiveJournalSnapshotExtensionMagic));
+    const bool hasCognitionExtension=
+        cognitionMarker!=bytes.end()
+        && hasTradeJourneyExtension
+        && cognitionMarker>tradeJourneyMarker;
+
     const auto rulesetEnd=
         hasHealthExtension
             ? healthMarker
@@ -328,7 +353,14 @@ bool decodeSimulationSnapshot(
 
     std::vector<std::uint8_t> tradeJourneyBytes;
     if(hasTradeJourneyExtension){
-        tradeJourneyBytes.assign(tradeJourneyMarker,bytes.end());
+        tradeJourneyBytes.assign(
+            tradeJourneyMarker,
+            hasCognitionExtension ? cognitionMarker : bytes.end());
+    }
+
+    std::vector<std::uint8_t> cognitionBytes;
+    if(hasCognitionExtension){
+        cognitionBytes.assign(cognitionMarker,bytes.end());
     }
 
     SimulationStateSnapshot decoded;
@@ -395,6 +427,15 @@ bool decodeSimulationSnapshot(
                 tradeJourneyReader,decoded)
            || !tradeJourneyReader.done()){
             setError(error,"invalid trade journey snapshot extension");
+            return false;
+        }
+    }
+
+    if(hasCognitionExtension){
+        Reader cognitionReader(cognitionBytes);
+        if(!readCognitiveJournalSnapshotExtension(cognitionReader,decoded)
+           || !cognitionReader.done()){
+            setError(error,"invalid accepted cognition snapshot extension");
             return false;
         }
     }
