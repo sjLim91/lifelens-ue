@@ -55,6 +55,12 @@ inline double socialClamp01(double value) {
     return std::max(0.0, std::min(1.0, value));
 }
 
+// Social opportunity is deliberately aligned to the existing five-minute
+// planning heartbeat while leaving regular fifteen-minute civilization
+// decisions with their own uncontested start opportunities.
+inline constexpr int SocialFirstContactOpportunityMinutes=60;
+inline constexpr int SocialFirstContactOpportunityOffsetMinutes=5;
+
 inline constexpr double SocialFirstContactFamiliarityHorizon=0.12;
 inline constexpr double SocialFirstContactBondHorizon=0.10;
 

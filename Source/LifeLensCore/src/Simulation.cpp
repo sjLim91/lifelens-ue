@@ -1928,6 +1928,14 @@ bool Simulation::trySocialDecision(
             world_,c,relationships_,r.pos,0.18,0.14,&population,
             &socialKnowledge_,&households_);
     }else{
+        // A social first-contact opportunity must not monopolize every
+        // planning boundary between civilization decisions. It is offered
+        // once per in-world hour, offset from the fifteen-minute civilization
+        // cadence: no numeric behavior/probability tuning of Needs or Health.
+        if(world_.minute%SocialFirstContactOpportunityMinutes
+           !=SocialFirstContactOpportunityOffsetMinutes){
+            return false;
+        }
         // The off-cadence social probe deliberately cannot start ordinary
         // civilization work. The old minCivilizationUtility=2.0 call still
         // evaluated every resource/facility candidate even though a clamped
