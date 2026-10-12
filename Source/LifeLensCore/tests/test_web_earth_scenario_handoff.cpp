@@ -1,3 +1,4 @@
+// 1000일 인과 감사: 생산 Core 코드는 PR #679 head와 완전히 동일.
 #include "lifelens/WebClientBridge.h"
 #include <cassert>
 #include <cmath>
