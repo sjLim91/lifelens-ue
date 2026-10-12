@@ -223,6 +223,7 @@ export function startObserverEngine(): () => void {
     );
     observerStore.update({
       world: snapshot.overview,
+      earthScenario: snapshot.earthScenario,
       residents: residentSnapshot,
       terrain,
       environment: snapshot.environment,
@@ -281,12 +282,25 @@ export function startObserverEngine(): () => void {
   }
   
   function createWorld(seed: string): void {
-    // UI button disabling alone does not cover keyboard/programmatic actions
-    // while the chunked fast-forward loop yields to the browser.
     if (!worldSession || fastForwardRunning) return;
     const requestedSeed = seed.trim();
     const effectiveSeed = requestedSeed || generateWorldSeed();
     worldSession.createWorld(effectiveSeed);
+    resetAfterWorldCreated();
+  }
+
+  function createEarthWorld(latitude: number, longitude: number): boolean {
+    if (!worldSession || fastForwardRunning
+      || !Number.isFinite(latitude) || !Number.isFinite(longitude))
+      return false;
+    const seed = generateWorldSeed();
+    if (!worldSession.createEarthWorld(seed, latitude, longitude))
+      return false;
+    resetAfterWorldCreated();
+    return true;
+  }
+
+  function resetAfterWorldCreated(): void {
     shadowObserver.resetWorld();
     centerX = 0;
     centerY = 0;
@@ -528,6 +542,7 @@ export function startObserverEngine(): () => void {
   
   const unbindActions = observerActions.bind({
     createWorld,
+    createEarthWorld,
     setSimulationSpeed,
     fastForwardDays,
     clearFastForwardResult: () => observerStore.clearFastForwardResult(),
