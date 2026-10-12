@@ -354,6 +354,10 @@ struct AutonomyAuditSeries {
         writeEvidenceByActionJson(out,observedSuccessEvidenceByActionDelta);
         out<<",\"failureEvidenceDeltaByAction\":";
         writeEvidenceByActionJson(out,observedFailureEvidenceByActionDelta);
+        out<<",\"acceptedCognitiveDecisionsStoredLast\":"
+           <<lastAcceptedCognitiveDecisionsStored;
+        out<<",\"observedAcceptedCognitiveDecisions\":"
+           <<observedAcceptedCognitiveDecisions;
         out<<",\"lastSocialFacts\":"<<lastKnowledgeFacts;
         out<<",\"lastDirectKnowledgeReceipts\":"<<lastDirectKnowledgeReceipts;
         out<<",\"lastTransmittedKnowledgeReceipts\":"<<lastTransmittedKnowledgeReceipts;
@@ -365,6 +369,8 @@ struct AutonomyAuditSeries {
             out<<"{\"actorId\":\""<<id<<"\"";
             out<<",\"observedSamples\":"<<actor.observedSamples;
             out<<",\"observedGoalChanges\":"<<actor.observedGoalChanges;
+            out<<",\"observedAcceptedCognitiveDecisions\":"
+               <<actor.observedAcceptedCognitiveDecisions;
             out<<",\"physicalSuccessEvidenceDelta\":"<<actor.observedSuccessEvidenceDelta;
             out<<",\"physicalFailureEvidenceDelta\":"<<actor.observedFailureEvidenceDelta;
             out<<",\"successEvidenceDeltaByAction\":";
@@ -381,9 +387,10 @@ struct AutonomyAuditSeries {
         // Never conflate sampled goal-state with actual events or capability.
         out<<",\"notInstrumented\":["
            <<"\"novelGoalCreation\",\"hypothesisGeneration\","
-           <<"\"composedPrimitivePlans\",\"acceptedCognitionEvents\","
+           <<"\"composedPrimitivePlans\",\"acceptedCognitionExecutionEffects\","
            <<"\"causalMethodLearning\",\"emergentCivilization\"]";
         out<<",\"evidenceCaveat\":\"Per-action deltas are observed belief evidence, not executed-action counts\"";
+        out<<",\"acceptedCognitionCaveat\":\"Newly observed Core-accepted decisions in retained journal, not execution effects\"";
         out<<",\"samplingCaveat\":\"Snapshots are observations, not all completed actions\"";
         out<<"}";
         return out.str();
