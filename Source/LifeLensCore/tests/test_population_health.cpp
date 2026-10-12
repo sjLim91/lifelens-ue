@@ -1,3 +1,5 @@
+// 장기 감사 전용 동작 동등성 검증 브랜치: Health.h는 PR #661과 동일합니다.
+// 이 주석은 simulator truth나 Core 테스트 시나리오를 바꾸지 않습니다.
 #include <cassert>
 #include <cmath>
 #include <cstdint>
