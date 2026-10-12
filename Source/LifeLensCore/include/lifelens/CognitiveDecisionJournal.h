@@ -102,7 +102,22 @@ inline bool validAcceptedCognitiveDecision(
        || d.priority<0.0 || d.priority>1.0
        || d.backendIdentity.empty()
        || d.backendIdentity.size()>MaxCognitionIdentityBytes
+       || d.rationaleDigest.empty()
        || d.rationaleDigest.size()>MaxCognitionIdentityBytes)
+        return false;
+    switch(d.trigger){
+        case CognitiveTriggerKind::RepeatedFailure:
+        case CognitiveTriggerKind::ResourceScarcity:
+        case CognitiveTriggerKind::SocialConflict:
+        case CognitiveTriggerKind::MajorLifeEvent:
+        case CognitiveTriggerKind::Discovery:
+        case CognitiveTriggerKind::MigrationPressure:
+        case CognitiveTriggerKind::LeadershipDecision:
+        case CognitiveTriggerKind::Reflection: break;
+        default: return false;
+    }
+    const auto catalog=cognitiveStrategicIntentCatalog();
+    if(std::find(catalog.begin(),catalog.end(),d.intent)==catalog.end())
         return false;
     bool actorExists=false,targetExists=false;
     for(const Character& c:world.characters){

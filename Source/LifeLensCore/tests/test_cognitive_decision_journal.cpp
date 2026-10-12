@@ -73,5 +73,14 @@ int main()
     loaded.acceptedCognitiveDecisions.front().actor=0;
     std::vector<std::uint8_t> corrupted;
     assert(!encodeSimulationSnapshot(loaded,corrupted,&error));
+    loaded.acceptedCognitiveDecisions.front().actor=resident;
+    loaded.acceptedCognitiveDecisions.front().intent=
+        static_cast<CognitiveIntentKind>(9999);
+    assert(!encodeSimulationSnapshot(loaded,corrupted,&error));
+    loaded.acceptedCognitiveDecisions.front().intent=
+        CognitiveIntentKind::ImproveWaterSecurity;
+    loaded.acceptedCognitiveDecisions.front().trigger=
+        static_cast<CognitiveTriggerKind>(9999);
+    assert(!encodeSimulationSnapshot(loaded,corrupted,&error));
     return 0;
 }
