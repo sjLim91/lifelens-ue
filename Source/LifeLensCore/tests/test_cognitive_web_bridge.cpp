@@ -19,6 +19,12 @@ static std::string firstResidentId(const std::string& residentsJson)
 
 int main()
 {
+    assert(std::string(cognitiveMemorySourceName(MemorySource::DirectWitness))
+           =="DirectWitness");
+    assert(std::string(cognitiveMemorySourceName(MemorySource::ToldByOther))
+           =="ToldByOther");
+    assert(std::string(cognitiveMemorySourceName(MemorySource::Inferred))
+           =="Inferred");
     WebClientBridge bridge;
     assert(bridge.newGame("8421901","",CurrentWorldGenerationVersion));
 
