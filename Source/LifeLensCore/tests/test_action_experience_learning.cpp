@@ -1,3 +1,4 @@
+// 장기 감사 전용 브랜치: production Core 논리와 PR #664가 동일함.
 #include <cassert>
 #include <cmath>
 #include <string>
