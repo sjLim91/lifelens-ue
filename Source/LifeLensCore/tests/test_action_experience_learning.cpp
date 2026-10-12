@@ -1,3 +1,4 @@
+// COG-L1 3차 안전 격리: 외형/생활 규칙 미변경, 생산 목표 점수는 기존 값 그대로
 #include <cassert>
 #include <cmath>
 #include <string>
