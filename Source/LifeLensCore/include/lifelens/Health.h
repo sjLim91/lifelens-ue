@@ -268,6 +268,11 @@ inline DailyHealthOutcome advanceHealthOneDay(
     state.pendingWaterContaminationDose=0.0;
 
     const bool wasIll=beforeState.illnessSeverity>=0.18;
+    // Severity can dip under the Ill presentation threshold while the same
+    // infection remains unresolved. That fluctuation is not a new infection.
+    // Keep episode accounting distinct from the UI-facing health stage.
+    const bool illnessEpisodeActive=
+        state.infectionEpisodes>state.recoveryEpisodes;
     if(state.pathogenLoad>=0.28){
         const double illnessGain=
             0.045
@@ -288,7 +293,7 @@ inline DailyHealthOutcome advanceHealthOneDay(
     }
 
     const bool isIll=state.illnessSeverity>=0.18;
-    if(!wasIll && isIll){
+    if(!illnessEpisodeActive && !wasIll && isIll){
         ++state.infectionEpisodes;
         state.lastIllnessMinute=currentMinute;
         outcome.becameIll=true;
