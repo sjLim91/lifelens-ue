@@ -1399,3 +1399,14 @@ button:disabled { opacity: .33; cursor: default; }
   .earth-globe-footer { padding: 9px 12px 14px; }
   .earth-globe-open { font-size: .7rem; padding: .38rem .55rem; }
 }
+
+
+.earth-globe-sites { display: flex; gap: 9px; flex-wrap: wrap; }
+.earth-globe-sites button {
+  flex: 1 1 190px; text-align: left; display: grid; gap: 6px;
+  padding: 10px; border: 1px solid #365769; border-radius: 10px;
+  background: #102536; color: #d0e1e9;
+}
+.earth-globe-sites button.active { border-color: #efd49a; background: #1a3442; }
+.earth-globe-sites button b { font-size: .82rem; }
+.earth-globe-sites button span { font-size: .75rem; color: #b0ceda; }

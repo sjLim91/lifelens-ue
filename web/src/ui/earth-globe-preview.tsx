@@ -4,11 +4,23 @@ import {
   paintNaturalEarthTexture,
   type EarthLandFeatureCollection,
 } from '../earth/natural-earth-land';
+import { geoFromGlobeUV, formatPreviewGeoPoint, type EarthPreviewGeoPoint } from '../earth/globe-region-picking';
 
 export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
   const holder = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeSlot, setActiveSlot] = useState<'A' | 'B'>('A');
+  const activeSlotRef = useRef<'A' | 'B'>('A');
+  const [selectedSites, setSelectedSites] = useState<{
+    A: EarthPreviewGeoPoint | null;
+    B: EarthPreviewGeoPoint | null;
+  }>({ A: null, B: null });
+
+  const selectSlot = (slot: 'A' | 'B') => {
+    activeSlotRef.current = slot;
+    setActiveSlot(slot);
+  };
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -63,6 +75,19 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
       globe.rotation.y = -0.75;
       globe.rotation.x = 0.1;
       scene.add(globe);
+      // Preview pins travel with the globe; they are NOT Core residents.
+      const siteMarkerGeometry = new THREE.SphereGeometry(0.037, 14, 10);
+      const siteMarkerMaterials = {
+        A: new THREE.MeshBasicMaterial({ color: 0xf4ca79, depthTest: false }),
+        B: new THREE.MeshBasicMaterial({ color: 0x76d8d0, depthTest: false }),
+      };
+      const siteMarkers = {
+        A: new THREE.Mesh(siteMarkerGeometry, siteMarkerMaterials.A),
+        B: new THREE.Mesh(siteMarkerGeometry, siteMarkerMaterials.B),
+      };
+      siteMarkers.A.visible = false;
+      siteMarkers.B.visible = false;
+      globe.add(siteMarkers.A, siteMarkers.B);
       // A faint outer atmosphere is presentation-only.
       const shellGeometry = new THREE.SphereGeometry(1.37, 48, 32);
       const shellMaterial = new THREE.MeshBasicMaterial({
@@ -86,15 +111,25 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
       resize();
 
       let dragging = false;
+      let didDrag = false;
+      let startX = 0, startY = 0;
       let lastX = 0, lastY = 0;
+      const picker = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
       const down = (event: PointerEvent) => {
         dragging = true;
+        didDrag = false;
+        startX = event.clientX;
+        startY = event.clientY;
         lastX = event.clientX;
         lastY = event.clientY;
         canvas.setPointerCapture(event.pointerId);
       };
       const move = (event: PointerEvent) => {
         if (!dragging) return;
+        if (Math.hypot(event.clientX - startX, event.clientY - startY) > 7) {
+          didDrag = true;
+        }
         globe.rotation.y += (event.clientX - lastX) * 0.006;
         globe.rotation.x = THREE.MathUtils.clamp(
           globe.rotation.x + (event.clientY - lastY) * 0.004,
@@ -103,7 +138,30 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
         lastX = event.clientX;
         lastY = event.clientY;
       };
-      const end = () => { dragging = false; };
+      const end = (event: PointerEvent) => {
+        if (!dragging) return;
+        dragging = false;
+        if (didDrag) return;
+        const bounds = canvas.getBoundingClientRect();
+        if (bounds.width <= 0 || bounds.height <= 0) return;
+        pointer.set(
+          ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
+          -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
+        );
+        globe.updateMatrixWorld(true);
+        picker.setFromCamera(pointer, camera);
+        const hit = picker.intersectObject(globe, false)[0];
+        if (!hit?.uv) return;
+        const location = geoFromGlobeUV(hit.uv.x, hit.uv.y);
+        if (!location) return;
+        const slot = activeSlotRef.current;
+        const marker = siteMarkers[slot];
+        marker.position.copy(globe.worldToLocal(hit.point.clone()))
+          .normalize().multiplyScalar(1.385);
+        marker.visible = true;
+        setSelectedSites((current) => ({ ...current, [slot]: location }));
+      };
+      const cancel = () => { dragging = false; didDrag = true; };
       const wheel = (event: WheelEvent) => {
         event.preventDefault();
         camera.position.z = THREE.MathUtils.clamp(
@@ -113,7 +171,7 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
       canvas.addEventListener('pointerdown', down);
       canvas.addEventListener('pointermove', move);
       canvas.addEventListener('pointerup', end);
-      canvas.addEventListener('pointercancel', end);
+      canvas.addEventListener('pointercancel', cancel);
       canvas.addEventListener('wheel', wheel, { passive: false });
 
       let frame = 0, lastFrame = 0;
@@ -133,8 +191,11 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
         canvas.removeEventListener('pointerdown', down);
         canvas.removeEventListener('pointermove', move);
         canvas.removeEventListener('pointerup', end);
-        canvas.removeEventListener('pointercancel', end);
+        canvas.removeEventListener('pointercancel', cancel);
         canvas.removeEventListener('wheel', wheel);
+        siteMarkerGeometry.dispose();
+        siteMarkerMaterials.A.dispose();
+        siteMarkerMaterials.B.dispose();
         geometry.dispose();
         material.dispose();
         texture.dispose();
@@ -178,7 +239,23 @@ export function EarthGlobePreview({ onClose }: { onClose: () => void }) {
           {error && <span className="earth-globe-message" role="alert">{error}</span>}
         </div>
         <div className="earth-globe-footer">
-          <p>손가락 또는 마우스로 회전 · 마우스 휠로 확대</p>
+          <div className="earth-globe-sites" aria-label="지구 지역 후보 좌표 선택">
+            {(['A', 'B'] as const).map((slot) => (
+              <button key={slot} type="button"
+                className={activeSlot === slot ? 'active' : ''}
+                aria-pressed={activeSlot === slot}
+                onClick={() => selectSlot(slot)}>
+                <b>지역 {slot}</b>
+                <span>{selectedSites[slot]
+                  ? formatPreviewGeoPoint(selectedSites[slot]!)
+                  : '좌표 미선택'}</span>
+              </button>
+            ))}
+          </div>
+          <p>지역 A 또는 B를 고른 뒤 지구본을 짧게 터치하면 위경도가 표시됩니다.
+            드래그로 회전 · 마우스 휠로 확대</p>
+          <p><b>선택한 좌표는 관찰용 후보입니다.</b> 주민이 이곳에 생성되거나,
+            현재 Core 세계의 위치·시드·생활환경이 바뀌지는 않습니다.</p>
           <p><b>자연지리 미리보기:</b> 실제 대륙·해안 윤곽 자료를 보여줍니다.
             기존 주민 시뮬레이션의 위치·날씨·바람·해류와는 아직 연결되지 않았습니다.
             현재 바람·해류 실황을 표시하는 화면이 아닙니다.</p>
