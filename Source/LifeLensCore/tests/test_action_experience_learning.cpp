@@ -1,3 +1,4 @@
+// 1,000일 감사 브랜치: Core 실행 경로는 검증 대상 PR #664와 동일.
 #include <cassert>
 #include <cmath>
 #include <string>
