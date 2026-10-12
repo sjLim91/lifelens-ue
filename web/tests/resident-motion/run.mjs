@@ -64,7 +64,7 @@ for(const [name,support,window] of [['ground',0,terrain],['bedding',.14,{...terr
   for(let i=0;i<100;i++){l.update(1/60);assert(bodyBounds(a).min.y>=support-.005);assert.equal(a.active,'sleep');assert.equal(a.visual.rotation.z,0);if(i===5||i===99)bake(a,name+' sleep '+i);}
   assert(a.sleepMotion.resting);const stable=bodyBounds(a).clone(),yaw=a.root.rotation.y;
   for(let i=0;i<80;i++)l.update(1/60);assert(bodyBounds(a).equals(stable));assert.equal(a.root.rotation.y,yaw);assert(a.current.equals(initial));
-  l.setResidents([resident(name,p({kind:'Physical',physicalGoal:'Eat'}))],terrain,0,0);
+  l.setResidents([resident(name,p({kind:'Physical',physicalGoal:'Eat'}),{civilization:{inventory:[{item:'RawMaterial',material:'PlantFood',quantity:1}]}})],terrain,0,0);
   let previous=a.visual.position.clone();for(let i=0;i<110;i++){l.update(1/60);assert(bodyBounds(a).min.y >= (a.sleepMotion.active ? -.005 : -.025));assert(a.visual.position.distanceTo(previous)<.3);previous.copy(a.visual.position);}
   assert(!a.sleepMotion.active);assert.equal(a.active,'consume');assert.equal(a.visual.position.length(),0);
  });
@@ -89,8 +89,8 @@ test('resource facing uses Core node center without moving from access cell',()=
 });
 test('visible arrival guards interactions and preserves walk grace',()=>{
  const r=resident('arrival',p({kind:'Physical',physicalGoal:'Eat',targetGridX:80}),{civilization:{inventory:[{item:'RawMaterial',material:'PlantFood',quantity:1}]}});l.setResidents([r],terrain,0,0);l.setResidents([{...r,gridX:80}],terrain,0,0);const a=l.actors.get('arrival');
- for(let i=0;i<5;i++){l.update(1/60);assert.equal(a.active,'walk');assert(a.current.distanceTo(a.target)>.008);}
- a.current.copy(a.target);l.update(1/60);assert.equal(a.active,'walk');
+ for(let i=0;i<5;i++){l.update(1/60);assert.equal(a.active,'carry');assert(a.current.distanceTo(a.target)>.008);}
+ a.current.copy(a.target);l.update(1/60);assert.equal(a.active,'carry');
  for(let i=0;i<30;i++)l.update(1/60);assert.equal(a.active,'consume');
 });
 test('social facing/connector cache follows the real partner and visible arrival',()=>{

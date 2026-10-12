@@ -19,13 +19,13 @@ function buildGround(slope){for(const m of [...groundGroup.children]){groundGrou
 for(const c of terrain.chunks){c.elevation01=slope ? .03+.009*c.x+.004*c.y : 0;const g=buildChunkGeometry(c,terrain),m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x688169,roughness:1}));m.position.set(c.x*8,0,c.y*8);groundGroup.add(m);}}
 const r={id:'qa',name:'검증 주민',hasPosition:true,gridX:16,gridY:16,ageYears:30,sex:'Female'};
 window.setScenario=async name=>{
- layer.setSimulationSpeed(1);buildGround(name==='slope');const resident={...r};
+ layer.setSimulationSpeed(1);buildGround(name==='slope');const resident={...r,id:`qa-${name}`};
  if(name==='walk'||name==='slope'){layer.setResidents([resident],terrain,0,0);resident.gridY=20;}
  if(name==='drink'||name==='no-water'){const c=terrain.chunks.find(c=>c.x===0&&c.y===0);c.waterKind=name==='drink'?'Spring':'None';c.waterAvailability=name==='drink'?.8:0;c.salinity='Fresh';resident.presentation={active:true,kind:'Physical',phase:'Interacting',physicalGoal:'Drink',directNaturalWaterSource:true,hasTargetGrid:true,targetGridX:16,targetGridY:16};}
  if(name==='sleep'){resident.presentation={active:true,kind:'Physical',phase:'Interacting',physicalGoal:'Sleep',hasTargetGrid:true,targetGridX:16,targetGridY:16};}
  if(name==='injured'){resident.needs={sleep:.9};resident.health={injurySeverity:.7};resident.emotion={fear:.7};}
- layer.setResidents([resident],terrain,0,0);for(let i=0;i<18;i++)layer.update(1/60,camera);
- const actor=layer.actors.get('qa');camera.lookAt(actor.current.x,actor.current.y+.8,actor.current.z);camera.position.set(actor.current.x+3,actor.current.y+2.4,actor.current.z+4);camera.updateMatrixWorld(true);
+ layer.setResidents([resident],terrain,0,0);for(let i=0;i<(name==='sleep'?60:18);i++)layer.update(1/60,camera);
+ const actor=layer.actors.get(resident.id);camera.lookAt(actor.current.x,actor.current.y+.8,actor.current.z);camera.position.set(actor.current.x+3,actor.current.y+2.4,actor.current.z+4);camera.updateMatrixWorld(true);
  renderer.render(scene,camera);document.querySelector('#label').textContent=`테스트용 관찰 데이터 · ${name} · 모션: ${actor.active}`;
  return {motion:actor.active,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles};
 };

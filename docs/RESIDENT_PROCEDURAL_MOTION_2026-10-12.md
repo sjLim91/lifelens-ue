@@ -34,7 +34,7 @@ T/A pose, 축, 좌우, 관절 landmark와 수정 가능한 원본/라이선스�
 
 ## 신규 구현
 
-- 원본 키프레임 생성: 공유된 upright baseline에 gait/crouch/reach/consume/gesture/wash 파라미터를 조합한 31개 semantic clip. 대기, 걷기, 달리기, 앉은 자세, 운반, 식사/음수, 씻기, 용변 자세, 채집, 작업/건설/수리, 제작/배치/보관/꺼내기, 농업, 대화/위로/교육/돌봄.
+- 원본 키프레임 생성: 공유된 upright baseline에 gait/crouch/reach/consume/gesture/wash 파라미터를 조합한 33개 semantic clip. 대기, 걷기, 달리기, 앉은 자세, 운반, 식사/음수, 씻기, 용변 자세, 채집, 작업/건설/수리, 제작/배치/보관/꺼내기, 농업, 대화/위로/교육/돌봄.
 - 기존 의미에 맞는 vendor clip을 우선하며, 없는 모션은 자체 키프레임으로 보충한다. 수면/기상은 기존 검증 경로를 유지한다.
 - run/sit은 재사용 가능한 clip으로 제공한다. 현재 Core에 달리기/좌석 행동 계약이 없으므로 renderer가 임의로 달리거나 없는 의자에 앉히지 않는다.
 - 이동: 실제 X/Z 잔여 변위에서 heading 계산, 기존 반전 시 선회 우선/보행 phase·정지 grace 재사용, 이동 중 매 프레임 지면 Y 재계산.
@@ -64,9 +64,9 @@ T/A pose, 축, 좌우, 관절 landmark와 수정 가능한 원본/라이선스�
 ## 검증과 한계
 
 로컬 Node 24의 내장 TypeScript 변환으로 실행한 신규 모션 테스트 12개 PASS. 이것은 semantic TypeScript typecheck가 아니다.
-기존 외형 10개, 행동 문맥 27개(+추가 cultivation/inventory guards), runtime resilience 18개, resident continuity 13개 PASS.
+실제 pinned UAL1/UAL2를 확보한 기존 모션 15개 PASS. 기존 외형 10개, 행동 문맥 27개(+추가 cultivation/inventory guards), runtime resilience 18개, resident continuity 13개 PASS.
 구조 검증: resident motion/action context/authoritative spatial targets PASS.
-Core native g++ 컴파일 및 determinism/save-load/snapshot codec/context completion 회귀 PASS. CMake/CTest 전체와 WASM/build는 로컬 도구/네트워크 부재로 CI 검증 대상이다.
+PR 첫 HEAD의 실제 TypeScript typecheck와 runtime resilience CI PASS. Core native g++ 컴파일 및 determinism/save-load/snapshot codec/context completion 회귀 PASS. CMake/CTest 전체와 WASM/build는 로컬 도구/네트워크 부재로 CI 검증 대상이다.
 
 실제 GLB skin 변형을 bake하고 Blender CPU로 걷기/중립/경사/음수/수면 포즈를 렌더해 확인했다. 이 결과는 게임 WebGL 화면이나 동영상의 최종 수락을 대신하지 않는다.
 로컬 Chromium은 sandbox socket `setsockopt: Operation not permitted`로 종료했다. WebGL 데스크톱 960×720/모바일 390×844의 14개 캡처 harness를 기존 character CI에 추가했다. CI 결과 확인 전 화면 검증 완료를 주장하지 않는다.

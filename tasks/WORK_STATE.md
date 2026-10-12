@@ -1,3 +1,12 @@
+## 2026-10-12 DRAFT — 주민 자체 키프레임·지면/손발 IK 기반
+
+- PR [#700](https://github.com/sjLim91/lifelens-ue/pull/700), `work/resident-procedural-motion-20261012`, main `bcff5d9` 기준. main 병합하지 않음.
+- 제품 구현 HEAD `eaca7280fa3cace3933a0bdfc9db2a5ef5a50390`: 공통 관절 18개·자체 모션 33개·지면/제한적 IK·실제 물리 대상 guard·시각 LOD. Core/저장/AI 성공 판정 변경 없음.
+- 로컬 신규 12/기존 실제 모션 15/외형 10/행동 문맥 27/runtime resilience 18/continuity 13 및 Core determinism/save-load/codec/context 완료 PASS.
+- 실제 typecheck/Preflight/runtime resilience CI PASS. 첫 시각 회귀 실패는 음식 없는 기존 Eat fixture 기대값이며 실제 Food/carry fixture로 수정. 브라우저 WebGL CI 및 전체 최종-head checks 확인 전 DRAFT 유지.
+- 분석/오류/성능/미완료 범위: `docs/RESIDENT_PROCEDURAL_MOTION_2026-10-12.md`, 복구: `tasks/RESIDENT_PROCEDURAL_MOTION_HANDOFF.md`.
+- 다음: 최종-head CI 실패 수정·브라우저 artifact 검토. 임의 단일 메시 자동 스키닝/좌석·후진·측면 Core 계약/Android GPU·1000명 장기 검증은 완료가 아님.
+
 ## 2026-10-04 WAITING_CI — Web 고속 진행 캡처 검증 / 사망 기록 보완
 
 - 기준 main: `7c2f4ecaaad6d64d71256f78f5b9512ffd4992f3` (#637). 이전 #637의 exact-head 10개 PR workflow 모두 PASS 및 실제 merge 확인.
