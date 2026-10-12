@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <string>
 
 #include "Simulation.h"
