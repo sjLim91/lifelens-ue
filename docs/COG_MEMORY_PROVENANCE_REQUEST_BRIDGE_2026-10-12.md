@@ -9,7 +9,7 @@
 - 이번 변경으로 **Core MemoryRecord -> bounded CognitiveRequest -> WebClientBridge.cognitiveRequestJson -> TypeScript CognitiveMemoryDto -> 로컬 AI**까지 source 및 witnessed를 전달한다.
 - 모델 시스템 프롬프트에서 직접 목격과 소문/추론을 구분하며, 후자를 확인된 월드 진실로 취급하지 않도록 한다.
 - Core COG-3 수락 입력 저널의 cognitiveRequestFingerprint에 source/witnessed 값을 추가한다. 동일 문장의 기억이어도 출처가 바뀌었다면 이전에 받았던 모델 판단 문맥과 같다고 인정하지 않는다.
-- 오래된 Web/WASM read model에는 두 필드가 없을 수 있으므로 TypeScript parser는 **Inferred + witnessed=false**로 보수적으로 치환한다. DirectWitness로 자동 승격하지 않는다. 잘못된 source/boolean 값은 거부한다.
+- 오래된 Web/WASM read model에는 두 필드가 없을 수 있으므로 TypeScript parser는 **구형 DTO의 원래 형상을 유지한다**. 빠진 출처를 직접 목격으로 보정하거나 임의 값을 객체에 넣지 않는다. 로컬 AI 안내문에서 누락된 provenance를 **미확인 정보**로 취급하고, 명시적으로 들어온 잘못된 source/boolean 값만 거부한다.
 
 ## 의도적으로 변경하지 않는 범위
 
