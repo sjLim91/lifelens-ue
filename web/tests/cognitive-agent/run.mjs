@@ -172,9 +172,9 @@ await test('Core local goal candidates are bounded, truthful read-only previews'
     worldOverviewJson:()=>JSON.stringify({available:true,minute:140,livingResidents:1}),
     residentsJson:()=>JSON.stringify({available:true,residents:[]}),
     terrainWindowJson:()=>JSON.stringify({available:false,centerChunkX:0,centerChunkY:0,chunks:[]}),
-    autonomousGoalCandidatesJson:(actor,trigger)=>{
-      assert.equal(actor,'9');
+    autonomousGoalCandidatesJson:(_actor,trigger)=>{
       assert.equal(trigger,'Reflection');
+      // Deliberately return another actor's data to test bridge authority.
       return JSON.stringify(preview);
     },
   };
