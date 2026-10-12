@@ -25,7 +25,11 @@ class HealthCohortTests(unittest.TestCase):
             {"type": "health_transition", "resident": "1",
              "after_pathogen": 0.7, "after_illness": 0.5,
              "local_residue_exposure_after_tick": 0.8,
-             "pending_water_dose_before_tick": 0.2},
+             "pending_water_dose_before_tick": 0.2,
+             "position_x": 15, "position_y": 20,
+             "top_residue_id": "77", "top_residue_source": "2",
+             "top_residue_distance": 1, "top_residue_contribution": 0.4,
+             "top_residue_amount": 7.0},
             {"type": "health_transition", "resident": "1",
              "after_pathogen": 0.1, "after_illness": 0.0,
              "local_residue_exposure_after_tick": 0.0,
@@ -67,6 +71,9 @@ class HealthCohortTests(unittest.TestCase):
         self.assertEqual(by_id["1"]["recoveries"], 2)
         self.assertEqual(by_id["1"]["mean_local_exposure"], 0.4)
         self.assertEqual(by_id["1"]["max_water_dose"], 0.2)
+        self.assertEqual(by_id["1"]["last_position"], {"x": 15, "y": 20})
+        self.assertEqual(by_id["1"]["last_top_residue"]["id"], "77")
+        self.assertEqual(by_id["1"]["last_top_residue"]["source_character"], "2")
         self.assertEqual(by_id["3"]["illness_onsets"], 0)
         self.assertEqual(by_id["2"]["fatal_cause"], "illness")
 

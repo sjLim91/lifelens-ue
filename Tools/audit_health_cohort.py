@@ -67,6 +67,21 @@ def analyze_cohort(archive_path):
                 continue
             data = residents[resident]
             data["health_samples"] += 1
+            # New audit artifacts carry sampled physical coordinates and the
+            # largest nearby waste contribution; old ZIPs omit these keys.
+            if "position_x" in metric and "position_y" in metric:
+                data["last_position"] = {
+                    "x": int(metric["position_x"]),
+                    "y": int(metric["position_y"]),
+                }
+            if "top_residue_id" in metric:
+                data["last_top_residue"] = {
+                    "id": str(metric["top_residue_id"]),
+                    "source_character": str(metric.get("top_residue_source", "0")),
+                    "distance_tiles": metric.get("top_residue_distance"),
+                    "contribution": metric.get("top_residue_contribution"),
+                    "amount": metric.get("top_residue_amount"),
+                }
             for metric_name, destination in [
                 ("after_pathogen", "max_pathogen"),
                 ("after_illness", "max_illness"),
