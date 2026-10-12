@@ -26,10 +26,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: web/package-lock.json
       - name: Install Web dependencies
-        run: cd web && npm ci
+        run: cd web && npm install --no-audit --no-fund
       - name: Test real personal experience summaries
         run: cd web && node tests/resident-experiences/run.mjs
       - name: Typecheck readout
