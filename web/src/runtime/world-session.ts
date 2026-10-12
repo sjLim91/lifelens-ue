@@ -126,7 +126,11 @@ export class WorldSession {
   refresh(requireFreshActivity = false): WorldSessionSnapshot {
     if (requireFreshActivity) this.forceWorldActivityRefresh();
     const overview = this.core.worldOverview();
-    const earthScenario = this.core.earthScenario(overview);
+    // Existing Web tests and older Core bridge implementations may not
+    // implement the new optional Earth observation capability yet.
+    const earthScenario = typeof this.core.earthScenario === 'function'
+      ? this.core.earthScenario(overview)
+      : { available: false };
     let freshResidentDetails = false;
     let residentRuntimePayload = this.core.residentRuntime();
     if (residentRuntimePayload.available === false) {
