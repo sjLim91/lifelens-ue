@@ -1,4 +1,8 @@
 import {
+  parseAutonomousGoalPreview,
+  type AutonomousGoalPreview,
+} from '../cognition/autonomous-goal-preview';
+import {
   parseCognitiveRequest,
   type CognitiveRequestDto,
   type CognitiveTrigger,
@@ -213,6 +217,23 @@ export class LifeLensCoreBridge {
       return parseCognitiveRequest(
         JSON.parse(this.client.cognitiveRequestJson(residentId, trigger)) as unknown,
       );
+    } catch {
+      return null;
+    }
+  }
+
+  // Pure Core observation; it never supplies a plan or an execution
+  // command. Older WASM builds without B3c safely return null.
+  autonomousGoalCandidates(
+    residentId: string,
+    trigger: CognitiveTrigger = 'Reflection',
+  ): AutonomousGoalPreview | null {
+    if (typeof this.client.autonomousGoalCandidatesJson !== 'function') return null;
+    try {
+      const preview = parseAutonomousGoalPreview(
+        JSON.parse(this.client.autonomousGoalCandidatesJson(residentId, trigger)) as unknown,
+      );
+      return preview.actor === residentId ? preview : null;
     } catch {
       return null;
     }
