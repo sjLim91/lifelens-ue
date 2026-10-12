@@ -69,6 +69,9 @@ inline std::uint64_t cognitiveRequestFingerprint(const CognitiveRequest& r)
     integer(r.memories.size());
     for(const auto& m:r.memories){
         integer(m.who);integer(static_cast<std::uint64_t>(m.minute));
+        // Same words with different origins must NOT share a context hash.
+        integer(static_cast<std::uint64_t>(m.source));
+        integer(m.witnessed ? 1ULL : 0ULL);
         number(m.recallScore);number(m.confidence);number(m.importance);
         number(m.emotionValence);number(m.emotionIntensity);
         str(m.what);str(m.where);
