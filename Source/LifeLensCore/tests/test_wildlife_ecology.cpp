@@ -74,7 +74,7 @@ int main()
     samePopulation(a,b);
     samePopulation(a,otherPopulationSeed);
     assert(!a.animals.empty());
-    assert(!a.animals.front().alive==false);
+    assert(a.animals.front().alive);
     assert(a.animals.front().id!=a.animals.back().id);
     const auto before=a;
     assert(!stepWildlifeDay(a,0).advanced);
