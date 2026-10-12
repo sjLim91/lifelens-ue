@@ -156,19 +156,51 @@ export function EarthGlobePreview({
       let dragging = false;
       let didDrag = false;
       let startX = 0, startY = 0;
+      const activePointers = new Map<number, {x: number; y: number}>();
+      let previousPinchDistance = 0;
+      const touchDistance = () => {
+        const positions = [...activePointers.values()];
+        return positions.length < 2 ? 0 : Math.hypot(
+          positions[0].x - positions[1].x,
+          positions[0].y - positions[1].y,
+        );
+      };
       let lastX = 0, lastY = 0;
       const picker = new THREE.Raycaster();
       const pointer = new THREE.Vector2();
       const down = (event: PointerEvent) => {
+        activePointers.set(event.pointerId, {
+          x: event.clientX, y: event.clientY,
+        });
+        canvas.setPointerCapture(event.pointerId);
+        if (activePointers.size >= 2) {
+          previousPinchDistance = touchDistance();
+          didDrag = true;
+          dragging = false;
+          return;
+        }
         dragging = true;
         didDrag = false;
         startX = event.clientX;
         startY = event.clientY;
         lastX = event.clientX;
         lastY = event.clientY;
-        canvas.setPointerCapture(event.pointerId);
       };
       const move = (event: PointerEvent) => {
+        if (activePointers.has(event.pointerId)) {
+          activePointers.set(event.pointerId, {
+            x: event.clientX, y: event.clientY,
+          });
+        }
+        if (activePointers.size >= 2) {
+          const nextPinchDistance = touchDistance();
+          if (previousPinchDistance > 0 && nextPinchDistance > 0) {
+            zoom((previousPinchDistance - nextPinchDistance) * 0.009);
+          }
+          previousPinchDistance = nextPinchDistance;
+          didDrag = true;
+          return;
+        }
         if (!dragging) return;
         if (Math.hypot(event.clientX - startX, event.clientY - startY) > 7) {
           didDrag = true;
@@ -182,6 +214,14 @@ export function EarthGlobePreview({
         lastY = event.clientY;
       };
       const end = (event: PointerEvent) => {
+        const wasPinching = activePointers.size >= 2;
+        activePointers.delete(event.pointerId);
+        if (wasPinching) {
+          previousPinchDistance = 0;
+          dragging = false;
+          didDrag = true;
+          return;
+        }
         if (!dragging) return;
         dragging = false;
         if (didDrag) return;
@@ -204,7 +244,12 @@ export function EarthGlobePreview({
         marker.visible = true;
         setSelectedSites((current) => ({ ...current, [slot]: location }));
       };
-      const cancel = () => { dragging = false; didDrag = true; };
+      const cancel = (event: PointerEvent) => {
+        activePointers.delete(event.pointerId);
+        previousPinchDistance = 0;
+        dragging = false;
+        didDrag = true;
+      };
       const zoom = (change: number) => {
         camera.position.z = THREE.MathUtils.clamp(
           camera.position.z + change, 1.55, 6.5,
@@ -362,7 +407,8 @@ export function EarthGlobePreview({
             </button>
           )}
           {startError && <p role="alert" className="earth-world-error">{startError}</p>}
-          <p>지구를 회전하고 위치를 선택하세요. 확대 버튼·휠을 사용하면 지역에 접근합니다.
+          <p>드래그로 지구를 회전하고 터치로 지역을 선택하세요.
+            두 손가락 핀치·확대 버튼·휠로 지역에 접근할 수 있습니다.
             실제 Core 거주 지역을 확대할 때만 주민 화면으로 전환됩니다.</p>
           <p><b>A/B 좌표는 선택 후보입니다.</b> '새로운 생활 시작' 버튼을 누르기 전에는
             주민 위치·시드·세계 상태를 변경하지 않습니다.
