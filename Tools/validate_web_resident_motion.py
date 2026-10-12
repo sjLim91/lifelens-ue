@@ -59,7 +59,8 @@ for token in (
 for token in (
     "residentPresentationMotionTimeScale(this.simulationSpeed)",
     "const motionDt = dt * motionTimeScale",
-    "actor.mixer.update(motionDt)",
+    "actor.animationElapsed += motionDt",
+    "actor.mixer.update(animationDt)",
     "speedResponsivenessPerSecond",
     "turnResponsivenessPerSecond",
 ):
@@ -258,3 +259,4 @@ for token in (
     assert token in resident or token == "socialConnectorDefaultColorHex", (
         f"resident social connector did not consume centralized color: {token}"
     )
+

@@ -269,6 +269,7 @@ export class WorldScene {
   ): void {
     this.civilization = civilization;
     this.residentLayer.setCivilization(civilization);
+    this.residentLayer.setWorldObjects(worldObjects);
     const resources = this.resourceProjectionCache.get(civilization, terrain);
     if (resources.signature !== this.resourceDressingSignature) {
       this.resourceDressingSignature = resources.signature;
@@ -328,7 +329,7 @@ export class WorldScene {
       + ((Number(desired.panZ) || 0) - (Number(current.panZ) || 0)) * t;
     this.applyCamera(current);
 
-    this.residentLayer.update(deltaSeconds);
+    this.residentLayer.update(deltaSeconds, this.camera);
     this.settlementFocusLayer.update(this.camera, this.selectedResidentId
       ? this.residentLayer.socialEventAnchor(this.selectedResidentId) : null);
     this.facilityLayer.update(deltaSeconds, this.camera);
@@ -555,6 +556,7 @@ export class WorldScene {
   }
 
 }
+
 
 
 
