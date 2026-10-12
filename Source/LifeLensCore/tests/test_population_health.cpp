@@ -173,6 +173,51 @@ void testSevereDeprivationCanBeFatalAndDependencyAmplifiesRisk()
     assert(outcome.fatalCause==HealthFatalCause::Deprivation);
 }
 
+void testRelapseIsNotDoubleCountedAsReinfection()
+{
+    // A partly resolved infection can cross the displayed Ill threshold
+    // again before recovery. Count one episode, not another illness onset.
+    HealthState ongoing;
+    ongoing.infectionEpisodes=1;
+    ongoing.recoveryEpisodes=0;
+    ongoing.pathogenLoad=0.45;
+    ongoing.illnessSeverity=0.15;
+    DailyHealthInputs exposed=healthyInputs();
+    exposed.localContamination01=0.72;
+
+    const auto flare=advanceHealthOneDay(
+        ongoing,exposed,81,501,20*24*60);
+    assert(ongoing.illnessSeverity>=0.18);
+    assert(!flare.becameIll);
+    assert(ongoing.infectionEpisodes==1);
+    assert(ongoing.recoveryEpisodes==0);
+
+    // When that same episode actually resolves, recovery is counted once.
+    ongoing.pathogenLoad=0.0;
+    ongoing.illnessSeverity=0.09;
+    const auto recovery=advanceHealthOneDay(
+        ongoing,healthyInputs(),81,501,21*24*60);
+    assert(recovery.recovered);
+    assert(ongoing.infectionEpisodes==1);
+    assert(ongoing.recoveryEpisodes==1);
+    const double immunityAfterRecovery=ongoing.immunity01;
+    const auto following=advanceHealthOneDay(
+        ongoing,healthyInputs(),81,501,22*24*60);
+    assert(!following.recovered);
+    assert(ongoing.recoveryEpisodes==1);
+    assert(ongoing.immunity01<=immunityAfterRecovery);
+
+    // An independently acquired infection after resolution is allowed.
+    // It is not blocked to artificially keep anyone healthy.
+    ongoing.pathogenLoad=0.75;
+    ongoing.illnessSeverity=0.16;
+    const auto reinfected=advanceHealthOneDay(
+        ongoing,exposed,81,501,23*24*60);
+    assert(reinfected.becameIll);
+    assert(ongoing.infectionEpisodes==2);
+    assert(ongoing.recoveryEpisodes==1);
+}
+
 void testHealthSnapshotRoundTrip()
 {
     Simulation simulation(41,73);
@@ -227,6 +272,7 @@ int main()
     testSanitationKnowledgeReducesContaminationPressure();
     testEnvironmentalStressAndHazardProducePhysicalConsequences();
     testSevereDeprivationCanBeFatalAndDependencyAmplifiesRisk();
+    testRelapseIsNotDoubleCountedAsReinfection();
     testHealthSnapshotRoundTrip();
     return 0;
 }
