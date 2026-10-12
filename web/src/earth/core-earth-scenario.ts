@@ -50,5 +50,5 @@ export function readCoreEarthScenario(
       entry.snapshotPersistence !== false) {
     return UNBOUND_EARTH_SCENARIO;
   }
-  return entry as CoreEarthScenarioObservation;
+  return entry as unknown as CoreEarthScenarioObservation;
 }
