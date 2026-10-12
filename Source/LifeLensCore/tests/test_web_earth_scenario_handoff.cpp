@@ -27,12 +27,12 @@ int main()
     assert(legacy.earthScenarioJson()=="{\"available\":false}");
 
     WebClientBridge earth;
-    assert(earth.newEarthGame(Seed,35.1796,129.0756,3));
+    assert(earth.newEarthGame(Seed,37.0,127.0,3));
     const std::string binding=earth.earthScenarioJson();
     assert(binding.find("\"available\":true")!=std::string::npos);
     assert(binding.find("\"source\":\"CoreEarthScenario\"")!=std::string::npos);
-    assert(binding.find("\"latitudeDeg\":35.1796")!=std::string::npos);
-    assert(binding.find("\"longitudeDeg\":129.0756")!=std::string::npos);
+    assert(binding.find("\"latitudeDeg\":37")!=std::string::npos);
+    assert(binding.find("\"longitudeDeg\":127")!=std::string::npos);
     assert(binding.find("\"worldSeed\":\"4242001\"")!=std::string::npos);
     assert(binding.find("\"terrainGeographicallyConditioned\":false")
            !=std::string::npos);
