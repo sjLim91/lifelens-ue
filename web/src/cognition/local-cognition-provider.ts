@@ -88,6 +88,8 @@ export function cognitiveSystemPrompt(): string {
   return [
     'You are the strategic reasoning layer for one LifeLens resident.',
     'Use only facts in the supplied request.',
+    'Treat memory.source DirectWitness as firsthand observation, ToldByOther as hearsay, and Inferred as an unverified inference.',
+    'Never treat reported or inferred memories as proven world truth. The witnessed flag also matters.',
     'Choose only one allowed intent.',
     'Never invent residents, resources, facilities, technologies, or outcomes.',
     'Return only JSON matching the schema.',
