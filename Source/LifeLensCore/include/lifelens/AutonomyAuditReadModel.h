@@ -19,6 +19,24 @@
 namespace lifelens {
 
 inline constexpr std::size_t AutonomyPhysicalGoalCount=6;
+// Evidence types come from actual `rememberActionOutcome` beliefs, not
+// completed-action events. Do not label these counters as execution counts.
+inline constexpr std::size_t AutonomyExperienceActionCount=7;
+inline constexpr const char* AutonomyExperienceActionNames[AutonomyExperienceActionCount]={
+    "Eat","Drink","Sleep","UseToilet","Wash","Idle","Other"
+};
+inline std::size_t autonomyExperienceActionIndex(const std::string& proposition)
+{
+    constexpr const char prefix[]="experienced-action-outcome:";
+    constexpr std::size_t prefixLen=sizeof(prefix)-1;
+    if(proposition.compare(0,prefixLen,prefix)!=0)
+        return AutonomyExperienceActionCount-1;
+    const std::string action=proposition.substr(prefixLen);
+    for(std::size_t index=0;index+1<AutonomyExperienceActionCount;++index){
+        if(action==AutonomyExperienceActionNames[index]) return index;
+    }
+    return AutonomyExperienceActionCount-1;
+}
 
 inline std::size_t autonomyPhysicalGoalIndex(Goal goal)
 {
@@ -44,6 +62,8 @@ struct AutonomyResidentCheckpoint {
     bool tradeContextPending=false;
     std::uint64_t successfulPhysicalEvidence=0;
     std::uint64_t failedPhysicalEvidence=0;
+    std::array<std::uint64_t,AutonomyExperienceActionCount> successEvidenceByAction{};
+    std::array<std::uint64_t,AutonomyExperienceActionCount> failureEvidenceByAction{};
     std::size_t experienceBeliefKinds=0;
     std::size_t directMemories=0;
     std::size_t reportedMemories=0;
@@ -120,6 +140,9 @@ inline AutonomyCheckpoint observeAutonomyCheckpoint(
             ++row.experienceBeliefKinds;
             row.successfulPhysicalEvidence+=belief.supportCount;
             row.failedPhysicalEvidence+=belief.contradictionCount;
+            const auto action=autonomyExperienceActionIndex(belief.proposition);
+            row.successEvidenceByAction[action]+=belief.supportCount;
+            row.failureEvidenceByAction[action]+=belief.contradictionCount;
         }
         for(const MemoryRecord& memory:resident.memory.entries){
             if(memory.source==MemorySource::DirectWitness) ++row.directMemories;
@@ -141,6 +164,10 @@ struct AutonomyActorAudit {
     std::uint64_t observedGoalChanges=0;
     std::uint64_t observedSuccessEvidenceDelta=0;
     std::uint64_t observedFailureEvidenceDelta=0;
+    std::array<std::uint64_t,AutonomyExperienceActionCount> observedSuccessEvidenceByActionDelta{};
+    std::array<std::uint64_t,AutonomyExperienceActionCount> observedFailureEvidenceByActionDelta{};
+    std::array<std::uint64_t,AutonomyExperienceActionCount> lastSuccessEvidenceByAction{};
+    std::array<std::uint64_t,AutonomyExperienceActionCount> lastFailureEvidenceByAction{};
     std::size_t lastExperienceBeliefKinds=0;
     std::size_t lastDirectMemories=0;
     std::size_t lastReportedMemories=0;
@@ -166,6 +193,8 @@ struct AutonomyAuditSeries {
     std::uint64_t sampledCivilizationContext=0;
     std::uint64_t sampledKnowledgeContext=0;
     std::uint64_t sampledTradeContext=0;
+    std::array<std::uint64_t,AutonomyExperienceActionCount> observedSuccessEvidenceByActionDelta{};
+    std::array<std::uint64_t,AutonomyExperienceActionCount> observedFailureEvidenceByActionDelta{};
     std::size_t lastKnowledgeFacts=0;
     std::size_t lastDirectKnowledgeReceipts=0;
     std::size_t lastTransmittedKnowledgeReceipts=0;
@@ -222,7 +251,28 @@ struct AutonomyAuditSeries {
                         row.failedPhysicalEvidence-actor.lastFailureEvidence;
                 }
             }
+            // Evidence counts are monotonically accumulated only when they
+            // increase between observed checkpoints. A reset/decrease may
+            // reflect removed/rebuilt beliefs; never invent negative events.
+            for(std::size_t i=0;i<AutonomyExperienceActionCount;++i){
+                if(previouslyObserved
+                    &&row.successEvidenceByAction[i]>actor.lastSuccessEvidenceByAction[i]){
+                    const auto delta=row.successEvidenceByAction[i]
+                        -actor.lastSuccessEvidenceByAction[i];
+                    actor.observedSuccessEvidenceByActionDelta[i]+=delta;
+                    observedSuccessEvidenceByActionDelta[i]+=delta;
+                }
+                if(previouslyObserved
+                    &&row.failureEvidenceByAction[i]>actor.lastFailureEvidenceByAction[i]){
+                    const auto delta=row.failureEvidenceByAction[i]
+                        -actor.lastFailureEvidenceByAction[i];
+                    actor.observedFailureEvidenceByActionDelta[i]+=delta;
+                    observedFailureEvidenceByActionDelta[i]+=delta;
+                }
+            }
             ++actor.observedSamples;
+            actor.lastSuccessEvidenceByAction=row.successEvidenceByAction;
+            actor.lastFailureEvidenceByAction=row.failureEvidenceByAction;
             actor.lastRuntimePresent=row.hasRuntime;
             actor.lastGoal=row.physicalGoal;
             actor.lastSuccessEvidence=row.successfulPhysicalEvidence;
@@ -233,6 +283,18 @@ struct AutonomyAuditSeries {
             actor.lastInferredMemories=row.inferredMemories;
         }
         return true;
+    }
+
+    static void writeEvidenceByActionJson(
+        std::ostringstream& out,
+        const std::array<std::uint64_t,AutonomyExperienceActionCount>& counts)
+    {
+        out<<"{";
+        for(std::size_t i=0;i<AutonomyExperienceActionCount;++i){
+            if(i) out<<",";
+            out<<"\""<<AutonomyExperienceActionNames[i]<<"\":"<<counts[i];
+        }
+        out<<"}";
     }
 
     std::string json() const
@@ -263,6 +325,10 @@ struct AutonomyAuditSeries {
         out<<",\"civilization\":"<<sampledCivilizationContext;
         out<<",\"knowledgeTeaching\":"<<sampledKnowledgeContext;
         out<<",\"trade\":"<<sampledTradeContext<<"}";
+        out<<",\"successEvidenceDeltaByAction\":";
+        writeEvidenceByActionJson(out,observedSuccessEvidenceByActionDelta);
+        out<<",\"failureEvidenceDeltaByAction\":";
+        writeEvidenceByActionJson(out,observedFailureEvidenceByActionDelta);
         out<<",\"lastSocialFacts\":"<<lastKnowledgeFacts;
         out<<",\"lastDirectKnowledgeReceipts\":"<<lastDirectKnowledgeReceipts;
         out<<",\"lastTransmittedKnowledgeReceipts\":"<<lastTransmittedKnowledgeReceipts;
@@ -276,6 +342,10 @@ struct AutonomyAuditSeries {
             out<<",\"observedGoalChanges\":"<<actor.observedGoalChanges;
             out<<",\"physicalSuccessEvidenceDelta\":"<<actor.observedSuccessEvidenceDelta;
             out<<",\"physicalFailureEvidenceDelta\":"<<actor.observedFailureEvidenceDelta;
+            out<<",\"successEvidenceDeltaByAction\":";
+            writeEvidenceByActionJson(out,actor.observedSuccessEvidenceByActionDelta);
+            out<<",\"failureEvidenceDeltaByAction\":";
+            writeEvidenceByActionJson(out,actor.observedFailureEvidenceByActionDelta);
             out<<",\"experienceBeliefKindsLast\":"<<actor.lastExperienceBeliefKinds;
             out<<",\"directMemoriesLast\":"<<actor.lastDirectMemories;
             out<<",\"reportedMemoriesLast\":"<<actor.lastReportedMemories;
@@ -288,6 +358,7 @@ struct AutonomyAuditSeries {
            <<"\"novelGoalCreation\",\"hypothesisGeneration\","
            <<"\"composedPrimitivePlans\",\"acceptedCognitionEvents\","
            <<"\"causalMethodLearning\",\"emergentCivilization\"]";
+        out<<",\"evidenceCaveat\":\"Per-action deltas are observed belief evidence, not executed-action counts\"";
         out<<",\"samplingCaveat\":\"Snapshots are observations, not all completed actions\"";
         out<<"}";
         return out.str();
