@@ -13,9 +13,11 @@ import type {
   WorldOverview,
 } from './core-types';
 import type { ResidentContinuity } from './resident-continuity';
+import type { CoreEarthScenarioObservation } from '../earth/core-earth-scenario';
 
 export interface WorldSessionSnapshot {
   overview: WorldOverview;
+  earthScenario: CoreEarthScenarioObservation;
   residents: Resident[];
   // Full Core records, including deceased residents, for explicit captures.
   // The render-facing list above remains filtered by ResidentContinuity.
@@ -62,6 +64,16 @@ export class WorldSession {
 
   createWorld(seed: string): void {
     this.core.createWorld(seed, '', 3);
+    this.resetObservation();
+  }
+
+  createEarthWorld(seed: string, latitude: number, longitude: number): boolean {
+    if (!this.core.createEarthWorld(seed, latitude, longitude, 3)) return false;
+    this.resetObservation();
+    return true;
+  }
+
+  private resetObservation(): void {
     this.centerX = 0;
     this.centerY = 0;
     this.followResidents = false;
@@ -114,6 +126,11 @@ export class WorldSession {
   refresh(requireFreshActivity = false): WorldSessionSnapshot {
     if (requireFreshActivity) this.forceWorldActivityRefresh();
     const overview = this.core.worldOverview();
+    // Existing Web tests and older Core bridge implementations may not
+    // implement the new optional Earth observation capability yet.
+    const earthScenario = typeof this.core.earthScenario === 'function'
+      ? this.core.earthScenario(overview)
+      : { available: false };
     let freshResidentDetails = false;
     let residentRuntimePayload = this.core.residentRuntime();
     if (residentRuntimePayload.available === false) {
@@ -347,6 +364,7 @@ export class WorldSession {
 
     return {
       overview,
+      earthScenario,
       residents,
       residentDetails: this.residentDetailSnapshot,
       terrain,

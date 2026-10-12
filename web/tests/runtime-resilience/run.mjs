@@ -111,9 +111,16 @@ try {
     'cognitive-contract',
     readFileSync(join(root,'src/cognition/cognitive-contract.ts'),'utf8'),
   );
+  // Compile the new Core-certified Earth observer contract alongside the
+  // real Core bridge. A fake seed/site must not be silently treated as truth.
+  compile(
+    'core-earth-scenario',
+    readFileSync(join(root,'src/earth/core-earth-scenario.ts'),'utf8'),
+  );
   const bridgeSource=readFileSync(join(root,'src/runtime/core-bridge.ts'),'utf8')
     .replaceAll('import.meta.env.BASE_URL',"'./'")
-    .replaceAll('../cognition/cognitive-contract','./cognitive-contract');
+    .replaceAll('../cognition/cognitive-contract','./cognitive-contract')
+    .replaceAll('../earth/core-earth-scenario','./core-earth-scenario');
   const {LifeLensCoreBridge}=compile('core-bridge',bridgeSource);
   await test('bridge propagates corrupt overview instead of fabricating empty state', () => {
     const bridge=new LifeLensCoreBridge({worldOverviewJson:()=>'{'});

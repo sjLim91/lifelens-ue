@@ -26,6 +26,8 @@ import {
   type RuntimeLoadPolicy,
 } from './runtime-loading';
 import { readResidents, readWorldOverview } from './core-response';
+import { readCoreEarthScenario, UNBOUND_EARTH_SCENARIO,
+  type CoreEarthScenarioObservation } from '../earth/core-earth-scenario';
 
 interface RuntimePayload {
   js: string;
@@ -148,6 +150,28 @@ export class LifeLensCoreBridge {
     generationVersion = 3,
   ): boolean {
     return this.client.newGame(worldSeed, populationSeed, generationVersion);
+  }
+
+  createEarthWorld(
+    seed: string, latitudeDeg: number, longitudeDeg: number,
+    generationVersion = 3,
+  ): boolean {
+    if (typeof this.client.newEarthGame !== 'function') return false;
+    return this.client.newEarthGame(
+      seed, latitudeDeg, longitudeDeg, generationVersion,
+    );
+  }
+
+  earthScenario(overview: WorldOverview): CoreEarthScenarioObservation {
+    if (typeof this.client.earthScenarioJson !== 'function')
+      return UNBOUND_EARTH_SCENARIO;
+    try {
+      return readCoreEarthScenario(
+        JSON.parse(this.client.earthScenarioJson()) as unknown, overview,
+      );
+    } catch {
+      return UNBOUND_EARTH_SCENARIO;
+    }
   }
 
   runMinutes(minutes: number): void {
