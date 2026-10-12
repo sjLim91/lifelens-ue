@@ -4,7 +4,8 @@ import {
   paintNaturalEarthTexture,
   type EarthLandFeatureCollection,
 } from '../earth/natural-earth-land';
-import { geoFromGlobeUV, formatPreviewGeoPoint, type EarthPreviewGeoPoint } from '../earth/globe-region-picking';
+import { geoFromGlobeUV, globeSurfaceUnitVector,
+  formatPreviewGeoPoint, type EarthPreviewGeoPoint } from '../earth/globe-region-picking';
 import type { WorldOverview } from '../runtime/core-types';
 import type { CoreEarthScenarioObservation } from '../earth/core-earth-scenario';
 
@@ -119,14 +120,16 @@ export function EarthGlobePreview({
           && bound.latitudeDeg !== undefined
           && bound.longitudeDeg !== undefined) {
         // The same spherical equirectangular mapping as SphereGeometry UV.
-        const phi = (bound.longitudeDeg + 180) * Math.PI / 180;
-        const latitude = bound.latitudeDeg * Math.PI / 180;
-        actualMarker.position.set(
-          -Math.cos(phi) * Math.cos(latitude),
-          Math.sin(latitude),
-          Math.sin(phi) * Math.cos(latitude),
-        ).multiplyScalar(1.40);
-        actualMarker.visible = true;
+        const direction = globeSurfaceUnitVector({
+          latitudeDeg: bound.latitudeDeg,
+          longitudeDeg: bound.longitudeDeg,
+        });
+        if (direction) {
+          actualMarker.position.set(
+            direction.x, direction.y, direction.z,
+          ).multiplyScalar(1.40);
+          actualMarker.visible = true;
+        }
       }
       // A faint outer atmosphere is presentation-only.
       const shellGeometry = new THREE.SphereGeometry(1.37, 48, 32);
