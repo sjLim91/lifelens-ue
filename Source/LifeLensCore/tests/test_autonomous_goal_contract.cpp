@@ -87,6 +87,24 @@ int main()
     result=autonomousGoalSatisfiedByTruth(world,relationships,goal);
     assert(result.has_value() && *result);
 
+    // A known resident's alive status is an observable outcome, not an
+    // instruction to create/resurrect people. A vacuous <= 1 condition fails.
+    AutonomousGoalPredicate alive;
+    alive.metric=AutonomousGoalMetric::KnownResidentAlive;
+    alive.targetResident=2;
+    alive.comparison=AutonomousGoalCompare::AtLeast;
+    alive.threshold=1.0;
+    auto socialGoal=goal;
+    socialGoal.desiredState={alive};
+    assert(validateAutonomousGoalCandidate(
+        world,request,socialGoal).accepted);
+    const auto socialTruth=
+        autonomousGoalSatisfiedByTruth(world,relationships,socialGoal);
+    assert(socialTruth.has_value() && *socialTruth);
+    socialGoal.desiredState[0].comparison=AutonomousGoalCompare::AtMost;
+    assert(!validateAutonomousGoalCandidate(
+        world,request,socialGoal).accepted);
+
     auto bad=goal;
     bad.priority=std::numeric_limits<double>::quiet_NaN();
     assert(!validateAutonomousGoalCandidate(world,request,bad).accepted);
