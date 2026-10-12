@@ -185,6 +185,7 @@ lifelens_add_test(test_designated_sanitation_affordance)
 lifelens_add_test(test_primitive_latrine_progression)
 
 lifelens_add_test(test_world_hierarchy)
+lifelens_add_test(test_earth_surface_coordinates)
 
 lifelens_add_test(test_world_genesis_wg1)
 
