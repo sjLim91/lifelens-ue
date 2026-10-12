@@ -32,8 +32,18 @@ export type CognitiveIntent = (typeof COGNITIVE_INTENTS)[number];
 
 export const MAX_COGNITIVE_CONTEXT_ENTRIES = 32 as const;
 
+export const COGNITIVE_MEMORY_SOURCES = [
+  'DirectWitness',
+  'ToldByOther',
+  'Inferred',
+] as const;
+
+export type CognitiveMemorySource = (typeof COGNITIVE_MEMORY_SOURCES)[number];
+
 export interface CognitiveMemoryDto {
   who: string;
+  source: CognitiveMemorySource;
+  witnessed: boolean;
   minute: number;
   recallScore: number;
   confidence: number;
@@ -185,12 +195,26 @@ export function parseCognitiveRequest(
     }
   };
   validateEntries(memories, ['who', 'what', 'where'], ['minute', 'recallScore', 'confidence', 'importance', 'emotionValence', 'emotionIntensity']);
-  for (const memory of memories) {
+  const normalizedMemories = memories.map((memory): CognitiveMemoryDto => {
     if (!Array.isArray(memory.tags) || memory.tags.length > MAX_COGNITIVE_CONTEXT_ENTRIES
       || memory.tags.some((tag) => typeof tag !== 'string' || tag.length > 128)) {
       throw new Error('cognitive memory tags are invalid');
     }
-  }
+    // Legacy Web/WASM observations had no source field. Treat those
+    // memories as inference, never upgrade them to direct eyewitness truth.
+    const source = memory.source ?? 'Inferred';
+    const witnessed = memory.witnessed ?? false;
+    if (typeof source !== 'string'
+      || !COGNITIVE_MEMORY_SOURCES.includes(source as CognitiveMemorySource)
+      || typeof witnessed !== 'boolean') {
+      throw new Error('cognitive memory provenance is invalid');
+    }
+    return {
+      ...memory,
+      source: source as CognitiveMemorySource,
+      witnessed,
+    };
+  });
   validateEntries(beliefs, ['subject', 'proposition'], ['stance', 'confidence', 'lastUpdatedMinute']);
   validateEntries(relationships, ['target'], ['socialBond', 'affection', 'trust', 'respect', 'conflict', 'fear', 'grudge']);
 
@@ -214,7 +238,7 @@ export function parseCognitiveRequest(
     needs,
     personality,
     emotion,
-    memories,
+    memories: normalizedMemories,
     beliefs,
     relationships,
     allowedIntents: candidate.allowedIntents as CognitiveIntent[],
