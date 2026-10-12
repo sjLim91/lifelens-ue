@@ -25,6 +25,7 @@ struct LiveCognitiveProposal {
 enum class LiveCognitiveValidationIssue {
     None,
     WrongWorld,
+    InvalidTrigger,
     StaleTime,
     ActorUnavailable,
     ForgedContext,
@@ -38,6 +39,24 @@ struct LiveCognitiveValidation {
     // Digest of *current* Core-owned request (not client supplied data).
     std::uint64_t currentContextFingerprint=0;
 };
+
+inline bool validLiveCognitiveTrigger(CognitiveTriggerKind trigger)
+{
+    switch(trigger){
+        case CognitiveTriggerKind::RepeatedFailure:
+        case CognitiveTriggerKind::ResourceScarcity:
+        case CognitiveTriggerKind::SocialConflict:
+        case CognitiveTriggerKind::MajorLifeEvent:
+        case CognitiveTriggerKind::Discovery:
+        case CognitiveTriggerKind::MigrationPressure:
+        case CognitiveTriggerKind::LeadershipDecision:
+        case CognitiveTriggerKind::Reflection:
+            return true;
+        case CognitiveTriggerKind::None:
+        default:
+            return false;
+    }
+}
 
 class CognitiveRequestHashV1 {
 public:
@@ -153,9 +172,9 @@ inline LiveCognitiveValidation validateLiveCognitiveProposal(
         return reject(LiveCognitiveValidationIssue::WrongWorld);
 
     const CognitiveRequest& offered=candidate.request;
-    if(offered.minute!=world.minute
-        ||offered.minute<0
-        ||offered.trigger==CognitiveTriggerKind::None)
+    if(!validLiveCognitiveTrigger(offered.trigger))
+        return reject(LiveCognitiveValidationIssue::InvalidTrigger);
+    if(offered.minute!=world.minute||offered.minute<0)
         return reject(LiveCognitiveValidationIssue::StaleTime);
     if(offered.actor==0)
         return reject(LiveCognitiveValidationIssue::ActorUnavailable);
