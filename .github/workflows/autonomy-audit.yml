@@ -1,0 +1,52 @@
+name: LifeLens Core Autonomy Read-only Audit
+
+on:
+  push:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/AutonomyAuditReadModel.h'
+      - 'Source/LifeLensCore/tests/test_autonomy_audit.cpp'
+      - 'Source/LifeLensCore/harness/autonomy_audit.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/autonomy-audit.yml'
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/include/lifelens/AutonomyAuditReadModel.h'
+      - 'Source/LifeLensCore/tests/test_autonomy_audit.cpp'
+      - 'Source/LifeLensCore/harness/autonomy_audit.cpp'
+      - 'Source/LifeLensCore/CMakeLists.txt'
+      - '.github/workflows/autonomy-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  read-only-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure native Core
+        run: cmake -S Source/LifeLensCore -B /tmp/lifelens-cog-audit -DCMAKE_BUILD_TYPE=Release
+      - name: Build audit tests and headless CLI
+        run: cmake --build /tmp/lifelens-cog-audit --target test_autonomy_audit ll_autonomy_audit -j2
+      - name: Verify Core snapshot/binary/seed truth unchanged by observation
+        run: ctest --test-dir /tmp/lifelens-cog-audit -R '^test_autonomy_audit$' --output-on-failure
+      - name: Run actual two-seed one-day baseline
+        run: |
+          /tmp/lifelens-cog-audit/ll_autonomy_audit --seed 874213954 --days 1 --sample-minutes 60 > /tmp/autonomy-874213954.json
+          /tmp/lifelens-cog-audit/ll_autonomy_audit --seed 4242001 --days 1 --sample-minutes 60 > /tmp/autonomy-4242001.json
+          python3 - <<'PY'
+          import json
+          for seed in ('874213954', '4242001'):
+              with open('/tmp/autonomy-' + seed + '.json', encoding='utf-8') as f:
+                  data = json.load(f)
+              assert data['worldSeed'] == seed
+              assert data['source'] == 'CoreSnapshotReadOnly'
+              assert data['checkpointCount'] == 25
+              assert data['lastMinute'] - data['firstMinute'] == 1440
+              assert data['residentSamples'] > 0
+              assert 'novelGoalCreation' in data['notInstrumented']
+              assert 'emergentCivilization' in data['notInstrumented']
+              print(f"{seed}: residents sampled={data['residentSamples']}, "
+                    f"pending context={data['sampledPendingContexts']}")
+          PY

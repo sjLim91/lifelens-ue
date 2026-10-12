@@ -25,6 +25,10 @@ target_link_libraries(ll_harness PRIVATE lifelens_core)
 add_executable(ll_balance_audit harness/balance_audit.cpp)
 target_link_libraries(ll_balance_audit PRIVATE lifelens_core)
 
+# COG-AUDIT B1: command-line read-only Core checkpoint metrics.
+add_executable(ll_autonomy_audit harness/autonomy_audit.cpp)
+target_link_libraries(ll_autonomy_audit PRIVATE lifelens_core)
+
 # Keep assertions active for test executables in every configuration. Release
 # normally defines NDEBUG and would remove both checks and setup side effects.
 function(lifelens_add_test name)
@@ -69,6 +73,7 @@ lifelens_add_test(test_belief)
 lifelens_add_test(test_social_cognition)
 lifelens_add_test(test_cognitive_agent_contract)
 lifelens_add_test(test_action_experience_learning)
+lifelens_add_test(test_autonomy_audit)
 lifelens_add_test(test_cognitive_web_bridge)
 
 lifelens_add_test(test_social_utility)
