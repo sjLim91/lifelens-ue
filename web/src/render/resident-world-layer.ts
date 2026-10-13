@@ -931,6 +931,15 @@ export class ResidentWorldLayer {
       this.sleepClip = animationClips.find(clip => clip.name === 'LayToIdle') ?? residentSleepFallbackClip();
       // A single shared calibration. The temporary skeleton is not retained per resident.
       const calibrationModel = cloneSkeleton(normalized) as THREE.Group;
+      // The old GLB sleep clearance did not include the newly authored limbs.
+      // Measure the REAL skinned new body through all 97 animation samples,
+      // including lying, to keep infant/adult feet and hands above the ground.
+      const calibrationAppearance = createResidentAppearanceProfile({
+        id: 'lifelens-anatomy-sleep-calibration', sex: 'Female',
+        ageYears: 30, lifeStage: 'Adult',
+      });
+      applyResidentMaterialVariant(calibrationModel, calibrationAppearance);
+      syncResidentAnatomicalBody(calibrationModel, calibrationAppearance);
       this.sleepCalibration = calibrateResidentSleep(calibrationModel, this.sleepClip);
       this.ready = true;
 
