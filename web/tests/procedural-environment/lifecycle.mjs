@@ -7,6 +7,13 @@ const { NaturalResourceProjection } = await source('render/natural-resource-proj
 const { snowPresentationCoverage } = await source('render/environment-surface-presentation.ts');
 const { createTerrainElevationSampler, createTerrainGeometryBuilder } = await source('render/terrain-geometry.ts');
 const { WaterLayer } = await source('render/water-layer.ts');
+const { WorldSession } = await source('runtime/world-session.ts');
+const { ResidentContinuity } = await source('runtime/resident-continuity.ts');
+const starts = [];
+const session = new WorldSession({ createWorld: (...args) => starts.push(args),
+  createEarthWorld: (...args) => { starts.push(args); return true; } }, new ResidentContinuity());
+session.createWorld('v4'); assert(session.createEarthWorld('v4', 37, 126));
+assert.deepEqual(starts, [['v4', '', 4], ['v4', 37, 126, 4]]);
 const w = { available: true, worldSeed: 'lifecycle', centerChunkX: 0, centerChunkY: 0,
   chunks: [{ x: 0, y: 0, elevation01: .25, waterKind: 'None', waterAvailability: .5,
     forestCoverage01: 1, grassCoverage01: 1, shrubCoverage01: 1, rockCoverage01: 0 }] };

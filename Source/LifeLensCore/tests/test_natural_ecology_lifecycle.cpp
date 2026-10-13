@@ -57,4 +57,15 @@ int main()
     assert(decoded.world.snowpacks.empty());
     assert(c.restoreSnapshot(decoded,&error)); c.runMinutes(2);
     bytes.pop_back(); assert(!decodeSimulationSnapshot(bytes,decoded,&error));
+    Simulation v4{77,0,4}; v4.setupNewGame();
+    assert(v4.world().characters.size()==4 && v4.world().facilities.empty());
+    const auto residentId=v4.world().characters.front().id;
+    v4.runMinutes(40);
+    assert(encodeSimulationSnapshot(v4.captureSnapshot(),bytes,&error));
+    assert(decodeSimulationSnapshot(bytes,decoded,&error));
+    Simulation v4Copy{77,0,4}; assert(v4Copy.restoreSnapshot(decoded,&error));
+    assert(v4Copy.world().characters.front().id==residentId);
+    v4.runMinutes(10); v4Copy.runMinutes(10);
+    assert(encodeSimulationSnapshot(v4.captureSnapshot(),x,&error));
+    assert(encodeSimulationSnapshot(v4Copy.captureSnapshot(),y,&error)); assert(x==y);
 }
