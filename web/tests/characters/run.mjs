@@ -119,6 +119,124 @@ try {
     assert.equal(syncResidentAuthoredHair(model,profile({id:'unknown'})),false);
     assert.equal(model.getObjectByName('LifeLensResidentAuthoredHair'),undefined);
   });
+  const { syncResidentAuthoredFace, removeResidentAuthoredFace,
+    setResidentFaceDetailVisibility } =
+    await source('render/resident-authored-appearance.ts');
+  function placeRealEyeLandmark(model, forward=1) {
+    const eyes = new THREE.Mesh(
+      new THREE.BoxGeometry(.08, .025, .005),
+      new THREE.MeshStandardMaterial({color:0xffffff}),
+    );
+    eyes.name='Eyes';
+    eyes.position.set(0, .05, forward * .11);
+    model.add(eyes);
+    return eyes;
+  }
+  test('A2 face requires an actual identifiable eye landmark; unsupported direction fails closed',()=>{
+    const {model}=headFixture();
+    const p=profile({id:'no-eyes',sex:'Female'});
+    assert.equal(syncResidentAuthoredFace(model,p),false);
+    assert.equal(model.getObjectByName('LifeLensResidentAuthoredFace'),undefined);
+    placeRealEyeLandmark(model);
+    assert.equal(syncResidentAuthoredFace(model,p),true);
+    const face=model.getObjectByName('LifeLensResidentAuthoredFace');
+    assert.equal(face.children.length,2);
+    for(const child of face.children) {
+      assert.ok(child.geometry.getAttribute('position').count>4);
+      assert.equal(child.userData.residentOwnsGeometry,true);
+    }
+    removeResidentAuthoredFace(model);
+    assert.equal(model.getObjectByName('LifeLensResidentAuthoredFace'),undefined);
+  });
+  test('A2 independent noses/mouth contours follow parent Head and vary by inherited face shape',()=>{
+    const low=headFixture(), high=headFixture();
+    placeRealEyeLandmark(low.model);
+    placeRealEyeLandmark(high.model);
+    const a=profile({id:'same-resident',ageYears:26,
+      genetics:{faceShape:0,hairPigment:.3}});
+    const b=profile({id:'same-resident',ageYears:26,
+      genetics:{faceShape:1,hairPigment:.3}});
+    assert.ok(b.noseScale > a.noseScale);
+    assert.ok(b.mouthWidthScale > a.mouthWidthScale);
+    assert.equal(syncResidentAuthoredFace(low.model,a),true);
+    assert.equal(syncResidentAuthoredFace(high.model,b),true);
+    const first=low.model.getObjectByName('LifeLensResidentAuthoredFace');
+    const second=high.model.getObjectByName('LifeLensResidentAuthoredFace');
+    assert.equal(first.parent,low.bone);
+    assert.equal(second.parent,high.bone);
+    const n1=first.getObjectByName('LifeLensResidentNoseBridge');
+    const n2=second.getObjectByName('LifeLensResidentNoseBridge');
+    assert.ok(n2.scale.x>n1.scale.x);
+    const mouthA=first.getObjectByName('LifeLensResidentMouthContour');
+    const mouthB=second.getObjectByName('LifeLensResidentMouthContour');
+    assert.notDeepEqual([...mouthA.geometry.getAttribute('position').array],
+      [...mouthB.geometry.getAttribute('position').array]);
+    setResidentFaceDetailVisibility(low.model,false);
+    assert.equal(first.visible,false);
+    assert.equal(second.visible,true);
+    setResidentFaceDetailVisibility(low.model,true);
+    assert.equal(first.visible,true);
+    low.bone.rotation.y=.4;low.model.updateMatrixWorld(true);
+    assert.equal(first.parent,low.bone);
+    removeResidentAuthoredFace(low.model);
+    removeResidentAuthoredFace(high.model);
+  });
+  test('A2 authoritative age transitions grey gradually and change only visual hair length',()=>{
+    const adult={id:'age-guid',sex:'Female',ageYears:32,lifeStage:'Adult',
+      genetics:{hairPigment:.75,faceShape:.3},lifeCondition:{appearanceAgeFactor:.32}};
+    const mid=profile({...adult,ageYears:55,lifeStage:'MiddleAge',
+      lifeCondition:{appearanceAgeFactor:.68}});
+    const old=profile({...adult,ageYears:81,lifeStage:'Elderly',
+      lifeCondition:{appearanceAgeFactor:.95}});
+    const young=profile(adult);
+    assert.equal(young.seed,mid.seed);
+    assert.equal(mid.seed,old.seed);
+    assert.notEqual(young.hairColor,old.hairColor);
+    const distanceToGrey = (hex) => {
+      const c=new THREE.Color(hex),g=new THREE.Color(0xb4b1a6);
+      return Math.hypot(c.r-g.r,c.g-g.g,c.b-g.b);
+    };
+    assert.ok(distanceToGrey(old.hairColor)<distanceToGrey(mid.hairColor));
+    assert.ok(distanceToGrey(mid.hairColor)<distanceToGrey(young.hairColor));
+    const child=profile({...adult,ageYears:7,lifeStage:'Child'});
+    const baby=profile({...adult,ageYears:0,lifeStage:'Baby'});
+    assert.ok(baby.hairLengthScale<child.hairLengthScale);
+    assert.ok(child.hairLengthScale<young.hairLengthScale);
+    const {model}=headFixture();
+    const hairSegments=[];
+    for(const p of [baby,child,young]) {
+      syncResidentAuthoredHair(model,{...p,hairStyle:7});
+      const locks=model.getObjectByName('LifeLensResidentAuthoredHair');
+      const last=locks.children.at(-1).geometry.getAttribute('position');
+      let minY=Infinity;
+      for(let i=0;i<last.count;i++) minY=Math.min(minY,last.getY(i));
+      hairSegments.push(minY);
+    }
+    assert.ok(hairSegments[0]>hairSegments[1]);
+    assert.ok(hairSegments[1]>hairSegments[2]);
+    removeResidentAuthoredHair(model);
+  });
+  test('A2 old-age creases track actual Core age and refresh without extra bone meshes',()=>{
+    const {model}=headFixture();placeRealEyeLandmark(model);
+    const younger=profile({id:'aging',ageYears:22,lifeStage:'Adult',
+      lifeCondition:{appearanceAgeFactor:.23}});
+    const elderly=profile({id:'aging',ageYears:81,lifeStage:'Elderly',
+      lifeCondition:{appearanceAgeFactor:.93}});
+    syncResidentAuthoredFace(model,younger);
+    const previous=model.getObjectByName('LifeLensResidentAuthoredFace');
+    assert.equal(previous.children.length,2);
+    syncResidentAuthoredFace(model,elderly);
+    const aged=model.getObjectByName('LifeLensResidentAuthoredFace');
+    assert.equal(aged.children.length,4);
+    assert.notEqual(aged,previous);
+    assert.equal(previous.parent,null);
+    const firstPositions=[...aged.children[0].geometry.getAttribute('position').array];
+    syncResidentAuthoredFace(model,elderly);
+    const stable=model.getObjectByName('LifeLensResidentAuthoredFace');
+    assert.deepEqual([...stable.children[0].geometry.getAttribute('position').array],
+      firstPositions);
+    removeResidentAuthoredFace(model);
+  });
   test('shared jade body gets separate skin upper lower and shoe colors without changing other residents', () => {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute([
