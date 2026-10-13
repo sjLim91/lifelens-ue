@@ -171,7 +171,12 @@ try {
     assert.ok(Math.abs(colors.getX(0)-hairColor.r)<1e-6);
     assert.ok(Math.abs(colors.getX(2)-skinColor.r)<1e-6);
     assert.equal(root.children.length,1);assert.equal(root.getObjectByName('LifeLensResidentHairVariant'),undefined);
-    assert.deepEqual([...mesh.geometry.getAttribute('position').array],[...geometry.getAttribute('position').array]);
+    // A1 deliberately sculpts the cloned HEAD rest mesh. The shared source
+    // remains untouched, and reapplying the same phenotype must not drift.
+    const sculpted=[...mesh.geometry.getAttribute('position').array];
+    assert.notDeepEqual(sculpted,[...geometry.getAttribute('position').array]);
+    material(root,p);
+    assert.deepEqual([...mesh.geometry.getAttribute('position').array],sculpted);
   });
   test('eyes and eyebrows no longer inherit the garment tint', () => {
     const root = new THREE.Group();
