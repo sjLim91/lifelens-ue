@@ -1,11 +1,12 @@
 #pragma once
 #include "World.h"
+#include "WildlifePopulationCodec.h"
 #include <unordered_set>
 namespace lifelens {
 inline constexpr char NaturalEcologyMagic[]={'L','L','E','C','O','L','0','1'};
 template<class W> void writeNaturalEcology(W& w,const World& world)
 {
-    w.raw(NaturalEcologyMagic,sizeof(NaturalEcologyMagic)); w.u32(1);
+    w.raw(NaturalEcologyMagic,sizeof(NaturalEcologyMagic)); w.u32(world.wildlifeEnabled ? 2 : 1);
     w.u32(static_cast<std::uint32_t>(world.resourceNodes.size()));
     for(const auto& n:world.resourceNodes){
         w.u64(n.id); w.i32(n.ecologyMinute); w.real(n.flower01); w.real(n.fruit01);
@@ -14,11 +15,19 @@ template<class W> void writeNaturalEcology(W& w,const World& world)
     }
     w.u32(static_cast<std::uint32_t>(world.snowpacks.size()));
     for(const auto& p:world.snowpacks){w.i32(p.coord.x); w.i32(p.coord.y); w.real(p.depthMeters); w.i32(p.minute);}
+    if(world.wildlifeEnabled){
+        w.u32(static_cast<std::uint32_t>(world.wildlifePopulations.size()));
+        for(const auto& p:world.wildlifePopulations){
+            std::vector<std::uint8_t> bytes; encodeWildlifePopulation(p,bytes);
+            w.u32(static_cast<std::uint32_t>(bytes.size()));
+            w.raw(reinterpret_cast<const char*>(bytes.data()),bytes.size());
+        }
+    }
 }
 template<class R> bool readNaturalEcology(R& r,World& world)
 {
     char magic[8]{}; std::uint32_t version=0,count=0;
-    if(!r.raw(magic,8) || !std::equal(magic,magic+8,NaturalEcologyMagic) || !r.u32(version) || version!=1 || !r.count(count) || count!=world.resourceNodes.size()) return false;
+    if(!r.raw(magic,8) || !std::equal(magic,magic+8,NaturalEcologyMagic) || !r.u32(version) || (version!=1 && version!=2) || !r.count(count) || count!=world.resourceNodes.size()) return false;
     std::unordered_set<ResourceNodeId> ids;
     for(std::uint32_t i=0;i<count;++i){
         ResourceNodeId id=0; if(!r.u64(id) || !ids.insert(id).second) return false;
@@ -41,6 +50,24 @@ template<class R> bool readNaturalEcology(R& r,World& world)
         if(!r.i32(p.coord.x) || !r.i32(p.coord.y) || !r.real(p.depthMeters) || !r.i32(p.minute) || !std::isfinite(p.depthMeters) || p.depthMeters<0 || p.depthMeters>2 || p.minute<0 || p.minute>world.minute || !world.findGeneratedNaturalChunk(p.coord) || (!world.snowpacks.empty() && !(world.snowpacks.back().coord<p.coord))) return false;
         world.snowpacks.push_back(p);
     }
+    world.wildlifeEnabled=version==2;
+    world.wildlifePopulations.clear();
+    if(version==2){
+        if(!r.count(count) || count>64) return false;
+        for(std::uint32_t i=0;i<count;++i){
+            std::uint32_t size=0;
+            if(!r.count(size) || size>WildlifeMaxBinaryBytes) return false;
+            std::vector<std::uint8_t> bytes(size);
+            WildlifePopulation p;
+            if(!r.raw(reinterpret_cast<char*>(bytes.data()),bytes.size())
+               || !decodeWildlifePopulation(bytes,p) || p.worldSeed!=world.seed
+               || p.generationVersion!=world.generationVersion || p.dayIndex>world.minute/(24*60)
+               || !world.findGeneratedNaturalChunk(p.habitat.coord)
+               || (!world.wildlifePopulations.empty() && !(world.wildlifePopulations.back().habitat.coord<p.habitat.coord))) return false;
+            world.wildlifePopulations.push_back(std::move(p));
+        }
+    }
     return true;
 }
 }
+

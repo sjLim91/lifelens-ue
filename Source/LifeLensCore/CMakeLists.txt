@@ -204,6 +204,7 @@ lifelens_add_test(test_earth_region_scenario)
 lifelens_add_test(test_earth_natural_land_mask)
 lifelens_add_test(test_earth_solar_observation)
 lifelens_add_test(test_wildlife_ecology)
+lifelens_add_test(test_wildlife_world_observation)
 lifelens_add_test(test_wildlife_population_codec)
 lifelens_add_test(test_web_earth_scenario_handoff)
 
@@ -277,3 +278,4 @@ lifelens_add_test(test_natural_ecology_lifecycle)
 
 add_executable(ll_ecology_fixture harness/ecology_fixture.cpp)
 target_link_libraries(ll_ecology_fixture PRIVATE lifelens_core)
+

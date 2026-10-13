@@ -1,8 +1,17 @@
 #pragma once
 #include "World.h"
+#include "WildlifePopulationCodec.h"
 namespace lifelens {
 inline bool validNaturalEcology(const World& world)
 {
+    if(world.wildlifePopulations.size()>64 || (!world.wildlifeEnabled && !world.wildlifePopulations.empty())) return false;
+    for(std::size_t i=0;i<world.wildlifePopulations.size();++i){
+        const auto& p=world.wildlifePopulations[i];
+        if(!validWildlifePopulation(p) || p.worldSeed!=world.seed
+           || p.generationVersion!=world.generationVersion || p.dayIndex>world.minute/(24*60)
+           || !world.findGeneratedNaturalChunk(p.habitat.coord)
+           || (i && !(world.wildlifePopulations[i-1].habitat.coord<p.habitat.coord))) return false;
+    }
     for(const auto& n:world.resourceNodes){
         if(n.ecologyMinute<0 || n.ecologyMinute>world.minute || !std::isfinite(n.flower01) || !std::isfinite(n.fruit01) || n.flower01<0 || n.flower01>1 || n.fruit01<0 || n.fruit01>1) return false;
         if(n.trees.empty()) continue;
@@ -22,3 +31,4 @@ inline bool validNaturalEcology(const World& world)
     return true;
 }
 }
+

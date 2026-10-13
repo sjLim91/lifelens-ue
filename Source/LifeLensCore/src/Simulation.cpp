@@ -341,6 +341,9 @@ void Simulation::setupNewGame(){
     world_.resourceNodes.clear();
     world_.storageSites.clear();
     world_.clearGeneratedNaturalWorld();
+    // Existing saves/compatibility fixtures retain their original wildlife-free
+    // contract. New v4 worlds opt into the independent ecology domain.
+    world_.wildlifeEnabled=world_.generationVersion>=4;
     const InitialStartRegionSelection startRegion=world_.establishInitialStartRegion();
     world_.materializeNaturalChunk(startRegion.region.coord);
 
@@ -3750,6 +3753,8 @@ void Simulation::step(){
     advancePrimitiveFireOneMinute(world_);
     world_.environmentalResidues.advanceToMinute(world_.minute);
     if(world_.minute%(24*60)==0){
+        for(auto& population:world_.wildlifePopulations)
+            stepWildlifeDay(population,world_.minute/(24*60));
         regenerateCivilizationEnvironment(world_);
         advanceCultivationOneDay(world_);
         advanceFoodSpoilageOneDay(world_);
@@ -3762,5 +3767,6 @@ void Simulation::step(){
 }
 void Simulation::runMinutes(int minutes){ for(int i=0;i<minutes;++i) step(); }
 }
+
 
 
