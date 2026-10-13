@@ -1977,15 +1977,17 @@ bool Simulation::trySocialDecision(
     // by a validated personal objective. Physical/civilization/survival slots
     // are never displaced by cognition; normal Core pending actions still own
     // spatial routing, timeout and observed relationship consequences.
-    if(const auto preferred=preferAutonomousSocialGoalTarget(
+    std::optional<AutonomousPreferredSocialGoal> selectedPersonalGoal;
+    if(const auto preferred=preferAutonomousSocialGoalTargetWithGoal(
            world_,relationships_,c,decision.social)){
-        const auto candidateRuntime=runtime_.find(preferred->target);
+        const auto candidateRuntime=runtime_.find(preferred->decision.target);
         // A distant or currently unlocated resident must not pull this
         // ordinary local social slot into a new unsafe long-range journey.
         if(candidateRuntime!=runtime_.end()
            &&manhattan(r.pos,candidateRuntime->second.pos)
                <=SettlementServiceRadiusGrid){
-            decision.social=*preferred;
+            decision.social=preferred->decision;
+            selectedPersonalGoal=*preferred;
         }
     }
 
@@ -1997,6 +1999,32 @@ bool Simulation::trySocialDecision(
     pending.kind=ContextActionKind::Social;
     pending.issuedMinute=world_.minute;
     pending.social=decision.social;
+    if(selectedPersonalGoal
+       &&selectedPersonalGoal->goal.desiredState.size()==1){
+        const auto& predicate=
+            selectedPersonalGoal->goal.desiredState.front();
+        const Relationship* myRelationship=relationships_.find(
+            c.id,pending.social.target);
+        // Preserve exactly the validated goal and its threshold at issue
+        // time. The matching pending token is persisted in an optional
+        // snapshot extension; no replanning at the execution site.
+        if(predicate.metric==AutonomousGoalMetric::RelationshipTrust
+           &&predicate.comparison==AutonomousGoalCompare::AtLeast
+           &&predicate.targetResident==pending.social.target
+           &&myRelationship!=nullptr){
+            AutonomousGoalActionLink link;
+            link.token=pending.token;
+            link.actor=c.id;
+            link.target=pending.social.target;
+            link.intent=pending.social.intent;
+            link.issuedMinute=pending.issuedMinute;
+            link.contextFingerprint=selectedPersonalGoal->contextFingerprint;
+            link.trustThreshold=predicate.threshold;
+            link.trustAtIssue=myRelationship->trust;
+            if(validAutonomousGoalActionLink(link))
+                pending.autonomousGoal=link;
+        }
+    }
     const auto targetRuntime=runtime_.find(decision.social.target);
     if(targetRuntime!=runtime_.end() && decision.social.intent!=SocialIntent::Avoid){
         pending.hasSpatialTarget=true;

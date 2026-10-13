@@ -1,5 +1,6 @@
 #include "lifelens/NaturalEcologyValidation.h"
 #include "lifelens/NaturalEcologySnapshotCodec.h"
+#include "lifelens/AutonomousGoalActionLinkSnapshotCodec.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/EnvironmentalResidueSnapshotCodec.h"
@@ -238,9 +239,32 @@ bool encodeSimulationSnapshot(
     }
 
     if(!validNaturalEcology(snapshot.world)){ setError(error,"invalid natural ecology state"); return false; }
+    for(const auto& runtime:snapshot.runtime){
+        if(!validAttachedAutonomousGoalLink(
+               runtime.first,runtime.second.pendingContext,snapshot.world.minute)){
+            setError(error,"invalid autonomous goal action attribution");
+            return false;
+        }
+    }
     Writer ecologyExtension;
     writeNaturalEcology(ecologyExtension,snapshot.world);
     body.insert(body.end(),ecologyExtension.bytes.begin(),ecologyExtension.bytes.end());
+
+    // Only a genuinely in-flight goal link requires the extension. Legacy
+    // and settled worlds keep byte-exact old v8 saves.
+    bool hasGoalLink=false;
+    for(const auto& runtime:snapshot.runtime){
+        if(runtime.second.pendingContext.autonomousGoal.active()){
+            hasGoalLink=true;
+            break;
+        }
+    }
+    if(hasGoalLink){
+        Writer goalExtension;
+        writeAutonomousGoalActionLinkExtension(goalExtension,snapshot);
+        body.insert(body.end(),goalExtension.bytes.begin(),
+                    goalExtension.bytes.end());
+    }
     outBytes=std::move(body);
     if(error) error->clear();
     return true;
@@ -334,6 +358,17 @@ bool decodeSimulationSnapshot(
         && (!hasHealthExtension || tradeJourneyMarker>healthMarker);
 
     const auto ecologyMarker=std::find_end(bytes.begin()+12,bytes.end(),NaturalEcologyMagic,NaturalEcologyMagic+sizeof(NaturalEcologyMagic));
+    const auto goalMarker=ecologyMarker!=bytes.end()
+        ?std::find_end(
+            ecologyMarker,bytes.end(),
+            AutonomousGoalActionLinkExtensionMagic,
+            AutonomousGoalActionLinkExtensionMagic
+                +sizeof(AutonomousGoalActionLinkExtensionMagic))
+        :bytes.end();
+    const bool hasGoalExtension=
+        goalMarker!=bytes.end()
+        &&ecologyMarker!=bytes.end()
+        &&goalMarker>ecologyMarker;
     const auto extensionEnd=ecologyMarker!=bytes.end() ? ecologyMarker : bytes.end();
     const auto cognitionMarker=std::find_end(
         tradeJourneyMarker!=bytes.end() ? tradeJourneyMarker : rulesetMarker,
@@ -449,10 +484,20 @@ bool decodeSimulationSnapshot(
     }
 
     if(ecologyMarker!=bytes.end()){
-        std::vector<std::uint8_t> ecologyBytes(ecologyMarker,bytes.end());
+        std::vector<std::uint8_t> ecologyBytes(
+            ecologyMarker,hasGoalExtension ? goalMarker : bytes.end());
         Reader ecologyReader(ecologyBytes);
         if(!readNaturalEcology(ecologyReader,decoded.world) || !ecologyReader.done()){
             setError(error,"invalid natural ecology snapshot extension"); return false;
+        }
+    }
+    if(hasGoalExtension){
+        const std::vector<std::uint8_t> goalBytes(goalMarker,bytes.end());
+        Reader goalReader(goalBytes);
+        if(!readAutonomousGoalActionLinkExtension(goalReader,decoded)
+           ||!goalReader.done()){
+            setError(error,"invalid autonomous goal action link extension");
+            return false;
         }
     }
     outSnapshot=std::move(decoded);
