@@ -88,6 +88,20 @@ async function renderCase(name) {
     water.group.position.y = -grid.elevationScale * .25;
     water.setTerrain(cw); water.setEnvironment(ce); water.setSimulationMinute(ce.simulationMinute);
     if (name === 'reflection') { camera.updateMatrixWorld(); water.updateReflection(renderer, scene, camera); }
+  } else if (['stumps', 'regrowth', 'phenology'].includes(name)) {
+    camera.position.set(5, 3.2, 7); camera.lookAt(0, .6, 0);
+    const close = { ...w, chunks: [chunks.find(c => c.x === 0 && c.y === 0)] };
+    const records = Array.from({ length: 8 }, (_, ordinal) => ({ id: `wood:${ordinal}`, ordinal,
+      ageDays: name === 'regrowth' ? 30 : 10950, remainingWood: name === 'regrowth' ? 2 : 0,
+      capacity: 10, felledMinute: 50, generation: name === 'regrowth' ? 1 : 0 }));
+    const resources = [{ id: 'wood', material: 'Wood', gridX: 16, gridY: 16,
+      quantity: name === 'regrowth' ? 16 : 0, maxQuantity: 80, trees: records },
+      { id: 'food', material: 'PlantFood', gridX: 16, gridY: 16, quantity: 80, maxQuantity: 80,
+        flower01: name === 'phenology' ? 1 : 0, fruit01: name === 'phenology' ? 1 : 0 }];
+    const projection = new NaturalResourceProjection({ available: true, resources }, close);
+    trees.group.visible = name !== 'phenology'; ground.group.visible = true;
+    trees.setTerrain(close, projection); ground.setTerrain(close, projection);
+    trees.setEnvironment(e); ground.setEnvironment(e); trees.update(camera);
   } else if (name === 'gallery') {
     camera.position.set(14, 9, 30); camera.lookAt(0, 3.8, 0); gallery.visible = true;
     for (const a of galleryAssets) { a.weather.setEnvironment(e); a.update(camera); }

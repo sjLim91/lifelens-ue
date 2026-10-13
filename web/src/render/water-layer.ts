@@ -25,7 +25,7 @@ export class WaterLayer {
     roughness: 0.56,
     metalness: 0,
     ior: 1.333,
-    clearcoat: 1,
+    clearcoat: 0,
     envMapIntensity: 1.1,
     depthWrite: true,
     depthTest: true,
@@ -45,7 +45,7 @@ export class WaterLayer {
     roughness: 0.6,
     metalness: 0,
     ior: 1.333,
-    clearcoat: 1,
+    clearcoat: 0,
     envMapIntensity: 1.1,
     depthWrite: true,
     depthTest: true,
@@ -177,8 +177,21 @@ export class WaterLayer {
     const visible = this.group.visible;
     const xr = renderer.xr.enabled;
     this.group.visible = false; renderer.xr.enabled = false;
-    this.reflectionCamera.position.copy(camera.position);
-    this.reflectionCamera.position.y = Math.max(0.2, camera.position.y * 0.35);
+    // Probe the closest actual water surface, rather than the observer's
+    // elevated/offshore camera position. One probe still approximates a region.
+    this.group.updateWorldMatrix(true, true);
+    const sample = new THREE.Vector3();
+    let nearest = Infinity;
+    for (const mesh of [this.openWaterMesh, this.flowWaterMesh]) {
+      const positions = mesh.geometry.getAttribute('position');
+      if (!positions) continue;
+      for (let i = 0; i < positions.count; i += 3) {
+        sample.fromBufferAttribute(positions, i).applyMatrix4(mesh.matrixWorld);
+        const distance = (sample.x - camera.position.x) ** 2 + (sample.z - camera.position.z) ** 2;
+        if (distance < nearest) { nearest = distance; this.reflectionCamera.position.copy(sample); }
+      }
+    }
+    this.reflectionCamera.position.y += 0.12;
     try {
       this.reflectionCamera.update(renderer, scene);
       this.reflectionGenerator ??= new THREE.PMREMGenerator(renderer);

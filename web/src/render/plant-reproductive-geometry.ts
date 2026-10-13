@@ -6,7 +6,7 @@ export function createFlowerGeometry(seed: string): THREE.BufferGeometry {
   const b = new AssetMeshBuilder(), random = assetRandom(seed);
   for (let head = 0; head < 7; head++) {
     const angle = head * 2.39996, radius = 0.10 + random() * 0.20;
-    const c = new THREE.Vector3(Math.cos(angle) * radius, 0.45 + random() * 0.47, Math.sin(angle) * radius);
+    const c = new THREE.Vector3(Math.cos(angle) * radius, 0.80 + random() * 0.50, Math.sin(angle) * radius);
     b.tube([c.clone().add(new THREE.Vector3(0, -0.15, 0)), c], [0.01, 0.006], 4, new THREE.Color(0x537444));
     const petals = head % 2 ? 5 : 6;
     for (let petal = 0; petal < petals; petal++) {
@@ -27,7 +27,7 @@ export function createFruitGeometry(seed: string): THREE.BufferGeometry {
   const b = new AssetMeshBuilder(), random = assetRandom(seed), color = new THREE.Color(0x913e45);
   for (let berry = 0; berry < 18; berry++) {
     const a = random() * Math.PI * 2;
-    const c = new THREE.Vector3(Math.cos(a) * 0.24, 0.37 + random() * 0.45, Math.sin(a) * 0.24);
+    const c = new THREE.Vector3(Math.cos(a) * 0.24, 0.60 + random() * 0.50, Math.sin(a) * 0.24);
     const top = b.vertex(c.clone().add(new THREE.Vector3(0, 0.04, 0)), color);
     const bottom = b.vertex(c.clone().sub(new THREE.Vector3(0, 0.04, 0)), color);
     const ring = Array.from({ length: 6 }, (_, i) => b.vertex(c.clone().add(new THREE.Vector3(Math.cos(i * Math.PI / 3) * 0.04, 0, Math.sin(i * Math.PI / 3) * 0.04)), color));
