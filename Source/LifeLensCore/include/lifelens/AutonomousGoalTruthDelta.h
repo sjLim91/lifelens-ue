@@ -212,10 +212,12 @@ inline AutonomousGoalTruthDelta compareAutonomousGoalCoreTruth(
     // A deadline lapse is not a success claim; still report actual gaps.
     if(observed.minute>goal.expiresMinute)
         result.status=AutonomousGoalTruthDeltaStatus::Expired;
-    else if(result.satisfiedBefore)
+    else if(result.satisfiedBefore &&result.satisfiedAfter)
         result.status=AutonomousGoalTruthDeltaStatus::AlreadySatisfied;
     else if(result.satisfiedAfter)
         result.status=AutonomousGoalTruthDeltaStatus::ReachedSinceBaseline;
+    else if(result.satisfiedBefore)
+        result.status=AutonomousGoalTruthDeltaStatus::Regressed;
     else if(improved &&worsened)
         result.status=AutonomousGoalTruthDeltaStatus::MixedChanges;
     else if(improved)
