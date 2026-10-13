@@ -1,18 +1,9 @@
 name: LifeLens Resident Experience Readout
 
 on:
-  push:
-    paths:
-      - 'web/src/ui/resident-experiences.ts'
-      - 'web/src/ui/observer-readout.tsx'
-      - 'web/tests/resident-experiences/run.mjs'
-      - '.github/workflows/resident-experience-readout.yml'
-  pull_request:
-    paths:
-      - 'web/src/ui/resident-experiences.ts'
-      - 'web/src/ui/observer-readout.tsx'
-      - 'web/tests/resident-experiences/run.mjs'
-      - '.github/workflows/resident-experience-readout.yml'
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -32,3 +23,4 @@ jobs:
         run: cd web && node tests/resident-experiences/run.mjs
       - name: Typecheck readout
         run: cd web && npm run typecheck
+

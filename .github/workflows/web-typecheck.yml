@@ -1,14 +1,8 @@
 name: Web Typecheck
 
 on:
-  push:
-    paths:
-      - 'web/**'
-      - '.github/workflows/web-typecheck.yml'
-  pull_request:
-    paths:
-      - 'web/**'
-      - '.github/workflows/web-typecheck.yml'
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
   workflow_dispatch:
 
 jobs:
@@ -34,3 +28,4 @@ jobs:
 
       - name: Observation feed regression
         run: node tests/observation-feed/run.mjs
+

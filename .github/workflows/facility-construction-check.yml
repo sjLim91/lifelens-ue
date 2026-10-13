@@ -1,10 +1,9 @@
 name: Web Facility Construction
 on:
-  push:
-    branches: ['work/web-facility-construction-*']
-    paths: ['web/**', '.github/workflows/facility-construction-check.yml']
-  pull_request:
-    paths: ['web/**', '.github/workflows/facility-construction-check.yml']
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
+  workflow_dispatch:
+
 jobs:
   presentation:
     runs-on: ubuntu-latest
@@ -41,4 +40,5 @@ jobs:
         with:
           name: facility-construction-review
           path: web/tests/facility-construction/review/
+
 

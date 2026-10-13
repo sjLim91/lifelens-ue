@@ -1,3 +1,14 @@
+## 2026-10-13 WAITING_CI — CI 공통화와 변경 범위별 검수
+
+- 사용자 승인 범위: 반복 Web install/typecheck/build/전체 회귀를 통합하고 화면·365일 검사를 관련 변경으로 제한.
+- 별도 브랜치: `codex/ci-deduplication-20261013`, 기반 main `5a54041f5f7a54ce7c12e7d9d5c08a78e5ad2abc`.
+- 자동 Web workflow 16개를 공통 `web-checks.yml`로 통합하고 기존 진단은 수동 실행으로 유지. 실제 WASM Shadow invariant와 배포 pipeline은 보존.
+- Core configure/build/CTest/결정론을 1회 실행하고 관련 Core 변경·02:17 UTC nightly·수동 실행의 365일 검사가 같은 실행 파일을 사용.
+- 로컬 14개 selector/runner 회귀, 전체 workflow YAML/jobs/steps, Python 구문, diff 검사 PASS. GitHub exact-head 실행은 PR에서 확인해야 함.
+- 현재 main의 required status contexts/rulesets는 비어 있음. branch protection/권한 변경 없음.
+- 제품 PR #710/#711을 포함하거나 병합하지 않음. 추가 grounding/wildlife 검사·capture는 공통 runner가 파일 존재 시 발견.
+- 상세 정책/남은 실행 검증: `docs/CI_SCOPE_AND_DEDUPLICATION_2026-10-13.md`.
+
 ## 2026-10-12 DONE — #700 병합·실행 미리보기 반영
 
 - 모든 exact-head CI PASS. Core CTest 119개/실패0, 3 seed × 365일 검증 PASS.
@@ -812,4 +823,5 @@ This lane is parallel to active World v2 work and must not fork simulation truth
 - Merged `d8fcd616a344833a0da13707c80be18d8c8638c4`: removed collar-like spherical hair proxies; actual skinned scalp coverage and darker eyes.
 - All three final-head checks pass, including 49 regression cases. Device visual acceptance remains pending; CPU model close-up is diagnostic only.
 - Checkpoint: `tasks/WEB_SCALP_HANDOFF_2026-09-25.md`.
+
 

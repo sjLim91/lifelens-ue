@@ -1,30 +1,9 @@
 name: LifeLens Earth to Life Navigation
 
 on:
-  push:
-    paths:
-      - 'web/src/earth/core-earth-scenario.ts'
-      - 'web/src/ui/earth-globe-preview.tsx'
-      - 'web/src/runtime/core-bridge.ts'
-      - 'web/src/runtime/world-session.ts'
-      - 'web/src/state/observer-store.ts'
-      - 'web/src/state/observer-actions.ts'
-      - 'web/src/observer-engine.ts'
-      - 'web/src/App.tsx'
-      - 'web/tests/earth-life-navigation/run.mjs'
-      - '.github/workflows/earth-life-navigation.yml'
-  pull_request:
-    paths:
-      - 'web/src/earth/core-earth-scenario.ts'
-      - 'web/src/ui/earth-globe-preview.tsx'
-      - 'web/src/runtime/core-bridge.ts'
-      - 'web/src/runtime/world-session.ts'
-      - 'web/src/state/observer-store.ts'
-      - 'web/src/state/observer-actions.ts'
-      - 'web/src/observer-engine.ts'
-      - 'web/src/App.tsx'
-      - 'web/tests/earth-life-navigation/run.mjs'
-      - '.github/workflows/earth-life-navigation.yml'
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -46,3 +25,4 @@ jobs:
         run: cd web && npm run typecheck
       - name: Web production build
         run: cd web && npm run build
+
