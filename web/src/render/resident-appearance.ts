@@ -265,12 +265,12 @@ export function applyResidentMaterialVariant(
     object.material = Array.isArray(object.material)
       ? object.material.map(cloneMaterial)
       : cloneMaterial(object.material);
-    applyBodyProportions(object, profile, referenceInverse);
+    applyBodyProportions(object, profile, referenceInverse, root);
   });
 }
 
 /** Small rest-mesh adjustments; no invented asset gender or skeleton changes. */
-function applyBodyProportions(mesh: THREE.Mesh, profile: ResidentAppearanceProfile, referenceInverse: THREE.Matrix4): void {
+function applyBodyProportions(mesh: THREE.Mesh, profile: ResidentAppearanceProfile, referenceInverse: THREE.Matrix4, root: THREE.Object3D): void {
   if (!(mesh instanceof THREE.SkinnedMesh)) return;
   const joints = mesh.geometry.getAttribute('skinIndex');
   const weights = mesh.geometry.getAttribute('skinWeight');
@@ -314,7 +314,7 @@ function applyBodyProportions(mesh: THREE.Mesh, profile: ResidentAppearanceProfi
     && torsoSize.y > .08 && torsoSize.z > .025 && torsoSize.x > .055;
   // Eye landmark establishes the real rig's anterior direction. Never guess
   // the orientation of an unsupported imported skeleton.
-  const eyes = mesh.parent?.getObjectByName('Eyes');
+  const eyes = root.getObjectByName('Eyes');
   const eyesWorld = eyes ? new THREE.Box3().setFromObject(eyes) : null;
   const eyesZ = eyesWorld && !eyesWorld.isEmpty()
     ? eyesWorld.getCenter(new THREE.Vector3()).applyMatrix4(referenceInverse).z : NaN;
