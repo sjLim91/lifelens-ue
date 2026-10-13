@@ -8,7 +8,7 @@
 - 새 유료 모델, API, 클라우드, 라이선스 자산 없음.
 
 ## A3 첫 수직 절편
-1. 원시 몸가리개 `PrimitiveWrap` 제작법을 기존 기술 그래프에 등록. 기존 `FiberCordage` 재현 지식과, 실제 개인 소유 섬유 2개 + 끈 1개가 선행 조건.
+1. 원시 몸가리개 `PrimitiveWrap` 제작법을 기존 기술 그래프에 등록. 기존 `FiberCordage`의 반복 실습으로 확보한 숙련(Practiced) 지식과, 실제 개인 소유 섬유 2개 + 끈 1개가 선행 조건.
 2. 기존 autonomous 실험/제작 선택 루프가 발견·학습·재생산을 수행한다. 성공/실패와 재료 소비는 Core만 처리한다.
 3. `ItemKind::PrimitiveWrap`, `TechniqueId::PrimitiveWrap`, `ExperimentKind::WeavePrimitiveWrap`, `TechnologyId::PrimitiveWrap`, `CapabilityId::WearProtection`를 **enum 끝에만 추가**해 기존 저장값 ordinal을 보존한다.
 4. Core observer: 개인 inventory에 `PrimitiveWrap/Fiber`가 수량 양수·내구도 양수로 존재할 때 **현재 자동 착용 정책**으로 `hasWornGarment / wornGarment` 기록을 제공한다. 아직 독립적인 착용 행동 AI나 추위 기반 착의 결정을 구현한 것은 **아니다**.
