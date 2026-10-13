@@ -455,6 +455,7 @@ export interface ResidentCivilization {
   latestKnowledgeMinute?: number;
   latestTechnique?: string;
   inventory?: ResidentCivilizationItem[];
+  wornGarment?: ResidentCivilizationItem | null;
   techniques?: ResidentCivilizationTechnique[];
   capabilities?: ResidentCivilizationCapability[];
   technologies?: ResidentCivilizationTechnology[];
@@ -1032,6 +1033,7 @@ export interface RuntimeClient {
 export interface CoreModule {
   LifeLensWebClient: new () => RuntimeClient;
 }
+
 
 
 
