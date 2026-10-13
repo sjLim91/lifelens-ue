@@ -1,35 +1,8 @@
 name: LifeLens Web Runtime Resilience
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'web/src/runtime/**'
-      - 'web/src/state/**'
-      - 'web/src/ui/**'
-      - 'web/src/input/**'
-      - 'web/src/observer-engine.ts'
-      - 'web/src/App.tsx'
-      - 'web/src/styles.css'
-      - 'web/tests/input/**'
-      - 'web/src/render/weather-layer.ts'
-      - 'web/src/render/resident-appearance.ts'
-      - 'web/src/render/resident-world-layer.ts'
-      - 'web/src/render/world-scene.ts'
-      - 'web/src/render/terrain-geometry.ts'
-      - 'web/src/render/water-*.ts'
-      - 'web/tests/presentation/**'
-      - 'web/tests/characters/**'
-      - 'web/tests/weather/**'
-      - 'web/tests/runtime-resilience/**'
-      - 'web/tests/observation-feed/**'
-      - 'web/tests/action-context/**'
-      - 'web/tests/human-traces/**'
-      - 'web/tests/fast-forward/**'
-      - 'web/src/render/human-trace-layer.ts'
-      - 'web/package.json'
-      - 'web/tsconfig.json'
-      - '.github/workflows/web-runtime-resilience.yml'
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
   workflow_dispatch:
 
 permissions:
@@ -73,3 +46,4 @@ jobs:
       - name: Build browser client
         working-directory: web
         run: npm run build
+
