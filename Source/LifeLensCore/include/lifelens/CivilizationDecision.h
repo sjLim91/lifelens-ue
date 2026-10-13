@@ -909,6 +909,10 @@ inline TechnologyInnovationWeights technologyInnovationWeights(
             return {technology,MaterialKind::Wood,0.0,0.0,0.05,0.0,0.0,0.70,0.25};
         case TechnologyId::BronzePick:
             return {technology,MaterialKind::TinOre,0.0,0.0,0.0,0.0,0.0,0.60,0.40};
+        case TechnologyId::PrimitiveWrap:
+            // A resident's witnessed environmental exposure raises the
+            // incentive to try new fiber structures; it does not unlock free cloth.
+            return {technology,MaterialKind::Fiber,0.0,0.55,0.0,0.0,0.0,0.35,0.10};
         case TechnologyId::None:
         default:
             return {};
