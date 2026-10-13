@@ -6,6 +6,7 @@
 
 #include "AutonomousAffordancePlanner.h"
 #include "AutonomousSocialOutcomeLearning.h"
+#include "AutonomousGoalActionLink.h"
 
 namespace lifelens {
 
