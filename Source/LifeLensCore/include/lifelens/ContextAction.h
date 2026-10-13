@@ -8,6 +8,7 @@
 #include "CivilizationSpatial.h"
 #include "Parenting.h"
 #include "SocialUtility.h"
+#include "AutonomousGoalActionLink.h"
 
 namespace lifelens {
 
@@ -28,6 +29,9 @@ struct PendingContextAction {
     int issuedMinute=-1;
 
     SocialUtilityDecision social{};
+    // Optional Core-only link from a verified autonomous relationship goal
+    // to this same pending social token; clear() drops both atomically.
+    AutonomousGoalActionLink autonomousGoal{};
     CivilizationUtilityDecision civilization{};
     CharacterId parentingTarget=0;
     ParentingAction parentingAction=ParentingAction::Comfort;
