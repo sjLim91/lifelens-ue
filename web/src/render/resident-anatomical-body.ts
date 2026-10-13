@@ -111,6 +111,118 @@ function blended(joints: Joint[], t: number): RingWeight[] {
     { index: joints[index + 1].index, weight: mix }];
 }
 
+/**
+ * Retarget the new high-density anatomy to the proven original skin weights.
+ * Bone-name-only binding is not sufficient: the UAL sleep clip rotates the
+ * spine differently from a straight loft. Spatial donor transfer preserves
+ * the original joint bend planes while keeping the NEW body geometry.
+ */
+function retargetSkinning(source: THREE.SkinnedMesh, geometry: THREE.BufferGeometry): boolean {
+  const sourcePosition = source.geometry.getAttribute('position');
+  const sourceIndex = source.geometry.getAttribute('skinIndex');
+  const sourceWeight = source.geometry.getAttribute('skinWeight');
+  const vertices = geometry.getAttribute('position');
+  const outputIndex = geometry.getAttribute('skinIndex');
+  const outputWeight = geometry.getAttribute('skinWeight');
+  if (!sourcePosition || !sourceIndex || !sourceWeight
+      || !vertices || !outputIndex || !outputWeight) return false;
+  const height = Math.max(.01,
+    source.geometry.boundingBox?.getSize(new THREE.Vector3()).y ?? 1);
+  const spacing = height / 22;
+  const label = (joint: number): string => {
+    const name = source.skeleton.bones[joint]?.name.toLowerCase() ?? '';
+    if (/^head$|^neck_/.test(name)) return 'head';
+    if (/spine|pelvis|^root$/.test(name)) return 'torso';
+    const side = /_l$/.test(name) ? 'left' : /_r$/.test(name) ? 'right' : '';
+    if (/upperarm|lowerarm|hand|thumb|index|middle|ring|pinky/.test(name))
+      return side + 'Arm';
+    if (/thigh|calf|foot|ball/.test(name)) return side + 'Leg';
+    return 'torso';
+  };
+  type Sample = { vertex: number; x: number; y: number; z: number; group: string };
+  const points: Sample[] = [];
+  const grid = new Map<string, Sample[]>();
+  const groups = new Map<string, Sample[]>();
+  const key = (group: string, x: number, y: number, z: number) =>
+    `${group}/${x}/${y}/${z}`;
+  for (let i = 0; i < sourcePosition.count; i++) {
+    let joint = sourceIndex.getX(i), max = sourceWeight.getX(i);
+    for (let k = 1; k < 4; k++) {
+      if (sourceWeight.getComponent(i, k) > max) {
+        joint = sourceIndex.getComponent(i, k);
+        max = sourceWeight.getComponent(i, k);
+      }
+    }
+    const group = label(joint);
+    const sample = { vertex: i, x: sourcePosition.getX(i),
+      y: sourcePosition.getY(i), z: sourcePosition.getZ(i), group };
+    points.push(sample);
+    const groupPoints = groups.get(group) ?? [];
+    groupPoints.push(sample);
+    groups.set(group, groupPoints);
+    const address = key(group, Math.floor(sample.x / spacing),
+      Math.floor(sample.y / spacing), Math.floor(sample.z / spacing));
+    const cell = grid.get(address) ?? [];
+    cell.push(sample);
+    grid.set(address, cell);
+  }
+  if (!points.length) return false;
+  let transferred = 0;
+  for (let i = 0; i < vertices.count; i++) {
+    const x = vertices.getX(i), y = vertices.getY(i), z = vertices.getZ(i);
+    const base = [Math.floor(x / spacing), Math.floor(y / spacing),
+      Math.floor(z / spacing)];
+    const initialGroup = label(outputIndex.getX(i));
+    const nearest: { sample: Sample; distance: number }[] = [];
+    const add = (sample: Sample) => {
+      const dx = sample.x - x, dy = sample.y - y, dz = sample.z - z;
+      const distance = dx * dx + dy * dy + dz * dz;
+      if (!Number.isFinite(distance)) return;
+      if (nearest.length === 3 && distance >= nearest[nearest.length - 1].distance) return;
+      nearest.push({ sample, distance });
+      nearest.sort((a, b) => a.distance - b.distance);
+      if (nearest.length > 3) nearest.pop();
+    };
+    for (let radius = 0; radius <= 3 && nearest.length < 3; radius++) {
+      for (let ix = -radius; ix <= radius; ix++) {
+        for (let iy = -radius; iy <= radius; iy++) {
+          for (let iz = -radius; iz <= radius; iz++) {
+            if (radius && Math.max(Math.abs(ix), Math.abs(iy), Math.abs(iz)) !== radius)
+              continue;
+            for (const sample of grid.get(key(initialGroup,
+              base[0] + ix, base[1] + iy, base[2] + iz)) ?? []) add(sample);
+          }
+        }
+      }
+    }
+    if (nearest.length < 3)
+      for (const sample of groups.get(initialGroup) ?? points) add(sample);
+    if (!nearest.length) return false;
+    const influence = new Map<number, number>();
+    let sum = 0;
+    for (const n of nearest) {
+      const weight = 1 / Math.max(.00001, n.distance);
+      sum += weight;
+      for (let component = 0; component < 4; component++) {
+        const joint = sourceIndex.getComponent(n.sample.vertex, component);
+        const strength = sourceWeight.getComponent(n.sample.vertex, component);
+        influence.set(joint, (influence.get(joint) ?? 0) + strength * weight);
+      }
+    }
+    const normalized = [...influence].sort((a, b) => b[1] - a[1]).slice(0, 4);
+    const total = normalized.reduce((acc, entry) => acc + entry[1], 0);
+    if (!(total > 0) || !(sum > 0)) return false;
+    for (let k = 0; k < 4; k++) {
+      outputIndex.setComponent(i, k, normalized[k]?.[0] ?? normalized[0][0]);
+      outputWeight.setComponent(i, k, (normalized[k]?.[1] ?? 0) / total);
+    }
+    transferred++;
+  }
+  outputIndex.needsUpdate = true;
+  outputWeight.needsUpdate = true;
+  return transferred === vertices.count;
+}
+
 function fitHead(source: THREE.SkinnedMesh, head: Joint): THREE.Box3 | null {
   const positions = source.geometry.getAttribute('position');
   const skinIndex = source.geometry.getAttribute('skinIndex');
@@ -322,6 +434,10 @@ function addAnatomy(source: THREE.SkinnedMesh, profile: ResidentAppearanceProfil
     }
   }
   const geometry = body.geometry();
+  if (!retargetSkinning(source, geometry)) {
+    geometry.dispose();
+    return null;
+  }
   if (!Number.isFinite(geometry.boundingSphere?.radius)
       || geometry.getAttribute('position').count < 3500) {
     geometry.dispose();
