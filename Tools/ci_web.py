@@ -31,8 +31,17 @@ def capture_entries(tests, screens):
     unknown = set(screens) - CAPTURES.keys()
     if unknown:
         raise ValueError(f"Unknown capture groups: {sorted(unknown)}")
-    # Feature PRs can add a capture while this CI PR is being reviewed.
-    return sorted({tests / p for screen in screens for p in CAPTURES[screen] if (tests / p).exists()})
+    entries = set()
+    for screen in screens:
+        primary, *optional = CAPTURES[screen]
+        required = tests / primary
+        if not required.exists():
+            raise FileNotFoundError(f"Required {screen} capture is missing: {primary}")
+        entries.add(required)
+        # Only the future wildlife extension is optional. Existing scene QA
+        # cannot silently disappear when a PR deletes or moves its script.
+        entries.update(tests / p for p in optional if (tests / p).exists())
+    return sorted(entries)
 
 
 def run(entries):

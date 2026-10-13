@@ -123,6 +123,8 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(set(web.capture_entries(root, ["environment"])), {file, future})
             with self.assertRaises(ValueError):
                 web.capture_entries(root, ["typo"])
+            with self.assertRaises(FileNotFoundError):
+                web.capture_entries(root, ["social"])
 
     def test_legacy_automatic_workflows_are_manual_diagnostics(self):
         names = ("web-runtime-resilience", "web-typecheck", "procedural-environment-check",
