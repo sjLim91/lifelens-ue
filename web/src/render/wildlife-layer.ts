@@ -148,7 +148,10 @@ if(wildlifePart>0.5 && wildlifePart<2.5) {
   update(dtSeconds: number): void {
     const dt=THREE.MathUtils.clamp(Number.isFinite(dtSeconds)?dtSeconds:0,0,.1);
     this.time.value+=dt;
-    const speed=2.5;
+    // A Core one-cell step needs time to be visible to an observer.
+    // Travel is always clamped to the latest authoritative target, never a
+    // new destination. Normal gait takes ~1.3s/cell; fleeing ~2.6s/2 cells.
+    const speed=grid.worldUnitsPerChunk/grid.gridCellsPerChunk*.75;
     for(const pose of this.animals.values()){
       const dx=pose.goalX-pose.x,dz=pose.goalZ-pose.z;
       const distance=Math.hypot(dx,dz);
