@@ -14,9 +14,9 @@ document.body.appendChild(renderer.domElement);
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(100,100), new THREE.MeshStandardMaterial({color:0x637950,roughness:1}));
 floor.rotation.x=-Math.PI/2; scene.add(floor);
 const material = new THREE.MeshStandardMaterial({vertexColors:true,roughness:.92});
-for (const [i,species] of ['Hare','Deer','Wolf','FreshwaterFish'].entries()) {
+for (const [i,species] of ['Hare','Deer','Wolf','FreshwaterFish','Tiger'].entries()) {
   const mesh = new THREE.Mesh(createWildlifeGeometry(species),material);
-  mesh.position.set((i-1.5)*1.35,0,i===0?.45:0);
+  mesh.position.set((i-2)*1.55,0,i===0?.45:0);
   mesh.rotation.y=.55; scene.add(mesh);
 }
 for(let i=0;i<12;i++) {

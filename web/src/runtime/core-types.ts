@@ -60,7 +60,7 @@ interface HumanTracePosition {
   gridY: number;
 }
 
-export type WildlifeSpecies = 'Hare' | 'Deer' | 'Wolf' | 'FreshwaterFish';
+export type WildlifeSpecies = 'Hare' | 'Deer' | 'Wolf' | 'FreshwaterFish' | 'Tiger';
 export interface WildlifeAnimalObservation {
   id: string;
   species: WildlifeSpecies;
@@ -68,6 +68,7 @@ export interface WildlifeAnimalObservation {
   gridX: number;
   gridY: number;
   ageDays: number;
+  behavior?: 'Rest' | 'Roam' | 'Forage' | 'Drink' | 'Flee' | 'Hunt' | 'Swim';
 }
 export interface WildlifeObservation {
   available: boolean;
