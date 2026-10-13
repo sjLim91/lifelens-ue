@@ -1,3 +1,4 @@
+#include "lifelens/NaturalEcologyValidation.h"
 #include "lifelens/NaturalEcologySnapshotCodec.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
@@ -236,6 +237,7 @@ bool encodeSimulationSnapshot(
                     cognitionExtension.bytes.end());
     }
 
+    if(!validNaturalEcology(snapshot.world)){ setError(error,"invalid natural ecology state"); return false; }
     Writer ecologyExtension;
     writeNaturalEcology(ecologyExtension,snapshot.world);
     body.insert(body.end(),ecologyExtension.bytes.begin(),ecologyExtension.bytes.end());

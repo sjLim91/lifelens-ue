@@ -17,11 +17,15 @@ inline void advanceSnowpack(SnowpackState& pack, const DynamicEnvironmentObserva
 }
 inline void advanceNaturalEcology(World& world)
 {
+    for(auto& node:world.resourceNodes){node.ecologyMinute=world.minute; node.ensureTrees();}
+    // Five simulation minutes is the authoritative ecology integration quantum;
+    // it bounds climate work during fast-forward and survives any save boundary.
+    if(world.minute%5!=0) return;
     for(const auto& chunk:world.generatedNaturalChunks){
         auto it=std::lower_bound(world.snowpacks.begin(),world.snowpacks.end(),chunk.coord,
             [](const SnowpackState& a,ChunkCoord b){return a.coord<b;});
         if(it==world.snowpacks.end() || !(it->coord==chunk.coord))
-            it=world.snowpacks.insert(it,{chunk.coord,0.0,world.minute-1});
+            it=world.snowpacks.insert(it,{chunk.coord,0.0,std::max(chunk.materializedMinute,world.minute-5)});
         advanceSnowpack(*it,deriveDynamicEnvironment(world.genesisIdentity(),chunk.coord,world.minute));
     }
     const auto calendar=deriveSimulationCalendar(world.minute);
