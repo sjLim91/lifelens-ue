@@ -98,7 +98,14 @@ async function renderCase(name) {
   }
   camera.updateMatrixWorld(); renderer.compile(scene, camera); renderer.render(scene, camera);
   const samples = [];
-  for (let i = 0; i < 5; i++) { const start = performance.now(); renderer.render(scene, camera); renderer.getContext().finish(); samples.push(performance.now() - start); }
+  const gl = renderer.getContext(), pixel = new Uint8Array(4);
+  for (let i = 0; i < 5; i++) {
+    const start = performance.now(); renderer.render(scene, camera);
+    // WebGL finish alone may only flush the browser's command transport.
+    // Readback forces completion before recording a software-frame duration.
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    samples.push(performance.now() - start);
+  }
   document.getElementById('label').textContent = `${name} · ${innerWidth}×${innerHeight}`;
   return { name, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
     ...activeResourceBudget(),
