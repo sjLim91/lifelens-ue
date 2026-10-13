@@ -182,7 +182,7 @@ const FACE_GROUP_NAME = 'LifeLensResidentAuthoredFace';
  * facial-front landmark. Never guess facing direction or add floating features
  * to nonhuman and unrecognized GLBs.
  */
-function verifiedFaceDirection(model: THREE.Group, head: HeadFit): 1 | -1 | null {
+function verifiedFaceLandmark(model: THREE.Group, head: HeadFit): {front: 1 | -1; eyes: THREE.Vector3} | null {
   model.updateMatrixWorld(true);
   const local = head.bone.matrixWorld.clone().invert();
   const eyeMarkers: THREE.Vector3[] = [];
@@ -207,9 +207,9 @@ function verifiedFaceDirection(model: THREE.Group, head: HeadFit): 1 | -1 | null
   // Eye centroid should lie on the head's front, not its middle or neck.
   if (Math.abs(depth) < head.radii.z * .22
       || Math.abs(depth) > head.radii.z * 2.25
-      || mean.y < head.center.y - head.radii.y * .65
+      || mean.y < head.center.y - head.radii.y * 1.3
       || mean.y > head.center.y + head.radii.y * 1.3) return null;
-  return depth > 0 ? 1 : -1;
+  return {front: depth > 0 ? 1 : -1, eyes: mean};
 }
 
 /** Geometry is born from existing Core faceShape and identity; no new traits
@@ -226,8 +226,9 @@ export function syncResidentAuthoredFace(
   const head = cached ?? fitHeadFromSkin(model);
   if (!head) return false;
   if (!cached) model.userData.residentHeadFit = head;
-  const front = verifiedFaceDirection(model, head);
-  if (!front) return false;
+  const landmark = verifiedFaceLandmark(model, head);
+  if (!landmark) return false;
+  const {front, eyes} = landmark;
   const { bone, center, radii } = head;
   const group = new THREE.Group();
   group.name = FACE_GROUP_NAME;
@@ -246,13 +247,15 @@ export function syncResidentAuthoredFace(
   nose.scale.set(x * .135 * appearance.noseScale,
     y * .20 * appearance.noseScale,
     z * .10 * appearance.noseScale);
-  nose.position.set(center.x, center.y + y * .01,
-    center.z + front * z * 1.025);
+  // The real GLB's eye centroid is below the Head-skinned crown bounds.
+  // Derive feature height from the real eyes, never from the scalp centre.
+  nose.position.set(eyes.x, eyes.y - y * .37,
+    eyes.z + front * z * .15);
   group.add(nose);
 
   const lipHalfWidth = x * .29 * appearance.mouthWidthScale;
-  const mouthY = center.y - y * .39;
-  const mouthZ = center.z + front * z * .97;
+  const mouthY = eyes.y - y * 1.02;
+  const mouthZ = eyes.z + front * z * .095;
   const lip = authoredMesh(new THREE.TubeGeometry(
     new THREE.CatmullRomCurve3([
       new THREE.Vector3(center.x - lipHalfWidth, mouthY + y * .015, mouthZ),
