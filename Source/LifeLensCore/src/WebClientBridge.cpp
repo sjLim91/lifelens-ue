@@ -1,4 +1,5 @@
 #include "lifelens/NaturalEcologyLifecycle.h"
+#include "lifelens/WildlifeObservation.h"
 #include "lifelens/WebClientBridge.h"
 #include "lifelens/AutonomousGoalComposer.h"
 
@@ -2169,6 +2170,8 @@ std::string WebClientBridge::humanTracesWindowJson(
     out << "\"humanTraces\":";
     appendHumanTraces(out, buildHumanTraceWindowObservation(
         simulation_->world(), {centerChunkX, centerChunkY}, radius));
+    out << ",\"wildlife\":";
+    appendWildlifeObservation(out,simulation_->world(),{centerChunkX,centerChunkY},radius);
     out << "}";
     return out.str();
 }
@@ -2256,10 +2259,13 @@ std::string WebClientBridge::terrainWindowJson(
     out << "],\"humanTraces\":";
     appendHumanTraces(out, buildHumanTraceWindowObservation(
         simulation_->world(), {centerChunkX, centerChunkY}, radius));
+    out << ",\"wildlife\":";
+    appendWildlifeObservation(out,simulation_->world(),{centerChunkX,centerChunkY},radius);
     out << "}";
     return out.str();
 }
 
 } // namespace lifelens
+
 
 
