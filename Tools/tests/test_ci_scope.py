@@ -88,13 +88,14 @@ class ScopeTests(unittest.TestCase):
             base = git("rev-parse", "HEAD")
             old.unlink()
             weird = "web/src/render/with space\n$(literal).ts"
-            (root / weird).write_text("new")
+            (root / weird).write_text("old")  # Exact-content rename, not just delete + unrelated add.
             git("add", "."); git("commit", "-qm", "rename")
             head = git("rev-parse", "HEAD")
             paths, full = scope.changed_paths({"pull_request": {"base": {"sha": base}, "head": {"sha": head}}},
                                               "pull_request", root)
             self.assertFalse(full)
             self.assertIn(weird, paths)
+            self.assertIn("web/src/render/social-event-layer.ts", paths)
             self.assertIn("social", scope.select_scope(paths)["screens"])
             with self.assertRaises(subprocess.CalledProcessError):
                 scope.changed_paths({"before": "missing", "after": head}, "push", root)

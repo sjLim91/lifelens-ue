@@ -92,7 +92,9 @@ def changed_paths(event, event_name, root=ROOT):
     else:
         raise ValueError(f"Unsupported CI event: {event_name}")
     # Missing commits must fail the selector, not masquerade as no changes.
-    result = subprocess.run(["git", "diff", "--name-only", "-z", comparison],
+    # Treat a rename as removal + addition so both old and new consumers are
+    # covered. Git's default rename detection reports only the new pathname.
+    result = subprocess.run(["git", "diff", "--no-renames", "--name-only", "-z", comparison],
                             cwd=root, check=True, capture_output=True)
     return [p for p in result.stdout.decode("utf-8").split("\0") if p], False
 
