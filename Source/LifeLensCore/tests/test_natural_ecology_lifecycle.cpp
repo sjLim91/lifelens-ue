@@ -1,3 +1,4 @@
+#include "lifelens/NaturalEcologyValidation.h"
 #include "lifelens/NaturalEcologyLifecycle.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
@@ -6,8 +7,11 @@
 using namespace lifelens;
 int main()
 {
+    World rewound{77}; rewound.materializeNaturalChunk({0,0}); rewound.minute=5;
+    advanceNaturalEcology(rewound); assert(validNaturalEcology(rewound));
     World w{77}; w.minute=10000;
     auto& node=w.resourceNodes[2]; node.ecologyMinute=w.minute; node.ensureTrees();
+    assert(node.trees[0].bornMinute!=node.trees[1].bornMinute);
     auto rng=w.rng; Inventory inventory;
     const auto id=node.id;
     const int before=node.quantity;

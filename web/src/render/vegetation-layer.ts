@@ -159,8 +159,11 @@ export class VegetationLayer {
           this.stumps.setMatrixAt(stumpIndex++, this.matrix);
         }
         if (candidate.tree?.remainingWood === 0) continue;
-        const ageScale = candidate.tree && candidate.tree.generation > 0
-          ? Math.min(1, 0.18 + Math.sqrt(candidate.tree.ageDays / (365 * 8)) * 0.82) : 1;
+        const ageScale = candidate.tree
+          ? candidate.tree.generation > 0
+            ? Math.min(1, 0.18 + Math.sqrt(Math.max(0, candidate.tree.ageDays) / (365 * 8)) * 0.82)
+            : 0.72 + Math.min(1, Math.max(0, candidate.tree.ageDays) / (365 * 35)) * 0.28
+          : 1;
         const fullTreeHeight = profile.treeHeightWorldUnits * treeScale * ageScale;
         this.rotation.setFromAxisAngle(UP, yaw);
         this.position.set(worldX, groundY, worldZ);

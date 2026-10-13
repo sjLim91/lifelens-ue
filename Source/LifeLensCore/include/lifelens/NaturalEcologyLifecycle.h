@@ -25,7 +25,7 @@ inline void advanceNaturalEcology(World& world)
         auto it=std::lower_bound(world.snowpacks.begin(),world.snowpacks.end(),chunk.coord,
             [](const SnowpackState& a,ChunkCoord b){return a.coord<b;});
         if(it==world.snowpacks.end() || !(it->coord==chunk.coord))
-            it=world.snowpacks.insert(it,{chunk.coord,0.0,std::max(chunk.materializedMinute,world.minute-5)});
+            it=world.snowpacks.insert(it,{chunk.coord,0.0,std::min(world.minute,std::max(chunk.materializedMinute,std::max(0,world.minute-5)))});
         advanceSnowpack(*it,deriveDynamicEnvironment(world.genesisIdentity(),chunk.coord,world.minute));
     }
     const auto calendar=deriveSimulationCalendar(world.minute);
