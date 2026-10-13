@@ -20,7 +20,7 @@ jobs:
       - run: npm run typecheck
         working-directory: web
       - run: python3 Tools/validate_web_presentation_v2_environment.py
-      - run: node tests/procedural-environment/run.mjs && node tests/procedural-environment/lifecycle.mjs && node tests/facility-construction/run.mjs && node tests/presentation/run.mjs
+      - run: node tests/procedural-environment/run.mjs && node tests/procedural-environment/lifecycle.mjs && node tests/procedural-environment/grounding-wildlife.mjs && node tests/facility-construction/run.mjs && node tests/presentation/run.mjs
         working-directory: web
       - run: node tests/environment-consequences/run.mjs && node tests/procedural-motion/run.mjs && node tests/resident-motion/run.mjs
         working-directory: web
@@ -32,8 +32,11 @@ jobs:
       - run: /tmp/ecology-core/test_natural_ecology_lifecycle && mkdir -p web/tests/procedural-environment/review && /tmp/ecology-core/ll_ecology_fixture web/tests/procedural-environment/review/core-fixture.json
       - run: node tests/procedural-environment/browser-review.mjs
         working-directory: web
+      - run: node tests/procedural-environment/wildlife-browser-review.mjs
+        working-directory: web
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: procedural-environment-review
           path: web/tests/procedural-environment/review/
+

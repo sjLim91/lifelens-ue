@@ -323,6 +323,7 @@ export class WorldSession {
         terrain = {
           ...terrain,
           humanTraces: traces.humanTraces,
+          wildlife: traces.wildlife,
         };
       }
     }
@@ -385,3 +386,4 @@ export class WorldSession {
     };
   }
 }
+

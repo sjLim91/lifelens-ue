@@ -35,6 +35,7 @@ export interface TerrainChunk {
 }
 
 export interface TerrainWindow {
+  wildlife?: WildlifeObservation;
   available: boolean;
   centerChunkX: number;
   centerChunkY: number;
@@ -45,6 +46,7 @@ export interface TerrainWindow {
 }
 
 export interface HumanTracesWindowPayload {
+  wildlife?: WildlifeObservation;
   available?: boolean;
   centerChunkX?: number;
   centerChunkY?: number;
@@ -56,6 +58,22 @@ interface HumanTracePosition {
   id: string;
   gridX: number;
   gridY: number;
+}
+
+export type WildlifeSpecies = 'Hare' | 'Deer' | 'Wolf' | 'FreshwaterFish';
+export interface WildlifeAnimalObservation {
+  id: string;
+  species: WildlifeSpecies;
+  sex: 'Male' | 'Female';
+  gridX: number;
+  gridY: number;
+  ageDays: number;
+}
+export interface WildlifeObservation {
+  available: boolean;
+  geographicallyConditioned: boolean;
+  regionalWeatherApplied: boolean;
+  animals: WildlifeAnimalObservation[];
 }
 
 export type HumanTrace = HumanTracePosition & (
@@ -1014,5 +1032,6 @@ export interface RuntimeClient {
 export interface CoreModule {
   LifeLensWebClient: new () => RuntimeClient;
 }
+
 
 

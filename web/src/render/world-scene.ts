@@ -30,6 +30,7 @@ import { VegetationLayer } from './vegetation-layer';
 import { WaterLayer } from './water-layer';
 import { createTerrainSurfaceSignature } from './terrain-surface';
 import { WeatherLayer } from './weather-layer';
+import { WildlifeLayer } from './wildlife-layer';
 
 import { NaturalResourceProjectionCache } from './natural-resource-projection';
 import { SurfaceConsequenceLayer } from './surface-consequence-layer';
@@ -75,6 +76,7 @@ export class WorldScene {
   private readonly humanTraceLayer = new HumanTraceLayer();
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
+  private readonly wildlifeLayer = new WildlifeLayer();
   private readonly residentLayer = new ResidentWorldLayer();
   private readonly socialEventLayer = new SocialEventLayer(id => this.residentLayer.socialEventAnchor(id));
   private socialEventCenter: { x: number; y: number } | null = null;
@@ -117,6 +119,7 @@ export class WorldScene {
     this.scene.add(this.humanTraceLayer.group);
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
+    this.scene.add(this.wildlifeLayer.group);
     this.scene.add(this.residentLayer.group);
     this.scene.add(this.socialEventLayer.group);
     this.scene.add(this.weatherLayer.group);
@@ -382,6 +385,7 @@ export class WorldScene {
   }
 
   setHumanTraces(window: TerrainWindow): void {
+    this.wildlifeLayer.setTerrain(window);
     const facilitySignature = this.facilityTraceSignature(window);
     this.facilityLayer.setTerrain(window);
     this.humanTraceLayer.setDynamicTraces(window);
@@ -399,6 +403,7 @@ export class WorldScene {
   }
 
   setTerrain(window: TerrainWindow): void {
+    this.wildlifeLayer.setTerrain(window);
     if (
       this.terrainWorldSeed !== undefined
       && window.worldSeed !== undefined
@@ -496,6 +501,7 @@ export class WorldScene {
     this.humanTraceLayer.dispose();
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();
+    this.wildlifeLayer.dispose();
     this.residentLayer.dispose();
     this.socialEventLayer.dispose();
     this.weatherLayer.dispose();
@@ -563,6 +569,7 @@ export class WorldScene {
   }
 
 }
+
 
 
 
