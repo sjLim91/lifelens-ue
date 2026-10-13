@@ -125,8 +125,11 @@ export function createWildlifeGeometry(species: WildlifeSpecies, sex: 'Male' | '
         const points: [number,number,number][]=[];
         for(let j=0;j<8;j++){
           const theta=j/7*1.40;
-          points.push([side*.32*radial*Math.sin(theta),
-            .72+.31*radial*Math.cos(theta)-.015,z+.025*Math.sin(theta+i)]);
+          // Raise the stripe tube above the local ellipsoid surface.
+          // A negative offset buried the entire stripe inside the skin.
+          const outer=radial+.045;
+          points.push([side*.32*outer*Math.sin(theta),
+            .72+.31*outer*Math.cos(theta),z+.025*Math.sin(theta+i)]);
         }
         segment(0x2d2520,points,.0115,0,10);
       }
