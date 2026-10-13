@@ -23,7 +23,11 @@ preferAutonomousSocialGoalTarget(
 {
     if(!actor.alive || actor.id==0 || requiresDirectCare(actor.lifeStage)
        || world.minute<0 ||world.minute%15!=0
-       || baseline.intent==SocialIntent::None ||baseline.target==0
+       // Avoidance protects the resident; Comfort protects another person.
+       // Neither may be displaced by a merely aspirational trust goal.
+       || (baseline.intent!=SocialIntent::Approach
+           &&baseline.intent!=SocialIntent::Repair)
+       ||baseline.target==0
        ||!std::isfinite(baseline.utility)
        ||baseline.utility<0.18 ||baseline.utility>1.0)
         return std::nullopt;
