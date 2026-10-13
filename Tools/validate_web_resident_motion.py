@@ -104,6 +104,7 @@ for token in (
     "widthScale",
     "depthScale",
     "bodyMaturity01",
+    "syncResidentAnatomicalBody",
     "shoulderScale",
     "hipScale",
     "waistScale",
@@ -151,10 +152,17 @@ assert "maxZoom: 6.4" in contract
 for token in (
     "canvas.width = 768",
     "canvas.height = 144",
-    "sprite.scale.set(4.8, 0.9, 1)",
+    "sprite.scale.set(2.4, 0.45, 1)",
     "let fontSize = 42",
 ):
-    assert token in resident, f"resident world label readability regressed: {token}"
+    assert token in resident, f"resident selected-only label readability regressed: {token}"
+assert "resident.id !== this.selectedResidentId || !cue" in resident
+assert "if (!actor.actionCue)" in resident
+assert "const actionCue = createActionCueSprite();" not in resident
+anatomy = (root / "web/src/render/resident-anatomical-body.ts").read_text(encoding="utf-8")
+for token in ("ANATOMICAL_BODY_NAME", "new THREE.SkinnedMesh", "bind(donor.skeleton",
+              "skinIndex", "skinWeight", "leftForearm", "rightCalf", "headBounds"):
+    assert token in anatomy, f"missing authored anatomical rig term: {token}"
 
 # The scalp belongs to the skinned body. Fixed-height spherical proxies caused
 # the exposed-scalp/collar regression reported on a real device.

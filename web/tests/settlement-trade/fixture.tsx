@@ -55,7 +55,7 @@ observerActions.bind({selectSettlement(id){selected=id;world.setSelectedSettleme
 renderer.domElement.addEventListener('click',event=>{const id=world.pickSettlement(event.clientX/innerWidth*2-1,-event.clientY/innerHeight*2+1);observerActions.selectSettlement(id);});
 if(['migration','frontier'].includes(mode))world.setSelectedResident(residents[0].id);
 drawUI();
-const render=()=>{world.update(0);for(const a of (world as any).residentLayer.actors.values())a.actionCue.sprite.visible=false;renderer.render(world.scene,world.camera);};render();
+const render=()=>{world.update(0);for(const a of (world as any).residentLayer.actors.values())if(a.actionCue)a.actionCue.sprite.visible=false;renderer.render(world.scene,world.camera);};render();
 const overlay=(world as any).settlementFocusLayer;
 overlay.group.visible=false;renderer.render(world.scene,world.camera);const baselineCalls=renderer.info.render.calls;overlay.group.visible=true;render();
 const stats=()=>{let objects=0;const materials=new Set();world.scene.traverse((o:any)=>{objects++;if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);});return {calls:renderer.info.render.calls,baselineCalls,overlayCalls:renderer.info.render.calls-baselineCalls,geometries:renderer.info.memory.geometries,materials:materials.size,objects,overlay:overlay.diagnostics};};

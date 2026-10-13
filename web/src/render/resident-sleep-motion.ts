@@ -68,14 +68,23 @@ export function calibrateResidentSleep(model: THREE.Group, clip: THREE.Animation
 
 export class ResidentSleepMotion {
   private engaged = false;
+  private readonly contact = new THREE.Vector3();
+  private readonly rootPosition = new THREE.Vector3();
   private time: number;
   private support = 0;
   private releasing = false;
   constructor(private readonly action: THREE.AnimationAction,
     private readonly calibration: ResidentSleepCalibration,
-    private readonly visual: THREE.Group) {
+    private readonly visual: THREE.Group,
+    private anatomicalBody: THREE.SkinnedMesh | null = null) {
     this.time = calibration.duration;
     action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true;
+  }
+  // Resident morphology updates replace the authored mesh while keeping the
+  // same actor, animation mixer and sleeping state. Never contact-solve a
+  // detached stale mesh after growth, puberty or inherited trait refresh.
+  setAnatomicalBody(body: THREE.SkinnedMesh | null): void {
+    this.anatomicalBody = body;
   }
   get active(): boolean { return this.engaged; }
   get resting(): boolean { return this.engaged && this.time === 0; }
@@ -109,6 +118,25 @@ export class ResidentSleepMotion {
     const lift = at(1) + (.045 + this.support) / height;
     this.visual.position.set(at(0), lift, at(2));
     this.visual.rotation.set(0, 0, 0);
+    // Match the new skin's animated lowest point to the actual support.
+    // This never changes the Core position, sleep state or saved skeleton.
+    if (sleeping && this.anatomicalBody) {
+      const body = this.anatomicalBody;
+      this.visual.updateWorldMatrix(true, true);
+      body.skeleton.update();
+      const positions = body.geometry.getAttribute('position');
+      let lowest = Infinity;
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        this.contact.fromBufferAttribute(positions, vertex);
+        body.applyBoneTransform(vertex, this.contact);
+        this.contact.applyMatrix4(body.matrixWorld);
+        lowest = Math.min(lowest, this.contact.y);
+      }
+      const ground = this.visual.parent?.getWorldPosition(this.rootPosition).y ?? 0;
+      const required = ground + Math.max(0, this.support) + .012;
+      if (Number.isFinite(lowest) && lowest < required)
+        this.visual.position.y += (required - lowest) / height;
+    }
     if (!sleeping && this.time === this.calibration.duration) {
       // Settle the upright visual offset before releasing the action. Avoid a
       // last-frame teleport from a raised bed/slope anchor back to ground.
