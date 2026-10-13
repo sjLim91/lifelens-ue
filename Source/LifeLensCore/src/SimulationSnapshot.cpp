@@ -1,3 +1,4 @@
+#include "lifelens/NaturalEcologyValidation.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/WorldGenerationSnapshotCodec.h"
@@ -292,6 +293,10 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
 bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::string* error)
 {
     if(!validateSnapshot(snapshot,error)) return false;
+    if(!validNaturalEcology(snapshot.world)){
+        if(error) *error="invalid natural ecology state";
+        return false;
+    }
     if(!sameSimulationRuleset(snapshot.ruleset,ruleset_)){
         if(error) *error="snapshot ruleset does not match simulation ruleset";
         return false;

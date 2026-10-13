@@ -97,6 +97,17 @@ inline double deriveContinuousSurfaceElevation01(
         + detail * 0.09
         + (ridge - 0.5) * 0.10;
 
+    if(identity.generationVersion>=4){
+        const double tectonic=surfaceValueNoiseAtGrid(identity,grid,0x4c4c544543544f4eULL,Chunk*18);
+        const double ridgeFine=surfaceValueNoiseAtGrid(identity,grid,0x4c4c524944474534ULL,Chunk*2);
+        const double ridgeSharp=std::pow(1.0-std::abs(ridgeFine*2.0-1.0),3.0);
+        const double mountain=macroSmoothStep(clampMacro01((tectonic-0.42)*3.0));
+        const double valley=surfaceValueNoiseAtGrid(identity,grid,0x4c4c56414c4c4559ULL,Chunk*4);
+        // Continuous plate/ridge bands, locally incised valleys and bedrock
+        // scarps. Hydrology/navigation read this same versioned field.
+        const double scarp=macroSmoothStep(clampMacro01((valley-0.46)*10.0));
+        return clampMacro01(elevation + mountain*(0.20*ridgeSharp+0.07*scarp)-0.05*(1.0-valley));
+    }
     return clampMacro01(elevation);
 }
 
@@ -127,3 +138,4 @@ inline ContinuousTerrainSample deriveContinuousTerrainSample(
 }
 
 } // namespace lifelens
+

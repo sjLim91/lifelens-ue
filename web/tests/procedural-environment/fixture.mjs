@@ -1,3 +1,4 @@
+import { WaterLayer } from './review/src/render/water-layer.mjs';
 import * as THREE from 'three';
 import { ProceduralTreeAsset } from './review/src/render/procedural-tree-layer.mjs';
 import { VegetationLayer } from './review/src/render/vegetation-layer.mjs';
@@ -17,8 +18,9 @@ scene.add(new THREE.HemisphereLight(0xe8f1ff, 0x61513c, 2.0));
 const sun = new THREE.DirectionalLight(0xffedd6, 2.7); sun.position.set(-25, 35, 18); scene.add(sun);
 const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, .1, 350);
 const trees = new VegetationLayer(), legacy = new LegacyVegetation(), ground = new GroundDetailLayer(), facilities = new FacilityLayer();
+const water = new WaterLayer();
 const terrainGroup = new THREE.Group(), gallery = new THREE.Group();
-scene.add(trees.group, legacy.group, ground.group, facilities.group, terrainGroup, gallery);
+scene.add(trees.group, legacy.group, ground.group, facilities.group, terrainGroup, gallery, water.group);
 const treeSpecies = ['oak', 'birch', 'pine'];
 const galleryAssets = treeSpecies.map((species, index) => {
   const a = new ProceduralTreeAsset(species, `${species}:0`, 1, false);
@@ -30,6 +32,7 @@ const chunks = Array.from({ length: 25 }, (_, i) => ({ x: i % 5 - 2, y: Math.flo
   elevation01: .25, waterKind: 'None', waterAvailability: .5, forestCoverage01: .75,
   grassCoverage01: .65, shrubCoverage01: .25, rockCoverage01: .18, moisture01: .7, temperature01: .5 }));
 const w = { available: true, centerChunkX: 0, centerChunkY: 0, worldSeed: 'visual-life-lens', chunks };
+const coreFixture = await fetch('/tests/procedural-environment/review/core-fixture.json').then(r => r.ok ? r.json() : null);
 const build = createTerrainGeometryBuilder(w);
 const terrainMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .96 });
 for (const chunk of chunks) {
@@ -65,8 +68,54 @@ function activeResourceBudget() {
 }
 async function renderCase(name) {
   trees.group.visible = legacy.group.visible = ground.group.visible = facilities.group.visible = terrainGroup.visible = gallery.visible = false;
+  water.group.visible = false;
   const e = environment(name === 'autumn' ? 'Autumn' : name === 'winter' ? 'Winter' : 'Summer');
-  if (name === 'gallery') {
+  if (name === 'core-terrain' || name === 'reflection') {
+    if (!coreFixture) throw new Error('Core fixture is required for integrated QA');
+    const cw = coreFixture.terrain, ce = coreFixture.environment;
+    camera.position.set(27, 24, 34); camera.lookAt(0, 3, 0);
+    for (const child of terrainGroup.children) child.geometry.dispose(); terrainGroup.clear();
+    const detailedBuild = createTerrainGeometryBuilder(cw);
+    for (const chunk of cw.chunks) {
+      const mesh = new THREE.Mesh(detailedBuild(chunk), terrainMaterial);
+      mesh.position.set((chunk.x - cw.centerChunkX) * grid.worldUnitsPerChunk, -grid.elevationScale * .25,
+        (chunk.y - cw.centerChunkY) * grid.worldUnitsPerChunk); terrainGroup.add(mesh);
+    }
+    terrainGroup.visible = trees.group.visible = ground.group.visible = water.group.visible = true;
+    const projection = new NaturalResourceProjection(coreFixture.resources, cw);
+    trees.setTerrain(cw, projection); ground.setTerrain(cw, projection);
+    trees.setEnvironment(ce); ground.setEnvironment(ce); trees.update(camera);
+    water.group.position.y = -grid.elevationScale * .25;
+    water.setTerrain(cw); water.setEnvironment(ce); water.setSimulationMinute(ce.simulationMinute);
+    if (name === 'reflection') { camera.updateMatrixWorld(); water.updateReflection(renderer, scene, camera); }
+  } else if (['stumps', 'regrowth', 'phenology'].includes(name)) {
+    camera.position.set(5, 3.2, 7); camera.lookAt(0, .6, 0);
+    for (const child of terrainGroup.children) child.geometry.dispose(); terrainGroup.clear();
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), terrainMaterial);
+    floor.rotation.x = -Math.PI / 2; floor.position.y = -0.035;
+    terrainGroup.add(floor); terrainGroup.visible = true;
+    const close = { ...w, chunks: [chunks.find(c => c.x === 0 && c.y === 0)] };
+    const records = Array.from({ length: 8 }, (_, ordinal) => ({ id: `wood:${ordinal}`, ordinal,
+      ageDays: name === 'regrowth' ? 30 : 10950, remainingWood: name === 'regrowth' ? 2 : 0,
+      capacity: 10, felledMinute: 50, generation: name === 'regrowth' ? 1 : 0 }));
+    const resources = [{ id: 'wood', material: 'Wood', gridX: 16, gridY: 16,
+      quantity: name === 'regrowth' ? 16 : 0, maxQuantity: 80, trees: records },
+      { id: 'food', material: 'PlantFood', gridX: 16, gridY: 16, quantity: 80, maxQuantity: 80,
+        flower01: name === 'phenology' ? 1 : 0, fruit01: name === 'phenology' ? 1 : 0 }];
+    const projection = new NaturalResourceProjection({ available: true, resources }, close);
+    trees.group.visible = name !== 'phenology'; ground.group.visible = true;
+    trees.setTerrain(close, projection); ground.setTerrain(close, projection);
+    trees.setEnvironment(e); ground.setEnvironment(e); trees.update(camera);
+    // Inspect the changed object, rather than an unrelated foreground tree.
+    const matrix = new THREE.Matrix4();
+    const object = name === 'phenology' ? ground.flowers : trees.stumps;
+    if (object.count > 0) {
+      object.getMatrixAt(0, matrix);
+      const focus = new THREE.Vector3().setFromMatrixPosition(matrix).add(object.parent.position);
+      camera.position.set(focus.x + 1.4, focus.y + .9, focus.z + 1.6);
+      camera.lookAt(focus.x, focus.y + .2, focus.z); trees.update(camera);
+    }
+  } else if (name === 'gallery') {
     camera.position.set(14, 9, 30); camera.lookAt(0, 3.8, 0); gallery.visible = true;
     for (const a of galleryAssets) { a.weather.setEnvironment(e); a.update(camera); }
   } else {

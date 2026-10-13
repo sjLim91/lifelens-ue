@@ -50,6 +50,7 @@ export function createTerrainElevationSampler(
   localX01: number,
   localY01: number,
 ) => number {
+  const detailed = new Map(window.chunks.filter(c => c.elevationSamples?.length === 289).map(c => [`${c.x}:${c.y}`, c.elevationSamples!]));
   const elevations = new Map(
     window.chunks.map((chunk) => [
       `${chunk.x}:${chunk.y}`,
@@ -67,6 +68,17 @@ export function createTerrainElevationSampler(
     localX01: number,
     localY01: number,
   ): number => {
+    const samples = detailed.get(`${chunkX}:${chunkY}`);
+    if (samples) {
+      const gx = THREE.MathUtils.clamp(localX01, 0, 1) * 16;
+      const gy = THREE.MathUtils.clamp(localY01, 0, 1) * 16;
+      const x = Math.min(15, Math.floor(gx)), y = Math.min(15, Math.floor(gy));
+      const tx = gx - x, ty = gy - y;
+      const a = samples[y * 17 + x], b = samples[y * 17 + x + 1];
+      const c = samples[(y + 1) * 17 + x], d = samples[(y + 1) * 17 + x + 1];
+      return tx >= ty ? a * (1 - tx) + b * (tx - ty) + d * ty
+        : a * (1 - ty) + c * (ty - tx) + d * tx;
+    }
     const center = elevationAt(chunkX, chunkY) ?? 0;
     const corner = (sx: number, sy: number): number => average(
       [
@@ -109,6 +121,15 @@ export function createTerrainGeometryBuilder(
   ]));
   const normal = new THREE.Vector3();
   const sampleNormal = (x: number, y: number): THREE.Vector3 => {
+    const cx = Math.floor(x), cy = Math.floor(y);
+    const detailChunk = window.chunks.find(c => c.x === cx && c.y === cy && c.elevationSamples?.length === 289);
+    if (detailChunk) {
+      const step = 1 / 16;
+      const lx = x - cx, ly = y - cy;
+      const dx = (sampleElevation(cx, cy, lx + step, ly) - sampleElevation(cx, cy, lx - step, ly)) / (2 * step);
+      const dy = (sampleElevation(cx, cy, lx, ly + step) - sampleElevation(cx, cy, lx, ly - step)) / (2 * step);
+      return normal.set(-dx * elevationScale / chunkWorldSize, 1, -dy * elevationScale / chunkWorldSize).normalize();
+    }
     const xs = Number.isInteger(x) ? [x - 1, x] : [Math.floor(x)];
     const ys = Number.isInteger(y) ? [y - 1, y] : [Math.floor(y)];
     let dx = 0, dy = 0, count = 0;
@@ -126,7 +147,7 @@ export function createTerrainGeometryBuilder(
   };
 
   return (chunk: TerrainChunk): THREE.BufferGeometry => {
-    const subdivisions = 10;
+    const subdivisions = chunk.elevationSamples?.length === 289 ? 16 : 10;
     const verticesPerSide = subdivisions + 1;
     const positions: number[] = [];
     const uvs: number[] = [];
@@ -160,8 +181,12 @@ export function createTerrainGeometryBuilder(
           y,
         );
         sampleColor(chunk.x, chunk.y, tx, ty, color).multiplyScalar(shade);
-        colors.push(color.r, color.g, color.b);
         sampleNormal(chunk.x + tx, chunk.y + ty);
+        if (chunk.elevationSamples?.length === 289) {
+          const rock = THREE.MathUtils.clamp((0.96 - normal.y) * 6, 0, 0.8);
+          color.lerp(new THREE.Color(0x888477), rock);
+        }
+        colors.push(color.r, color.g, color.b);
         normals.push(normal.x, normal.y, normal.z);
       }
     }
@@ -205,3 +230,4 @@ export function buildChunkGeometry(
 ): THREE.BufferGeometry {
   return createTerrainGeometryBuilder(window, options)(chunk);
 }
+

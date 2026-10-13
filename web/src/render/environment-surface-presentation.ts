@@ -22,6 +22,7 @@ export function presentationHash01(value: string): number {
  */
 export function snowPresentationCoverage(environment: DynamicEnvironment | null): number {
   if (!environment || environment.available === false) return 0;
+  if (Number.isFinite(environment.snowDepthMeters)) return clamp01(Number(environment.snowDepthMeters) / 0.12);
   const type = environment.precipitationType ?? (environment.summary === 'Snow' ? 'Snow' : 'None');
   if (type !== 'Snow' || !Number.isFinite(environment.airTemperatureC)) return 0;
   const config = WORLD_PRESENTATION.weather;

@@ -1,3 +1,4 @@
+#include <map>
 #pragma once
 
 #include <cstddef>
@@ -74,6 +75,8 @@ public:
         int radiusChunks) const;
 
 private:
+    // Bounded immutable terrain samples; never a simulation state cache.
+    mutable std::map<std::string,std::string> elevationSampleCache_;
     std::unique_ptr<Simulation> simulation_;
     std::unique_ptr<EarthScenarioGeoCatalog> earthScenario_;
     SurfaceRegionId activeEarthOriginRegionId_=0;
@@ -84,3 +87,4 @@ private:
 };
 
 } // namespace lifelens
+

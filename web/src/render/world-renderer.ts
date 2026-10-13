@@ -36,6 +36,7 @@ export class WorldRenderer {
       );
       lastFrame = frameTime;
       this.world.update(deltaSeconds);
+      this.world.updateReflections(this.renderer);
       this.renderer.render(this.world.scene, this.world.camera);
       this.animationFrame = requestAnimationFrame(render);
     };
@@ -155,3 +156,4 @@ export class WorldRenderer {
     this.renderer.dispose();
   }
 }
+

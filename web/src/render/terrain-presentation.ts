@@ -95,3 +95,4 @@ export function shade(hex: string, factor: number): string {
 
   return `rgb(${red} ${green} ${blue})`;
 }
+

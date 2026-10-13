@@ -65,12 +65,12 @@ export class WorldSession {
   ) {}
 
   createWorld(seed: string): void {
-    this.core.createWorld(seed, '', 3);
+    this.core.createWorld(seed, '', 4);
     this.resetObservation();
   }
 
   createEarthWorld(seed: string, latitude: number, longitude: number): boolean {
-    if (!this.core.createEarthWorld(seed, latitude, longitude, 3)) return false;
+    if (!this.core.createEarthWorld(seed, latitude, longitude, 4)) return false;
     this.resetObservation();
     return true;
   }

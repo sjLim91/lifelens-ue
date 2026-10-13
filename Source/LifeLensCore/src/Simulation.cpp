@@ -1,3 +1,4 @@
+#include "lifelens/NaturalEcologyLifecycle.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/WaterSourceExperience.h"
 #include "lifelens/AutonomousSocialGoalRouting.h"
@@ -3699,6 +3700,7 @@ void Simulation::step(){
         if(!r.plan.empty()) advanceAction(c,r);
     }
     ++world_.minute;
+    advanceNaturalEcology(world_);
 
     // Environmental pressure follows each resident's authoritative Core runtime
     // position. Do not apply one start-region climate to residents who have
@@ -3732,4 +3734,5 @@ void Simulation::step(){
 }
 void Simulation::runMinutes(int minutes){ for(int i=0;i<minutes;++i) step(); }
 }
+
 

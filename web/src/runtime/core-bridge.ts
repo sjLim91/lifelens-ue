@@ -153,14 +153,14 @@ export class LifeLensCoreBridge {
   createWorld(
     worldSeed: string,
     populationSeed = '',
-    generationVersion = 3,
+    generationVersion = 4,
   ): boolean {
     return this.client.newGame(worldSeed, populationSeed, generationVersion);
   }
 
   createEarthWorld(
     seed: string, latitudeDeg: number, longitudeDeg: number,
-    generationVersion = 3,
+    generationVersion = 4,
   ): boolean {
     if (typeof this.client.newEarthGame !== 'function') return false;
     return this.client.newEarthGame(
@@ -397,3 +397,4 @@ export class LifeLensCoreBridge {
     this.client.delete?.();
   }
 }
+

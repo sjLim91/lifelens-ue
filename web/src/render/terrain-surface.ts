@@ -11,7 +11,7 @@ const ELEVATION_PALETTE = [
 /** Actual 3D surface palette, in Three's linear working color space. */
 export function terrainSurfaceColor(chunk: TerrainChunk): THREE.Color {
   if (chunk.waterKind === 'Ocean') return new THREE.Color(0x1b4b63);
-  if (chunk.waterKind === 'Coast') return new THREE.Color(0x66705a);
+  if (chunk.waterKind === 'Coast') return new THREE.Color(0xb7aa83);
   if (chunk.waterKind === 'Wetland') return new THREE.Color(0x496e58);
   const elevation = clamp01(chunk.elevation01);
   const base = new THREE.Color(ELEVATION_PALETTE[0][1]);
@@ -68,3 +68,4 @@ export function createTerrainSurfaceSignature(window: TerrainWindow) {
     return `${window.worldSeed ?? '0'}|${neighbors.join('|')}`;
   };
 }
+

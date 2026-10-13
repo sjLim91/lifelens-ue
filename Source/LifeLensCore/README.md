@@ -36,3 +36,8 @@ python Tools/build_web_client.py
 ```
 
 Do not move simulation authority into React/TypeScript/Three.js. Browser code consumes explicit Core/WASM contracts.
+
+
+## Natural ecology lifecycle
+
+Wood nodes persist tree ordinals, seed-derived birth dates, harvest/felling state and coppice generations. Materialized chunks integrate snow accumulation/melt in five-minute Core time quanta. Snapshot v8 keeps these in an optional validated extension so older snapshots remain readable. Web NEW GAME opts into generation v4; v1–v3 terrain remains unchanged. See [implementation and validation](../../docs/PROCEDURAL_ECOLOGY_LIFECYCLE_2026-10-13.md).
