@@ -24,6 +24,10 @@ export interface ResidentAppearanceProfile {
   jawScale: number;
   cheekScale: number;
   faceLengthScale: number;
+  noseScale: number;
+  mouthWidthScale: number;
+  hairLengthScale: number;
+  ageWeathering01: number;
 }
 
 const GARMENT_PALETTE = [
@@ -88,8 +92,11 @@ function phenotype(value: number | undefined, fallback: number): number {
     ? THREE.MathUtils.clamp(value, 0, 1) : fallback;
 }
 
-function agedHairColor(color: number, elderly: boolean): number {
-  return elderly ? new THREE.Color(color).lerp(new THREE.Color(0xb4b1a6), 0.55).getHex() : color;
+function agedHairColor(color: number, weathering: number): number {
+  // LifeCondition.appearanceAgeFactor is the Core-owned aging clock. Grey
+  // emerges gradually; old observers and new births replay identically.
+  const grey = THREE.MathUtils.smoothstep(weathering, .51, 1) * .62;
+  return new THREE.Color(color).lerp(new THREE.Color(0xb4b1a6), grey).getHex();
 }
 function pigmentColor(value: number, colors: readonly number[]): number {
   const position = value * (colors.length - 1);
@@ -131,6 +138,12 @@ export function createResidentAppearanceProfile(
 ): ResidentAppearanceProfile {
   const seed = stableHash(resident.id);
   const life = deriveResidentLifeVisualState(resident);
+  const ageFallback = life.age === null ? 0 : THREE.MathUtils.clamp((life.age - 25) / 65, 0, 1);
+  const ageWeathering01 = phenotype(resident.lifeCondition?.appearanceAgeFactor, ageFallback);
+  const hairLengthScale = life.stage === 'Baby' ? .25
+    : life.stage === 'Toddler' ? .48
+    : life.stage === 'Child' ? .72
+    : life.stage === 'Teen' ? .86 : 1;
   const sexWidthBias = resident.sex === 'Male'
     ? 1.05
     : resident.sex === 'Female'
@@ -175,7 +188,7 @@ export function createResidentAppearanceProfile(
     hairStyle: Math.floor(hash01(seed, 53) * 8),
     hairColor: agedHairColor(typeof resident.genetics?.hairPigment === 'number' && Number.isFinite(resident.genetics.hairPigment)
       ? pigmentColor(phenotype(resident.genetics.hairPigment, .5), [0xc6a064, 0x805631, 0x3b281c, 0x1c1a19])
-      : HAIR_PALETTE[hairIndex], life.stage === 'Elderly'),
+      : HAIR_PALETTE[hairIndex], ageWeathering01),
     gaitRateBias: (0.94 + hash01(seed, 59) * 0.12) * life.gaitBias,
     eyeColor: pigmentColor(phenotype(resident.genetics?.eyePigment, 1), [0x547d8c, 0x627255, 0x705336, 0x302720]),
     shoulderScale: resident.sex === 'Female' ? .92 : resident.sex === 'Male' ? 1.02 : 1,
@@ -184,6 +197,14 @@ export function createResidentAppearanceProfile(
     jawScale: .83 + phenotype(resident.genetics?.faceShape, hash01(seed, 83)) * .34,
     cheekScale: .90 + phenotype(resident.genetics?.faceShape, hash01(seed, 85)) * .21,
     faceLengthScale: 1.09 - phenotype(resident.genetics?.faceShape, hash01(seed, 87)) * .17,
+    // Only existing inherited faceShape is genetic truth. The small GUID salt
+    // gives siblings individual visual detail, never a fabricated Core allele.
+    noseScale: .83 + phenotype(resident.genetics?.faceShape, hash01(seed, 91)) * .27
+      + (hash01(seed, 93) - .5) * .11,
+    mouthWidthScale: .83 + phenotype(resident.genetics?.faceShape, hash01(seed, 95)) * .24
+      + (hash01(seed, 97) - .5) * .13,
+    hairLengthScale,
+    ageWeathering01,
   };
 }
 
