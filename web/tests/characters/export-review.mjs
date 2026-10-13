@@ -73,7 +73,11 @@ for(let ci=0;ci<cases.length;ci++){
     objects:objects.slice(0,6)
   }));
  }
- if(!syncResidentAuthoredGarment(model,{item:'PrimitiveWrap',material:'Fiber',quantity:1,quality:.72,durability:.88},profile))throw Error('A3 real GLB torso bind unavailable');
+ // Preview genuine initial state with no owned garment, plus optional crafted item.
+ const crafted=axis>=1;
+ const worn=crafted?{item:'PrimitiveWrap',material:'Fiber',quantity:1,quality:.72,durability:.88}:null;
+ if(syncResidentAuthoredGarment(model,worn,profile)!==crafted)
+   throw Error('A3 garment existence did not match Core equipment for '+label);
   const visual=new THREE.Group();visual.add(model);const root=new THREE.Group();root.add(visual);
  root.scale.set(profile.heightWorldUnits*profile.widthScale,profile.heightWorldUnits,profile.heightWorldUnits*profile.depthScale);
  const props=new ResidentInventoryProps(visual,model);props.setInventory([...items.map(item=>({item,quantity:1})),{item:'RawMaterial',material:clipName==='Farm_Watering'?'Water':'Wood',quantity:2}],{active:true,kind:'Civilization',phase:clipName==='Walk_Carry_Loop'?'Moving':'Interacting',facilityKind:'CultivatedPlot',facilityAction:clipName==='Farm_Watering'?'Water':clipName==='Walk_Carry_Loop'?'DeliverMaterial':'Plant',civilizationMaterial:'Wood'});

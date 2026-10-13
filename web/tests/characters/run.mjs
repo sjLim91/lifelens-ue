@@ -24,19 +24,20 @@ let passed = 0;
 function test(name, fn) { fn(); passed++; console.log(`PASS ${name}`); }
 try {
   const { createResidentAppearanceProfile: profile, applyResidentMaterialVariant: material } = await source('render/resident-appearance.ts');
-  test('1000 identities stay within valid palette, body and hair ranges', () => {
+  test('1000 residents have distinct hair, skin and age-appropriate anatomical profiles without default clothes', () => {
     const styles = new Set(), colors = new Set();
     for (let i = 0; i < 1000; i++) {
       const p = profile({ id: `resident-${i}`, ageYears: 25, sex: i % 2 ? 'Male' : 'Female' });
-      for (const color of [p.garmentColor, p.lowerGarmentColor, p.shoeColor, p.hairColor, p.skinColor]) assert.ok(Number.isInteger(color) && color >= 0 && color <= 0xffffff);
+      for (const color of [p.hairColor, p.skinColor]) assert.ok(Number.isInteger(color) && color >= 0 && color <= 0xffffff);
       assert.ok(p.hairStyle >= 0 && p.hairStyle < 8);
-      assert.ok(p.garmentMix >= 0.70 && p.garmentMix <= 0.88);
-      assert.ok(p.waistHeight01 >= 0.46 && p.waistHeight01 <= 0.56);
-      assert.ok(p.widthScale >= 0.8 && p.widthScale <= 1.18);
+      assert.ok(p.widthScale >= .8 && p.widthScale <= 1.22);
       assert.ok(p.heightWorldUnits >= 1.46 && p.heightWorldUnits <= 1.86);
-      styles.add(p.hairStyle); colors.add(p.garmentColor);
+      assert.ok(p.breastVolume >= 0 && p.breastVolume <= .3);
+      assert.equal(Object.hasOwn(p,'garmentColor'),false);
+      assert.equal(Object.hasOwn(p,'shoeColor'),false);
+      styles.add(p.hairStyle); colors.add(p.skinColor);
     }
-    assert.equal(styles.size, 8); assert.equal(colors.size, 8);
+    assert.equal(styles.size, 8); assert.ok(colors.size >= 5);
   });
   test('identity appearance remains stable across reloads and ordering', () => {
     const resident = { id: 'saved-guid', ageYears: 32, sex: 'Female' };
@@ -237,7 +238,7 @@ try {
       firstPositions);
     removeResidentAuthoredFace(model);
   });
-  test('shared jade body gets separate skin upper lower and shoe colors without changing other residents', () => {
+  test('all bare rig vertices are skin, without ID-tinted clothes or shoes', () => {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute([
       0,3,0,
@@ -267,13 +268,11 @@ try {
     assert.notEqual(mesh.material, shared); assert.equal(mesh.material.vertexColors, true);
     const colors = mesh.geometry.getAttribute('color');
     const skin = new THREE.Color(p.skinColor);
-    const upper = new THREE.Color(p.garmentColor);
-    const lower = new THREE.Color(p.lowerGarmentColor);
-    const shoe = new THREE.Color(p.shoeColor);
-    assert.ok(Math.abs(colors.getX(0)-skin.r) < 1e-6);
-    assert.ok(Math.abs(colors.getX(1)-upper.r) < 1e-6);
-    assert.ok(Math.abs(colors.getX(2)-lower.r) < 1e-6);
-    assert.ok(Math.abs(colors.getX(3)-shoe.r) < 1e-6);
+    for(let i=0;i<4;i++) {
+      assert.ok(Math.abs(colors.getX(i)-skin.r)<1e-6);
+      assert.ok(Math.abs(colors.getY(i)-skin.g)<1e-6);
+      assert.ok(Math.abs(colors.getZ(i)-skin.b)<1e-6);
+    }
     assert.equal(mesh.userData.residentOwnsGeometry, true);
   });
   test('scalp follows actual head vertices, with no separate collar geometry', () => {
@@ -296,7 +295,7 @@ try {
     material(root,p);
     assert.deepEqual([...mesh.geometry.getAttribute('position').array],sculpted);
   });
-  test('eyes and eyebrows no longer inherit the garment tint', () => {
+  test('eyes and eyebrows retain their own phenotype pigments', () => {
     const root = new THREE.Group();
     for (const name of ['Eyes', 'Eyebrows']) { const mesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ color: 0x77a88d })); mesh.name = name; root.add(mesh); }
     const p = profile({ id: 'face-test' }); material(root,p);
@@ -311,9 +310,32 @@ try {
     assert.ok(high.widthScale > low.widthScale && high.depthScale > low.depthScale);
     assert.ok(high.headWidthScale > low.headWidthScale);
     for (const key of ['skinColor','hairColor','eyeColor']) assert.notEqual(high[key],low[key]);
-    assert.equal(high.garmentColor,low.garmentColor);
     assert.deepEqual(profile({...resident, genetics:{heightPotential:NaN}}), profile(resident));
     assert.equal(profile({...resident, genetics:{heightPotential:2}}).heightWorldUnits, high.heightWorldUnits);
+  });
+  test('Core sex and life stage visibly change shoulders hips waist jaw and breast silhouette',()=>{
+    const common={id:'identical-id',ageYears:28,lifeStage:'Adult',
+      genetics:{heightPotential:.5,buildPotential:.5,faceShape:.5,skinTone:.5}};
+    const male=profile({...common,sex:'Male'}),female=profile({...common,sex:'Female'});
+    assert.ok(male.shoulderScale > female.shoulderScale + .17);
+    assert.ok(female.hipScale > male.hipScale + .12);
+    assert.ok(female.waistScale < male.waistScale - .10);
+    assert.ok(female.breastVolume > .18 && male.breastVolume === 0);
+    assert.ok(male.jawScale>female.jawScale);
+    const child=profile({...common,sex:'Female',ageYears:7,lifeStage:'Child'});
+    const teen=profile({...common,sex:'Female',ageYears:15,lifeStage:'Teen'});
+    assert.equal(child.breastVolume,0);
+    assert.equal(child.bodyMaturity01,0);
+    assert.ok(teen.breastVolume > 0 && teen.breastVolume < female.breastVolume);
+    assert.ok(teen.shoulderScale > female.shoulderScale);
+  });
+  test('unrigged material mesh defaults to skin instead of visually fabricated clothing',()=>{
+    const root=new THREE.Group(), mesh=new THREE.Mesh(new THREE.BoxGeometry(.4,.8,.2),
+      new THREE.MeshStandardMaterial({color:0x77a88d}));
+    mesh.name='UnknownOutfitTexture';root.add(mesh);
+    const p=profile({id:'no-clothes',sex:'Female'});
+    material(root,p);
+    assert.equal(mesh.material.color.getHex(),p.skinColor);
   });
   test('late phenotype updates do not accumulate deformation or depend on animated bone positions', () => {
     const root = new THREE.Group();
