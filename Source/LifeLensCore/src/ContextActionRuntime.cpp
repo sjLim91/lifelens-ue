@@ -1,5 +1,6 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/EmotionRuntime.h"
+#include "lifelens/AutonomousSocialOutcomeLearning.h"
 #include "lifelens/ToolEffectiveness.h"
 #include "lifelens/SocietyEconomy.h"
 
@@ -203,12 +204,19 @@ bool Simulation::completeContextAction(
                 return false;
             }
 
+            const double selfMoodBefore=actor.emotion.valence;
             const DecisionExecutionResult result=executeSocialDecision(
                 world_,relationships_,actor.id,pending.social,"simulation");
             if(!result.socialExecuted){
                 pending.clear();
                 return false;
             }
+            // Actual Core execution only: record the actor's OWN directly
+            // felt change. The target's private trust is not available to
+            // the actor as direct evidence of goal completion.
+            rememberExperiencedSocialMoodOutcome(
+                actor,target->id,pending.social.intent,world_.minute,
+                selfMoodBefore,actor.emotion.valence);
             if(result.generatedSocialEvent){
                 recordSocialEvent(result.socialEvent);
             }
