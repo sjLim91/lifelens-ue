@@ -184,6 +184,20 @@ int main()
         before,beforeRelations,observed,beforeRelations,hunger)
         .status==Status::InvalidContext);
 
+    // Distinct region identity with the same world seed is not one
+    // continuous local history; duplicated goal predicates are invalid.
+    auto regionSwapped=before;
+    regionSwapped.hasInitialStartRegionSelection=true;
+    regionSwapped.initialStartRegionCoord.x=11;
+    assert(compareAutonomousGoalCoreTruth(
+        before,beforeRelations,regionSwapped,beforeRelations,trust)
+        .status==Status::InvalidContext);
+    auto duplicate=trust;
+    duplicate.desiredState.push_back(trust.desiredState.front());
+    assert(compareAutonomousGoalCoreTruth(
+        before,beforeRelations,before,beforeRelations,duplicate)
+        .status==Status::InvalidContext);
+
     // A nonexistent record is not evidence of no trust.
     RelationshipBook absentRelations;
     assert(compareAutonomousGoalCoreTruth(
