@@ -44,7 +44,8 @@ const errors = [], metrics = [];
 try {
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
-    page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', e => { errors.push(e.message); console.error('PAGE', e.message); });
+    page.on('console', m => { if (m.type() === 'error') { errors.push(m.text()); console.error('GPU', m.text()); } });
     await page.route('http://lifelens.local/**', serve);
     await page.goto('http://lifelens.local/tests/procedural-environment/fixture.html');
     await page.waitForFunction(() => window.proceduralReview?.ready);
