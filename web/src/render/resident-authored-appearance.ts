@@ -133,7 +133,7 @@ export function syncResidentAuthoredHair(
     ),
     appearance.hairColor, 'LifeLensResidentHairCrown',
   );
-  crown.scale.set(rx, ry, rz);
+  crown.scale.set(rx, ry * (.85 + .15 * appearance.hairLengthScale), rz);
   crown.position.copy(center).add(new THREE.Vector3(
     0, radii.y * 0.06, 0,
   ));
@@ -144,7 +144,7 @@ export function syncResidentAuthoredHair(
   // not a disguised downloaded wig or a painted-on hairline.
   const lockCount = [0, 1, 3, 4, 6, 5, 4, 8][style];
   const lockLength = [0, 0.18, 0.27, 0.39, 0.78, 0.26, 0.40, 1.04][style];
-  const h = Math.max(radii.y * 2, 0.01);
+  const h = Math.max(radii.y * 2, 0.01) * appearance.hairLengthScale;
   for (let i = 0; i < lockCount; i++) {
     const side = i % 2 === 0 ? -1 : 1;
     const depthSlot = Math.floor(i / 2);
@@ -172,5 +172,126 @@ export function syncResidentAuthoredHair(
 
 export function removeResidentAuthoredHair(model: THREE.Group): void {
   const previous = model.getObjectByName(HAIR_GROUP_NAME);
+  if (previous instanceof THREE.Group) disposeHair(previous);
+}
+
+
+const FACE_GROUP_NAME = 'LifeLensResidentAuthoredFace';
+
+/** A2 only places face parts when the actual imported Eye mesh gives a reliable
+ * facial-front landmark. Never guess facing direction or add floating features
+ * to nonhuman and unrecognized GLBs.
+ */
+function verifiedFaceDirection(model: THREE.Group, head: HeadFit): 1 | -1 | null {
+  model.updateMatrixWorld(true);
+  const local = head.bone.matrixWorld.clone().invert();
+  const eyeMarkers: THREE.Vector3[] = [];
+  model.traverse(object => {
+    if (!(object instanceof THREE.Mesh)
+        || object.userData.residentProceduralAppearance
+        || !/^(Eyes|Eye[._-]?[lr])$/i.test(object.name)) return;
+    if (!object.geometry.getAttribute('position')) return;
+    if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
+    if (!object.geometry.boundingBox || object.geometry.boundingBox.isEmpty()) return;
+    const point = object.geometry.boundingBox
+      .getCenter(new THREE.Vector3())
+      .applyMatrix4(object.matrixWorld)
+      .applyMatrix4(local);
+    if (Number.isFinite(point.x + point.y + point.z)) eyeMarkers.push(point);
+  });
+  if (!eyeMarkers.length) return null;
+  const mean = eyeMarkers.reduce((sum, eye) => sum.add(eye), new THREE.Vector3())
+    .multiplyScalar(1 / eyeMarkers.length);
+  const depth = mean.z - head.center.z;
+  // Eye centroid should lie on the head's front, not its middle or neck.
+  if (Math.abs(depth) < head.radii.z * .22
+      || Math.abs(depth) > head.radii.z * 2.25
+      || mean.y < head.center.y - head.radii.y * .65
+      || mean.y > head.center.y + head.radii.y * 1.3) return null;
+  return depth > 0 ? 1 : -1;
+}
+
+/** Geometry is born from existing Core faceShape and identity; no new traits
+ * are written to the Core or re-derived from an action that never occurred.
+ * The mouth and nose are subtle close-range identity features only.
+ */
+export function syncResidentAuthoredFace(
+  model: THREE.Group,
+  appearance: ResidentAppearanceProfile,
+): boolean {
+  const previous = model.getObjectByName(FACE_GROUP_NAME);
+  if (previous instanceof THREE.Group) disposeHair(previous);
+  const cached = model.userData.residentHeadFit as HeadFit | undefined;
+  const head = cached ?? fitHeadFromSkin(model);
+  if (!head) return false;
+  if (!cached) model.userData.residentHeadFit = head;
+  const front = verifiedFaceDirection(model, head);
+  if (!front) return false;
+  const { bone, center, radii } = head;
+  const group = new THREE.Group();
+  group.name = FACE_GROUP_NAME;
+  group.userData.residentProceduralAppearance = true;
+  // Unitless local head dimensions; works for both growing child and adult
+  // because the parent ResidentWorldLayer already owns world-space scaling.
+  const skin = new THREE.Color(appearance.skinColor);
+  const noseColor = skin.clone().multiplyScalar(.97).getHex();
+  const lipColor = skin.clone().lerp(new THREE.Color(0x7d4444), .21).getHex();
+  const x = Math.max(.005, radii.x), y = Math.max(.005, radii.y),
+    z = Math.max(.005, radii.z);
+  const nose = authoredMesh(
+    new THREE.SphereGeometry(1, 9, 6), noseColor,
+    'LifeLensResidentNoseBridge',
+  );
+  nose.scale.set(x * .135 * appearance.noseScale,
+    y * .20 * appearance.noseScale,
+    z * .10 * appearance.noseScale);
+  nose.position.set(center.x, center.y + y * .01,
+    center.z + front * z * 1.025);
+  group.add(nose);
+
+  const lipHalfWidth = x * .29 * appearance.mouthWidthScale;
+  const mouthY = center.y - y * .39;
+  const mouthZ = center.z + front * z * .97;
+  const lip = authoredMesh(new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3([
+      new THREE.Vector3(center.x - lipHalfWidth, mouthY + y * .015, mouthZ),
+      new THREE.Vector3(center.x, mouthY, mouthZ + front * z * .045),
+      new THREE.Vector3(center.x + lipHalfWidth, mouthY + y * .015, mouthZ),
+    ]), 7, Math.max(.001, y * .025), 4, false,
+  ), lipColor, 'LifeLensResidentMouthContour');
+  group.add(lip);
+
+  if (appearance.ageWeathering01 > .65) {
+    // Small age creases are purely a view of authoritative physical age,
+    // not fabricated scars or events.
+    const crease = skin.clone().multiplyScalar(.84).getHex();
+    for (const side of [-1, 1]) {
+      const p = center.x + side * x * .54;
+      group.add(authoredMesh(new THREE.TubeGeometry(
+        new THREE.CatmullRomCurve3([
+          new THREE.Vector3(p, mouthY + y * .07, mouthZ),
+          new THREE.Vector3(p + side * x * .035, mouthY, mouthZ),
+          new THREE.Vector3(p + side * x * .045, mouthY - y * .075, mouthZ - front * z * .015),
+        ]), 4, Math.max(.0007, y * .012 * appearance.ageWeathering01), 3, false,
+      ), crease, 'LifeLensResidentAgeCrease'));
+    }
+  }
+  bone.add(group);
+  return true;
+}
+
+/** Far-away residents keep hairstyle silhouette but skip face detail draw calls.
+ * Selection always wins; this does not alter Core/animation progression.
+ */
+export function setResidentFaceDetailVisibility(
+  model: THREE.Group,
+  visible: boolean,
+): void {
+  const details = model.getObjectByName(FACE_GROUP_NAME);
+  if (details) details.visible = visible;
+}
+
+export function removeResidentAuthoredFace(model: THREE.Group): void {
+  const previous = model.getObjectByName(FACE_GROUP_NAME);
   if (previous instanceof THREE.Group) disposeHair(previous);
 }
