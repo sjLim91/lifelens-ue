@@ -51,7 +51,7 @@ for (const detailed of [false, true]) {
   geometry.dispose(); material.dispose();
 }
 console.log('PASS grounding matches', assertions, 'actual rendered triangle intersections, with rebasing');
-for (const species of ['Hare', 'Deer', 'Wolf', 'FreshwaterFish']) {
+for (const species of ['Hare', 'Deer', 'Wolf', 'FreshwaterFish', 'Tiger']) {
   const a = createWildlifeGeometry(species), b = createWildlifeGeometry(species);
   assert.deepEqual(a.getAttribute('position').array, b.getAttribute('position').array);
   assert([...a.getAttribute('position').array, ...a.getAttribute('normal').array].every(Number.isFinite));
@@ -74,7 +74,7 @@ layer.setTerrain(snapshot); assert.equal(layer.instanceCount, 3);
 layer.setTerrain(terrain); assert.equal(layer.instanceCount, 0);
 layer.setTerrain({...snapshot, available: false}); assert.equal(layer.instanceCount, 0);
 let disposed = 0; for (const mesh of layer.group.children) mesh.geometry.addEventListener('dispose', () => disposed++);
-layer.dispose(); assert.equal(disposed, 4); assert.equal(layer.group.children.length, 0);
+layer.dispose(); assert.equal(disposed, 6); assert.equal(layer.group.children.length, 0);
 console.log('PASS Core-only observation, deduplication, removal, legacy runtime, reload, disposal');
 
 // Use the actual rendered freshwater surface and body bounds: adult fish must
