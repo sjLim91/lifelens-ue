@@ -78,6 +78,12 @@ int main()
     assert(!preferAutonomousSocialGoalTarget(
         world,relationships,world.characters[0],
         {SocialIntent::None,0,0.0}));
+    assert(!preferAutonomousSocialGoalTarget(
+        world,relationships,world.characters[0],
+        {SocialIntent::Avoid,33,personalScore+0.03}));
+    assert(!preferAutonomousSocialGoalTarget(
+        world,relationships,world.characters[0],
+        {SocialIntent::Comfort,33,personalScore+0.03}));
 
     world.characters[0].needs.hunger=0.99;
     assert(!preferAutonomousSocialGoalTarget(
