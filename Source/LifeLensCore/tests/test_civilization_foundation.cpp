@@ -197,6 +197,9 @@ int main()
     assert(!attemptExperiment(wrapContext,weaver.inventory,weaver.knowledge).attempted);
     assert(weaver.inventory.count(ItemKind::RawMaterial,MaterialKind::Fiber)==4);
     weaver.knowledge.learn(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible,.9);
+    assert(!attemptExperiment(wrapContext,weaver.inventory,weaver.knowledge).attempted);
+    for(int i=0;i<3;i++) weaver.knowledge.recordSuccessfulUse(TechniqueId::FiberCordage);
+    assert(weaver.knowledge.level(TechniqueId::FiberCordage)==KnowledgeLevel::Practiced);
     wrapContext.attemptIndex=findAttempt(wrapContext,true);
     const ExperimentResult clothing=attemptExperiment(wrapContext,weaver.inventory,weaver.knowledge);
     assert(clothing.attempted && clothing.success && clothing.producedItem);

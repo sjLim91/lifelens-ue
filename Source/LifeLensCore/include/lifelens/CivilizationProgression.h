@@ -184,7 +184,7 @@ TechnologyPrerequisiteRegistry={{
     {TechnologyId::BronzePick,TechnologyId::BronzeAlloying,KnowledgeLevel::Reproducible},
     {TechnologyId::BronzePick,TechnologyId::StoneHammer,KnowledgeLevel::Reproducible},
     {TechnologyId::BronzePick,TechnologyId::FiberCordage,KnowledgeLevel::Reproducible},
-    {TechnologyId::PrimitiveWrap,TechnologyId::FiberCordage,KnowledgeLevel::Reproducible}
+    {TechnologyId::PrimitiveWrap,TechnologyId::FiberCordage,KnowledgeLevel::Practiced}
 }};
 
 inline constexpr std::array<TechnologyTransformationEffectEdge,7>

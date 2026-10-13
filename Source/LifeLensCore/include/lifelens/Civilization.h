@@ -754,7 +754,9 @@ inline bool experimentPrerequisitesMet(const ExperimentContext& context,const Kn
         return knowledge.knowsAtLeast(TechniqueId::SharpFlake,KnowledgeLevel::Reproducible);
     }
     if(context.kind==ExperimentKind::WeavePrimitiveWrap){
-        return knowledge.knowsAtLeast(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible);
+        // More complex woven structures require demonstrated, practiced
+        // cordage work rather than a free technology timer.
+        return knowledge.knowsAtLeast(TechniqueId::FiberCordage,KnowledgeLevel::Practiced);
     }
     if(context.kind==ExperimentKind::HaftStoneHammer){
         return knowledge.knowsAtLeast(TechniqueId::ChippedStoneTool,KnowledgeLevel::Reproducible)
