@@ -1,24 +1,9 @@
 name: LifeLens Natural Earth Globe Preview
 
 on:
-  push:
-    paths:
-      - 'web/src/earth/natural-earth-land.ts'
-      - 'web/src/ui/earth-globe-preview.tsx'
-      - 'web/src/App.tsx'
-      - 'web/src/styles.css'
-      - 'web/public/earth/ne_110m_land.geojson'
-      - 'web/tests/earth-globe/run.mjs'
-      - '.github/workflows/natural-earth-globe-preview.yml'
-  pull_request:
-    paths:
-      - 'web/src/earth/natural-earth-land.ts'
-      - 'web/src/ui/earth-globe-preview.tsx'
-      - 'web/src/App.tsx'
-      - 'web/src/styles.css'
-      - 'web/public/earth/ne_110m_land.geojson'
-      - 'web/tests/earth-globe/run.mjs'
-      - '.github/workflows/natural-earth-globe-preview.yml'
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -40,3 +25,4 @@ jobs:
         run: cd web && npm run typecheck
       - name: Build static globe
         run: cd web && npm run build
+

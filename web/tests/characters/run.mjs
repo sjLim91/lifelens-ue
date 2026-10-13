@@ -29,19 +29,95 @@ try {
     for (let i = 0; i < 1000; i++) {
       const p = profile({ id: `resident-${i}`, ageYears: 25, sex: i % 2 ? 'Male' : 'Female' });
       for (const color of [p.garmentColor, p.lowerGarmentColor, p.shoeColor, p.hairColor, p.skinColor]) assert.ok(Number.isInteger(color) && color >= 0 && color <= 0xffffff);
-      assert.ok(p.hairStyle >= 0 && p.hairStyle < 4);
+      assert.ok(p.hairStyle >= 0 && p.hairStyle < 8);
       assert.ok(p.garmentMix >= 0.70 && p.garmentMix <= 0.88);
       assert.ok(p.waistHeight01 >= 0.46 && p.waistHeight01 <= 0.56);
       assert.ok(p.widthScale >= 0.8 && p.widthScale <= 1.18);
       assert.ok(p.heightWorldUnits >= 1.46 && p.heightWorldUnits <= 1.86);
       styles.add(p.hairStyle); colors.add(p.garmentColor);
     }
-    assert.equal(styles.size, 4); assert.equal(colors.size, 8);
+    assert.equal(styles.size, 8); assert.equal(colors.size, 8);
   });
   test('identity appearance remains stable across reloads and ordering', () => {
     const resident = { id: 'saved-guid', ageYears: 32, sex: 'Female' };
     const before = profile(resident); profile({ id: 'another' });
     assert.deepEqual(profile(resident), before);
+  });
+  const { syncResidentAuthoredHair, removeResidentAuthoredHair } =
+    await source('render/resident-authored-appearance.ts');
+  function headFixture() {
+    const model = new THREE.Group();
+    const geometry = new THREE.BoxGeometry(.18, .25, .16, 3, 3, 3);
+    const count = geometry.getAttribute('position').count;
+    const jointIndices = new Uint16Array(count * 4);
+    const jointWeights = new Float32Array(count * 4);
+    for (let i = 0; i < count; i++) jointWeights[i * 4] = 1;
+    geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(jointIndices, 4));
+    geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(jointWeights, 4));
+    const mesh = new THREE.SkinnedMesh(
+      geometry, new THREE.MeshStandardMaterial({color:0xe0b394}),
+    );
+    mesh.name = 'SuperHero_Male';
+    const bone = new THREE.Bone(); bone.name = 'Head';
+    mesh.add(bone);
+    mesh.bind(new THREE.Skeleton([bone]));
+    model.add(mesh);
+    return { model, mesh, bone };
+  }
+  test('procedural hairstyles generate actual bone-attached silhouette geometry', () => {
+    const {model,mesh,bone}=headFixture();
+    const sourceVertexCount=mesh.geometry.getAttribute('position').count;
+    const output=[];
+    for(let style=0;style<8;style++){
+      const p={...profile({id:'head-genetics',sex:'Female'}),hairStyle:style};
+      assert.equal(syncResidentAuthoredHair(model,p),true);
+      const hair=model.getObjectByName('LifeLensResidentAuthoredHair');
+      assert.equal(hair?.parent,bone);
+      const count=hair.children.length;
+      const vertices=hair.children.reduce((sum,o)=>sum+o.geometry.getAttribute('position').count,0);
+      assert.ok(vertices>=85);
+      assert.ok(hair.children.every(o=>o.userData.residentOwnsGeometry));
+      output.push(count);
+    }
+    assert.ok(new Set(output).size>=5, 'multiple silhouettes, not 8 palette aliases');
+    assert.equal(mesh.geometry.getAttribute('position').count,sourceVertexCount);
+    bone.rotation.z=0.23;
+    model.updateMatrixWorld(true);
+    const headHair=model.getObjectByName('LifeLensResidentAuthoredHair');
+    assert.equal(headHair?.parent,bone);
+    removeResidentAuthoredHair(model);
+    assert.equal(model.getObjectByName('LifeLensResidentAuthoredHair'),undefined);
+  });
+  test('hair stays private to a skeleton, survives genetics refresh, and resists garment recolor', () => {
+    const first=headFixture(),second=headFixture();
+    const profile1=profile({id:'sibling-A',sex:'Male',
+      genetics:{faceShape:.2,hairPigment:.1,heightPotential:.2}});
+    const profile2=profile({id:'sibling-B',sex:'Male',
+      genetics:{faceShape:.8,hairPigment:.9,heightPotential:.8}});
+    syncResidentAuthoredHair(first.model,profile1);
+    syncResidentAuthoredHair(second.model,profile2);
+    const hair1=first.model.getObjectByName('LifeLensResidentAuthoredHair');
+    const hair2=second.model.getObjectByName('LifeLensResidentAuthoredHair');
+    assert.notEqual(hair1,hair2);
+    assert.notEqual(hair1.parent,hair2.parent);
+    const firstColor=hair1.children[0].material.color.getHex();
+    assert.notEqual(firstColor,hair2.children[0].material.color.getHex());
+    material(first.model,profile1);
+    assert.equal(hair1.children[0].material.color.getHex(),firstColor);
+    const last=first.model.getObjectByName('LifeLensResidentAuthoredHair');
+    syncResidentAuthoredHair(first.model,profile2);
+    assert.notEqual(first.model.getObjectByName('LifeLensResidentAuthoredHair'),last);
+    assert.equal(second.model.getObjectByName('LifeLensResidentAuthoredHair'),hair2);
+    assert.ok(profile2.jawScale>profile1.jawScale);
+    assert.ok(profile2.faceLengthScale<profile1.faceLengthScale);
+    removeResidentAuthoredHair(first.model);
+    removeResidentAuthoredHair(second.model);
+  });
+  test('unknown or unskinned rigs cannot receive floating invented hair',()=>{
+    const model=new THREE.Group();
+    model.add(new THREE.Mesh(new THREE.BoxGeometry(.2,.3,.2)));
+    assert.equal(syncResidentAuthoredHair(model,profile({id:'unknown'})),false);
+    assert.equal(model.getObjectByName('LifeLensResidentAuthoredHair'),undefined);
   });
   test('shared jade body gets separate skin upper lower and shoe colors without changing other residents', () => {
     const geometry = new THREE.BufferGeometry();
@@ -95,7 +171,12 @@ try {
     assert.ok(Math.abs(colors.getX(0)-hairColor.r)<1e-6);
     assert.ok(Math.abs(colors.getX(2)-skinColor.r)<1e-6);
     assert.equal(root.children.length,1);assert.equal(root.getObjectByName('LifeLensResidentHairVariant'),undefined);
-    assert.deepEqual([...mesh.geometry.getAttribute('position').array],[...geometry.getAttribute('position').array]);
+    // A1 deliberately sculpts the cloned HEAD rest mesh. The shared source
+    // remains untouched, and reapplying the same phenotype must not drift.
+    const sculpted=[...mesh.geometry.getAttribute('position').array];
+    assert.notDeepEqual(sculpted,[...geometry.getAttribute('position').array]);
+    material(root,p);
+    assert.deepEqual([...mesh.geometry.getAttribute('position').array],sculpted);
   });
   test('eyes and eyebrows no longer inherit the garment tint', () => {
     const root = new THREE.Group();

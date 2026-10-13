@@ -22,6 +22,7 @@ import {
   applyResidentMaterialVariant,
   createResidentAppearanceProfile,
 } from './resident-appearance';
+import { syncResidentAuthoredHair } from './resident-authored-appearance';
 import { ResidentInventoryProps, ResidentPropResources } from './resident-props';
 import { ResidentProductionTargets } from './resident-production-context';
 import { residentActionCue } from './resident-action-context';
@@ -955,6 +956,9 @@ export class ResidentWorldLayer {
       const signature = this.materialAppearanceSignature(appearance);
       if (signature !== existing.appearanceSignature) {
         applyResidentMaterialVariant(existing.model, appearance);
+        // Rebuild only when an actual phenotype/pigment value changes,
+        // never every observer refresh. The attachment follows its Head bone.
+        syncResidentAuthoredHair(existing.model, appearance);
         existing.lifeShape.install();
         existing.appearanceSignature = signature;
       }
@@ -977,6 +981,7 @@ export class ResidentWorldLayer {
 
     const model = cloneSkeleton(this.template) as THREE.Group;
     applyResidentMaterialVariant(model, appearance);
+    syncResidentAuthoredHair(model, appearance);
 
     const visual = new THREE.Group();
     visual.name = 'LifeLensResidentVisual';

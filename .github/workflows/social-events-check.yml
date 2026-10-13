@@ -1,10 +1,9 @@
 name: Web Social Events
 on:
-  push:
-    branches: ['work/web-social-events-*']
-    paths: ['web/**', '.github/workflows/social-events-check.yml']
-  pull_request:
-    paths: ['web/**', '.github/workflows/social-events-check.yml']
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
+  workflow_dispatch:
+
 jobs:
   presentation:
     runs-on: ubuntu-latest
@@ -41,3 +40,4 @@ jobs:
         with:
           name: social-events-review
           path: web/tests/social-events/review/
+

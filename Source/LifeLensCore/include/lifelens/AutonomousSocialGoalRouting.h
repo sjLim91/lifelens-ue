@@ -4,7 +4,7 @@
 #include <cmath>
 #include <optional>
 
-#include "AutonomousAffordancePlanner.h"
+#include "AutonomousExperimentPlanner.h"
 #include "AutonomousSocialOutcomeLearning.h"
 #include "AutonomousGoalActionLink.h"
 
@@ -63,41 +63,48 @@ preferAutonomousSocialGoalTargetWithGoal(
            ||goal.desiredState.front().metric
               !=AutonomousGoalMetric::RelationshipTrust
            ||goal.priority<0.40) continue;
-        const auto candidate=draftAutonomousAffordancePlan(
-            world,relationships,request,goal);
-        if(candidate.status!=AutonomousAffordancePlanStatus::CandidateOnly
-           ||candidate.proposedSteps.size()!=1) continue;
-        const auto& step=candidate.proposedSteps.front();
-        if(step.kind!=AutonomousAffordanceKind::ExistingSocialIntent
-           ||step.target==0 ||step.target==baseline.target) continue;
+        // B5b: compete only methods the Core already supports, with an
+        // actor-specific bounded exploration budget. No extra social slot is
+        // granted; the normal Simulation pending token still owns execution.
+        AutonomousExperimentBudget budget;
+        const double riskTolerance=std::clamp(
+            actor.personality.riskTolerance,0.0,1.0);
+        budget.maxRiskProxy=0.08+0.16*riskTolerance;
+        budget.maxEffortUnits=actor.personality.patience>=0.25 ? 2u : 1u;
+        const auto options=composeAutonomousExperimentOptions(
+            world,relationships,request,goal,budget);
+        if(options.status!=AutonomousExperimentStatus::CandidatesOnly)
+            continue;
+        for(const auto& option:options.alternatives){
+            if(option.steps.size()!=1) continue;
+            const auto& step=option.steps.front();
+            if(step.kind!=AutonomousAffordanceKind::ExistingSocialIntent
+               ||step.target==0 ||step.target==baseline.target) continue;
 
-        const Character* target=cognitiveCharacter(world,step.target);
-        if(target==nullptr ||!target->alive) continue;
-        const double actualScore=step.socialIntent==SocialIntent::Repair
-            ?scoreRepairIntent(actor,step.target,relationships)
-            :scoreApproachIntent(world,actor,step.target,relationships);
-        if(!std::isfinite(actualScore)
-           ||actualScore<0.18
-           ||actualScore<baseline.utility-0.12) continue;
+            const Character* target=cognitiveCharacter(world,step.target);
+            if(target==nullptr ||!target->alive) continue;
+            const double actualScore=step.socialIntent==SocialIntent::Repair
+                ?scoreRepairIntent(actor,step.target,relationships)
+                :scoreApproachIntent(world,actor,step.target,relationships);
+            if(!std::isfinite(actualScore)
+               ||actualScore<0.18
+               ||actualScore<baseline.utility-0.12) continue;
 
-        // Goal priority may only break CLOSE social alternatives. It can
-        // never create a positive social score or force social over survival,
-        // work, care, trade or an urgent physical need.
-        // A small, bounded tie-break from the resident's own observed
-        // emotional result. No omniscient inference of the target's trust;
-        // utility/survival/nearby gating remains authoritative.
-        const double personalExperience=learnedSocialMoodDisposition(
-            actor,step.target,step.socialIntent);
-        const double progressExperience=learnedAutonomousGoalProgressDisposition(
-            actor,step.target,step.socialIntent);
-        const double ranked=actualScore+0.16*goal.priority
-            +0.06*personalExperience+0.04*progressExperience;
-        if(ranked>bestRank){
-            bestRank=ranked;
-            best=AutonomousPreferredSocialGoal{
-                {step.socialIntent,step.target,actualScore},
-                goal,cognitiveRequestFingerprint(request)
-            };
+            // Personally experienced outcomes are bounded tie-breakers,
+            // never assumed probabilities of trust gain or fresh actions.
+            const double personalExperience=learnedSocialMoodDisposition(
+                actor,step.target,step.socialIntent);
+            const double progressExperience=learnedAutonomousGoalProgressDisposition(
+                actor,step.target,step.socialIntent);
+            const double ranked=actualScore+0.16*goal.priority
+                +0.06*personalExperience+0.04*progressExperience;
+            if(ranked>bestRank){
+                bestRank=ranked;
+                best=AutonomousPreferredSocialGoal{
+                    {step.socialIntent,step.target,actualScore},
+                    goal,options.contextFingerprint
+                };
+            }
         }
     }
     return best;
