@@ -80,7 +80,8 @@ enum class ItemKind {
     BronzeAxe,
     BronzePick,
     // C5 durable proto-record medium. Appended to preserve persisted ordinals.
-    RecordTablet
+    RecordTablet,
+    PrimitiveWrap // A3 persisted item: append-only
 };
 
 enum class ToolCapability {
@@ -422,7 +423,8 @@ enum class TechniqueId {
     TinSmelting,
     BronzeAlloying,
     BronzeAxe,
-    BronzePick
+    BronzePick,
+    PrimitiveWrap
 };
 
 enum class KnowledgeLevel : int {
@@ -516,7 +518,8 @@ enum class ExperimentKind {
     SmeltTinOre,
     AlloyBronze,
     CastBronzeAxe,
-    CastBronzePick
+    CastBronzePick,
+    WeavePrimitiveWrap
 };
 
 enum class CivilizationEventType {
@@ -617,6 +620,10 @@ inline TechniqueRecipe techniqueRecipe(TechniqueId technique)
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Bronze,2,false},{ItemKind::RawMaterial,MaterialKind::Wood,1,false},{ItemKind::Cordage,MaterialKind::Fiber,1,false}},true,ItemKind::BronzeAxe,MaterialKind::Bronze,1};
         case TechniqueId::BronzePick:
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Bronze,2,false},{ItemKind::RawMaterial,MaterialKind::Wood,1,false},{ItemKind::Cordage,MaterialKind::Fiber,1,false}},true,ItemKind::BronzePick,MaterialKind::Bronze,1};
+        case TechniqueId::PrimitiveWrap:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::Fiber,2,false},
+                {ItemKind::Cordage,MaterialKind::Fiber,1,false}},true,
+                ItemKind::PrimitiveWrap,MaterialKind::Fiber,1};
         case TechniqueId::Cultivation:
             // Experimentation consumes one edible plant unit as seed stock.
             // Production itself belongs to CultivatedPlot authority.
@@ -669,6 +676,7 @@ inline TechniqueId experimentTechnique(ExperimentKind kind)
         case ExperimentKind::AlloyBronze: return TechniqueId::BronzeAlloying;
         case ExperimentKind::CastBronzeAxe: return TechniqueId::BronzeAxe;
         case ExperimentKind::CastBronzePick: return TechniqueId::BronzePick;
+        case ExperimentKind::WeavePrimitiveWrap: return TechniqueId::PrimitiveWrap;
         default: return TechniqueId::None;
     }
 }
@@ -702,6 +710,7 @@ inline double experimentBaseChance(ExperimentKind kind,MaterialKind material)
         case ExperimentKind::HaftSharpFlake: return material==MaterialKind::Wood ? 0.28 : 0.0;
         case ExperimentKind::FrictionWood: return material==MaterialKind::Wood ? 0.15 : 0.0;
         case ExperimentKind::TwistFiber: return material==MaterialKind::Fiber ? 0.34 : 0.0;
+        case ExperimentKind::WeavePrimitiveWrap: return material==MaterialKind::Fiber ? 0.28 : 0.0;
         case ExperimentKind::ShapeClay: return material==MaterialKind::Clay ? 0.30 : 0.0;
         case ExperimentKind::ShapeDiggingStick: return material==MaterialKind::Wood ? 0.29 : 0.0;
         case ExperimentKind::HaftStoneHammer: return material==MaterialKind::Stone ? 0.24 : 0.0;
@@ -743,6 +752,9 @@ inline bool experimentPrerequisitesMet(const ExperimentContext& context,const Kn
     }
     if(context.kind==ExperimentKind::ShapeDiggingStick){
         return knowledge.knowsAtLeast(TechniqueId::SharpFlake,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::WeavePrimitiveWrap){
+        return knowledge.knowsAtLeast(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible);
     }
     if(context.kind==ExperimentKind::HaftStoneHammer){
         return knowledge.knowsAtLeast(TechniqueId::ChippedStoneTool,KnowledgeLevel::Reproducible)

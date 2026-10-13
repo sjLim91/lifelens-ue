@@ -30,7 +30,8 @@ enum class CapabilityId : std::uint16_t {
     Strike=9,
     SmeltMetal=10,
     CultivateFood=11,
-    AlloyMetal=12
+    AlloyMetal=12,
+    WearProtection=13
 };
 
 enum class TechnologyId : std::uint16_t {
@@ -50,7 +51,8 @@ enum class TechnologyId : std::uint16_t {
     TinSmelting=13,
     BronzeAlloying=14,
     BronzeAxe=15,
-    BronzePick=16
+    BronzePick=16,
+    PrimitiveWrap=17
 };
 
 struct TechnologyDefinition {
@@ -126,7 +128,7 @@ struct InnovationPressureObservation {
     double resourceScarcity01=0.0;
 };
 
-inline constexpr std::array<TechnologyDefinition,16> TechnologyRegistry={{
+inline constexpr std::array<TechnologyDefinition,17> TechnologyRegistry={{
     {TechnologyId::SharpFlake,TechniqueId::SharpFlake,CapabilityId::Cut},
     {TechnologyId::ChippedStoneTool,TechniqueId::ChippedStoneTool,CapabilityId::Chop},
     {TechnologyId::FireMaking,TechniqueId::FireMaking,CapabilityId::ControlFire},
@@ -142,7 +144,8 @@ inline constexpr std::array<TechnologyDefinition,16> TechnologyRegistry={{
     {TechnologyId::TinSmelting,TechniqueId::TinSmelting,CapabilityId::SmeltMetal},
     {TechnologyId::BronzeAlloying,TechniqueId::BronzeAlloying,CapabilityId::AlloyMetal},
     {TechnologyId::BronzeAxe,TechniqueId::BronzeAxe,CapabilityId::Chop},
-    {TechnologyId::BronzePick,TechniqueId::BronzePick,CapabilityId::Strike}
+    {TechnologyId::BronzePick,TechniqueId::BronzePick,CapabilityId::Strike},
+    {TechnologyId::PrimitiveWrap,TechniqueId::PrimitiveWrap,CapabilityId::WearProtection}
 }};
 
 struct TechnologyPrerequisiteEdge {
@@ -161,7 +164,7 @@ struct TechnologyTransformationEffectEdge {
 // and declare knowledge prerequisites/effects here rather than adding another
 // era switch. Legacy Technique guards remain as compatibility assertions while
 // the Technology graph is the extensible progression contract.
-inline constexpr std::array<TechnologyPrerequisiteEdge,18>
+inline constexpr std::array<TechnologyPrerequisiteEdge,19>
 TechnologyPrerequisiteRegistry={{
     {TechnologyId::ChippedStoneTool,TechnologyId::SharpFlake,KnowledgeLevel::Reproducible},
     {TechnologyId::DugSanitationPit,TechnologyId::DesignatedSanitationArea,KnowledgeLevel::Reproducible},
@@ -180,7 +183,8 @@ TechnologyPrerequisiteRegistry={{
     {TechnologyId::BronzeAxe,TechnologyId::FiberCordage,KnowledgeLevel::Reproducible},
     {TechnologyId::BronzePick,TechnologyId::BronzeAlloying,KnowledgeLevel::Reproducible},
     {TechnologyId::BronzePick,TechnologyId::StoneHammer,KnowledgeLevel::Reproducible},
-    {TechnologyId::BronzePick,TechnologyId::FiberCordage,KnowledgeLevel::Reproducible}
+    {TechnologyId::BronzePick,TechnologyId::FiberCordage,KnowledgeLevel::Reproducible},
+    {TechnologyId::PrimitiveWrap,TechnologyId::FiberCordage,KnowledgeLevel::Reproducible}
 }};
 
 inline constexpr std::array<TechnologyTransformationEffectEdge,7>
@@ -209,6 +213,7 @@ inline const char* capabilityIdName(CapabilityId id)
         case CapabilityId::SmeltMetal: return "SmeltMetal";
         case CapabilityId::CultivateFood: return "CultivateFood";
         case CapabilityId::AlloyMetal: return "AlloyMetal";
+        case CapabilityId::WearProtection: return "WearProtection";
         case CapabilityId::None:
         default: return "None";
     }
@@ -309,6 +314,7 @@ inline const char* technologyIdName(TechnologyId id)
         case TechnologyId::BronzeAlloying: return "BronzeAlloying";
         case TechnologyId::BronzeAxe: return "BronzeAxe";
         case TechnologyId::BronzePick: return "BronzePick";
+        case TechnologyId::PrimitiveWrap: return "PrimitiveWrap";
         case TechnologyId::None:
         default: return "None";
     }
@@ -529,6 +535,8 @@ inline bool capabilityAvailable(
             return inventoryHasToolCapability(inventory,ToolCapability::Strike);
         case CapabilityId::CarryLiquid:
             return simpleContainerCount(inventory)>0;
+        case CapabilityId::WearProtection:
+            return inventory.count(ItemKind::PrimitiveWrap,MaterialKind::Fiber)>0;
         case CapabilityId::ControlFire:
             return technologyOperational(world,resident,TechnologyId::FireMaking);
         case CapabilityId::Bind:

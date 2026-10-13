@@ -151,6 +151,7 @@ export const KOREAN_ITEM_LABELS: Record<string, string> = {
   BronzeAxe: '청동 도끼',
   BronzePick: '청동 곡괭이',
   RecordTablet: '기록판',
+  PrimitiveWrap: '원시 섬유 몸가리개',
 };
 
 export const KOREAN_CAPABILITY_LABELS: Record<string, string> = {
@@ -166,6 +167,7 @@ export const KOREAN_CAPABILITY_LABELS: Record<string, string> = {
   SmeltMetal: '금속 제련',
   CultivateFood: '식량 재배',
   AlloyMetal: '금속 합금',
+  WearProtection: '보온·보호 의복',
 };
 
 export const KOREAN_TECHNOLOGY_POPULATION_STATE_LABELS: Record<string, string> = {
@@ -276,6 +278,7 @@ export const KOREAN_TECHNIQUE_LABELS: Record<string, string> = {
   BronzeAlloying: '청동 합금',
   BronzeAxe: '청동 도끼 제작',
   BronzePick: '청동 곡괭이 제작',
+  PrimitiveWrap: '섬유 몸가리개 제작',
 };
 
 export const KOREAN_FACILITY_KIND_LABELS: Record<string, string> = {
