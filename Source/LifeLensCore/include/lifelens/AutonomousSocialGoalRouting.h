@@ -15,8 +15,16 @@ namespace lifelens {
 // opportunity, no change to survival utility, no movement shortcuts.
 // The Core still executes the existing pending context action and determines
 // all real outcomes; this is a bounded target/method preference only.
-inline std::optional<SocialUtilityDecision>
-preferAutonomousSocialGoalTarget(
+struct AutonomousPreferredSocialGoal {
+    SocialUtilityDecision decision{};
+    AutonomousGoalCandidate goal{};
+    std::uint64_t contextFingerprint=0;
+};
+
+// The detailed variant returns the actual validated goal that caused the
+// reroute. Never re-compose a different goal at action completion.
+inline std::optional<AutonomousPreferredSocialGoal>
+preferAutonomousSocialGoalTargetWithGoal(
     const World& world,
     const RelationshipBook& relationships,
     const Character& actor,
@@ -47,7 +55,7 @@ preferAutonomousSocialGoalTarget(
         DefaultCognitiveRelationshipContextLimit);
     const auto goals=composeAutonomousGoalCandidates(world,request,6);
 
-    std::optional<SocialUtilityDecision> best;
+    std::optional<AutonomousPreferredSocialGoal> best;
     double bestRank=baseline.utility+0.02;
     for(const auto& goal:goals){
         if(goal.desiredState.size()!=1
@@ -79,16 +87,33 @@ preferAutonomousSocialGoalTarget(
         // utility/survival/nearby gating remains authoritative.
         const double personalExperience=learnedSocialMoodDisposition(
             actor,step.target,step.socialIntent);
+        const double progressExperience=learnedAutonomousGoalProgressDisposition(
+            actor,step.target,step.socialIntent);
         const double ranked=actualScore+0.16*goal.priority
-            +0.06*personalExperience;
+            +0.06*personalExperience+0.04*progressExperience;
         if(ranked>bestRank){
             bestRank=ranked;
-            best=SocialUtilityDecision{
-                step.socialIntent,step.target,actualScore
+            best=AutonomousPreferredSocialGoal{
+                {step.socialIntent,step.target,actualScore},
+                goal,cognitiveRequestFingerprint(request)
             };
         }
     }
     return best;
+}
+
+// Compatibility with the existing B4b API and tests. The chosen social
+// decision remains identical when no outcome-learning evidence exists.
+inline std::optional<SocialUtilityDecision> preferAutonomousSocialGoalTarget(
+    const World& world,
+    const RelationshipBook& relationships,
+    const Character& actor,
+    const SocialUtilityDecision& baseline)
+{
+    const auto selected=preferAutonomousSocialGoalTargetWithGoal(
+        world,relationships,actor,baseline);
+    if(!selected) return std::nullopt;
+    return selected->decision;
 }
 
 } // namespace lifelens
