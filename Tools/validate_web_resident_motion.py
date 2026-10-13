@@ -95,23 +95,21 @@ assert "next.reset().fadeIn" not in resident, (
     "walk loop must not restart from frame zero on every movement sample"
 )
 
-# Residents are deterministic individuals, not one cloned visual with only a
-# tiny hue jitter. Identity drives overlapping height/body-width, clothing,
-# scalp coverage and gait phase/rate variation.
+# Residents are deterministic individuals, not one cloned visual with only
+# hue jitter. Naked body geometry is based on Core sex, growth and genetics.
+# Only a real Core wornGarment can add a separate garment.
 for token in (
     "createResidentAppearanceProfile",
     "heightWorldUnits",
     "widthScale",
     "depthScale",
-    "GARMENT_PALETTE",
-    "LOWER_GARMENT_PALETTE",
-    "SHOE_PALETTE",
-    "lowerGarmentColor",
-    "shoeColor",
-    "waistHeight01",
-    "bodyHeight01",
-    "upperGarment",
-    "lowerGarment",
+    "bodyMaturity01",
+    "shoulderScale",
+    "hipScale",
+    "waistScale",
+    "breastVolume",
+    "torsoBox",
+    "frontSign",
     "hairStyle",
     "gaitRateBias",
     "applyResidentMaterialVariant",
@@ -120,18 +118,36 @@ for token in (
     "headTop",
     "hairline",
     "hairColor,",
+    "color.copy(skin)",
 ):
     assert token in appearance or token in resident, (
-        f"missing resident appearance diversity token: {token}"
+        f"missing resident anatomy or appearance token: {token}"
     )
 
+for forbidden in (
+    "GARMENT_PALETTE",
+    "LOWER_GARMENT_PALETTE",
+    "SHOE_PALETTE",
+    "lowerGarmentColor",
+    "shoeColor",
+    "upperGarment",
+    "lowerGarment",
+):
+    assert forbidden not in appearance, (
+        f"fake default clothing returned: {forbidden}"
+    )
+assert "resident.civilization?.wornGarment" in resident, (
+    "procedural clothing must come from an actual Core worn item"
+)
+assert "syncResidentAuthoredGarment" in resident, (
+    "real worn garments must remain rendered after removing fake base clothes"
+)
 assert "const hueShift = ((variantSeed % 17) - 8) * 0.006;" not in resident, (
     "resident identity must not collapse back to tiny whole-model hue jitter"
 )
 
 assert "defaultMobileZoom: 2.3" in contract
 assert "maxZoom: 6.4" in contract
-assert "garmentMix: 0.7 + hash01(seed, 43) * 0.18" in appearance
 for token in (
     "canvas.width = 768",
     "canvas.height = 144",
