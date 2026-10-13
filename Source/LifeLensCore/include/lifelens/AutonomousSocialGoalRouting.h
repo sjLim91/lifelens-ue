@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "AutonomousAffordancePlanner.h"
+#include "AutonomousSocialOutcomeLearning.h"
 
 namespace lifelens {
 
@@ -73,7 +74,13 @@ preferAutonomousSocialGoalTarget(
         // Goal priority may only break CLOSE social alternatives. It can
         // never create a positive social score or force social over survival,
         // work, care, trade or an urgent physical need.
-        const double ranked=actualScore+0.16*goal.priority;
+        // A small, bounded tie-break from the resident's own observed
+        // emotional result. No omniscient inference of the target's trust;
+        // utility/survival/nearby gating remains authoritative.
+        const double personalExperience=learnedSocialMoodDisposition(
+            actor,step.target,step.socialIntent);
+        const double ranked=actualScore+0.16*goal.priority
+            +0.06*personalExperience;
         if(ranked>bestRank){
             bestRank=ranked;
             best=SocialUtilityDecision{
