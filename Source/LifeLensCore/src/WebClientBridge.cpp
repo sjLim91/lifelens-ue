@@ -836,7 +836,7 @@ std::string civilizationWorldObservationJson(
             if(j) out << ",";
             const auto& tree=resource.trees[j];
             out << "{\"id\":\"" << resource.id << ":" << tree.ordinal << "\",\"ordinal\":" << tree.ordinal;
-            out << ",\"ageDays\":" << (resource.ecologyMinute-tree.bornMinute)/1440;
+            out << ",\"ageDays\":" << (static_cast<std::int64_t>(resource.ecologyMinute)-tree.bornMinute)/1440;
             out << ",\"remainingWood\":" << tree.remainingWood << ",\"capacity\":" << tree.capacity;
             out << ",\"felledMinute\":" << tree.felledMinute << ",\"generation\":" << tree.generation << "}";
         }
