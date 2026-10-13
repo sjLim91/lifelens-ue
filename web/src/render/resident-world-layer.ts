@@ -22,7 +22,9 @@ import {
   applyResidentMaterialVariant,
   createResidentAppearanceProfile,
 } from './resident-appearance';
-import { syncResidentAuthoredHair } from './resident-authored-appearance';
+import { syncResidentAuthoredHair, syncResidentAuthoredFace, setResidentFaceDetailVisibility } from './resident-authored-appearance';
+import { syncResidentAuthoredGarment } from './resident-authored-garment';
+import { syncResidentAnatomicalBody } from './resident-anatomical-body';
 import { ResidentInventoryProps, ResidentPropResources } from './resident-props';
 import { ResidentProductionTargets } from './resident-production-context';
 import { residentActionCue } from './resident-action-context';
@@ -133,7 +135,7 @@ function createActionCueSprite(): ResidentActionCueSprite | null {
     opacity: 0.96,
   });
   const sprite = new THREE.Sprite(material);
-  sprite.scale.set(4.8, 0.9, 1);
+  sprite.scale.set(2.4, 0.45, 1);
   sprite.renderOrder = 8;
   sprite.visible = false;
 
@@ -455,6 +457,15 @@ export class ResidentWorldLayer {
 
   setSelectedResident(residentId: string | null): void {
     this.selectedResidentId = residentId;
+    // A clear world is the default. The sole action caption belongs to the
+    // selected resident, never to every visible pedestrian.
+    for (const actor of this.actors.values())
+      if (actor.actionCue) actor.actionCue.sprite.visible = false;
+    if (residentId) {
+      const actor = this.actors.get(residentId);
+      if (actor?.root.visible)
+        this.updateActionCue(actor, actor.motionFacts, this.pendingResidents, false);
+    }
     this.updateSelectionRing();
   }
 
@@ -598,7 +609,7 @@ export class ResidentWorldLayer {
       if (actor.actionCue) {
         actor.actionCue.sprite.position.set(
           actor.current.x,
-          actor.current.y + 2.0,
+          actor.current.y + actor.root.scale.y * 1.16,
           actor.current.z,
         );
       }
@@ -613,6 +624,11 @@ export class ResidentWorldLayer {
       this.actorSphere.radius = actor.root.scale.y;
       const onScreen = !camera || this.frustum.intersectsSphere(this.actorSphere);
       const detailed = !camera || (onScreen && actor.current.distanceToSquared(this.cameraPosition) < 35 * 35) || actor.root.userData.residentId === this.selectedResidentId;
+      // Facial microgeometry is expensive only as extra draw calls. Preserve
+      // distant silhouettes, but cull tiny details beyond face-reading range.
+      setResidentFaceDetailVisibility(actor.model,
+        !camera || (onScreen && actor.current.distanceToSquared(this.cameraPosition) < 9 * 9)
+        || actor.root.userData.residentId === this.selectedResidentId);
       actor.animationElapsed += motionDt;
       const animationInterval = detailed ? 0 : (onScreen ? 1/15 : 1/5) * motionTimeScale;
       const animate = detailed || actor.animationElapsed >= animationInterval;
@@ -915,6 +931,15 @@ export class ResidentWorldLayer {
       this.sleepClip = animationClips.find(clip => clip.name === 'LayToIdle') ?? residentSleepFallbackClip();
       // A single shared calibration. The temporary skeleton is not retained per resident.
       const calibrationModel = cloneSkeleton(normalized) as THREE.Group;
+      // The old GLB sleep clearance did not include the newly authored limbs.
+      // Measure the REAL skinned new body through all 97 animation samples,
+      // including lying, to keep infant/adult feet and hands above the ground.
+      const calibrationAppearance = createResidentAppearanceProfile({
+        id: 'lifelens-anatomy-sleep-calibration', name: 'Anatomy Calibration', sex: 'Female',
+        ageYears: 30, lifeStage: 'Adult',
+      });
+      applyResidentMaterialVariant(calibrationModel, calibrationAppearance);
+      syncResidentAnatomicalBody(calibrationModel, calibrationAppearance);
       this.sleepCalibration = calibrateResidentSleep(calibrationModel, this.sleepClip);
       this.ready = true;
 
@@ -952,16 +977,26 @@ export class ResidentWorldLayer {
       facts.pregnancy = resident.pregnancy;
       facts.alive = resident.alive;
       if (resident.genetics !== undefined) facts.genetics = { ...facts.genetics, ...resident.genetics };
+      if (resident.lifeCondition !== undefined) facts.lifeCondition = { ...facts.lifeCondition, ...resident.lifeCondition };
       const appearance = createResidentAppearanceProfile(facts);
       const signature = this.materialAppearanceSignature(appearance);
       if (signature !== existing.appearanceSignature) {
         applyResidentMaterialVariant(existing.model, appearance);
+        syncResidentAnatomicalBody(existing.model, appearance);
+        const newAnatomy = existing.model.getObjectByName('LifeLensAuthoredAnatomicalBody');
+        existing.sleepMotion.setAnatomicalBody(
+          newAnatomy instanceof THREE.SkinnedMesh ? newAnatomy : null,
+        );
         // Rebuild only when an actual phenotype/pigment value changes,
         // never every observer refresh. The attachment follows its Head bone.
         syncResidentAuthoredHair(existing.model, appearance);
+        syncResidentAuthoredFace(existing.model, appearance);
         existing.lifeShape.install();
         existing.appearanceSignature = signature;
       }
+      // Only the Core-observed worn item can produce a new garment silhouette.
+      // Missing later observations explicitly invalidate previous clothing.
+      syncResidentAuthoredGarment(existing.model, resident.civilization?.wornGarment, appearance);
       existing.lifeShape.setFacts(facts, new THREE.Vector3(appearance.heightWorldUnits * appearance.widthScale,
         appearance.heightWorldUnits, appearance.heightWorldUnits * appearance.depthScale));
       existing.gaitRateBias = appearance.gaitRateBias;
@@ -981,7 +1016,10 @@ export class ResidentWorldLayer {
 
     const model = cloneSkeleton(this.template) as THREE.Group;
     applyResidentMaterialVariant(model, appearance);
+    syncResidentAnatomicalBody(model, appearance);
     syncResidentAuthoredHair(model, appearance);
+    syncResidentAuthoredFace(model, appearance);
+    syncResidentAuthoredGarment(model, resident.civilization?.wornGarment, appearance);
 
     const visual = new THREE.Group();
     visual.name = 'LifeLensResidentVisual';
@@ -1005,7 +1043,11 @@ export class ResidentWorldLayer {
     const sleepAction = mixer.clipAction(this.sleepClip, root);
     actions.set('sleep', sleepAction);
     const uniqueActions = [...new Set(actions.values())];
-    const sleepMotion = new ResidentSleepMotion(sleepAction, this.sleepCalibration, visual);
+    const skinnedAnatomy = model.getObjectByName('LifeLensAuthoredAnatomicalBody');
+    const sleepMotion = new ResidentSleepMotion(
+      sleepAction, this.sleepCalibration, visual,
+      skinnedAnatomy instanceof THREE.SkinnedMesh ? skinnedAnatomy : null,
+    );
     const idle = actions.get('idle'), walk = actions.get('walk');
     idle?.play();
     if (idle) idle.time = (appearance.seed % 997) / 997 * Math.max(.001, idle.getClip().duration);
@@ -1043,10 +1085,7 @@ export class ResidentWorldLayer {
       initialized: false,
     };
 
-    const actionCue = createActionCueSprite();
-    actor.actionCue = actionCue;
-    if (actionCue) this.group.add(actionCue.sprite);
-
+    // Allocate the expensive canvas/texture only when the resident is selected.
     actor.procedural.setFacts(resident);
     this.actors.set(resident.id, actor);
     this.group.add(root);
@@ -1064,11 +1103,20 @@ export class ResidentWorldLayer {
       residents,
       visuallyMoving,
     );
-    if (!actor.actionCue || !cue) {
+    if (resident.id !== this.selectedResidentId || !cue) {
       if (actor.actionCue) actor.actionCue.sprite.visible = false;
       return;
     }
-
+    if (!actor.actionCue) {
+      actor.actionCue = createActionCueSprite();
+      if (actor.actionCue) this.group.add(actor.actionCue.sprite);
+    }
+    if (!actor.actionCue) return;
+    actor.actionCue.sprite.position.set(
+      actor.current.x,
+      actor.current.y + actor.root.scale.y * 1.16,
+      actor.current.z,
+    );
     paintActionCue(actor.actionCue, cue.text, cue.phase);
     actor.actionCue.sprite.visible = true;
   }

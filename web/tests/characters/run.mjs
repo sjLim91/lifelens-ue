@@ -24,19 +24,20 @@ let passed = 0;
 function test(name, fn) { fn(); passed++; console.log(`PASS ${name}`); }
 try {
   const { createResidentAppearanceProfile: profile, applyResidentMaterialVariant: material } = await source('render/resident-appearance.ts');
-  test('1000 identities stay within valid palette, body and hair ranges', () => {
+  test('1000 residents have distinct hair, skin and age-appropriate anatomical profiles without default clothes', () => {
     const styles = new Set(), colors = new Set();
     for (let i = 0; i < 1000; i++) {
       const p = profile({ id: `resident-${i}`, ageYears: 25, sex: i % 2 ? 'Male' : 'Female' });
-      for (const color of [p.garmentColor, p.lowerGarmentColor, p.shoeColor, p.hairColor, p.skinColor]) assert.ok(Number.isInteger(color) && color >= 0 && color <= 0xffffff);
+      for (const color of [p.hairColor, p.skinColor]) assert.ok(Number.isInteger(color) && color >= 0 && color <= 0xffffff);
       assert.ok(p.hairStyle >= 0 && p.hairStyle < 8);
-      assert.ok(p.garmentMix >= 0.70 && p.garmentMix <= 0.88);
-      assert.ok(p.waistHeight01 >= 0.46 && p.waistHeight01 <= 0.56);
-      assert.ok(p.widthScale >= 0.8 && p.widthScale <= 1.18);
+      assert.ok(p.widthScale >= .8 && p.widthScale <= 1.22);
       assert.ok(p.heightWorldUnits >= 1.46 && p.heightWorldUnits <= 1.86);
-      styles.add(p.hairStyle); colors.add(p.garmentColor);
+      assert.ok(p.breastVolume >= 0 && p.breastVolume <= .3);
+      assert.equal(Object.hasOwn(p,'garmentColor'),false);
+      assert.equal(Object.hasOwn(p,'shoeColor'),false);
+      styles.add(p.hairStyle); colors.add(p.skinColor);
     }
-    assert.equal(styles.size, 8); assert.equal(colors.size, 8);
+    assert.equal(styles.size, 8); assert.ok(colors.size >= 5);
   });
   test('identity appearance remains stable across reloads and ordering', () => {
     const resident = { id: 'saved-guid', ageYears: 32, sex: 'Female' };
@@ -119,7 +120,125 @@ try {
     assert.equal(syncResidentAuthoredHair(model,profile({id:'unknown'})),false);
     assert.equal(model.getObjectByName('LifeLensResidentAuthoredHair'),undefined);
   });
-  test('shared jade body gets separate skin upper lower and shoe colors without changing other residents', () => {
+  const { syncResidentAuthoredFace, removeResidentAuthoredFace,
+    setResidentFaceDetailVisibility } =
+    await source('render/resident-authored-appearance.ts');
+  function placeRealEyeLandmark(model, forward=1) {
+    const eyes = new THREE.Mesh(
+      new THREE.BoxGeometry(.08, .025, .005),
+      new THREE.MeshStandardMaterial({color:0xffffff}),
+    );
+    eyes.name='Eyes';
+    eyes.position.set(0, .05, forward * .11);
+    model.add(eyes);
+    return eyes;
+  }
+  test('A2 face requires an actual identifiable eye landmark; unsupported direction fails closed',()=>{
+    const {model}=headFixture();
+    const p=profile({id:'no-eyes',sex:'Female'});
+    assert.equal(syncResidentAuthoredFace(model,p),false);
+    assert.equal(model.getObjectByName('LifeLensResidentAuthoredFace'),undefined);
+    placeRealEyeLandmark(model);
+    assert.equal(syncResidentAuthoredFace(model,p),true);
+    const face=model.getObjectByName('LifeLensResidentAuthoredFace');
+    assert.equal(face.children.length,2);
+    for(const child of face.children) {
+      assert.ok(child.geometry.getAttribute('position').count>4);
+      assert.equal(child.userData.residentOwnsGeometry,true);
+    }
+    removeResidentAuthoredFace(model);
+    assert.equal(model.getObjectByName('LifeLensResidentAuthoredFace'),undefined);
+  });
+  test('A2 independent noses/mouth contours follow parent Head and vary by inherited face shape',()=>{
+    const low=headFixture(), high=headFixture();
+    placeRealEyeLandmark(low.model);
+    placeRealEyeLandmark(high.model);
+    const a=profile({id:'same-resident',ageYears:26,
+      genetics:{faceShape:0,hairPigment:.3}});
+    const b=profile({id:'same-resident',ageYears:26,
+      genetics:{faceShape:1,hairPigment:.3}});
+    assert.ok(b.noseScale > a.noseScale);
+    assert.ok(b.mouthWidthScale > a.mouthWidthScale);
+    assert.equal(syncResidentAuthoredFace(low.model,a),true);
+    assert.equal(syncResidentAuthoredFace(high.model,b),true);
+    const first=low.model.getObjectByName('LifeLensResidentAuthoredFace');
+    const second=high.model.getObjectByName('LifeLensResidentAuthoredFace');
+    assert.equal(first.parent,low.bone);
+    assert.equal(second.parent,high.bone);
+    const n1=first.getObjectByName('LifeLensResidentNoseBridge');
+    const n2=second.getObjectByName('LifeLensResidentNoseBridge');
+    assert.ok(n2.scale.x>n1.scale.x);
+    const mouthA=first.getObjectByName('LifeLensResidentMouthContour');
+    const mouthB=second.getObjectByName('LifeLensResidentMouthContour');
+    assert.notDeepEqual([...mouthA.geometry.getAttribute('position').array],
+      [...mouthB.geometry.getAttribute('position').array]);
+    setResidentFaceDetailVisibility(low.model,false);
+    assert.equal(first.visible,false);
+    assert.equal(second.visible,true);
+    setResidentFaceDetailVisibility(low.model,true);
+    assert.equal(first.visible,true);
+    low.bone.rotation.y=.4;low.model.updateMatrixWorld(true);
+    assert.equal(first.parent,low.bone);
+    removeResidentAuthoredFace(low.model);
+    removeResidentAuthoredFace(high.model);
+  });
+  test('A2 authoritative age transitions grey gradually and change only visual hair length',()=>{
+    const adult={id:'age-guid',sex:'Female',ageYears:32,lifeStage:'Adult',
+      genetics:{hairPigment:.75,faceShape:.3},lifeCondition:{appearanceAgeFactor:.32}};
+    const mid=profile({...adult,ageYears:55,lifeStage:'MiddleAge',
+      lifeCondition:{appearanceAgeFactor:.68}});
+    const old=profile({...adult,ageYears:81,lifeStage:'Elderly',
+      lifeCondition:{appearanceAgeFactor:.95}});
+    const young=profile(adult);
+    assert.equal(young.seed,mid.seed);
+    assert.equal(mid.seed,old.seed);
+    assert.notEqual(young.hairColor,old.hairColor);
+    const distanceToGrey = (hex) => {
+      const c=new THREE.Color(hex),g=new THREE.Color(0xb4b1a6);
+      return Math.hypot(c.r-g.r,c.g-g.g,c.b-g.b);
+    };
+    assert.ok(distanceToGrey(old.hairColor)<distanceToGrey(mid.hairColor));
+    assert.ok(distanceToGrey(mid.hairColor)<distanceToGrey(young.hairColor));
+    const child=profile({...adult,ageYears:7,lifeStage:'Child'});
+    const baby=profile({...adult,ageYears:0,lifeStage:'Baby'});
+    assert.ok(baby.hairLengthScale<child.hairLengthScale);
+    assert.ok(child.hairLengthScale<young.hairLengthScale);
+    const {model}=headFixture();
+    const hairSegments=[];
+    for(const p of [baby,child,young]) {
+      syncResidentAuthoredHair(model,{...p,hairStyle:7});
+      const locks=model.getObjectByName('LifeLensResidentAuthoredHair');
+      const last=locks.children.at(-1).geometry.getAttribute('position');
+      let minY=Infinity;
+      for(let i=0;i<last.count;i++) minY=Math.min(minY,last.getY(i));
+      hairSegments.push(minY);
+    }
+    assert.ok(hairSegments[0]>hairSegments[1]);
+    assert.ok(hairSegments[1]>hairSegments[2]);
+    removeResidentAuthoredHair(model);
+  });
+  test('A2 old-age creases track actual Core age and refresh without extra bone meshes',()=>{
+    const {model}=headFixture();placeRealEyeLandmark(model);
+    const younger=profile({id:'aging',ageYears:22,lifeStage:'Adult',
+      lifeCondition:{appearanceAgeFactor:.23}});
+    const elderly=profile({id:'aging',ageYears:81,lifeStage:'Elderly',
+      lifeCondition:{appearanceAgeFactor:.93}});
+    syncResidentAuthoredFace(model,younger);
+    const previous=model.getObjectByName('LifeLensResidentAuthoredFace');
+    assert.equal(previous.children.length,2);
+    syncResidentAuthoredFace(model,elderly);
+    const aged=model.getObjectByName('LifeLensResidentAuthoredFace');
+    assert.equal(aged.children.length,4);
+    assert.notEqual(aged,previous);
+    assert.equal(previous.parent,null);
+    const firstPositions=[...aged.children[0].geometry.getAttribute('position').array];
+    syncResidentAuthoredFace(model,elderly);
+    const stable=model.getObjectByName('LifeLensResidentAuthoredFace');
+    assert.deepEqual([...stable.children[0].geometry.getAttribute('position').array],
+      firstPositions);
+    removeResidentAuthoredFace(model);
+  });
+  test('all bare rig vertices are skin, without ID-tinted clothes or shoes', () => {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute([
       0,3,0,
@@ -149,13 +268,11 @@ try {
     assert.notEqual(mesh.material, shared); assert.equal(mesh.material.vertexColors, true);
     const colors = mesh.geometry.getAttribute('color');
     const skin = new THREE.Color(p.skinColor);
-    const upper = new THREE.Color(p.garmentColor);
-    const lower = new THREE.Color(p.lowerGarmentColor);
-    const shoe = new THREE.Color(p.shoeColor);
-    assert.ok(Math.abs(colors.getX(0)-skin.r) < 1e-6);
-    assert.ok(Math.abs(colors.getX(1)-upper.r) < 1e-6);
-    assert.ok(Math.abs(colors.getX(2)-lower.r) < 1e-6);
-    assert.ok(Math.abs(colors.getX(3)-shoe.r) < 1e-6);
+    for(let i=0;i<4;i++) {
+      assert.ok(Math.abs(colors.getX(i)-skin.r)<1e-6);
+      assert.ok(Math.abs(colors.getY(i)-skin.g)<1e-6);
+      assert.ok(Math.abs(colors.getZ(i)-skin.b)<1e-6);
+    }
     assert.equal(mesh.userData.residentOwnsGeometry, true);
   });
   test('scalp follows actual head vertices, with no separate collar geometry', () => {
@@ -178,7 +295,7 @@ try {
     material(root,p);
     assert.deepEqual([...mesh.geometry.getAttribute('position').array],sculpted);
   });
-  test('eyes and eyebrows no longer inherit the garment tint', () => {
+  test('eyes and eyebrows retain their own phenotype pigments', () => {
     const root = new THREE.Group();
     for (const name of ['Eyes', 'Eyebrows']) { const mesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ color: 0x77a88d })); mesh.name = name; root.add(mesh); }
     const p = profile({ id: 'face-test' }); material(root,p);
@@ -193,9 +310,32 @@ try {
     assert.ok(high.widthScale > low.widthScale && high.depthScale > low.depthScale);
     assert.ok(high.headWidthScale > low.headWidthScale);
     for (const key of ['skinColor','hairColor','eyeColor']) assert.notEqual(high[key],low[key]);
-    assert.equal(high.garmentColor,low.garmentColor);
     assert.deepEqual(profile({...resident, genetics:{heightPotential:NaN}}), profile(resident));
     assert.equal(profile({...resident, genetics:{heightPotential:2}}).heightWorldUnits, high.heightWorldUnits);
+  });
+  test('Core sex and life stage visibly change shoulders hips waist jaw and breast silhouette',()=>{
+    const common={id:'identical-id',ageYears:28,lifeStage:'Adult',
+      genetics:{heightPotential:.5,buildPotential:.5,faceShape:.5,skinTone:.5}};
+    const male=profile({...common,sex:'Male'}),female=profile({...common,sex:'Female'});
+    assert.ok(male.shoulderScale > female.shoulderScale + .17);
+    assert.ok(female.hipScale > male.hipScale + .12);
+    assert.ok(female.waistScale < male.waistScale - .10);
+    assert.ok(female.breastVolume > .18 && male.breastVolume === 0);
+    assert.ok(male.jawScale>female.jawScale);
+    const child=profile({...common,sex:'Female',ageYears:7,lifeStage:'Child'});
+    const teen=profile({...common,sex:'Female',ageYears:15,lifeStage:'Teen'});
+    assert.equal(child.breastVolume,0);
+    assert.equal(child.bodyMaturity01,0);
+    assert.ok(teen.breastVolume > 0 && teen.breastVolume < female.breastVolume);
+    assert.ok(teen.shoulderScale > female.shoulderScale);
+  });
+  test('unrigged material mesh defaults to skin instead of visually fabricated clothing',()=>{
+    const root=new THREE.Group(), mesh=new THREE.Mesh(new THREE.BoxGeometry(.4,.8,.2),
+      new THREE.MeshStandardMaterial({color:0x77a88d}));
+    mesh.name='UnknownOutfitTexture';root.add(mesh);
+    const p=profile({id:'no-clothes',sex:'Female'});
+    material(root,p);
+    assert.equal(mesh.material.color.getHex(),p.skinColor);
   });
   test('late phenotype updates do not accumulate deformation or depend on animated bone positions', () => {
     const root = new THREE.Group();
@@ -249,6 +389,53 @@ try {
     assert.equal(residentPouringWater(inventory.slice(1),watering),false);
     assert.equal(residentPouringWater([inventory[0]],watering),false);
     assert.equal(residentPouringWater(inventory,{...watering,phase:'Moving'}),false);
+  });
+  const {syncResidentAuthoredGarment,validWornPrimitiveWrap,AUTHORED_GARMENT_GROUP}=await source('render/resident-authored-garment.ts');
+  function torsoFixture() {
+    const model=new THREE.Group(), geometry=new THREE.BoxGeometry(.3,.36,.21,3,3,3);
+    const n=geometry.getAttribute('position').count;
+    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(new Uint16Array(n*4),4));
+    const weights=new Float32Array(n*4);for(let i=0;i<n;i++)weights[i*4]=1;
+    geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+    const mesh=new THREE.SkinnedMesh(geometry,new THREE.MeshStandardMaterial());
+    const bone=new THREE.Bone();bone.name='spine_03';mesh.add(bone);mesh.bind(new THREE.Skeleton([bone]));model.add(mesh);
+    return {model,bone,mesh};
+  }
+  const wrap={item:'PrimitiveWrap',material:'Fiber',quantity:1,quality:.8,durability:.8};
+  test('A3 worn garment needs Core item evidence, never loose resources or mere knowledge',()=>{
+    for(const input of [undefined,null,{item:'RawMaterial',material:'Fiber',quantity:9,quality:1,durability:1},
+      {...wrap,quantity:0},{...wrap,durability:0},{...wrap,quality:NaN},{...wrap,material:'Hide'}])
+      assert.equal(validWornPrimitiveWrap(input),false);
+    assert.equal(validWornPrimitiveWrap(wrap),true);
+  });
+  test('A3 fit uses actual torso bone, stable replay and bounded replacement',()=>{
+    const {model,bone}=torsoFixture(), p=profile({id:'a3-self-authored',sex:'Female'});
+    assert.equal(syncResidentAuthoredGarment(model,wrap,p),true);
+    const group=model.getObjectByName(AUTHORED_GARMENT_GROUP);
+    assert.equal(group.parent,bone);
+    const child=group.getObjectByName('LifeLensPrimitiveFiberWrap');
+    assert.ok(child.geometry.getAttribute('position').count>50);
+    assert.ok(child.userData.residentOwnsGeometry);
+    assert.equal(syncResidentAuthoredGarment(model,{...wrap},p),true);
+    assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP),group);
+    const positions=[...child.geometry.getAttribute('position').array];
+    const other=torsoFixture();
+    assert.equal(syncResidentAuthoredGarment(other.model,wrap,p),true);
+    assert.deepEqual([...other.model.getObjectByName('LifeLensPrimitiveFiberWrap').geometry.getAttribute('position').array],positions);
+    let disposed=0;child.geometry.addEventListener('dispose',()=>disposed++);
+    assert.equal(syncResidentAuthoredGarment(model,{...wrap,durability:.3},p),true);
+    assert.equal(disposed,1);
+    assert.equal(syncResidentAuthoredGarment(model,null,p),false);
+    assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP),undefined);
+    assert.equal(syncResidentAuthoredGarment(model,wrap,p),true);
+    bone.rotation.z=.2;model.updateMatrixWorld(true);
+    assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP).parent,bone);
+  });
+  test('A3 no unsupported rig ever gets a floating garment',()=>{
+    const model=new THREE.Group(),p=profile({id:'unrigged'});
+    model.add(new THREE.Mesh(new THREE.BoxGeometry(.3,.4,.2),new THREE.MeshStandardMaterial()));
+    assert.equal(syncResidentAuthoredGarment(model,wrap,p),false);
+    assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP),undefined);
   });
   console.log(`${passed} character regression checks passed`);
 } finally { rmSync(directory,{recursive:true,force:true}); }

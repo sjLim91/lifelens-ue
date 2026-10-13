@@ -61,6 +61,8 @@ struct ResidentCivilizationObservation {
     std::size_t adoptedTechnologyCount=0;
     int latestKnowledgeMinute=-1;
     TechniqueId latestTechnique=TechniqueId::None;
+    bool hasWornGarment=false;
+    CivilizationItemObservation wornGarment{};
     std::vector<CivilizationItemObservation> inventory;
     std::vector<CivilizationTechniqueObservation> techniques;
     std::vector<CivilizationCapabilityStatus> capabilities;
@@ -274,6 +276,13 @@ inline ResidentCivilizationObservation buildResidentCivilizationObservation(
         if(stack.quantity<=0) continue;
         dto.totalInventoryUnits+=stack.quantity;
         dto.inventory.push_back(makeCivilizationItemObservation(stack));
+        // Current Core policy: a valid personally owned wrap is worn by default.
+        if(stack.kind==ItemKind::PrimitiveWrap && stack.material==MaterialKind::Fiber
+           && stack.durability>0.0
+           && (!dto.hasWornGarment || stack.quality>dto.wornGarment.quality)){
+            dto.hasWornGarment=true;
+            dto.wornGarment=makeCivilizationItemObservation(stack);
+        }
     }
     sortCivilizationItems(dto.inventory);
 

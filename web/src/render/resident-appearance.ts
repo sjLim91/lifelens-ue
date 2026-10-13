@@ -7,11 +7,10 @@ export interface ResidentAppearanceProfile {
   heightWorldUnits: number;
   widthScale: number;
   depthScale: number;
-  garmentColor: number;
-  lowerGarmentColor: number;
-  shoeColor: number;
-  garmentMix: number;
-  waistHeight01: number;
+  // These describe the body's actual silhouette, not invented clothes.
+  waistScale: number;
+  breastVolume: number;
+  bodyMaturity01: number;
   skinLightnessShift: number;
   skinColor: number;
   hairStyle: number;
@@ -24,36 +23,11 @@ export interface ResidentAppearanceProfile {
   jawScale: number;
   cheekScale: number;
   faceLengthScale: number;
+  noseScale: number;
+  mouthWidthScale: number;
+  hairLengthScale: number;
+  ageWeathering01: number;
 }
-
-const GARMENT_PALETTE = [
-  0x2f5f86,
-  0x8a4d35,
-  0x4f7448,
-  0x8a6b2f,
-  0x62528c,
-  0x8a5067,
-  0x2f746a,
-  0x6e6654,
-] as const;
-
-const LOWER_GARMENT_PALETTE = [
-  0x263544,
-  0x49392f,
-  0x39463b,
-  0x4d4837,
-  0x3e384f,
-  0x4c3740,
-  0x2e4744,
-  0x4c4942,
-] as const;
-
-const SHOE_PALETTE = [
-  0x211f1d,
-  0x302923,
-  0x25272a,
-  0x3a3129,
-] as const;
 
 const HAIR_PALETTE = [
   0x241a14,
@@ -88,8 +62,11 @@ function phenotype(value: number | undefined, fallback: number): number {
     ? THREE.MathUtils.clamp(value, 0, 1) : fallback;
 }
 
-function agedHairColor(color: number, elderly: boolean): number {
-  return elderly ? new THREE.Color(color).lerp(new THREE.Color(0xb4b1a6), 0.55).getHex() : color;
+function agedHairColor(color: number, weathering: number): number {
+  // LifeCondition.appearanceAgeFactor is the Core-owned aging clock. Grey
+  // emerges gradually; old observers and new births replay identically.
+  const grey = THREE.MathUtils.smoothstep(weathering, .51, 1) * .62;
+  return new THREE.Color(color).lerp(new THREE.Color(0xb4b1a6), grey).getHex();
 }
 function pigmentColor(value: number, colors: readonly number[]): number {
   const position = value * (colors.length - 1);
@@ -131,26 +108,23 @@ export function createResidentAppearanceProfile(
 ): ResidentAppearanceProfile {
   const seed = stableHash(resident.id);
   const life = deriveResidentLifeVisualState(resident);
+  const ageFallback = life.age === null ? 0 : THREE.MathUtils.clamp((life.age - 25) / 65, 0, 1);
+  const ageWeathering01 = phenotype(resident.lifeCondition?.appearanceAgeFactor, ageFallback);
+  const hairLengthScale = life.stage === 'Baby' ? .25
+    : life.stage === 'Toddler' ? .48
+    : life.stage === 'Child' ? .72
+    : life.stage === 'Teen' ? .86 : 1;
   const sexWidthBias = resident.sex === 'Male'
-    ? 1.05
-    : resident.sex === 'Female'
-      ? 0.94
-      : 1;
-  const widthVariation = 0.86 + phenotype(resident.genetics?.buildPotential, hash01(seed, 29)) * 0.26;
-  const depthVariation = 0.88 + phenotype(resident.genetics?.buildPotential, hash01(seed, 31)) * 0.22;
-  const garmentIndex = Math.min(
-    GARMENT_PALETTE.length - 1,
-    Math.floor(hash01(seed, 37) * GARMENT_PALETTE.length),
-  );
-  const lowerGarmentIndex = (
-    garmentIndex
-    + 2
-    + Math.floor(hash01(seed, 39) * (GARMENT_PALETTE.length - 2))
-  ) % LOWER_GARMENT_PALETTE.length;
-  const shoeIndex = Math.min(
-    SHOE_PALETTE.length - 1,
-    Math.floor(hash01(seed, 40) * SHOE_PALETTE.length),
-  );
+    ? 1.055 : resident.sex === 'Female' ? 0.95 : 1;
+  const build = phenotype(resident.genetics?.buildPotential, hash01(seed, 29));
+  const widthVariation = 0.86 + build * 0.26;
+  const depthVariation = 0.88 + build * 0.22;
+  // Secondary sex-related morphology appears gradually rather than on babies.
+  // Small inherited/identity differences still overlap across individuals.
+  const bodyMaturity01 = life.stage === 'Baby' || life.stage === 'Toddler' || life.stage === 'Child'
+    ? 0 : life.stage === 'Teen' ? 0.6 : 1;
+  const female = resident.sex === 'Female' ? bodyMaturity01 : 0;
+  const male = resident.sex === 'Male' ? bodyMaturity01 : 0;
   const hairIndex = Math.min(
     HAIR_PALETTE.length - 1,
     Math.floor(hash01(seed, 41) * HAIR_PALETTE.length),
@@ -161,11 +135,10 @@ export function createResidentAppearanceProfile(
     heightWorldUnits: heightForResident(resident, seed),
     widthScale: sexWidthBias * widthVariation * life.bodyWidth,
     depthScale: depthVariation,
-    garmentColor: GARMENT_PALETTE[garmentIndex],
-    lowerGarmentColor: LOWER_GARMENT_PALETTE[lowerGarmentIndex],
-    shoeColor: SHOE_PALETTE[shoeIndex],
-    garmentMix: 0.7 + hash01(seed, 43) * 0.18,
-    waistHeight01: 0.46 + hash01(seed, 45) * 0.1,
+    waistScale: 1 - female * (0.15 + (1 - build) * 0.025) - male * 0.035,
+    // Render-only anatomical volumes derived from Core sex and life stage.
+    breastVolume: female * (0.20 + hash01(seed, 45) * 0.06),
+    bodyMaturity01,
     skinLightnessShift: (hash01(seed, 47) - 0.5) * 0.055,
     skinColor: typeof resident.genetics?.skinTone === 'number' && Number.isFinite(resident.genetics.skinTone)
       ? pigmentColor(phenotype(resident.genetics.skinTone, .5), [0xe0b394, 0xc99573, 0xb47e5e, 0x946344, 0x704b38])
@@ -175,15 +148,25 @@ export function createResidentAppearanceProfile(
     hairStyle: Math.floor(hash01(seed, 53) * 8),
     hairColor: agedHairColor(typeof resident.genetics?.hairPigment === 'number' && Number.isFinite(resident.genetics.hairPigment)
       ? pigmentColor(phenotype(resident.genetics.hairPigment, .5), [0xc6a064, 0x805631, 0x3b281c, 0x1c1a19])
-      : HAIR_PALETTE[hairIndex], life.stage === 'Elderly'),
+      : HAIR_PALETTE[hairIndex], ageWeathering01),
     gaitRateBias: (0.94 + hash01(seed, 59) * 0.12) * life.gaitBias,
     eyeColor: pigmentColor(phenotype(resident.genetics?.eyePigment, 1), [0x547d8c, 0x627255, 0x705336, 0x302720]),
-    shoulderScale: resident.sex === 'Female' ? .92 : resident.sex === 'Male' ? 1.02 : 1,
-    hipScale: resident.sex === 'Female' ? 1.07 : resident.sex === 'Male' ? .99 : 1,
+    shoulderScale: 1 + male * .10 - female * .10 + (build - .5) * .035,
+    hipScale: 1 + female * .14 - male * .02 + (build - .5) * .035,
     headWidthScale: (.94 + phenotype(resident.genetics?.faceShape, .5) * .12) * life.headScale,
-    jawScale: .83 + phenotype(resident.genetics?.faceShape, hash01(seed, 83)) * .34,
-    cheekScale: .90 + phenotype(resident.genetics?.faceShape, hash01(seed, 85)) * .21,
+    jawScale: (.83 + phenotype(resident.genetics?.faceShape, hash01(seed, 83)) * .34)
+      * (1 + male * .055 - female * .045),
+    cheekScale: (.90 + phenotype(resident.genetics?.faceShape, hash01(seed, 85)) * .21)
+      * (1 + female * .025),
     faceLengthScale: 1.09 - phenotype(resident.genetics?.faceShape, hash01(seed, 87)) * .17,
+    // Only existing inherited faceShape is genetic truth. The small GUID salt
+    // gives siblings individual visual detail, never a fabricated Core allele.
+    noseScale: .83 + phenotype(resident.genetics?.faceShape, hash01(seed, 91)) * .27
+      + (hash01(seed, 93) - .5) * .11,
+    mouthWidthScale: .83 + phenotype(resident.genetics?.faceShape, hash01(seed, 95)) * .24
+      + (hash01(seed, 97) - .5) * .13,
+    hairLengthScale,
+    ageWeathering01,
   };
 }
 
@@ -206,7 +189,6 @@ export function applyResidentMaterialVariant(
   root: THREE.Object3D,
   profile: ResidentAppearanceProfile,
 ): void {
-  const garmentColor = new THREE.Color(profile.garmentColor);
   root.updateMatrixWorld(true);
   const referenceInverse = root.matrixWorld.clone().invert();
 
@@ -273,31 +255,29 @@ export function applyResidentMaterialVariant(
         return cloned;
       }
 
-      const materialSalt = stableHash(identity);
-      cloned.color.lerp(garmentColor, profile.garmentMix);
-      cloned.color.offsetHSL(
-        (hash01(profile.seed, materialSalt + 71) - 0.5) * 0.035,
-        0.08,
-        (hash01(profile.seed, materialSalt + 73) - 0.5) * 0.06,
-      );
+      // The imported base GLB is a shared rigged human body, not owned clothing.
+      // The old ID-based upper/lower/shoe tints incorrectly created free outfits.
+      // Model clothing only in resident-authored-garment from Core wornGarment.
+      cloned.color.set(profile.skinColor);
       return cloned;
     };
 
     object.material = Array.isArray(object.material)
       ? object.material.map(cloneMaterial)
       : cloneMaterial(object.material);
-    applyBodyProportions(object, profile, referenceInverse);
+    applyBodyProportions(object, profile, referenceInverse, root);
   });
 }
 
 /** Small rest-mesh adjustments; no invented asset gender or skeleton changes. */
-function applyBodyProportions(mesh: THREE.Mesh, profile: ResidentAppearanceProfile, referenceInverse: THREE.Matrix4): void {
+function applyBodyProportions(mesh: THREE.Mesh, profile: ResidentAppearanceProfile, referenceInverse: THREE.Matrix4, root: THREE.Object3D): void {
   if (!(mesh instanceof THREE.SkinnedMesh)) return;
   const joints = mesh.geometry.getAttribute('skinIndex');
   const weights = mesh.geometry.getAttribute('skinWeight');
   const positions = mesh.geometry.getAttribute('position');
   if (!joints || !weights || !positions) return;
-  if (profile.shoulderScale === 1 && profile.hipScale === 1 && profile.headWidthScale === 1
+  if (profile.shoulderScale === 1 && profile.hipScale === 1 && profile.waistScale === 1
+      && profile.breastVolume === 0 && profile.headWidthScale === 1
       && profile.jawScale === 1 && profile.cheekScale === 1 && profile.faceLengthScale === 1) return;
   if (!mesh.userData.residentOwnsGeometry) mesh.geometry = mesh.geometry.clone();
   mesh.userData.residentOwnsGeometry = true;
@@ -305,37 +285,74 @@ function applyBodyProportions(mesh: THREE.Mesh, profile: ResidentAppearanceProfi
   const point = new THREE.Vector3();
   const relative = referenceInverse.clone().multiply(mesh.matrixWorld);
   const inverse = relative.clone().invert();
-  // Determine the head's rest-vertex vertical range, never the animated
-  // Head bone pose. Sibling morphology remains fully deterministic.
-  let minHeadY = Infinity;
-  let maxHeadY = -Infinity;
+  // Derive anatomy from the actual *rest* vertices influenced by the body's
+  // spine. This is deterministic and independent of a later animated pose.
+  let minHeadY = Infinity, maxHeadY = -Infinity;
+  const torsoBox = new THREE.Box3();
+  let torsoCount = 0, headZ = 0, headCount = 0;
   for (let vertex = 0; vertex < positions.count; vertex++) {
-    let headInfluence = 0;
+    let headInfluence = 0, torsoInfluence = 0;
     for (let i = 0; i < 4; i++) {
-      if (/^head$/i.test(mesh.skeleton.bones[joints.getComponent(vertex, i)]?.name ?? ''))
-        headInfluence += weights.getComponent(vertex, i);
+      const name = mesh.skeleton.bones[joints.getComponent(vertex, i)]?.name ?? '';
+      const weight = weights.getComponent(vertex, i);
+      if (/^head$/i.test(name)) headInfluence += weight;
+      if (/^spine_0[123]$/i.test(name)) torsoInfluence += weight;
     }
-    if (headInfluence < 0.5) continue;
     point.fromBufferAttribute(positions, vertex).applyMatrix4(relative);
-    minHeadY = Math.min(minHeadY, point.y);
-    maxHeadY = Math.max(maxHeadY, point.y);
+    if (headInfluence >= .5) {
+      minHeadY = Math.min(minHeadY, point.y);
+      maxHeadY = Math.max(maxHeadY, point.y);
+      headZ += point.z; headCount++;
+    }
+    if (torsoInfluence >= .5) { torsoBox.expandByPoint(point); torsoCount++; }
   }
   const headHeight = Math.max(0.0001, maxHeadY - minHeadY);
   const validHeadRange = Number.isFinite(headHeight)
     && Number.isFinite(maxHeadY) && Number.isFinite(minHeadY);
+  const torsoSize = torsoBox.getSize(new THREE.Vector3());
+  const torsoValid = torsoCount >= 12 && !torsoBox.isEmpty()
+    && torsoSize.y > .08 && torsoSize.z > .025 && torsoSize.x > .055;
+  // Eye landmark establishes the real rig's anterior direction. Never guess
+  // the orientation of an unsupported imported skeleton.
+  const eyes = root.getObjectByName('Eyes');
+  const eyesWorld = eyes ? new THREE.Box3().setFromObject(eyes) : null;
+  const eyesZ = eyesWorld && !eyesWorld.isEmpty()
+    ? eyesWorld.getCenter(new THREE.Vector3()).applyMatrix4(referenceInverse).z : NaN;
+  const eyeDepth = headCount > 0 ? eyesZ - headZ / headCount : 0;
+  const frontSign = Number.isFinite(eyeDepth) && Math.abs(eyeDepth) > torsoSize.z * .06
+    ? Math.sign(eyeDepth) : 0;
   // The normalized source is centered on X. Use rest vertices, never animated
   // bone positions: a late genetics observation must not bake the current pose.
   for (let vertex = 0; vertex < output.count; vertex++) {
-    let headWeight = 0, torsoWeight = 0, hipWeight = 0;
+    let headWeight = 0, torsoWeight = 0, hipWeight = 0, midTorsoWeight = 0;
     for (let i = 0; i < 4; i++) {
       const name = mesh.skeleton.bones[joints.getComponent(vertex, i)]?.name ?? '';
       const weight = weights.getComponent(vertex, i);
       if (/^head$/i.test(name)) headWeight += weight;
       if (/^spine_0[23]$/i.test(name)) torsoWeight += weight;
+      if (/^spine_0[123]$/i.test(name)) midTorsoWeight += weight;
       if (/^pelvis$/i.test(name)) hipWeight += weight;
     }
     point.fromBufferAttribute(positions, vertex).applyMatrix4(relative);
     point.x += point.x * ((profile.shoulderScale - 1) * torsoWeight + (profile.hipScale - 1) * hipWeight);
+    if (torsoValid && midTorsoWeight > 0) {
+      const ribHeight = (point.y - torsoBox.min.y) / torsoSize.y;
+      // Waist narrowing is smooth across bones to prevent seams in motion.
+      const waistMask = Math.exp(-Math.pow((ribHeight - .28) / .25, 2));
+      point.x += point.x * (profile.waistScale - 1) * waistMask * midTorsoWeight;
+      if (frontSign !== 0 && profile.breastVolume > 0) {
+        const midX = (torsoBox.min.x + torsoBox.max.x) * .5;
+        const radiusX = torsoSize.x * .5;
+        const relativeX = Math.abs(point.x - midX) / Math.max(.001, radiusX);
+        const bustMask = Math.exp(-Math.pow((ribHeight - .67) / .18, 2))
+          * Math.exp(-Math.pow((relativeX - .43) / .33, 2));
+        const depthFromBack = frontSign > 0
+          ? point.z - torsoBox.min.z : torsoBox.max.z - point.z;
+        const frontMask = THREE.MathUtils.smoothstep(depthFromBack / torsoSize.z, .42, .78);
+        point.z += frontSign * torsoSize.z * profile.breastVolume
+          * bustMask * frontMask * midTorsoWeight;
+      }
+    }
     point.x += point.x * (profile.headWidthScale - 1) * headWeight;
     if (headWeight > 0 && validHeadRange) {
       const faceHeight01 = THREE.MathUtils.clamp(
@@ -367,12 +384,9 @@ function applyBodyColors(
   const joints = mesh.geometry.getAttribute('skinIndex');
   const weights = mesh.geometry.getAttribute('skinWeight');
   if (!joints || !weights) return;
-  // Geometry is shared by SkeletonUtils.clone; color buffers must be per person.
+  // Geometry is shared by SkeletonUtils.clone; skin buffers must be per person.
   mesh.geometry = mesh.geometry.clone();
   mesh.userData.residentOwnsGeometry = true;
-  const skinBones = new Set(mesh.skeleton.bones.flatMap((bone, index) =>
-    /^(Head|neck_01|hand_[lr]|(?:thumb|index|middle|ring|pinky)_\d+.*)$/i.test(bone.name)
-      ? [index] : []));
   const headIndex = mesh.skeleton.bones.findIndex(bone => /^head$/i.test(bone.name));
   const positions = mesh.geometry.getAttribute('position');
   const headWeights = new Float32Array(joints.count);
@@ -381,8 +395,6 @@ function applyBodyColors(
   const relative = referenceInverse.clone().multiply(mesh.matrixWorld);
   let headBottom = Infinity;
   let headTop = -Infinity;
-  let bodyBottom = Infinity;
-  let bodyTop = -Infinity;
   for (let vertex = 0; vertex < joints.count; vertex++) {
     for (let component = 0; component < 4; component++) {
       if (joints.getComponent(vertex, component) === headIndex) {
@@ -391,55 +403,23 @@ function applyBodyColors(
     }
     point.fromBufferAttribute(positions, vertex).applyMatrix4(relative);
     heights[vertex] = point.y;
-    bodyBottom = Math.min(bodyBottom, point.y);
-    bodyTop = Math.max(bodyTop, point.y);
     if (headWeights[vertex] > 0.5) {
       headBottom = Math.min(headBottom, point.y);
       headTop = Math.max(headTop, point.y);
     }
   }
   const headHeight = headTop - headBottom;
-  const bodyHeight = Math.max(0.0001, bodyTop - bodyBottom);
   const hairColor = new THREE.Color(profile.hairColor);
   // Color the actual skinned scalp, not a fixed-height sphere that can become
   // a collar when the imported rig changes pose. Keep face and neck uncovered.
   const hairline = 0.64 + profile.hairStyle * 0.025;
   const colors = new Float32Array(joints.count * 3);
-  const upperGarment = new THREE.Color(profile.garmentColor);
-  const lowerGarment = new THREE.Color(profile.lowerGarmentColor);
-  const shoe = new THREE.Color(profile.shoeColor);
   const skin = new THREE.Color(profile.skinColor);
   const color = new THREE.Color();
   for (let vertex = 0; vertex < joints.count; vertex++) {
-    let skinWeight = 0;
-    for (let component = 0; component < 4; component++) {
-      if (skinBones.has(joints.getComponent(vertex, component))) {
-        skinWeight += weights.getComponent(vertex, component);
-      }
-    }
-    const bodyHeight01 = THREE.MathUtils.clamp(
-      (heights[vertex] - bodyBottom) / bodyHeight,
-      0,
-      1,
-    );
-    const shoeBlend = 1 - THREE.MathUtils.smoothstep(
-      bodyHeight01,
-      0.08,
-      0.15,
-    );
-    const lowerBlend = 1 - THREE.MathUtils.smoothstep(
-      bodyHeight01,
-      profile.waistHeight01 - 0.025,
-      profile.waistHeight01 + 0.035,
-    );
-
-    color.copy(upperGarment);
-    color.lerp(lowerGarment, lowerBlend);
-    color.lerp(shoe, shoeBlend);
-    color.lerp(
-      skin,
-      THREE.MathUtils.smoothstep(skinWeight, 0.25, 0.75),
-    );
+    // Every body vertex is naked skin until a real Core garment is owned.
+    // No shoe/trouser/tunic palette can be inferred from a GUID or sex.
+    color.copy(skin);
 
     if (
       headWeights[vertex] > 0.5

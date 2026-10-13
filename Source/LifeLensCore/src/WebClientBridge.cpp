@@ -1,4 +1,5 @@
 #include "lifelens/NaturalEcologyLifecycle.h"
+#include "lifelens/WildlifeObservation.h"
 #include "lifelens/WebClientBridge.h"
 #include "lifelens/AutonomousGoalComposer.h"
 
@@ -434,6 +435,7 @@ const char* itemKindName(ItemKind kind)
         case ItemKind::BronzeAxe: return "BronzeAxe";
         case ItemKind::BronzePick: return "BronzePick";
         case ItemKind::RecordTablet: return "RecordTablet";
+        case ItemKind::PrimitiveWrap: return "PrimitiveWrap";
     }
     return "RawMaterial";
 }
@@ -457,6 +459,7 @@ const char* techniqueIdName(TechniqueId technique)
         case TechniqueId::BronzeAlloying: return "BronzeAlloying";
         case TechniqueId::BronzeAxe: return "BronzeAxe";
         case TechniqueId::BronzePick: return "BronzePick";
+        case TechniqueId::PrimitiveWrap: return "PrimitiveWrap";
         case TechniqueId::None:
         default: return "None";
     }
@@ -1553,6 +1556,18 @@ std::string WebClientBridge::residentsJson() const
         out << "\"adoptedTechnologyCount\":" << civilization.adoptedTechnologyCount << ",";
         out << "\"latestKnowledgeMinute\":" << civilization.latestKnowledgeMinute << ",";
         out << "\"latestTechnique\":\"" << techniqueIdName(civilization.latestTechnique) << "\",";
+        out << "\"wornGarment\":";
+        if(civilization.hasWornGarment){
+            out << "{\"item\":\"" << itemKindName(civilization.wornGarment.item)
+                << "\",\"material\":\"" << materialName(civilization.wornGarment.material)
+                << "\",\"quantity\":" << civilization.wornGarment.quantity
+                << ",\"quality\":";
+            appendDouble(out,civilization.wornGarment.quality);
+            out << ",\"durability\":";
+            appendDouble(out,civilization.wornGarment.durability);
+            out << "}";
+        }else out << "null";
+        out << ",";
         out << "\"inventory\":[";
         for (std::size_t i = 0; i < civilization.inventory.size(); ++i) {
             if (i != 0) out << ",";
@@ -2155,6 +2170,8 @@ std::string WebClientBridge::humanTracesWindowJson(
     out << "\"humanTraces\":";
     appendHumanTraces(out, buildHumanTraceWindowObservation(
         simulation_->world(), {centerChunkX, centerChunkY}, radius));
+    out << ",\"wildlife\":";
+    appendWildlifeObservation(out,simulation_->world(),{centerChunkX,centerChunkY},radius);
     out << "}";
     return out.str();
 }
@@ -2242,10 +2259,13 @@ std::string WebClientBridge::terrainWindowJson(
     out << "],\"humanTraces\":";
     appendHumanTraces(out, buildHumanTraceWindowObservation(
         simulation_->world(), {centerChunkX, centerChunkY}, radius));
+    out << ",\"wildlife\":";
+    appendWildlifeObservation(out,simulation_->world(),{centerChunkX,centerChunkY},radius);
     out << "}";
     return out.str();
 }
 
 } // namespace lifelens
+
 
 

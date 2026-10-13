@@ -260,6 +260,24 @@ int main()
     CHECK(restoredWorld.transmissionReceiptCount==worldRead.transmissionReceiptCount);
     CHECK(restoredWorld.recentDiscoveries.size()==worldRead.recentDiscoveries.size());
 
+    // A3: equipped appearance is an inventory-backed Core observation.
+    sim.world().characters[0].civilization.inventory.add({
+        ItemKind::PrimitiveWrap,MaterialKind::Fiber,1,0.75,0.9});
+    const auto garmentRead=sim.observeResidentCivilization(discoverer.id);
+    CHECK(garmentRead.hasWornGarment);
+    CHECK(garmentRead.wornGarment.item==ItemKind::PrimitiveWrap);
+    CHECK(garmentRead.wornGarment.material==MaterialKind::Fiber);
+    const auto garmentSnapshot=sim.captureSnapshot();
+    Simulation garmentRestored(1);
+    std::string garmentError;
+    CHECK(garmentRestored.restoreSnapshot(garmentSnapshot,&garmentError));
+    const auto wornAfterRestore=garmentRestored.observeResidentCivilization(discoverer.id);
+    CHECK(wornAfterRestore.hasWornGarment);
+    CHECK(wornAfterRestore.wornGarment.item==ItemKind::PrimitiveWrap);
+    CHECK(sim.world().characters[0].civilization.inventory.remove(
+        ItemKind::PrimitiveWrap,MaterialKind::Fiber,1));
+    CHECK(!sim.observeResidentCivilization(discoverer.id).hasWornGarment);
+
     std::cout << "civilization observer read model passed\n";
     return 0;
 }

@@ -26,7 +26,7 @@ if(mode==='pregnancy'||mode==='pregnancy-sleep'){
 if(mode==='parenting'||mode==='parenting-moving')residents=[r('parent',-.55,0,'Adult',30,{presentation:{active:true,kind:'Parenting',phase:mode==='parenting'?'Interacting':'Moving',parentingAction:'Feed',targetResidentId:'child'}}),r('child',.55,0,'Toddler',3,{family:{parents:[{id:'parent'}]}}),r('grandparent',2,-1,'Elderly',78)];
 if(mode==='events'||mode==='coalescing'||mode.startsWith('event-'))residents=[r('parent',-.7,0,'Adult',30,{family:{children:[{id:'child'}]}}),r('partner',.7,0),r('child',-.1,1,'Baby',0,{family:{parents:[{id:'parent'},{id:'partner'}]}})];
 if(['generations','pregnancy','pregnancy-sleep'].includes(mode))residents.forEach((resident,i)=>{const mobile=innerWidth<500;const x=mobile?(i%2-.5)*2.6:(i%3-1)*2.2;const z=mobile?2-Math.floor(i/2)*2:1.5-Math.floor(i/3)*3;resident.gridX=(x/G.worldUnitsPerChunk+.5)*G.gridCellsPerChunk;resident.gridY=(z/G.worldUnitsPerChunk+.5)*G.gridCellsPerChunk;if(resident.presentation){resident.presentation.targetGridX=resident.gridX;resident.presentation.targetGridY=resident.gridY;}});
-const hideExistingText=()=>{for(const actor of l.actors.values())actor.actionCue.sprite.visible=false;};
+const hideExistingText=()=>{for(const actor of l.actors.values())if(actor.actionCue)actor.actionCue.sprite.visible=false;};
 l.setResidents(residents,terrain,0,0);l.setSimulationSpeed(1);for(let n=0;n<90;n++)l.update(.02);
 // Face the fixed test camera, only in this synthetic read-only fixture.
 if(mode.startsWith('pregnancy')||mode==='generations')for(const actor of l.actors.values())actor.root.rotation.y=mode.startsWith('pregnancy')?1.15:.28;

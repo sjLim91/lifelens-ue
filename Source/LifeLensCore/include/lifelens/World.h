@@ -12,6 +12,7 @@
 #include "MacroWorldGenesis.h"
 #include "Hydrology.h"
 #include "NaturalWorldChunk.h"
+#include "WildlifeEcology.h"
 namespace lifelens {
 struct SnowpackState { ChunkCoord coord{}; double depthMeters=0.0; int minute=0; };
 
@@ -31,6 +32,8 @@ struct World {
     EnvironmentalResidueField environmentalResidues;
     std::vector<GeneratedNaturalChunk> generatedNaturalChunks;
     std::vector<SnowpackState> snowpacks;
+    bool wildlifeEnabled=false;
+    std::vector<WildlifePopulation> wildlifePopulations;
     bool hasInitialStartRegionSelection=false;
     ChunkCoord initialStartRegionCoord{};
     double initialStartRegionViability=0.0;
@@ -139,6 +142,13 @@ struct World {
             return a.id<b.id;
         });
         it=generatedNaturalChunks.insert(it,std::move(generated));
+        if(wildlifeEnabled && wildlifePopulations.size()<64){
+            auto population=startWildlifePopulation(genesisIdentity(),
+                deriveWildlifeHabitat(genesisIdentity(),coord),minute/(24*60));
+            auto wildlifeIt=std::lower_bound(wildlifePopulations.begin(),wildlifePopulations.end(),coord,
+                [](const WildlifePopulation& p,ChunkCoord c){return p.habitat.coord<c;});
+            wildlifePopulations.insert(wildlifeIt,std::move(population));
+        }
         return *it;
     }
 
@@ -146,6 +156,8 @@ struct World {
     {
         generatedNaturalChunks.clear();
         snowpacks.clear();
+        wildlifePopulations.clear();
+        wildlifeEnabled=false;
         hasInitialStartRegionSelection=false;
         initialStartRegionCoord={};
         initialStartRegionViability=0.0;
@@ -174,7 +186,10 @@ struct World {
         facilities.clear();
         primitiveSanitationSites.clear();
         environmentalResidues.clear();
+        wildlifeEnabled=false;
+        wildlifePopulations.clear();
     }
 };
 }
+
 

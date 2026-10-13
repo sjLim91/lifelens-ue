@@ -76,3 +76,30 @@ layer.setTerrain({...snapshot, available: false}); assert.equal(layer.instanceCo
 let disposed = 0; for (const mesh of layer.group.children) mesh.geometry.addEventListener('dispose', () => disposed++);
 layer.dispose(); assert.equal(disposed, 4); assert.equal(layer.group.children.length, 0);
 console.log('PASS Core-only observation, deduplication, removal, legacy runtime, reload, disposal');
+
+// Use the actual rendered freshwater surface and body bounds: adult fish must
+// not protrude above water, and shallow water must not bury them in the bed.
+const { buildFlowWaterSurfaceGeometry } = await source('render/water-geometry.ts');
+const fishLayer = new WildlifeLayer();
+for (const ageDays of [0, 900]) for (const bed of [.2, .3]) {
+  const lake = {...terrain, chunks: [{...chunk, waterKind: 'Lake', salinity: 'Fresh',
+    waterAvailability: 1, elevationSamples: Array(289).fill(bed)}],
+    wildlife: {...wildlife, animals: [{...animals[0], species: 'FreshwaterFish', ageDays}]}};
+  fishLayer.setTerrain(lake);
+  if (bed === .3) { assert.equal(fishLayer.instanceCount, 0); continue; }
+  assert.equal(fishLayer.instanceCount, 1);
+  const fish = fishLayer.group.children[3], matrix = new THREE.Matrix4();
+  fish.getMatrixAt(0, matrix);
+  const bounds = fish.geometry.boundingBox.clone().applyMatrix4(matrix);
+  const waterGeometry = buildFlowWaterSurfaceGeometry(lake);
+  const waterMaterial = new THREE.MeshBasicMaterial({side: THREE.DoubleSide});
+  const water = new THREE.Mesh(waterGeometry, waterMaterial); water.updateMatrixWorld();
+  ray.set(new THREE.Vector3(0, 100, 0), new THREE.Vector3(0, -1, 0));
+  const surface = ray.intersectObject(water)[0]; assert(surface);
+  ground.setTerrain(lake, lake.centerChunkX, lake.centerChunkY);
+  assert(bounds.min.y > ground.height(0, 0));
+  assert(bounds.max.y < surface.point.y);
+  waterGeometry.dispose(); waterMaterial.dispose();
+}
+fishLayer.dispose();
+console.log('PASS juvenile/adult fish fit below actual water and above bed; shallow fish hidden');

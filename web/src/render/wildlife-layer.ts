@@ -68,14 +68,18 @@ export class WildlifeLayer {
       if (height === null) continue;
       const fish = animal.species === 'FreshwaterFish';
       if (fish !== insideWater(x, z) || (!fish && !outsideFacilityFootprints(x, z, footprints, .35))) continue;
+      const maturity = animal.species === 'Deer' ? 420 : animal.species === 'Wolf' ? 600 : animal.species === 'Hare' ? 35 : 75;
+      const scale = .45 + .55 * Math.min(1, animal.ageDays / maturity);
       let y = height;
       if (fish) {
         if (!this.water) continue;
         this.rayOrigin.set(x, 1000, z);
         this.ray.set(this.rayOrigin, this.down);
         const hit = this.ray.intersectObject(this.water)[0];
-        if (!hit || hit.point.y - height < .2) continue;
-        y = hit.point.y - .18;
+        const bodyHeight = mesh.geometry.boundingBox!.max.y * scale;
+        const clearance = .02;
+        if (!hit || hit.point.y - height < bodyHeight + 2 * clearance) continue;
+        y = hit.point.y - bodyHeight - clearance;
       } else {
         // A conservative sole footprint keeps all four feet above hills even
         // without a quadruped IK rig. It never moves the authoritative X/Z.
@@ -84,8 +88,6 @@ export class WildlifeLayer {
         for (const dx of [-width, width]) for (const dz of [-length, length])
           y = Math.max(y, this.ground.height(x + dx, z + dz) ?? height);
       }
-      const maturity = animal.species === 'Deer' ? 420 : animal.species === 'Wolf' ? 600 : animal.species === 'Hare' ? 35 : 75;
-      const scale = .45 + .55 * Math.min(1, animal.ageDays / maturity);
       this.transform.position.set(x, y, z);
       this.transform.rotation.set(0, 0, 0);
       this.transform.scale.setScalar(scale);
@@ -111,3 +113,4 @@ export class WildlifeLayer {
     this.group.clear();
   }
 }
+

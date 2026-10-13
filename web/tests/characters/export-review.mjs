@@ -23,6 +23,9 @@ function emit(path){
 }
 const {createResidentAppearanceProfile,applyResidentMaterialVariant}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-appearance.ts'))));
 const {ResidentInventoryProps}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-props.ts'))));
+const {syncResidentAuthoredHair,syncResidentAuthoredFace}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-authored-appearance.ts'))));
+const {syncResidentAuthoredGarment}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-authored-garment.ts'))));
+const {syncResidentAnatomicalBody,ANATOMICAL_BODY_NAME}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-anatomical-body.ts'))));
 const loader=new GLTFLoader();
 async function load(file){const b=readFileSync(new URL('../../public/vendor/characters/'+file,import.meta.url));return loader.parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),'');}
 const base=await load('character.glb'),ual1=await load('ual1.glb'),ual2=await load('ual2.glb');
@@ -31,6 +34,7 @@ base.scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(base
 base.scene.position.sub(new THREE.Vector3(center.x,box.min.y,center.z));
 const template=new THREE.Group();template.add(base.scene);template.scale.setScalar(1/size.y);
 const result=[];
+let maleBareVertices=null;
 const cases=[
  ['Male / low','Male',0,'Idle_Loop',.7, ['StoneHammer','SharpFlake']],
  ['Female / low','Female',0,'Idle_Loop',.7,['SimpleContainer','DiggingStick']],
@@ -42,7 +46,78 @@ for(let ci=0;ci<cases.length;ci++){
  const [label,sex,axis,clipName,phase,items]=cases[ci];
  const profile=createResidentAppearanceProfile({id:'same-person',sex,ageYears:30,genetics:{heightPotential:axis,buildPotential:axis,faceShape:axis,skinTone:axis,hairPigment:axis,eyePigment:axis}});
  const model=clone(template);applyResidentMaterialVariant(model,profile);
- const visual=new THREE.Group();visual.add(model);const root=new THREE.Group();root.add(visual);
+ if(!syncResidentAnatomicalBody(model,profile))
+   throw Error('Anatomical body generation on real pinned GLB failed: '+label);
+ const authored=model.getObjectByName(ANATOMICAL_BODY_NAME);
+ if(!(authored instanceof THREE.SkinnedMesh))
+   throw Error('Authored anatomy is not a real skinned mesh: '+label);
+ const sumVertices=authored.geometry.getAttribute('position').count;
+ if(sumVertices<3500)throw Error('Anatomical mesh too sparse: '+label);
+ const authoredWeights=authored.geometry.getAttribute('skinWeight');
+ for(let i=0;i<authoredWeights.count;i++) {
+   const total=authoredWeights.getX(i)+authoredWeights.getY(i)
+     +authoredWeights.getZ(i)+authoredWeights.getW(i);
+   if(Math.abs(total-1)>1e-4)throw Error('Unnormalized anatomical bind weights: '+label);
+ }
+ if(model.getObjectByName('SuperHero_Male').material.visible!==false)
+   throw Error('Legacy template body still rendering: '+label);
+ const body=model.getObjectByName('SuperHero_Male');
+ if(!(body instanceof THREE.SkinnedMesh))throw Error('A4 pinned skinned body unavailable');
+ const barePositions=[...body.geometry.getAttribute('position').array];
+ const skinColors=body.geometry.getAttribute('color');
+ if(!skinColors)throw Error('A4 no per-vertex skin color');
+ const skin=new THREE.Color(profile.skinColor);
+ let skinCount=0;
+ for(let v=0;v<skinColors.count;v++)
+   if(Math.abs(skinColors.getX(v)-skin.r)<1e-5
+     && Math.abs(skinColors.getY(v)-skin.g)<1e-5
+     && Math.abs(skinColors.getZ(v)-skin.b)<1e-5)skinCount++;
+ if(skinCount/skinColors.count<.72)
+   throw Error('A4 fake base-clothes tint still present on pinned rig '+label);
+ if(ci===0) maleBareVertices=barePositions;
+ if(ci===1){
+   if(!maleBareVertices || maleBareVertices.length!==barePositions.length)
+     throw Error('A4 sex geometry count mismatch');
+   let delta=0;for(let v=0;v<barePositions.length;v++)delta+=Math.abs(barePositions[v]-maleBareVertices[v]);
+   if(delta<.04)throw Error('A4 male and female actual bare body geometry indistinguishable');
+ }
+ if(!syncResidentAuthoredHair(model,profile))throw Error('A2 real GLB Head mesh is unavailable');
+ if(!syncResidentAuthoredFace(model,profile)){
+  const objects=[];
+  model.updateMatrixWorld(true);
+  model.traverse(o=>{
+    if(!o.isMesh && !/head|eye/i.test(o.name))return;
+    const info={name:o.name,type:o.type,parent:o.parent?.name};
+    if(o.isMesh){
+      const local=new THREE.Box3().setFromObject(o);
+      const cc=local.getCenter(new THREE.Vector3()), sz=local.getSize(new THREE.Vector3());
+      info.center=cc.toArray().map(n=>+n.toFixed(5));
+      info.size=sz.toArray().map(n=>+n.toFixed(5));
+      info.skin=o.isSkinnedMesh;
+    }
+    objects.push(info);
+  });
+  const fit=model.userData.residentHeadFit,eye=model.getObjectByName('Eyes');
+  const toHead=fit.bone.matrixWorld.clone().invert();
+  const eyeBBox=new THREE.Box3().setFromObject(eye,true);
+  const eyeLocal=eyeBBox.getCenter(new THREE.Vector3()).applyMatrix4(toHead);
+  throw Error('A2 real GLB face landmark diagnostics '+JSON.stringify({
+    headCenter:fit.center.toArray(),headRadii:fit.radii.toArray(),
+    boneWorld:fit.bone.getWorldPosition(new THREE.Vector3()).toArray(),
+    eyeLocal:eyeLocal.toArray(),eyeWorld:eyeBBox.getCenter(new THREE.Vector3()).toArray(),
+    depth:eyeLocal.z-fit.center.z,
+    eyeHeight:eyeLocal.y-fit.center.y,
+    objects:objects.slice(0,6)
+  }));
+ }
+ // Preview genuine initial state with no owned garment, plus optional crafted item.
+ const crafted=axis>=1;
+ const worn=crafted?{item:'PrimitiveWrap',material:'Fiber',quantity:1,quality:.72,durability:.88}:null;
+ if(syncResidentAuthoredGarment(model,worn,profile)!==crafted)
+   throw Error('A3 garment existence did not match Core equipment for '+label);
+ if(Boolean(model.getObjectByName('LifeLensResidentAuthoredGarment'))!==crafted)
+   throw Error('A4 fake/absent clothing in pinned rig '+label);
+  const visual=new THREE.Group();visual.add(model);const root=new THREE.Group();root.add(visual);
  root.scale.set(profile.heightWorldUnits*profile.widthScale,profile.heightWorldUnits,profile.heightWorldUnits*profile.depthScale);
  const props=new ResidentInventoryProps(visual,model);props.setInventory([...items.map(item=>({item,quantity:1})),{item:'RawMaterial',material:clipName==='Farm_Watering'?'Water':'Wood',quantity:2}],{active:true,kind:'Civilization',phase:clipName==='Walk_Carry_Loop'?'Moving':'Interacting',facilityKind:'CultivatedPlot',facilityAction:clipName==='Farm_Watering'?'Water':clipName==='Walk_Carry_Loop'?'DeliverMaterial':'Plant',civilizationMaterial:'Wood'});
  const mixer=new THREE.AnimationMixer(root);const clip=clips.find(c=>c.name===clipName);if(!clip)throw Error(clipName);mixer.clipAction(clip).play();mixer.setTime(clip.duration*phase);
@@ -60,4 +135,4 @@ for(let ci=0;ci<cases.length;ci++){
  });
  result.push({label,meshes});
 }
-writeFileSync(new URL('poses.json',out),JSON.stringify(result));console.log('Verified real rig/clip skinning for',result.length,'poses');
+writeFileSync(new URL('poses.json',out),JSON.stringify(result));console.log('Verified real rig/clip, face and garment attachments for',result.length,'poses');
