@@ -43,6 +43,26 @@ galleryGround.rotation.x = -Math.PI / 2; galleryGround.position.y = -.035; galle
 function environment(season = 'Summer') { return { available: true, simulationMinute: 512,
   windIntensity01: .35, calendar: { season }, precipitationType: season === 'Winter' ? 'Snow' : 'None',
   precipitationIntensity01: season === 'Winter' ? .7 : 0, airTemperatureC: season === 'Winter' ? -4 : 20 }; }
+function activeResourceBudget() {
+  const geometries = new Set(), textures = new Set();
+  let geometryBytes = 0, instanceBytes = 0, textureRgbaBytes = 0;
+  scene.traverseVisible(object => {
+    if (!object.isMesh || object.isInstancedMesh && object.count === 0) return;
+    if (!geometries.has(object.geometry)) {
+      geometries.add(object.geometry);
+      for (const attribute of Object.values(object.geometry.attributes)) geometryBytes += attribute.array.byteLength;
+      geometryBytes += object.geometry.index?.array.byteLength ?? 0;
+    }
+    if (object.isInstancedMesh) instanceBytes += object.instanceMatrix.array.byteLength + (object.instanceColor?.array.byteLength ?? 0);
+    for (const material of [object.material].flat()) for (const value of Object.values(material)) {
+      if (value?.isTexture && !textures.has(value)) {
+        textures.add(value); textureRgbaBytes += (value.image?.width ?? 0) * (value.image?.height ?? 0) * 4;
+      }
+    }
+  });
+  return { activeGeometryBytes: geometryBytes, activeInstanceBytes: instanceBytes,
+    activeTextureRgbaBytes: textureRgbaBytes };
+}
 async function renderCase(name) {
   trees.group.visible = legacy.group.visible = ground.group.visible = facilities.group.visible = terrainGroup.visible = gallery.visible = false;
   const e = environment(name === 'autumn' ? 'Autumn' : name === 'winter' ? 'Winter' : 'Summer');
@@ -81,6 +101,7 @@ async function renderCase(name) {
   for (let i = 0; i < 12; i++) { const start = performance.now(); renderer.render(scene, camera); renderer.getContext().finish(); samples.push(performance.now() - start); }
   document.getElementById('label').textContent = `${name} · ${innerWidth}×${innerHeight}`;
   return { name, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
+    ...activeResourceBudget(),
     geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures,
     frameMedianMs: samples.sort((a, b) => a - b)[Math.floor(samples.length / 2)], trees: trees.instanceCount };
 }
