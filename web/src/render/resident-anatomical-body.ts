@@ -88,15 +88,24 @@ class AnatomicalSurface {
   }
 }
 
+/** The original donor joint's *bind* position in donor-local space.
+ * Current animated bone.matrixWorld must never drive permanent anatomy:
+ * a phenotype refresh can arrive during a walk, crouch or sleep.
+ */
+function bindPoint(source: THREE.SkinnedMesh, index: number): THREE.Vector3 {
+  const inverse = source.skeleton.boneInverses[index];
+  if (!inverse || index < 0 || index >= source.skeleton.bones.length)
+    throw new Error('Unsupported anatomical bind joint');
+  const local = source.bindMatrix.clone().invert().multiply(inverse.clone().invert());
+  return new THREE.Vector3().setFromMatrixPosition(local);
+}
 function jointMap(source: THREE.SkinnedMesh): Map<ResidentJoint, Joint> {
   const joints = new Map<ResidentJoint, Joint>();
-  const inverse = source.matrixWorld.clone().invert();
   for (const name of Object.keys(RESIDENT_JOINTS) as ResidentJoint[]) {
     const index = source.skeleton.bones.findIndex(bone =>
       (RESIDENT_JOINTS[name] as readonly string[]).includes(bone.name));
     if (index < 0) continue;
-    const point = source.skeleton.bones[index].getWorldPosition(new THREE.Vector3())
-      .applyMatrix4(inverse);
+    const point = bindPoint(source, index);
     if (Number.isFinite(point.x + point.y + point.z))
       joints.set(name, { index, point });
   }
@@ -134,7 +143,9 @@ function retargetSkinning(source: THREE.SkinnedMesh, geometry: THREE.BufferGeome
     if (/^head$|^neck_/.test(name)) return 'head';
     if (/spine|pelvis|^root$/.test(name)) return 'torso';
     const side = /_l$/.test(name) ? 'left' : /_r$/.test(name) ? 'right' : '';
-    if (/upperarm|lowerarm|hand|thumb|index|middle|ring|pinky/.test(name))
+    const digit = /^(thumb|index|middle|ring|pinky)_/.exec(name)?.[1];
+    if (digit) return side + 'Digit:' + digit;
+    if (/upperarm|lowerarm|hand|clavicle/.test(name))
       return side + 'Arm';
     if (/thigh|calf|foot|ball/.test(name)) return side + 'Leg';
     return 'torso';
@@ -258,8 +269,7 @@ function addAnatomy(source: THREE.SkinnedMesh, profile: ResidentAppearanceProfil
   // present, otherwise remain on the known semantic spine. Never invent joints.
   const upperSpineIndex = source.skeleton.bones.findIndex(b => b.name === 'spine_03');
   const upperSpine = upperSpineIndex >= 0
-    ? { index: upperSpineIndex, point: source.skeleton.bones[upperSpineIndex]
-      .getWorldPosition(new THREE.Vector3()).applyMatrix4(source.matrixWorld.clone().invert()) }
+    ? { index: upperSpineIndex, point: bindPoint(source, upperSpineIndex) }
     : get('spine');
   const points = [get('pelvis'), get('spine'), upperSpine, get('neck')];
   const headBounds = fitHead(source, get('head'));
@@ -271,8 +281,13 @@ function addAnatomy(source: THREE.SkinnedMesh, profile: ResidentAppearanceProfil
   const scale = height;
   const eyes = source.parent?.getObjectByName('Eyes');
   const eyeBounds = eyes ? new THREE.Box3().setFromObject(eyes) : null;
+  // Resolve the eye marker into the animated head frame first, then place
+  // it in the rest pose. No turning-head event may flip anterior direction.
   const eyePosition = eyeBounds && !eyeBounds.isEmpty()
-    ? eyeBounds.getCenter(new THREE.Vector3()).applyMatrix4(source.matrixWorld.clone().invert())
+    ? eyeBounds.getCenter(new THREE.Vector3())
+      .applyMatrix4(source.skeleton.bones[get('head').index].matrixWorld.clone().invert())
+      .applyMatrix4(source.bindMatrix.clone().invert()
+        .multiply(source.skeleton.boneInverses[get('head').index].clone().invert()))
     : null;
   const front = eyePosition && Math.abs(eyePosition.z - headBounds.getCenter(new THREE.Vector3()).z) > .005
     ? Math.sign(eyePosition.z - headBounds.getCenter(new THREE.Vector3()).z) : 1;
@@ -281,8 +296,8 @@ function addAnatomy(source: THREE.SkinnedMesh, profile: ResidentAppearanceProfil
   const body = new AnatomicalSurface();
   const female = profile.bodyMaturity01 * (profile.breastVolume > 0 ? 1 : 0);
   const male = profile.bodyMaturity01 * (profile.breastVolume === 0 ? 1 : 0);
-  const halfShoulder = shoulderWidth * .5;
-  const halfHip = hipWidth * .70;
+  const halfShoulder = shoulderWidth * .5 * profile.shoulderScale;
+  const halfHip = hipWidth * .70 * profile.hipScale;
   const waist = (halfShoulder * .88 + halfHip * .9) * .5 * profile.waistScale;
   const line = (t: number) => {
     const f = clamp(t, 0, 1) * (points.length - 1);
@@ -292,6 +307,7 @@ function addAnatomy(source: THREE.SkinnedMesh, profile: ResidentAppearanceProfil
   const radii = [
     { t: 0, x: halfHip * 1.05, z: halfHip * .66 },
     { t: .18, x: waist, z: halfHip * .68 },
+    { t: .30, x: waist * .97, z: halfHip * .71 },
     { t: .42, x: halfShoulder * .84, z: halfShoulder * .58 },
     { t: .68, x: halfShoulder * (.99 + male * .08), z: halfShoulder * .62 },
     { t: .83, x: halfShoulder * (1.06 + male * .04), z: halfShoulder * .54 },
@@ -306,53 +322,91 @@ function addAnatomy(source: THREE.SkinnedMesh, profile: ResidentAppearanceProfil
   }
   // 41 rib/abdominal/shoulder cross sections, with independent shoulder,
   // waist, clavicle, serratus and paired pectoral contours.
-  body.addLoft(40, 40, t => {
+  body.addLoft(48, 48, t => {
     const r = radius(t);
     return { center: line(t), radialX: sideVector, radialZ: frontVector,
       radiusX: r.x, radiusZ: r.z, weights: blended(points, t),
       frontBump: (.014 + male * .012) * scale * gaussian(t, .59, .18) };
   }, (t, angle) => {
     const x = Math.sin(angle), f = Math.max(0, Math.cos(angle));
-    const chest = female * profile.breastVolume * .11 * scale * gaussian(t, .64, .105)
-      * gaussian(Math.abs(x), .40, .27) * f * f;
-    const clavicle = .011 * scale * gaussian(t, .87, .055)
-      * gaussian(Math.abs(x), .58, .31) * f;
+    const chest = female * profile.breastVolume * .24 * scale * gaussian(t, .65, .115)
+      * gaussian(Math.abs(x), .43, .27) * f * f;
+    // Symmetric anatomical landmarks are bounded and blend into the skin.
+    const pectoral = male * .014 * scale * gaussian(t, .66, .15)
+      * gaussian(Math.abs(x), .45, .32) * f;
+    const clavicle = .011 * scale * gaussian(t, .88, .055)
+      * gaussian(Math.abs(x), .62, .28) * f;
+    const sternum = .007 * scale * gaussian(t, .73, .18)
+      * gaussian(x, 0, .13) * f;
+    const costal = .006 * scale * gaussian(t, .43, .09)
+      * gaussian(Math.abs(x), .77, .22) * f;
     const oblique = .004 * scale * gaussian(t, .34, .12)
       * Math.cos(8 * angle) * f;
-    return frontVector.clone().multiplyScalar(chest + clavicle + oblique);
+    const scapula = .006 * scale * gaussian(t, .78, .13)
+      * gaussian(Math.abs(x), .75, .2) * Math.max(0, -Math.cos(angle));
+    return frontVector.clone().multiplyScalar(
+      chest + pectoral + clavicle + sternum + costal + oblique - scapula
+    );
   });
 
   // A fully authored high-resolution cranium and jaw, with subtle nose bridge,
   // cheek planes and brows. Eyes and hair keep their existing bone attachments.
   const headCenter = headBounds.getCenter(new THREE.Vector3());
   const headSize = headBounds.getSize(new THREE.Vector3());
-  body.addLoft(26, 36, t => {
+  body.addLoft(36, 48, t => {
     const ellipse = Math.max(.035, Math.sin(Math.PI * t) ** .48);
     const jaw = 1 - (.19 + female * .04) * (1 - THREE.MathUtils.smoothstep(t, .17, .58));
     return { center: new THREE.Vector3(headCenter.x,
       THREE.MathUtils.lerp(headBounds.min.y, headBounds.max.y, t),
       headCenter.z),
     radialX: sideVector, radialZ: frontVector,
-    radiusX: headSize.x * .5 * ellipse * jaw * profile.headWidthScale,
-    radiusZ: headSize.z * .53 * ellipse * (1 + .06 * gaussian(t, .62, .19)),
+    radiusX: headSize.x * .5 * ellipse * jaw * profile.headWidthScale
+      * (1 + (profile.jawScale - 1) * gaussian(t, .23, .17)),
+    radiusZ: headSize.z * .53 * ellipse * (1 + .06 * gaussian(t, .62, .19))
+      * (1 + (profile.faceLengthScale - 1) * .32 * gaussian(t, .32, .3)),
     weights: [{ index: get('head').index, weight: 1 }] };
   }, (t, angle) => {
     const facing = Math.max(0, Math.cos(angle));
-    const cheek = .022 * scale * gaussian(t, .46, .10) * gaussian(Math.abs(Math.sin(angle)), .57, .21);
-    const nose = .040 * scale * gaussian(t, .45, .075) * gaussian(Math.sin(angle), 0, .18);
-    const brow = .014 * scale * (1 + male * .32) * gaussian(t, .62, .046)
-      * gaussian(Math.abs(Math.sin(angle)), .45, .26);
-    return frontVector.clone().multiplyScalar(facing * (cheek + nose + brow));
+    const lateral = Math.abs(Math.sin(angle));
+    const midline = Math.sin(angle);
+    const cheek = .022 * scale * profile.cheekScale
+      * gaussian(t, .48, .10) * gaussian(lateral, .56, .21);
+    // Eye sockets sit below the supraorbital ridge, not a single flat plane.
+    const orbital = -.012 * scale * gaussian(t, .60, .056)
+      * gaussian(lateral, .42, .20);
+    const brow = .013 * scale * (1 + male * .32) * gaussian(t, .655, .045)
+      * gaussian(lateral, .43, .24);
+    const nose = .039 * scale * profile.noseScale
+      * gaussian(t, .445, .10) * gaussian(midline, 0, .16);
+    const tip = .018 * scale * profile.noseScale
+      * gaussian(t, .397, .040) * gaussian(midline, 0, .18);
+    const alar = .010 * scale * gaussian(t, .386, .032)
+      * gaussian(lateral, .22, .11);
+    const philtrum = .004 * scale * gaussian(t, .323, .034)
+      * gaussian(midline, 0, .065);
+    const mouthWidth = Math.max(.12, profile.mouthWidthScale * .28);
+    const lips = (.0085 * gaussian(t, .289, .022)
+      + .010 * gaussian(t, .253, .023)) * scale
+      * gaussian(midline, 0, mouthWidth);
+    const mouthCrease = -.004 * scale * gaussian(t, .271, .009)
+      * gaussian(midline, 0, mouthWidth);
+    const chin = .012 * scale * (1 + male * .16) * gaussian(t, .165, .067)
+      * gaussian(midline, 0, .31);
+    return frontVector.clone().multiplyScalar(
+      facing * (cheek + orbital + brow + nose + tip + alar
+        + philtrum + lips + mouthCrease + chin)
+    );
   });
 
   // Neck has its own smoothly weighted bridge across spine, neck and head.
   const neckBottom = get('neck').point.clone().lerp(upperSpine.point, .35);
   const neckTop = get('head').point.clone().lerp(get('neck').point, .36);
-  body.addLoft(10, 24, t => ({
+  body.addLoft(12, 28, t => ({
     center: interpolate(neckBottom, neckTop, t),
     radialX: sideVector, radialZ: frontVector,
     radiusX: .072 * scale * (1 - .09 * gaussian(t, .5, .4)),
     radiusZ: .060 * scale,
+    frontBump: male * .007 * scale * gaussian(t, .57, .22),
     weights: [{ index: get('neck').index, weight: 1 - t },
       { index: get('head').index, weight: t }],
   }));
@@ -393,33 +447,77 @@ function addAnatomy(source: THREE.SkinnedMesh, profile: ResidentAppearanceProfil
   for (const side of ['left', 'right'] as const) {
     limb(get(`${side}Arm`), get(`${side}Forearm`), get(`${side}Hand`), 'arm');
     limb(get(`${side}Thigh`), get(`${side}Calf`), get(`${side}Foot`), 'leg');
-    const hand = get(`${side}Hand`), forearm = get(`${side}Forearm`);
-    const fingerDirection = hand.point.clone().sub(forearm.point).normalize();
-    const across = Math.sign(hand.point.x) || 1;
-    for (let finger = 0; finger < 5; finger++) {
-      const offset = (finger - 2) * .015 * scale;
-      const start = hand.point.clone().add(new THREE.Vector3(0, 0, offset));
-      const end = start.clone().addScaledVector(fingerDirection,
-        scale * (.065 + (finger === 0 ? -.019 : -.009 * Math.abs(finger - 2))));
-      body.addLoft(6, 10, t => ({
-        center: interpolate(start, end, t),
-        radialX: sideVector,
-        radialZ: frontVector,
-        radiusX: .011 * scale * (1 - .78 * t),
-        radiusZ: .011 * scale * (1 - .78 * t),
+    const hand = get(`${side}Hand`);
+    const suffix = side === 'left' ? 'l' : 'r';
+    const across = Math.sign(hand.point.x) || (side === 'left' ? -1 : 1);
+    const named = (name: string): Joint | null => {
+      const index = source.skeleton.bones.findIndex(bone => bone.name === name);
+      return index < 0 ? null : { index, point: bindPoint(source, index) };
+    };
+    const digits = ['thumb', 'index', 'middle', 'ring', 'pinky'] as const;
+    for (const digit of digits) {
+      const names = [`${digit}_01_${suffix}`, `${digit}_02_${suffix}`,
+        `${digit}_03_${suffix}`, `${digit}_04_leaf_${suffix}`];
+      const chain = names.map(named);
+      if (chain.some(j => !j)) continue; // Never invent missing finger joints.
+      const joints = chain as Joint[];
+      const length = joints.slice(1).reduce((acc, joint, i) =>
+        acc + joint.point.distanceTo(joints[i].point), 0);
+      if (!(length > scale * .008 && length < scale * .24)) continue;
+      // 13 rings per actual digit, skinned to its articulated phalanges.
+      body.addLoft(12, 12, t => {
+        const f = t * 3, index = Math.min(2, Math.floor(f)), blend = f - index;
+        const center = interpolate(joints[index].point, joints[index + 1].point, blend);
+        const tangent = joints[index + 1].point.clone().sub(joints[index].point).normalize();
+        const radialZ = new THREE.Vector3().crossVectors(tangent, sideVector);
+        if (radialZ.lengthSq() < .0001) radialZ.crossVectors(tangent, frontVector);
+        radialZ.normalize();
+        const radialX = new THREE.Vector3().crossVectors(radialZ, tangent).normalize();
+        const thickness = digit === 'thumb' ? 1.20 : digit === 'pinky' ? .73 : 1;
+        const taper = .75 + .25 * gaussian(t, .24, .28);
+        const tip = 1 - .95 * THREE.MathUtils.smoothstep(t, .91, 1);
+        return { center, radialX, radialZ,
+          radiusX: .010 * scale * thickness * taper * tip,
+          radiusZ: .009 * scale * thickness * taper * tip,
+          weights: blended(joints, t) };
+      });
+    }
+    // The palm bridges wrist and articulated metacarpal origins.
+    const palmEnds = digits.map(digit => named(`${digit}_01_${suffix}`))
+      .filter((joint): joint is Joint => joint !== null);
+    if (palmEnds.length === digits.length) {
+      const base = new THREE.Vector3();
+      for (const joint of palmEnds) base.add(joint.point);
+      base.multiplyScalar(1 / palmEnds.length);
+      body.addLoft(10, 24, t => ({
+        center: interpolate(hand.point, base, t),
+        radialX: sideVector, radialZ: frontVector,
+        radiusX: scale * (.036 + .006 * Math.sin(Math.PI * t)),
+        radiusZ: scale * .017,
         weights: [{ index: hand.index, weight: 1 }],
       }));
     }
-    // Anatomically distinct heel and forefoot, both follow the actual foot.
+    // Actual foot and ball joints preserve toe flexion in walking / crouching.
     const foot = get(`${side}Foot`);
-    const ball = foot.point.clone().addScaledVector(frontVector, .080 * scale);
-    body.addLoft(12, 22, t => ({
-      center: interpolate(foot.point, ball, t),
-      radialX: sideVector, radialZ: new THREE.Vector3(0, 1, 0),
-      radiusX: scale * (.047 + .006 * Math.sin(Math.PI * t)),
-      radiusZ: scale * (.033 - .013 * t),
-      weights: [{ index: foot.index, weight: 1 }],
-    }));
+    const ballJoint = named(`ball_${suffix}`);
+    const toeJoint = named(`ball_leaf_${suffix}`);
+    const end = ballJoint ?? {
+      index: foot.index, point: foot.point.clone().addScaledVector(frontVector, .080 * scale),
+    };
+    const tip = toeJoint ?? {
+      index: end.index, point: end.point.clone().addScaledVector(frontVector, .036 * scale),
+    };
+    const footChain = [foot, end, tip];
+    body.addLoft(16, 24, t => {
+      const index = t < .5 ? 0 : 1, f = t < .5 ? t * 2 : (t - .5) * 2;
+      return {
+        center: interpolate(footChain[index].point, footChain[index + 1].point, f),
+        radialX: sideVector, radialZ: new THREE.Vector3(0, 1, 0),
+        radiusX: scale * (.047 + .007 * gaussian(t, .58, .24)) * (1 - .94 * THREE.MathUtils.smoothstep(t, .92, 1)),
+        radiusZ: scale * (.033 - .010 * t),
+        weights: blended(footChain, t),
+      };
+    });
     // Ears sit on the skull, not independently floating world-space sprites.
     for (const earSide of [across]) {
       const ear = headCenter.clone().add(new THREE.Vector3(
@@ -438,6 +536,29 @@ function addAnatomy(source: THREE.SkinnedMesh, profile: ResidentAppearanceProfil
     geometry.dispose();
     return null;
   }
+  // Ground IK must use the *authored* sole, not an arbitrary imported shoe.
+  const localPositions = geometry.getAttribute('position');
+  const localIndices = geometry.getAttribute('skinIndex');
+  const localWeights = geometry.getAttribute('skinWeight');
+  const footSole = { left: .035, right: .035 };
+  for (const side of ['left', 'right'] as const) {
+    const bone = get(`${side}Foot`);
+    let low = Infinity;
+    for (let i = 0; i < localPositions.count; i++) {
+      let weight = 0;
+      for (let k = 0; k < 4; k++) {
+        const name = source.skeleton.bones[localIndices.getComponent(i, k)]?.name ?? '';
+        if (name === `foot_${side === 'left' ? 'l' : 'r'}`
+            || name === `ball_${side === 'left' ? 'l' : 'r'}`)
+          weight += localWeights.getComponent(i, k);
+      }
+      if (weight >= .4) low = Math.min(low, localPositions.getY(i));
+    }
+    if (Number.isFinite(low))
+      footSole[side] = clamp(bone.point.y - low, .014, .095);
+  }
+  geometry.userData.residentFootSole = footSole;
+  geometry.userData.anatomyVersion = 'A6-A7';
   if (!Number.isFinite(geometry.boundingSphere?.radius)
       || geometry.getAttribute('position').count < 3500) {
     geometry.dispose();
