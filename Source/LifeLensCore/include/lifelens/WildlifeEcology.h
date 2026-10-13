@@ -386,8 +386,8 @@ inline WildlifeBehavior wildlifeBehavior(
        && animal.hunger01>=0.18) return WildlifeBehavior::Hunt;
     if(animal.hunger01>=0.40) return predator
         ? WildlifeBehavior::Roam : WildlifeBehavior::Forage;
-    if(!predator && population.habitat.freshwaterAvailable
-       && animal.hunger01>.28) return WildlifeBehavior::Drink;
+    // Water present somewhere in a chunk does not prove the animal reached
+    // a drinkable shore. Only report Drink after a real source/path gate exists.
     return WildlifeBehavior::Rest;
 }
 
