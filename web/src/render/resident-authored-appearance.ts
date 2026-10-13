@@ -191,12 +191,13 @@ function verifiedFaceDirection(model: THREE.Group, head: HeadFit): 1 | -1 | null
         || object.userData.residentProceduralAppearance
         || !/^(Eyes|Eye[._-]?[lr])$/i.test(object.name)) return;
     if (!object.geometry.getAttribute('position')) return;
-    if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
-    if (!object.geometry.boundingBox || object.geometry.boundingBox.isEmpty()) return;
-    const point = object.geometry.boundingBox
-      .getCenter(new THREE.Vector3())
-      .applyMatrix4(object.matrixWorld)
-      .applyMatrix4(local);
+    // Eye assets in the real pinned GLB are SkinnedMesh, not rigid markers.
+    // THREE.Box3.setFromObject(..., true) evaluates their actual skinned
+    // vertex bounds in world coordinates, then transforms into Head space.
+    // Reading raw geometry.boundingBox silently ignores the skin bind pose.
+    const worldBounds = new THREE.Box3().setFromObject(object, true);
+    if (worldBounds.isEmpty()) return;
+    const point = worldBounds.getCenter(new THREE.Vector3()).applyMatrix4(local);
     if (Number.isFinite(point.x + point.y + point.z)) eyeMarkers.push(point);
   });
   if (!eyeMarkers.length) return null;
