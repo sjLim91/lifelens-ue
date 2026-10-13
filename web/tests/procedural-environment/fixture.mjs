@@ -106,6 +106,15 @@ async function renderCase(name) {
     trees.group.visible = name !== 'phenology'; ground.group.visible = true;
     trees.setTerrain(close, projection); ground.setTerrain(close, projection);
     trees.setEnvironment(e); ground.setEnvironment(e); trees.update(camera);
+    // Inspect the changed object, rather than an unrelated foreground tree.
+    const matrix = new THREE.Matrix4();
+    const object = name === 'phenology' ? ground.flowers : trees.stumps;
+    if (object.count > 0) {
+      object.getMatrixAt(0, matrix);
+      const focus = new THREE.Vector3().setFromMatrixPosition(matrix).add(object.parent.position);
+      camera.position.set(focus.x + 1.4, focus.y + .9, focus.z + 1.6);
+      camera.lookAt(focus.x, focus.y + .2, focus.z); trees.update(camera);
+    }
   } else if (name === 'gallery') {
     camera.position.set(14, 9, 30); camera.lookAt(0, 3.8, 0); gallery.visible = true;
     for (const a of galleryAssets) { a.weather.setEnvironment(e); a.update(camera); }
