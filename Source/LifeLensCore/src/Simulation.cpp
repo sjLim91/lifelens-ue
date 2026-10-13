@@ -1978,7 +1978,14 @@ bool Simulation::trySocialDecision(
     // spatial routing, timeout and observed relationship consequences.
     if(const auto preferred=preferAutonomousSocialGoalTarget(
            world_,relationships_,c,decision.social)){
-        decision.social=*preferred;
+        const auto candidateRuntime=runtime_.find(preferred->target);
+        // A distant or currently unlocated resident must not pull this
+        // ordinary local social slot into a new unsafe long-range journey.
+        if(candidateRuntime!=runtime_.end()
+           &&manhattan(r.pos,candidateRuntime->second.pos)
+               <=SettlementServiceRadiusGrid){
+            decision.social=*preferred;
+        }
     }
 
     const Character* target=findCharacter(world_,decision.social.target);
