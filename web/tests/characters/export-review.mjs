@@ -44,7 +44,23 @@ for(let ci=0;ci<cases.length;ci++){
  const profile=createResidentAppearanceProfile({id:'same-person',sex,ageYears:30,genetics:{heightPotential:axis,buildPotential:axis,faceShape:axis,skinTone:axis,hairPigment:axis,eyePigment:axis}});
  const model=clone(template);applyResidentMaterialVariant(model,profile);
  if(!syncResidentAuthoredHair(model,profile))throw Error('A2 real GLB Head mesh is unavailable');
- if(!syncResidentAuthoredFace(model,profile))throw Error('A2 real GLB Eyes landmark could not safely orient authored face');
+ if(!syncResidentAuthoredFace(model,profile)){
+  const objects=[];
+  model.updateMatrixWorld(true);
+  model.traverse(o=>{
+    if(!o.isMesh && !/head|eye/i.test(o.name))return;
+    const info={name:o.name,type:o.type,parent:o.parent?.name};
+    if(o.isMesh){
+      const local=new THREE.Box3().setFromObject(o);
+      const cc=local.getCenter(new THREE.Vector3()), sz=local.getSize(new THREE.Vector3());
+      info.center=cc.toArray().map(n=>+n.toFixed(5));
+      info.size=sz.toArray().map(n=>+n.toFixed(5));
+      info.skin=o.isSkinnedMesh;
+    }
+    objects.push(info);
+  });
+  throw Error('A2 real GLB face landmark diagnostics '+JSON.stringify(objects.slice(0,35)));
+ }
  const visual=new THREE.Group();visual.add(model);const root=new THREE.Group();root.add(visual);
  root.scale.set(profile.heightWorldUnits*profile.widthScale,profile.heightWorldUnits,profile.heightWorldUnits*profile.depthScale);
  const props=new ResidentInventoryProps(visual,model);props.setInventory([...items.map(item=>({item,quantity:1})),{item:'RawMaterial',material:clipName==='Farm_Watering'?'Water':'Wood',quantity:2}],{active:true,kind:'Civilization',phase:clipName==='Walk_Carry_Loop'?'Moving':'Interacting',facilityKind:'CultivatedPlot',facilityAction:clipName==='Farm_Watering'?'Water':clipName==='Walk_Carry_Loop'?'DeliverMaterial':'Plant',civilizationMaterial:'Wood'});
