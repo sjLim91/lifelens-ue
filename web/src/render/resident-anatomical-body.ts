@@ -289,8 +289,17 @@ function addAnatomy(source: THREE.SkinnedMesh, profile: ResidentAppearanceProfil
       .applyMatrix4(source.bindMatrix.clone().invert()
         .multiply(source.skeleton.boneInverses[get('head').index].clone().invert()))
     : null;
-  const front = eyePosition && Math.abs(eyePosition.z - headBounds.getCenter(new THREE.Vector3()).z) > .005
-    ? Math.sign(eyePosition.z - headBounds.getCenter(new THREE.Vector3()).z) : 1;
+  // The eye landmark is resolved once at actor creation. Subsequent phenotype
+  // refreshes can occur while looking sideways or bending, and must not
+  // reinterpret the permanent anterior axis from the CURRENT animation.
+  const inferredFront = eyePosition
+    && Math.abs(eyePosition.z - headBounds.getCenter(new THREE.Vector3()).z) > .005
+    ? Math.sign(eyePosition.z - headBounds.getCenter(new THREE.Vector3()).z) : 0;
+  const cachedFront = source.userData.residentAnatomyFrontSign;
+  const front = cachedFront === 1 || cachedFront === -1
+    ? cachedFront : inferredFront;
+  if (front !== 1 && front !== -1) return null;
+  source.userData.residentAnatomyFrontSign = front;
   const frontVector = new THREE.Vector3(0, 0, front);
   const sideVector = new THREE.Vector3(1, 0, 0);
   const body = new AnatomicalSurface();
