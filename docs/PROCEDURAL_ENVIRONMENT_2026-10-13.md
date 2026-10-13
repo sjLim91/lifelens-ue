@@ -65,7 +65,7 @@
 
 ## 6. 테스트/빌드
 
-로컬: 절차적 환경 11개, 기존 facility construction 10개, 환경 preflight, diff whitespace 검사 통과. 새 검사는 모델 결정론, 서로 다른 형태, finite/index/bounds, LOD 비용, 공유 cache dispose, 변경 없는 GPU upload 억제, stock 고갈/회복, origin rebase 접지, 관측 날씨 reset, 침상 support bounds, 셰이더 cache 합성을 검사한다.
+로컬: 절차적 환경 12개, 기존 facility construction 10개, 환경 preflight, diff whitespace 검사 통과. 새 검사는 모델 결정론, 서로 다른 형태, finite/index/bounds, LOD 비용, 공유 cache dispose, 변경 없는 GPU upload 억제, stock 고갈/회복, origin rebase 접지, 관측 날씨 reset, 침상 support bounds, 셰이더 cache 합성을 검사한다.
 
 로컬 셸 네트워크/Chromium socket 제한 때문에 npm 전체 설치와 브라우저 검증은 GitHub CI로 보완한다. PR에는 전체 TypeScript/build, 64 presentation 회귀, 환경 9개, 기존 모션·시설·runtime resilience 검증이 연결되어 있다. 정확한 최종 head의 CI 결과는 PR Checks를 기준으로 한다. 이전 실패나 이전 head 통과를 최종 결과로 취급하지 않는다.
 
@@ -78,10 +78,10 @@
 | 나무 수 | 1089 | 726 |
 | 기본 distant LOD 삼각형 합계 | 1,804,884 | 1,165,008 |
 | geometry attribute/index bytes | 2,178,432 | 589,680 |
-| instance matrix/color bytes | 4,939,776 | 2,580,480 |
+| instance matrix/color bytes | 480,256 | 143,360 |
 | 비어 있지 않은 tree batch | 12 | 12 |
 
-Desktop 가까운/먼 배치를 동시에 사용하면 최대 24 tree draw calls가 가능하다. Mobile은 낮은 LOD 한 종류만 생성한다. 캐시는 동일 템플릿 geometry를 공유하고 마지막 owner가 해제되면 GPU 리소스도 해제한다. 관측 상태가 같으면 matrices를 다시 upload하지 않는다.
+Desktop 가까운/먼 배치를 동시에 사용하면 최대 24 tree draw calls가 가능하다. Mobile은 낮은 LOD 한 종류만 생성한다. 인스턴스 버퍼는 64개부터 실제 수요만큼 2의 거듭제곱 크기로 확장하며 교체된 GPU 버퍼를 해제한다. 캐시는 동일 템플릿 geometry를 공유하고 마지막 owner가 해제되면 GPU 리소스도 해제한다. 관측 상태가 같으면 matrices를 다시 upload하지 않는다.
 
 기존 GLB의 수종별 삼각형은 6,257 / 5,625 / 4,065개다. 이 값만으로 프레임 향상을 주장하지 않는다. foliage overdraw와 가까운 LOD 비율도 중요하다. CPU 시간은 머신/JIT에 따라 달라지므로 `cpu-metrics.json`을 원자료로 남긴다. 기존 대비 frame median/drawcalls/geometry/texture는 동일 카메라의 `browser-metrics.json`에 기록한다. SwiftShader 결과는 실제 모바일 GPU FPS가 아니다. Core simulation 속도는 이 fixture로 측정하지 않는다.
 

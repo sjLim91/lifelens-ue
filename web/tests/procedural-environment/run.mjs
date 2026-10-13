@@ -67,6 +67,15 @@ test('LOD uploads only on selection changes; zero stock clears both levels', () 
   a.setInstances(new Float32Array(), 0, new Float32Array());
   assert(a.levels.every(l => l.bark.count === 0 && l.foliage.count === 0)); a.dispose(); a.dispose();
 });
+test('instance buffers grow to bounded demand and release the replaced GPU buffer', () => {
+  const a = new ProceduralTreeAsset('birch', 'buffers', 3072, true), first = a.levels[0].bark;
+  assert.equal(first.instanceMatrix.count, 64); let releases = 0; first.addEventListener('dispose', () => releases++);
+  const matrices = new Float32Array(200 * 16), tints = new Float32Array(200 * 3).fill(.5);
+  for (let i = 0; i < 200; i++) new THREE.Matrix4().makeTranslation(i, 0, 0).toArray(matrices, i * 16);
+  a.setInstances(matrices, 200, tints);
+  assert.equal(releases, 1); assert.equal(a.levels[0].bark.instanceMatrix.count, 256);
+  assert.equal(a.levels[0].bark.count, 200); assert.equal(a.levels[0].foliage.count, 200); a.dispose();
+});
 test('weather is observed season/wind/time, unavailable resets; no accumulation clock', () => {
   const weather = new PlantWeatherMaterial(), material = new THREE.MeshLambertMaterial(); weather.install(material);
   weather.setEnvironment({ available: true, windIntensity01: .8, simulationMinute: 123,

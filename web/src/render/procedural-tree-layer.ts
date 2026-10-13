@@ -88,8 +88,9 @@ export class ProceduralTreeAsset {
       this.releases.push(cached.release);
       // Geometry holds only static vertex attributes. Instance data belongs to meshes.
       const g = cached.geometry;
-      const bark = new THREE.InstancedMesh(g.bark, barkMaterial, capacity);
-      const foliage = new THREE.InstancedMesh(g.foliage, leafMaterial, capacity);
+      const initialCapacity = Math.min(capacity, 64);
+      const bark = new THREE.InstancedMesh(g.bark, barkMaterial, initialCapacity);
+      const foliage = new THREE.InstancedMesh(g.foliage, leafMaterial, initialCapacity);
       for (const mesh of [bark, foliage]) {
         mesh.count = 0; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         mesh.frustumCulled = true; mesh.castShadow = false; mesh.receiveShadow = true;
@@ -100,6 +101,7 @@ export class ProceduralTreeAsset {
   }
   setInstances(matrices: Float32Array, count: number, tints: Float32Array): void {
     this.count = Math.max(0, Math.min(this.capacity, count));
+    this.ensureCapacity(this.count);
     this.packed.set(matrices.subarray(0, this.count * 16)); this.tints.set(tints.subarray(0, this.count * 3));
     this.selected.fill(255); this.repack();
   }
@@ -107,6 +109,18 @@ export class ProceduralTreeAsset {
     camera.getWorldPosition(this.center);
     if (this.center.distanceToSquared(this.cameraPosition) < 4) return;
     this.cameraPosition.copy(this.center); this.repack();
+  }
+  private ensureCapacity(required: number): void {
+    for (const level of this.levels) for (const key of ['bark', 'foliage'] as const) {
+      const old = level[key];
+      if (old.instanceMatrix.count >= required) continue;
+      const capacity = Math.min(this.capacity, 2 ** Math.ceil(Math.log2(Math.max(64, required))));
+      const next = new THREE.InstancedMesh(old.geometry, old.material, capacity);
+      next.count = 0; next.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      next.frustumCulled = old.frustumCulled; next.receiveShadow = old.receiveShadow;
+      next.castShadow = old.castShadow;
+      this.group.remove(old); old.dispose(); this.group.add(next); level[key] = next;
+    }
   }
   private repack(): void {
     const counts = [0, 0]; let changed = false;
