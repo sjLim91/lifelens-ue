@@ -22,7 +22,7 @@ import {
   applyResidentMaterialVariant,
   createResidentAppearanceProfile,
 } from './resident-appearance';
-import { syncResidentAuthoredHair } from './resident-authored-appearance';
+import { syncResidentAuthoredHair, syncResidentAuthoredFace, setResidentFaceDetailVisibility } from './resident-authored-appearance';
 import { ResidentInventoryProps, ResidentPropResources } from './resident-props';
 import { ResidentProductionTargets } from './resident-production-context';
 import { residentActionCue } from './resident-action-context';
@@ -613,6 +613,11 @@ export class ResidentWorldLayer {
       this.actorSphere.radius = actor.root.scale.y;
       const onScreen = !camera || this.frustum.intersectsSphere(this.actorSphere);
       const detailed = !camera || (onScreen && actor.current.distanceToSquared(this.cameraPosition) < 35 * 35) || actor.root.userData.residentId === this.selectedResidentId;
+      // Facial microgeometry is expensive only as extra draw calls. Preserve
+      // distant silhouettes, but cull tiny details beyond face-reading range.
+      setResidentFaceDetailVisibility(actor.model,
+        !camera || (onScreen && actor.current.distanceToSquared(this.cameraPosition) < 9 * 9)
+        || actor.root.userData.residentId === this.selectedResidentId);
       actor.animationElapsed += motionDt;
       const animationInterval = detailed ? 0 : (onScreen ? 1/15 : 1/5) * motionTimeScale;
       const animate = detailed || actor.animationElapsed >= animationInterval;
@@ -952,6 +957,7 @@ export class ResidentWorldLayer {
       facts.pregnancy = resident.pregnancy;
       facts.alive = resident.alive;
       if (resident.genetics !== undefined) facts.genetics = { ...facts.genetics, ...resident.genetics };
+      if (resident.lifeCondition !== undefined) facts.lifeCondition = { ...facts.lifeCondition, ...resident.lifeCondition };
       const appearance = createResidentAppearanceProfile(facts);
       const signature = this.materialAppearanceSignature(appearance);
       if (signature !== existing.appearanceSignature) {
@@ -959,6 +965,7 @@ export class ResidentWorldLayer {
         // Rebuild only when an actual phenotype/pigment value changes,
         // never every observer refresh. The attachment follows its Head bone.
         syncResidentAuthoredHair(existing.model, appearance);
+        syncResidentAuthoredFace(existing.model, appearance);
         existing.lifeShape.install();
         existing.appearanceSignature = signature;
       }
@@ -982,6 +989,7 @@ export class ResidentWorldLayer {
     const model = cloneSkeleton(this.template) as THREE.Group;
     applyResidentMaterialVariant(model, appearance);
     syncResidentAuthoredHair(model, appearance);
+    syncResidentAuthoredFace(model, appearance);
 
     const visual = new THREE.Group();
     visual.name = 'LifeLensResidentVisual';
