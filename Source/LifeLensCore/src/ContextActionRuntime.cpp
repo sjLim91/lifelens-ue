@@ -205,6 +205,16 @@ bool Simulation::completeContextAction(
             }
 
             const double selfMoodBefore=actor.emotion.valence;
+            // A relationship goal is the actor's OWN directional trust, not
+            // the recipient's private feelings. Sample immediately before
+            // execution to avoid credit for changes during the journey.
+            const AutonomousGoalActionLink goalLink=pending.autonomousGoal;
+            const auto selfTrust=[&]() -> std::optional<double> {
+                const Relationship* mine=relationships_.find(actor.id,target->id);
+                return mine ? std::optional<double>(mine->trust) : std::nullopt;
+            };
+            const auto selfTrustBefore=goalLink.active()
+                ?selfTrust():std::optional<double>{};
             const DecisionExecutionResult result=executeSocialDecision(
                 world_,relationships_,actor.id,pending.social,"simulation");
             if(!result.socialExecuted){
@@ -217,6 +227,26 @@ bool Simulation::completeContextAction(
             rememberExperiencedSocialMoodOutcome(
                 actor,target->id,pending.social.intent,world_.minute,
                 selfMoodBefore,actor.emotion.valence);
+            if(goalLink.active()
+               &&goalLink.token==token
+               &&goalLink.actor==actor.id
+               &&goalLink.target==target->id
+               &&goalLink.intent==pending.social.intent){
+                const auto outcome=classifyAutonomousGoalActionOutcome(
+                    goalLink,selfTrustBefore,selfTrust());
+                if(rememberAutonomousGoalActionOutcome(
+                       actor,goalLink,token,world_.minute,outcome)){
+                    // The event records the observed goal verdict for
+                    // diagnostics, not a fabricated change to Core trust.
+                    std::ostringstream evidence;
+                    evidence<<"COG_GOAL_OUTCOME actor="<<actor.id
+                            <<" target="<<target->id
+                            <<" actionToken="<<token
+                            <<" issueMinute="<<goalLink.issuedMinute
+                            <<" result="<<autonomousGoalActionOutcomeName(outcome);
+                    emit(evidence.str());
+                }
+            }
             if(result.generatedSocialEvent){
                 recordSocialEvent(result.socialEvent);
             }
