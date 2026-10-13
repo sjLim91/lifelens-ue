@@ -90,6 +90,10 @@ async function renderCase(name) {
     if (name === 'reflection') { camera.updateMatrixWorld(); water.updateReflection(renderer, scene, camera); }
   } else if (['stumps', 'regrowth', 'phenology'].includes(name)) {
     camera.position.set(5, 3.2, 7); camera.lookAt(0, .6, 0);
+    for (const child of terrainGroup.children) child.geometry.dispose(); terrainGroup.clear();
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), terrainMaterial);
+    floor.rotation.x = -Math.PI / 2; floor.position.y = -0.035;
+    terrainGroup.add(floor); terrainGroup.visible = true;
     const close = { ...w, chunks: [chunks.find(c => c.x === 0 && c.y === 0)] };
     const records = Array.from({ length: 8 }, (_, ordinal) => ({ id: `wood:${ordinal}`, ordinal,
       ageDays: name === 'regrowth' ? 30 : 10950, remainingWood: name === 'regrowth' ? 2 : 0,
