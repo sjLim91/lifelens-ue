@@ -32,7 +32,8 @@ assert "createTerrainElevationSampler" in terrain
 assert "sampleElevation(" in terrain
 assert "positions.push(px, elevation, z)" in terrain
 assert "synthetic" not in terrain.lower()
-assert "const subdivisions = 10" in terrain
+assert "chunk.elevationSamples?.length === 289 ? 16 : 10" in terrain
+assert "elevationSamples" in (root / "Source/LifeLensCore/src/WebClientBridge.cpp").read_text(encoding="utf-8")
 assert "geometry.setAttribute(\n      'color'" in terrain
 assert "vertexColors: true" in world_scene
 
