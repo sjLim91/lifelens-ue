@@ -26,6 +26,7 @@ static ExperimentKind experimentForTechnology(TechnologyId technology)
         case TechnologyId::BronzeAlloying: return ExperimentKind::AlloyBronze;
         case TechnologyId::BronzeAxe: return ExperimentKind::CastBronzeAxe;
         case TechnologyId::BronzePick: return ExperimentKind::CastBronzePick;
+        case TechnologyId::PrimitiveWrap: return ExperimentKind::WeavePrimitiveWrap;
         default: return ExperimentKind::StrikeStone;
     }
 }
@@ -47,7 +48,7 @@ static KnowledgeState knowledgeWithGraphPrerequisites(
 
 int main()
 {
-    constexpr int TechnologySlots=17;
+    constexpr int TechnologySlots=18;
     std::array<bool,TechnologySlots> registered{};
     for(const auto& definition:TechnologyRegistry){
         const int raw=static_cast<int>(definition.id);
@@ -95,7 +96,7 @@ int main()
     CHECK(technologyHasPrerequisite(
         TechnologyId::BronzePick,TechnologyId::StoneHammer));
 
-    constexpr std::array<TechnologyId,10> gated={{
+    constexpr std::array<TechnologyId,11> gated={{
         TechnologyId::ChippedStoneTool,
         TechnologyId::DugSanitationPit,
         TechnologyId::DiggingStick,
@@ -105,7 +106,8 @@ int main()
         TechnologyId::TinSmelting,
         TechnologyId::BronzeAlloying,
         TechnologyId::BronzeAxe,
-        TechnologyId::BronzePick
+        TechnologyId::BronzePick,
+        TechnologyId::PrimitiveWrap
     }};
 
     for(const TechnologyId technology:gated){

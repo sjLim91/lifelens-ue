@@ -131,6 +131,7 @@ inline const char* techniqueName(TechniqueId technique)
         case TechniqueId::BronzeAlloying: return "BronzeAlloying";
         case TechniqueId::BronzeAxe: return "BronzeAxe";
         case TechniqueId::BronzePick: return "BronzePick";
+        case TechniqueId::PrimitiveWrap: return "PrimitiveWrap";
         default: return "None";
     }
 }
@@ -498,6 +499,7 @@ inline MaterialKind experimentMaterial(ExperimentKind kind)
         case ExperimentKind::HaftSharpFlake: return MaterialKind::Wood;
         case ExperimentKind::FrictionWood: return MaterialKind::Wood;
         case ExperimentKind::TwistFiber: return MaterialKind::Fiber;
+        case ExperimentKind::WeavePrimitiveWrap: return MaterialKind::Fiber;
         case ExperimentKind::ShapeClay: return MaterialKind::Clay;
         case ExperimentKind::ShapeDiggingStick: return MaterialKind::Wood;
         case ExperimentKind::HaftStoneHammer: return MaterialKind::Stone;
@@ -907,6 +909,10 @@ inline TechnologyInnovationWeights technologyInnovationWeights(
             return {technology,MaterialKind::Wood,0.0,0.0,0.05,0.0,0.0,0.70,0.25};
         case TechnologyId::BronzePick:
             return {technology,MaterialKind::TinOre,0.0,0.0,0.0,0.0,0.0,0.60,0.40};
+        case TechnologyId::PrimitiveWrap:
+            // A resident's witnessed environmental exposure raises the
+            // incentive to try new fiber structures; it does not unlock free cloth.
+            return {technology,MaterialKind::Fiber,0.0,0.55,0.0,0.0,0.0,0.35,0.10};
         case TechnologyId::None:
         default:
             return {};
@@ -1347,7 +1353,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const InnovationPressureContextSnapshot innovationContext=
         observeInnovationPressureContext(
             world,self,authoritativePosition,population);
-    const std::array<ExperimentKind,16> experiments={
+    const std::array<ExperimentKind,17> experiments={
         ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
         ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
         ExperimentKind::ShapeDiggingStick,ExperimentKind::HaftStoneHammer,
@@ -1355,7 +1361,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         ExperimentKind::OrganizeStockpile,ExperimentKind::SmeltCopperOre,
         ExperimentKind::CultivatePlantFood,ExperimentKind::SmeltTinOre,
         ExperimentKind::AlloyBronze,ExperimentKind::CastBronzeAxe,
-        ExperimentKind::CastBronzePick};
+        ExperimentKind::CastBronzePick,ExperimentKind::WeavePrimitiveWrap};
 
     for(const ExperimentKind kind:experiments){
         const TechniqueId technique=experimentTechnique(kind);
@@ -1463,6 +1469,7 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
         case TechniqueId::StoneHammer: return 1;
         case TechniqueId::BronzeAxe: return 1;
         case TechniqueId::BronzePick: return 1;
+        case TechniqueId::PrimitiveWrap: return 1;
         case TechniqueId::FireMaking:
         case TechniqueId::CopperSmelting:
         case TechniqueId::TinSmelting:
@@ -2446,11 +2453,12 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
 
     // Smelting/alloying remain facility-driven. Finished bronze tools use the
     // ordinary recipe path only after residents possess real Bronze stock.
-    const std::array<TechniqueId,8> techniques={
+    const std::array<TechniqueId,9> techniques={
         TechniqueId::SharpFlake,TechniqueId::ChippedStoneTool,
         TechniqueId::FiberCordage,TechniqueId::SimpleContainer,
         TechniqueId::DiggingStick,TechniqueId::StoneHammer,
-        TechniqueId::BronzeAxe,TechniqueId::BronzePick};
+        TechniqueId::BronzeAxe,TechniqueId::BronzePick,
+        TechniqueId::PrimitiveWrap};
 
     for(const TechniqueId technique:techniques){
         if(!self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
@@ -2476,7 +2484,8 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         const bool durableDemandDriven=
             technique==TechniqueId::SimpleContainer
             || technique==TechniqueId::BronzeAxe
-            || technique==TechniqueId::BronzePick;
+            || technique==TechniqueId::BronzePick
+            || technique==TechniqueId::PrimitiveWrap;
         const double practiceNeed=
             durableDemandDriven
                 ? (stockNeed>0.0

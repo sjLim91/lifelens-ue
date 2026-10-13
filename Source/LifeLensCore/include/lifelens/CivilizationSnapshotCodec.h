@@ -37,7 +37,7 @@ inline bool validMaterialKind(MaterialKind value)
 inline bool validItemKind(ItemKind value)
 {
     return static_cast<int>(value)>=static_cast<int>(ItemKind::RawMaterial)
-        && static_cast<int>(value)<=static_cast<int>(ItemKind::RecordTablet);
+        && static_cast<int>(value)<=static_cast<int>(ItemKind::PrimitiveWrap);
 }
 
 inline bool validTechniqueId(TechniqueId value)
@@ -47,7 +47,7 @@ inline bool validTechniqueId(TechniqueId value)
     // TechniqueId::DesignatedSanitationArea
     // TechniqueId::DugSanitationPit
     return static_cast<int>(value)>=static_cast<int>(TechniqueId::None)
-        && static_cast<int>(value)<=static_cast<int>(TechniqueId::BronzePick);
+        && static_cast<int>(value)<=static_cast<int>(TechniqueId::PrimitiveWrap);
 }
 
 inline bool validKnowledgeLevel(KnowledgeLevel value)

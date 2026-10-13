@@ -181,5 +181,39 @@ int main()
     for(int i=0;i<9;++i) practice.recordSuccessfulUse(TechniqueId::FiberCordage);
     assert(practice.level(TechniqueId::FiberCordage)==KnowledgeLevel::Mastered);
 
+    // A3: a true resident experiment, not a free observer costume.
+    IndividualCivilizationState weaver;
+    weaver.character=19;
+    weaver.inventory.add({ItemKind::RawMaterial,MaterialKind::Fiber,4,0.8,1.0});
+    weaver.inventory.add({ItemKind::Cordage,MaterialKind::Fiber,2,0.8,1.0});
+    ExperimentContext wrapContext;
+    wrapContext.worldSeed=42;
+    wrapContext.actor=weaver.character;
+    wrapContext.kind=ExperimentKind::WeavePrimitiveWrap;
+    wrapContext.material=MaterialKind::Fiber;
+    wrapContext.learningSkill=.6;
+    wrapContext.curiosity=.6;
+    wrapContext.patience=.6;
+    assert(!attemptExperiment(wrapContext,weaver.inventory,weaver.knowledge).attempted);
+    assert(weaver.inventory.count(ItemKind::RawMaterial,MaterialKind::Fiber)==4);
+    weaver.knowledge.learn(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible,.9);
+    assert(!attemptExperiment(wrapContext,weaver.inventory,weaver.knowledge).attempted);
+    for(int i=0;i<3;i++) weaver.knowledge.recordSuccessfulUse(TechniqueId::FiberCordage);
+    assert(weaver.knowledge.level(TechniqueId::FiberCordage)==KnowledgeLevel::Practiced);
+    wrapContext.attemptIndex=findAttempt(wrapContext,true);
+    const ExperimentResult clothing=attemptExperiment(wrapContext,weaver.inventory,weaver.knowledge);
+    assert(clothing.attempted && clothing.success && clothing.producedItem);
+    assert(clothing.output.kind==ItemKind::PrimitiveWrap);
+    assert(clothing.output.material==MaterialKind::Fiber);
+    assert(weaver.inventory.count(ItemKind::PrimitiveWrap,MaterialKind::Fiber)==1);
+    assert(weaver.inventory.count(ItemKind::RawMaterial,MaterialKind::Fiber)==2);
+    assert(weaver.inventory.count(ItemKind::Cordage,MaterialKind::Fiber)==1);
+    const CraftResult second=reproduceTechnique(weaver.character,
+        TechniqueId::PrimitiveWrap,weaver.inventory,weaver.knowledge,.7);
+    assert(second.success);
+    assert(weaver.inventory.count(ItemKind::PrimitiveWrap,MaterialKind::Fiber)==2);
+    assert(weaver.inventory.count(ItemKind::RawMaterial,MaterialKind::Fiber)==0);
+    assert(weaver.inventory.count(ItemKind::Cordage,MaterialKind::Fiber)==0);
+
     return 0;
 }

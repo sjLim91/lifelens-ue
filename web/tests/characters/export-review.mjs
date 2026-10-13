@@ -24,6 +24,7 @@ function emit(path){
 const {createResidentAppearanceProfile,applyResidentMaterialVariant}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-appearance.ts'))));
 const {ResidentInventoryProps}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-props.ts'))));
 const {syncResidentAuthoredHair,syncResidentAuthoredFace}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-authored-appearance.ts'))));
+const {syncResidentAuthoredGarment}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-authored-garment.ts'))));
 const loader=new GLTFLoader();
 async function load(file){const b=readFileSync(new URL('../../public/vendor/characters/'+file,import.meta.url));return loader.parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),'');}
 const base=await load('character.glb'),ual1=await load('ual1.glb'),ual2=await load('ual2.glb');
@@ -72,7 +73,8 @@ for(let ci=0;ci<cases.length;ci++){
     objects:objects.slice(0,6)
   }));
  }
- const visual=new THREE.Group();visual.add(model);const root=new THREE.Group();root.add(visual);
+ if(!syncResidentAuthoredGarment(model,{item:'PrimitiveWrap',material:'Fiber',quantity:1,quality:.72,durability:.88},profile))throw Error('A3 real GLB torso bind unavailable');
+  const visual=new THREE.Group();visual.add(model);const root=new THREE.Group();root.add(visual);
  root.scale.set(profile.heightWorldUnits*profile.widthScale,profile.heightWorldUnits,profile.heightWorldUnits*profile.depthScale);
  const props=new ResidentInventoryProps(visual,model);props.setInventory([...items.map(item=>({item,quantity:1})),{item:'RawMaterial',material:clipName==='Farm_Watering'?'Water':'Wood',quantity:2}],{active:true,kind:'Civilization',phase:clipName==='Walk_Carry_Loop'?'Moving':'Interacting',facilityKind:'CultivatedPlot',facilityAction:clipName==='Farm_Watering'?'Water':clipName==='Walk_Carry_Loop'?'DeliverMaterial':'Plant',civilizationMaterial:'Wood'});
  const mixer=new THREE.AnimationMixer(root);const clip=clips.find(c=>c.name===clipName);if(!clip)throw Error(clipName);mixer.clipAction(clip).play();mixer.setTime(clip.duration*phase);
@@ -90,4 +92,4 @@ for(let ci=0;ci<cases.length;ci++){
  });
  result.push({label,meshes});
 }
-writeFileSync(new URL('poses.json',out),JSON.stringify(result));console.log('Verified real rig/clip and self-authored face attachments for',result.length,'poses');
+writeFileSync(new URL('poses.json',out),JSON.stringify(result));console.log('Verified real rig/clip, face and garment attachments for',result.length,'poses');

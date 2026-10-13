@@ -63,6 +63,7 @@ inline const char* techniqueFactToken(TechniqueId technique)
         case TechniqueId::BronzeAlloying: return "BronzeAlloying";
         case TechniqueId::BronzeAxe: return "BronzeAxe";
         case TechniqueId::BronzePick: return "BronzePick";
+        case TechniqueId::PrimitiveWrap: return "PrimitiveWrap";
         case TechniqueId::None:
         default: return "None";
     }
@@ -294,7 +295,7 @@ inline TechniqueTransmissionOutcome applyTechniqueWitness(
     // Sanitation remains a protected subset of the now-extended range. Legacy
     // structural contract marker: raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::BronzePick);++raw){
+        raw<=static_cast<int>(TechniqueId::PrimitiveWrap);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)){ technique=candidate; break; }
     }

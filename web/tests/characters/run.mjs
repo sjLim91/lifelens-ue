@@ -368,6 +368,53 @@ try {
     assert.equal(residentPouringWater([inventory[0]],watering),false);
     assert.equal(residentPouringWater(inventory,{...watering,phase:'Moving'}),false);
   });
+  const {syncResidentAuthoredGarment,validWornPrimitiveWrap,AUTHORED_GARMENT_GROUP}=await source('render/resident-authored-garment.ts');
+  function torsoFixture() {
+    const model=new THREE.Group(), geometry=new THREE.BoxGeometry(.3,.36,.21,3,3,3);
+    const n=geometry.getAttribute('position').count;
+    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(new Uint16Array(n*4),4));
+    const weights=new Float32Array(n*4);for(let i=0;i<n;i++)weights[i*4]=1;
+    geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+    const mesh=new THREE.SkinnedMesh(geometry,new THREE.MeshStandardMaterial());
+    const bone=new THREE.Bone();bone.name='spine_03';mesh.add(bone);mesh.bind(new THREE.Skeleton([bone]));model.add(mesh);
+    return {model,bone,mesh};
+  }
+  const wrap={item:'PrimitiveWrap',material:'Fiber',quantity:1,quality:.8,durability:.8};
+  test('A3 worn garment needs Core item evidence, never loose resources or mere knowledge',()=>{
+    for(const input of [undefined,null,{item:'RawMaterial',material:'Fiber',quantity:9,quality:1,durability:1},
+      {...wrap,quantity:0},{...wrap,durability:0},{...wrap,quality:NaN},{...wrap,material:'Hide'}])
+      assert.equal(validWornPrimitiveWrap(input),false);
+    assert.equal(validWornPrimitiveWrap(wrap),true);
+  });
+  test('A3 fit uses actual torso bone, stable replay and bounded replacement',()=>{
+    const {model,bone}=torsoFixture(), p=profile({id:'a3-self-authored',sex:'Female'});
+    assert.equal(syncResidentAuthoredGarment(model,wrap,p),true);
+    const group=model.getObjectByName(AUTHORED_GARMENT_GROUP);
+    assert.equal(group.parent,bone);
+    const child=group.getObjectByName('LifeLensPrimitiveFiberWrap');
+    assert.ok(child.geometry.getAttribute('position').count>50);
+    assert.ok(child.userData.residentOwnsGeometry);
+    assert.equal(syncResidentAuthoredGarment(model,{...wrap},p),true);
+    assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP),group);
+    const positions=[...child.geometry.getAttribute('position').array];
+    const other=torsoFixture();
+    assert.equal(syncResidentAuthoredGarment(other.model,wrap,p),true);
+    assert.deepEqual([...other.model.getObjectByName('LifeLensPrimitiveFiberWrap').geometry.getAttribute('position').array],positions);
+    let disposed=0;child.geometry.addEventListener('dispose',()=>disposed++);
+    assert.equal(syncResidentAuthoredGarment(model,{...wrap,durability:.3},p),true);
+    assert.equal(disposed,1);
+    assert.equal(syncResidentAuthoredGarment(model,null,p),false);
+    assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP),undefined);
+    assert.equal(syncResidentAuthoredGarment(model,wrap,p),true);
+    bone.rotation.z=.2;model.updateMatrixWorld(true);
+    assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP).parent,bone);
+  });
+  test('A3 no unsupported rig ever gets a floating garment',()=>{
+    const model=new THREE.Group(),p=profile({id:'unrigged'});
+    model.add(new THREE.Mesh(new THREE.BoxGeometry(.3,.4,.2),new THREE.MeshStandardMaterial()));
+    assert.equal(syncResidentAuthoredGarment(model,wrap,p),false);
+    assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP),undefined);
+  });
   console.log(`${passed} character regression checks passed`);
 } finally { rmSync(directory,{recursive:true,force:true}); }
 
