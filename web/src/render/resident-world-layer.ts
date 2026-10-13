@@ -935,7 +935,7 @@ export class ResidentWorldLayer {
       // Measure the REAL skinned new body through all 97 animation samples,
       // including lying, to keep infant/adult feet and hands above the ground.
       const calibrationAppearance = createResidentAppearanceProfile({
-        id: 'lifelens-anatomy-sleep-calibration', sex: 'Female',
+        id: 'lifelens-anatomy-sleep-calibration', name: 'Anatomy Calibration', sex: 'Female',
         ageYears: 30, lifeStage: 'Adult',
       });
       applyResidentMaterialVariant(calibrationModel, calibrationAppearance);
