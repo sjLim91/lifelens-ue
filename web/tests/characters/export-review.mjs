@@ -59,7 +59,18 @@ for(let ci=0;ci<cases.length;ci++){
     }
     objects.push(info);
   });
-  throw Error('A2 real GLB face landmark diagnostics '+JSON.stringify(objects.slice(0,35)));
+  const fit=model.userData.residentHeadFit,eye=model.getObjectByName('Eyes');
+  const toHead=fit.bone.matrixWorld.clone().invert();
+  const eyeBBox=new THREE.Box3().setFromObject(eye,true);
+  const eyeLocal=eyeBBox.getCenter(new THREE.Vector3()).applyMatrix4(toHead);
+  throw Error('A2 real GLB face landmark diagnostics '+JSON.stringify({
+    headCenter:fit.center.toArray(),headRadii:fit.radii.toArray(),
+    boneWorld:fit.bone.getWorldPosition(new THREE.Vector3()).toArray(),
+    eyeLocal:eyeLocal.toArray(),eyeWorld:eyeBBox.getCenter(new THREE.Vector3()).toArray(),
+    depth:eyeLocal.z-fit.center.z,
+    eyeHeight:eyeLocal.y-fit.center.y,
+    objects:objects.slice(0,6)
+  }));
  }
  const visual=new THREE.Group();visual.add(model);const root=new THREE.Group();root.add(visual);
  root.scale.set(profile.heightWorldUnits*profile.widthScale,profile.heightWorldUnits,profile.heightWorldUnits*profile.depthScale);
