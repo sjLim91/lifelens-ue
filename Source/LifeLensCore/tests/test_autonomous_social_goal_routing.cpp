@@ -65,6 +65,41 @@ int main()
     assert(replay->intent==chosen->intent);
     assert(replay->utility==chosen->utility);
 
+    // B5b existing social slot: a risk-averse resident may try Approach but
+    // never Repair when its hypothetical budget only admits one effort unit
+    // and a risk proxy of 0.08. This is method selection, not a new slot.
+    newFriend.conflict=0.25;
+    const auto beforeCompetingTrust=newFriend.trust;
+    const auto beforeCompetingRng=world.rng;
+    // Mutate the Core-owned resident, not a caller-invented copy: B4a
+    // correctly rejects cognitive requests inconsistent with live World.
+    const double priorRiskTolerance=world.characters[0].personality.riskTolerance;
+    const double priorPatience=world.characters[0].personality.patience;
+    world.characters[0].personality.riskTolerance=0.0;
+    world.characters[0].personality.patience=0.0;
+    const auto cautiousRoute=preferAutonomousSocialGoalTargetWithGoal(
+        world,relationships,world.characters[0],baseline);
+    if(cautiousRoute){
+        assert(cautiousRoute->decision.intent==SocialIntent::Approach);
+        assert(cautiousRoute->decision.target==22);
+        assert(cautiousRoute->contextFingerprint!=0);
+        assert(cautiousRoute->goal.actor==11);
+    }
+    world.characters[0].personality.riskTolerance=1.0;
+    world.characters[0].personality.patience=1.0;
+    const auto permissiveRoute=preferAutonomousSocialGoalTargetWithGoal(
+        world,relationships,world.characters[0],baseline);
+    if(permissiveRoute){
+        assert(permissiveRoute->decision.intent==SocialIntent::Approach
+            ||permissiveRoute->decision.intent==SocialIntent::Repair);
+        assert(permissiveRoute->decision.target==22);
+    }
+    assert(world.rng==beforeCompetingRng);
+    assert(relationships.find(11,22)->trust==beforeCompetingTrust);
+    newFriend.conflict=0.0;
+    world.characters[0].personality.riskTolerance=priorRiskTolerance;
+    world.characters[0].personality.patience=priorPatience;
+
     // A much stronger original social preference cannot be overridden
     // by cognition; only close feasible alternatives are affected.
     const SocialUtilityDecision strong={
