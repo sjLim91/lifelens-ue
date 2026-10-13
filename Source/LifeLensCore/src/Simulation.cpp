@@ -1,5 +1,6 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/WaterSourceExperience.h"
+#include "lifelens/AutonomousSocialGoalRouting.h"
 #include "lifelens/CoreNavigation.h"
 #include "lifelens/CultivationProgression.h"
 #include "lifelens/FamilyProgression.h"
@@ -1969,6 +1970,16 @@ bool Simulation::trySocialDecision(
             world_,c,relationships_,0.18);
     }
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
+
+    // The existing unified Core utility has ALREADY selected social activity.
+    // Only the destination/method of that same social slot can be influenced
+    // by a validated personal objective. Physical/civilization/survival slots
+    // are never displaced by cognition; normal Core pending actions still own
+    // spatial routing, timeout and observed relationship consequences.
+    if(const auto preferred=preferAutonomousSocialGoalTarget(
+           world_,relationships_,c,decision.social)){
+        decision.social=*preferred;
+    }
 
     const Character* target=findCharacter(world_,decision.social.target);
     if(target==nullptr || !target->alive) return false;
