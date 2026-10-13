@@ -983,6 +983,10 @@ export class ResidentWorldLayer {
       if (signature !== existing.appearanceSignature) {
         applyResidentMaterialVariant(existing.model, appearance);
         syncResidentAnatomicalBody(existing.model, appearance);
+        const newAnatomy = existing.model.getObjectByName('LifeLensAuthoredAnatomicalBody');
+        existing.sleepMotion.setAnatomicalBody(
+          newAnatomy instanceof THREE.SkinnedMesh ? newAnatomy : null,
+        );
         // Rebuild only when an actual phenotype/pigment value changes,
         // never every observer refresh. The attachment follows its Head bone.
         syncResidentAuthoredHair(existing.model, appearance);

@@ -76,9 +76,15 @@ export class ResidentSleepMotion {
   constructor(private readonly action: THREE.AnimationAction,
     private readonly calibration: ResidentSleepCalibration,
     private readonly visual: THREE.Group,
-    private readonly anatomicalBody: THREE.SkinnedMesh | null = null) {
+    private anatomicalBody: THREE.SkinnedMesh | null = null) {
     this.time = calibration.duration;
     action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true;
+  }
+  // Resident morphology updates replace the authored mesh while keeping the
+  // same actor, animation mixer and sleeping state. Never contact-solve a
+  // detached stale mesh after growth, puberty or inherited trait refresh.
+  setAnatomicalBody(body: THREE.SkinnedMesh | null): void {
+    this.anatomicalBody = body;
   }
   get active(): boolean { return this.engaged; }
   get resting(): boolean { return this.engaged && this.time === 0; }
