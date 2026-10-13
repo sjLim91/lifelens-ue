@@ -18,11 +18,11 @@
 namespace lifelens {
 
 enum class WildlifeSpecies : std::uint8_t {
-    Hare=0, Deer=1, Wolf=2, FreshwaterFish=3
+    Hare=0, Deer=1, Wolf=2, FreshwaterFish=3, Tiger=4
 };
 enum class WildlifeSex : std::uint8_t { Female=0, Male=1 };
 
-inline constexpr std::size_t WildlifeSpeciesCount=4;
+inline constexpr std::size_t WildlifeSpeciesCount=5;
 inline constexpr int WildlifeCellsPerChunk=WorldChunkSpanGridCells;
 inline constexpr std::uint64_t WildlifeDomain=0x45434f57494c4431ULL; // ECOWILD1
 
@@ -70,6 +70,11 @@ inline WildlifeHabitat deriveWildlifeHabitat(
         ? std::min(4,preyCapacity/7):0;
     result.carryingCapacity[3]=result.freshwaterAvailable
         ? std::min(32,4+static_cast<int>(25*water.surfaceAvailability)):0;
+    // Tigers are rare, solitary apex predators of wooded deer habitats.
+    // Historical four-species snapshot populations retain zero tiger capacity.
+    result.carryingCapacity[4]=
+        deerSuitability>0.50 && shelter>0.65 && preyCapacity>=13
+        ? 2 : 0;
     return result;
 }
 
@@ -141,6 +146,7 @@ inline int wildlifeMaturityDays(WildlifeSpecies s)
         case WildlifeSpecies::Deer: return 420;
         case WildlifeSpecies::Wolf: return 600;
         case WildlifeSpecies::FreshwaterFish: return 75;
+        case WildlifeSpecies::Tiger: return 900;
     }
     return 1000000;
 }
@@ -152,6 +158,7 @@ inline int wildlifeMaximumAgeDays(WildlifeSpecies s)
         case WildlifeSpecies::Deer: return 4700;
         case WildlifeSpecies::Wolf: return 4200;
         case WildlifeSpecies::FreshwaterFish: return 1500;
+        case WildlifeSpecies::Tiger: return 5800;
     }
     return 1;
 }
@@ -163,6 +170,7 @@ inline double wildlifeBirthProbability(WildlifeSpecies s)
         case WildlifeSpecies::Deer: return 0.004;
         case WildlifeSpecies::Wolf: return 0.003;
         case WildlifeSpecies::FreshwaterFish: return 0.025;
+        case WildlifeSpecies::Tiger: return 0.0015;
     }
     return 0.0;
 }
@@ -246,9 +254,10 @@ inline WildlifeStepResult stepWildlifeDay(
             continue;
         }
 
-        const bool predator=animal.species==WildlifeSpecies::Wolf;
+        const bool tiger=animal.species==WildlifeSpecies::Tiger;
+        const bool predator=animal.species==WildlifeSpecies::Wolf || tiger;
         const bool fish=animal.species==WildlifeSpecies::FreshwaterFish;
-        animal.hunger01=std::min(1.0,animal.hunger01+(predator?0.20:fish?0.085:0.12));
+        animal.hunger01=std::min(1.0,animal.hunger01+(tiger?0.16:predator?0.20:fish?0.085:0.12));
         bool ate=false;
         bool pursuedPrey=false;
         if(predator){
@@ -270,7 +279,7 @@ inline WildlifeStepResult stepWildlifeDay(
             // A wolf may smell nearby prey, but cannot hunt at infinite range.
             // Spatial chase is still limited to one step per axis and remains
             // inside the same chunk until verified multi-chunk pathing exists.
-            if(prey!=nullptr && nearestDistance<=12){
+            if(prey!=nullptr && nearestDistance<=(tiger?8:12)){
                 pursuedPrey=true;
                 const int dx=(prey->position.x>animal.position.x)
                     -(prey->position.x<animal.position.x);
@@ -284,7 +293,7 @@ inline WildlifeStepResult stepWildlifeDay(
                     +std::abs(prey->position.y-animal.position.y);
                 if(afterDistance<=2
                    &&wildlifeRoll(state,animal.id,targetDay,
-                        0x50524544415445ULL)<0.40){
+                        0x50524544415445ULL)<(tiger?0.54:0.40)){
                     prey->alive=false;
                     ++report.predationDeaths;
                     ate=true;
@@ -296,7 +305,7 @@ inline WildlifeStepResult stepWildlifeDay(
             ate=wildlifeRoll(state,animal.id,targetDay,0x464f52414745ULL)<chance;
         }
         if(ate){
-            animal.hunger01=std::max(0.0,animal.hunger01-(predator?0.7:0.28));
+            animal.hunger01=std::max(0.0,animal.hunger01-(tiger?0.88:predator?0.7:0.28));
             ++report.foraged;
         }
         if(animal.hunger01>=0.999){
@@ -346,6 +355,93 @@ inline WildlifeStepResult stepWildlifeDay(
         ++report.births;
     }
     return report;
+}
+
+enum class WildlifeBehavior : std::uint8_t {
+    Rest, Roam, Forage, Drink, Flee, Hunt, Swim
+};
+
+// Read-only Core explanation for observers; never fabricate browser agency.
+inline WildlifeBehavior wildlifeBehavior(
+    const WildlifePopulation& population,const WildlifeAnimal& animal)
+{
+    if(animal.species==WildlifeSpecies::FreshwaterFish)
+        return WildlifeBehavior::Swim;
+    const bool predator=animal.species==WildlifeSpecies::Wolf
+        || animal.species==WildlifeSpecies::Tiger;
+    int nearestPrey=1000000,nearestThreat=1000000;
+    for(const auto& other:population.animals){
+        if(!other.alive || other.id==animal.id) continue;
+        const int d=std::abs(other.position.x-animal.position.x)
+            +std::abs(other.position.y-animal.position.y);
+        if(predator && (other.species==WildlifeSpecies::Deer
+                         ||other.species==WildlifeSpecies::Hare))
+            nearestPrey=std::min(nearestPrey,d);
+        if(!predator && (other.species==WildlifeSpecies::Tiger
+                          ||other.species==WildlifeSpecies::Wolf))
+            nearestThreat=std::min(nearestThreat,d);
+    }
+    if(!predator && nearestThreat<=7) return WildlifeBehavior::Flee;
+    if(predator && nearestPrey<=(animal.species==WildlifeSpecies::Tiger?10:14)
+       && animal.hunger01>=0.18) return WildlifeBehavior::Hunt;
+    if(animal.hunger01>=0.40) return predator
+        ? WildlifeBehavior::Roam : WildlifeBehavior::Forage;
+    if(!predator && population.habitat.freshwaterAvailable
+       && animal.hunger01>.28) return WildlifeBehavior::Drink;
+    return WildlifeBehavior::Rest;
+}
+
+// One authoritative spatial step per simulation hour. Age, hunger, births,
+// hunting kills and capacity remain day-owned; no new snapshot fields or
+// camera-driven ecology. Call only on the absolute Core hour boundary.
+inline int stepWildlifeHour(WildlifePopulation& population,std::int64_t hourIndex)
+{
+    if(!population.habitat.available || hourIndex<=0) return 0;
+    const GridPos origin=chunkOriginGrid(population.habitat.coord);
+    int moved=0;
+    for(auto& animal:population.animals){
+        if(!animal.alive || animal.species==WildlifeSpecies::FreshwaterFish)
+            continue;
+        const auto behavior=wildlifeBehavior(population,animal);
+        const std::uint64_t roll=wildlifeHash(
+            population.worldSeed,population.habitat.coord,animal.id,
+            static_cast<std::uint64_t>(hourIndex),0x57494c44484f5552ULL);
+        // Rest is meaningful: not all animals wander without purpose.
+        if(behavior==WildlifeBehavior::Rest && (roll&3ULL)!=0) continue;
+        if(behavior==WildlifeBehavior::Forage && (roll&1ULL)==0) continue;
+        int dx=static_cast<int>(roll%3)-1;
+        int dy=static_cast<int>((roll>>8U)%3)-1;
+        int nearest=1000000;
+        for(const auto& target:population.animals){
+            if(!target.alive || target.id==animal.id) continue;
+            const bool prey=(target.species==WildlifeSpecies::Hare
+                ||target.species==WildlifeSpecies::Deer);
+            const bool predator=(target.species==WildlifeSpecies::Wolf
+                ||target.species==WildlifeSpecies::Tiger);
+            if(!((behavior==WildlifeBehavior::Hunt && prey)
+                ||(behavior==WildlifeBehavior::Flee && predator))) continue;
+            const int d=std::abs(target.position.x-animal.position.x)
+                +std::abs(target.position.y-animal.position.y);
+            if(d<nearest || (d==nearest
+                && (wildlifeHash(population.worldSeed,population.habitat.coord,
+                    target.id,static_cast<std::uint64_t>(hourIndex),0x544945ULL)&1ULL))){
+                nearest=d;
+                const int sign=behavior==WildlifeBehavior::Flee?-1:1;
+                dx=sign*((target.position.x>animal.position.x)
+                     -(target.position.x<animal.position.x));
+                dy=sign*((target.position.y>animal.position.y)
+                     -(target.position.y<animal.position.y));
+            }
+        }
+        const int range=behavior==WildlifeBehavior::Flee?2:1;
+        const int oldX=animal.position.x,oldY=animal.position.y;
+        animal.position.x=std::clamp(oldX+dx*range,
+            origin.x,origin.x+WildlifeCellsPerChunk-1);
+        animal.position.y=std::clamp(oldY+dy*range,
+            origin.y,origin.y+WildlifeCellsPerChunk-1);
+        if(oldX!=animal.position.x || oldY!=animal.position.y) ++moved;
+    }
+    return moved;
 }
 
 } // namespace lifelens

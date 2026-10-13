@@ -161,6 +161,6 @@ int main()
 
     // The standalone ECO-A1 model must never create meat without a verified
     // hunt/carcass/inventory pipeline in the future ECO-B phase.
-    static_assert(WildlifeSpeciesCount==4);
+    static_assert(WildlifeSpeciesCount==5);
     return 0;
 }

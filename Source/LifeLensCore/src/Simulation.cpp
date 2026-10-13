@@ -3752,6 +3752,10 @@ void Simulation::step(){
         world_,settlementPopulationAfterMovement);
     advancePrimitiveFireOneMinute(world_);
     world_.environmentalResidues.advanceToMinute(world_.minute);
+    if(world_.minute%60==0 && world_.minute%(24*60)!=0){
+        for(auto& population:world_.wildlifePopulations)
+            stepWildlifeHour(population,world_.minute/60);
+    }
     if(world_.minute%(24*60)==0){
         for(auto& population:world_.wildlifePopulations)
             stepWildlifeDay(population,world_.minute/(24*60));
