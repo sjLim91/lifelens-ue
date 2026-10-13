@@ -57,6 +57,18 @@ try {
       // software-browser compositor. Both paths use the same preserved buffer.
       const png = await page.evaluate(() => document.querySelector('canvas').toDataURL('image/png'));
       writeFileSync(resolve(out, `${viewport.width}-${name}.png`), Buffer.from(png.split(',')[1], 'base64'));
+      if (['gallery', 'baseline', 'forest'].includes(name)) {
+        // Bounded thumbnails let offline CI reviewers inspect captured pixels
+        // through text-only job-log readers. Full frames remain in the artifact.
+        const thumbnail = await page.evaluate(() => {
+          const source = document.querySelector('canvas'), small = document.createElement('canvas');
+          const scale = Math.min(320 / source.width, 240 / source.height);
+          small.width = Math.round(source.width * scale); small.height = Math.round(source.height * scale);
+          small.getContext('2d').drawImage(source, 0, 0, small.width, small.height);
+          return small.toDataURL('image/png');
+        });
+        console.log('REVIEW_THUMBNAIL', JSON.stringify({ width: viewport.width, name, png: thumbnail }));
+      }
     }
     await page.close();
   }
