@@ -358,7 +358,8 @@ struct ResourceNode {
             const int remaining=std::min(stock,capacity);
             stock-=remaining;
             const int years=8+static_cast<int>((id^(static_cast<std::uint64_t>(i+1)*0x9e3779b97f4a7c15ULL))%48);
-            trees.push_back({i,ecologyMinute-years*365*1440,remaining,capacity,-1,0});
+            // Initial birth dates belong to the world epoch, not first observation.
+            trees.push_back({i,-years*365*1440,remaining,capacity,-1,0});
         }
     }
 

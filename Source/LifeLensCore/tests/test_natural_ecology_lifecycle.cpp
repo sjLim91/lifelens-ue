@@ -12,6 +12,8 @@ int main()
     World w{77}; w.minute=10000;
     auto& node=w.resourceNodes[2]; node.ecologyMinute=w.minute; node.ensureTrees();
     assert(node.trees[0].bornMinute!=node.trees[1].bornMinute);
+    auto delayed=node; delayed.trees.clear(); delayed.ecologyMinute+=5000; delayed.ensureTrees();
+    assert(delayed.trees[0].bornMinute==node.trees[0].bornMinute);
     auto rng=w.rng; Inventory inventory;
     const auto id=node.id;
     const int before=node.quantity;
