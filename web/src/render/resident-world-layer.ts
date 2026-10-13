@@ -987,6 +987,7 @@ export class ResidentWorldLayer {
         existing.sleepMotion.setAnatomicalBody(
           newAnatomy instanceof THREE.SkinnedMesh ? newAnatomy : null,
         );
+        existing.procedural.setAnatomicalBody(newAnatomy);
         // Rebuild only when an actual phenotype/pigment value changes,
         // never every observer refresh. The attachment follows its Head bone.
         syncResidentAuthoredHair(existing.model, appearance);
