@@ -1,20 +1,9 @@
 name: LifeLens Globe Region Selection
 
 on:
-  push:
-    paths:
-      - 'web/src/earth/globe-region-picking.ts'
-      - 'web/src/ui/earth-globe-preview.tsx'
-      - 'web/src/styles.css'
-      - 'web/tests/earth-globe-regions/run.mjs'
-      - '.github/workflows/globe-region-selection.yml'
-  pull_request:
-    paths:
-      - 'web/src/earth/globe-region-picking.ts'
-      - 'web/src/ui/earth-globe-preview.tsx'
-      - 'web/src/styles.css'
-      - 'web/tests/earth-globe-regions/run.mjs'
-      - '.github/workflows/globe-region-selection.yml'
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -34,3 +23,4 @@ jobs:
         run: cd web && node tests/earth-globe-regions/run.mjs
       - name: Typecheck and build
         run: cd web && npm run typecheck && npm run build
+

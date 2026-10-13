@@ -1,10 +1,9 @@
 name: Web Resident Lifecycle
 on:
-  push:
-    branches: ['work/web-resident-lifecycle-*']
-    paths: ['web/**', '.github/workflows/resident-lifecycle-check.yml']
-  pull_request:
-    paths: ['web/**', '.github/workflows/resident-lifecycle-check.yml']
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
+  workflow_dispatch:
+
 jobs:
   presentation:
     runs-on: ubuntu-latest
@@ -41,4 +40,5 @@ jobs:
         with:
           name: resident-lifecycle-review
           path: web/tests/resident-lifecycle/review/
+
 

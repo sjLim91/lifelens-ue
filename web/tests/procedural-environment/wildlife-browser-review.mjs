@@ -4,7 +4,7 @@ import { resolve, extname } from 'node:path';
 import { chromium } from 'playwright';
 import * as THREE from 'three';
 import { source } from './compile.mjs';
-for (const file of ['procedural-wildlife', 'procedural-asset-kit', 'plant-reproductive-geometry']) await source(`render/${file}.ts`);
+for (const file of ['procedural-wildlife', 'procedural-asset-kit', 'procedural-tree-generator']) await source(`render/${file}.ts`);
 const root = resolve(import.meta.dirname, '../..');
 const browser = await chromium.launch({ headless: true,
   ...(process.env.LIFELENS_CHROMIUM_PATH ? { executablePath: process.env.LIFELENS_CHROMIUM_PATH } : {}),

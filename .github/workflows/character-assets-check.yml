@@ -1,24 +1,8 @@
 name: LifeLens Character Asset Verification
 
 on:
-  push:
-    branches: ['visual/resident-motion-tools-phenotype-20261002', 'work/resident-motion-pass-20261002']
-    paths:
-      - 'Tools/prepare_web_character_assets.py'
-      - 'Tools/extract_web_sleep_pose.mjs'
-      - '.github/workflows/character-assets-check.yml'
-      - 'web/src/render/resident-*.ts'
-      - 'web/tests/characters/**'
-      - 'web/tests/action-context/**'
-      - 'web/tests/resident-motion/**'
-      - 'web/tests/procedural-motion/**'
-      - 'web/package.json'
-  pull_request:
-    paths:
-      - 'web/src/render/resident-*.ts'
-      - 'web/tests/resident-motion/**'
-      - 'web/tests/procedural-motion/**'
-      - '.github/workflows/character-assets-check.yml'
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
   workflow_dispatch:
 
 permissions:
@@ -72,4 +56,5 @@ jobs:
             web/tests/procedural-motion/review/*.png
             web/tests/procedural-motion/review/browser-results.json
           retention-days: 7
+
 

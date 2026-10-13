@@ -1,10 +1,9 @@
 name: Procedural Environment
 on:
-  pull_request:
-    paths: ['web/**', 'Tools/validate_web_presentation_v2_environment.py', '.github/workflows/procedural-environment-check.yml']
-  push:
-    branches: ['codex/procedural-ecology-*']
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
   workflow_dispatch:
+
 jobs:
   presentation:
     runs-on: ubuntu-latest
@@ -39,4 +38,5 @@ jobs:
         with:
           name: procedural-environment-review
           path: web/tests/procedural-environment/review/
+
 

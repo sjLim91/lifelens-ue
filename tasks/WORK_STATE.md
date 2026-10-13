@@ -1,3 +1,15 @@
+## 2026-10-13 DONE — CI 공통화와 변경 범위별 검수 (#714)
+
+- 사용자 승인 범위: 반복 Web install/typecheck/build/전체 회귀를 통합하고 화면·365일 검사를 관련 변경으로 제한.
+- 별도 브랜치: `codex/ci-deduplication-20261013`, 기반 main `5a54041f5f7a54ce7c12e7d9d5c08a78e5ad2abc`.
+- 자동 Web workflow 16개를 공통 `web-checks.yml`로 통합하고 기존 진단은 수동 실행으로 유지. 실제 WASM Shadow invariant와 배포 pipeline은 보존.
+- Core configure/build/CTest/결정론을 1회 실행하고 관련 Core 변경·02:17 UTC nightly·수동 실행의 365일 검사가 같은 실행 파일을 사용.
+- 로컬 14개 selector/runner 회귀, 전체 workflow YAML/jobs/steps, Python 구문, diff 검사 PASS. 최종 PR head `e645ee0e9b8c388a27f92d1e66fed7884641d6d3`의 Preflight/Core Tests/Web Checks/WASM Shadow invariant 모두 PASS. 전체 Web 회귀·타입·빌드와 8개 화면 capture PASS; 이번 CI 정책 변경의 365일 단계 skipped 확인.
+- 현재 main의 required status contexts/rulesets는 비어 있음. branch protection/권한 변경 없음.
+- 제품 PR #710/#711을 포함하거나 병합하지 않음. 추가 grounding/wildlife 검사·capture는 공통 runner가 파일 존재 시 발견.
+- main 반영: PR #714 squash 병합, `75ba930e1c378eb2507f5d3db3d23febd04852b1`. 병합 후 Preflight PASS; Core Tests run 38356379638 / Web Checks run 38356379634 진행 중. 제품 변경이 없어 배포 workflow는 이 커밋에서 시작되지 않음.
+- 상세 정책: `docs/CI_SCOPE_AND_DEDUPLICATION_2026-10-13.md`.
+
 ## 2026-10-12 DONE — #700 병합·실행 미리보기 반영
 
 - 모든 exact-head CI PASS. Core CTest 119개/실패0, 3 seed × 365일 검증 PASS.
@@ -812,4 +824,5 @@ This lane is parallel to active World v2 work and must not fork simulation truth
 - Merged `d8fcd616a344833a0da13707c80be18d8c8638c4`: removed collar-like spherical hair proxies; actual skinned scalp coverage and darker eyes.
 - All three final-head checks pass, including 49 regression cases. Device visual acceptance remains pending; CPU model close-up is diagnostic only.
 - Checkpoint: `tasks/WEB_SCALP_HANDOFF_2026-09-25.md`.
+
 

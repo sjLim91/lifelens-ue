@@ -21,6 +21,9 @@ export interface ResidentAppearanceProfile {
   shoulderScale: number;
   hipScale: number;
   headWidthScale: number;
+  jawScale: number;
+  cheekScale: number;
+  faceLengthScale: number;
 }
 
 const GARMENT_PALETTE = [
@@ -169,7 +172,7 @@ export function createResidentAppearanceProfile(
       : [0xe0b394, 0xc99573, 0xb47e5e, 0x946344, 0x704b38][
       Math.floor(hash01(seed, 61) * 5)
     ],
-    hairStyle: Math.floor(hash01(seed, 53) * 4),
+    hairStyle: Math.floor(hash01(seed, 53) * 8),
     hairColor: agedHairColor(typeof resident.genetics?.hairPigment === 'number' && Number.isFinite(resident.genetics.hairPigment)
       ? pigmentColor(phenotype(resident.genetics.hairPigment, .5), [0xc6a064, 0x805631, 0x3b281c, 0x1c1a19])
       : HAIR_PALETTE[hairIndex], life.stage === 'Elderly'),
@@ -178,6 +181,9 @@ export function createResidentAppearanceProfile(
     shoulderScale: resident.sex === 'Female' ? .92 : resident.sex === 'Male' ? 1.02 : 1,
     hipScale: resident.sex === 'Female' ? 1.07 : resident.sex === 'Male' ? .99 : 1,
     headWidthScale: (.94 + phenotype(resident.genetics?.faceShape, .5) * .12) * life.headScale,
+    jawScale: .83 + phenotype(resident.genetics?.faceShape, hash01(seed, 83)) * .34,
+    cheekScale: .90 + phenotype(resident.genetics?.faceShape, hash01(seed, 85)) * .21,
+    faceLengthScale: 1.09 - phenotype(resident.genetics?.faceShape, hash01(seed, 87)) * .17,
   };
 }
 
@@ -205,7 +211,8 @@ export function applyResidentMaterialVariant(
   const referenceInverse = root.matrixWorld.clone().invert();
 
   root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
+    if (!(object instanceof THREE.Mesh)
+        || object.userData.residentProceduralAppearance) return;
 
     // Start each update from the source, not the last tinted/deformed copy.
     // Runtime summaries may arrive before the full genetics observation.
@@ -290,13 +297,32 @@ function applyBodyProportions(mesh: THREE.Mesh, profile: ResidentAppearanceProfi
   const weights = mesh.geometry.getAttribute('skinWeight');
   const positions = mesh.geometry.getAttribute('position');
   if (!joints || !weights || !positions) return;
-  if (profile.shoulderScale === 1 && profile.hipScale === 1 && profile.headWidthScale === 1) return;
+  if (profile.shoulderScale === 1 && profile.hipScale === 1 && profile.headWidthScale === 1
+      && profile.jawScale === 1 && profile.cheekScale === 1 && profile.faceLengthScale === 1) return;
   if (!mesh.userData.residentOwnsGeometry) mesh.geometry = mesh.geometry.clone();
   mesh.userData.residentOwnsGeometry = true;
   const output = mesh.geometry.getAttribute('position');
   const point = new THREE.Vector3();
   const relative = referenceInverse.clone().multiply(mesh.matrixWorld);
   const inverse = relative.clone().invert();
+  // Determine the head's rest-vertex vertical range, never the animated
+  // Head bone pose. Sibling morphology remains fully deterministic.
+  let minHeadY = Infinity;
+  let maxHeadY = -Infinity;
+  for (let vertex = 0; vertex < positions.count; vertex++) {
+    let headInfluence = 0;
+    for (let i = 0; i < 4; i++) {
+      if (/^head$/i.test(mesh.skeleton.bones[joints.getComponent(vertex, i)]?.name ?? ''))
+        headInfluence += weights.getComponent(vertex, i);
+    }
+    if (headInfluence < 0.5) continue;
+    point.fromBufferAttribute(positions, vertex).applyMatrix4(relative);
+    minHeadY = Math.min(minHeadY, point.y);
+    maxHeadY = Math.max(maxHeadY, point.y);
+  }
+  const headHeight = Math.max(0.0001, maxHeadY - minHeadY);
+  const validHeadRange = Number.isFinite(headHeight)
+    && Number.isFinite(maxHeadY) && Number.isFinite(minHeadY);
   // The normalized source is centered on X. Use rest vertices, never animated
   // bone positions: a late genetics observation must not bake the current pose.
   for (let vertex = 0; vertex < output.count; vertex++) {
@@ -311,6 +337,19 @@ function applyBodyProportions(mesh: THREE.Mesh, profile: ResidentAppearanceProfi
     point.fromBufferAttribute(positions, vertex).applyMatrix4(relative);
     point.x += point.x * ((profile.shoulderScale - 1) * torsoWeight + (profile.hipScale - 1) * hipWeight);
     point.x += point.x * (profile.headWidthScale - 1) * headWeight;
+    if (headWeight > 0 && validHeadRange) {
+      const faceHeight01 = THREE.MathUtils.clamp(
+        (point.y - minHeadY) / headHeight, 0, 1,
+      );
+      const jawMask = 1 - THREE.MathUtils.smoothstep(faceHeight01, .20, .65);
+      const cheekMask = 1 - Math.min(1, Math.abs(faceHeight01 - .57) * 3.5);
+      point.x += point.x * headWeight * (
+        (profile.jawScale - 1) * jawMask
+        + (profile.cheekScale - 1) * cheekMask
+      );
+      point.y += (point.y - maxHeadY) * (profile.faceLengthScale - 1)
+        * jawMask * headWeight;
+    }
     point.applyMatrix4(inverse);
     output.setXYZ(vertex, point.x, point.y, point.z);
   }

@@ -1,14 +1,9 @@
 name: LifeLens Weather Sleep and Era Verification
 on:
-  pull_request:
-    paths:
-      - 'Source/LifeLensCore/**'
-      - 'web/**'
-      - 'Tools/verify_sleep_longrun.py'
-      - 'Tools/test_verify_sleep_longrun.py'
-      - 'tasks/WEATHER_SLEEP_ERA_LONGRUN.json'
-      - '.github/workflows/sleep-era-check.yml'
+  # Automatic checks are consolidated in web-checks.yml / core-tests.yml.
+  # Keep this focused manual replay available for diagnostics.
   workflow_dispatch:
+
 jobs:
   web-contract:
     runs-on: ubuntu-latest
@@ -57,3 +52,4 @@ jobs:
           path: |
             candidate-*.log
             sleep-longrun-metrics.json
+

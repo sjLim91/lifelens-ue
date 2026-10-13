@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createWildlifeGeometry } from './review/src/render/procedural-wildlife.mjs';
-import { createShrubGeometry, createGrassGeometry } from './review/src/render/procedural-asset-kit.mjs';
-import { createFlowerGeometry } from './review/src/render/plant-reproductive-geometry.mjs';
+import { createGrassGeometry } from './review/src/render/procedural-asset-kit.mjs';
+import { createShrubGeometry } from './review/src/render/procedural-tree-generator.mjs';
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0xcddcdc);
 const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, .1, 100);
 camera.position.set(3.4, 3.1, 6.5); camera.lookAt(0, .6, 0);
