@@ -10,4 +10,8 @@ ResidentGroundSurface가 v4 17×17 Core 고도 표본을 네 모서리로 축소
 
 로컬 검증: 렌더링 메시 raycast 1,144점과 접지 높이 비교, 상세/기존 지형·음수 청크·origin rebasing·범위 밖 좌표 검사 통과. 동물 4종의 결정론/finite geometry/바닥 위치 및 Core-only projection·중복 제거·개체 제거·구형 runtime·복원·dispose 검사 통과. 기존 절차적 환경 12개 및 lifecycle 회귀 통과. Blender CPU geometry diagnostic으로 모델 형태를 확인했다.
 
-로컬 Chromium은 sandbox socket 제한으로 시작하지 못했다. 서버 network permission 요청에서 대기가 발생해 중단했으며, 이후 권한 재요청 없이 CPU diagnostic을 사용했다. 실제 WebGL/TypeScript/build/WASM 실행 검증은 GitHub CI와 기기 검수가 남아 있다. WebGL gallery fixture/capture를 기존 CI에 추가했다. CPU diagnostic은 실제 게임 화면 검수가 아니다. 자동 병합하지 않는다.
+시각 갤러리의 관목 import를 실제 procedural-tree-generator export로 수정했다. 물고기 위치는 성장 크기와 실제 geometry 전체 높이를 사용해 수면 위 돌출과 바닥 침하를 방지하고, 얕은 수면에서는 표시하지 않는다. 어린 개체/성체의 실제 수면·바닥 경계 검사도 PASS.
+
+최종 PR head `75459bf9be00befe79521d4ff30eb414e277fef3`의 GitHub Preflight와 공통 Web Checks PASS: 전체 회귀·typecheck·build, 실제 생태 fixture, 모바일/데스크톱 장면과 동식물 WebGL gallery 포함. gallery는 browser 오류 없이 52 draw calls / 12,485 triangles. artifact: https://github.com/sjLim91/lifelens-ue/actions/runs/38384373697 . 실제 새 게임 seed77의 Core 관측 24개 중 화면 레이어 16개 투영을 별도로 확인했다. 로컬 Chromium의 socket 제약은 GitHub 실제 WebGL 검사로 보완했으며 실제 휴대폰 GPU 검수는 별도다.
+
+PR #711은 `6135ea4afb5e9a4dfa163b1ba0c2e4526a130de8`으로 main 병합. Web Preview run 38385310238, Pages deployment 38385364177, External Preview Probe 38385372273 모두 PASS. 화면 source는 `6135ea4`, Core runtime source는 #710의 `db4d931`. 실행: https://sjlim91.github.io/lifelens-ue/index.html?v=6135ea4 . 동물은 신규 v4 게임에서 확인한다.

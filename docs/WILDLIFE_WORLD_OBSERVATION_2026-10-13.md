@@ -8,4 +8,4 @@ terrainWindowJson 및 경량 humanTracesWindowJson에 동일한 wildlife DTO를 
 
 검증: 전체 Core 7개 translation unit을 g++ C++17로 연결하고 신규 world observation 테스트 통과. 저장/복원 후 3,000분 동일 continuation, 손상/다른 seed 거부, 기존 저장에서 개체 생성 금지, 읽기 전용 관측과 RNG 보존을 검사했다. 기존 wildlife ecology/codec, natural ecology lifecycle, snapshot codec, continuous terrain, web bridge 테스트도 통과했다.
 
-최신 main `728433a8693b93ddcb98fea6c812841ea60f1943`의 goal provenance 변경을 보존하며 재검증했다. CMake/CTest 및 WASM은 GitHub CI에서 검증해야 한다. 로컬 CMake가 없어서 g++ 직접 빌드를 사용했다. 자동 병합하지 않는다.
+최종 PR head `9bb19f4443d25f3f1a3ece2f0ff8f2b9aec699b1`의 CMake/CTest·결정론·365일 검증·WASM·공통 Web·생태/저장/좌표/audit 등 GitHub 9개 workflow PASS. PR #710은 `db4d93163948edc0c69f4c50f749a154a4769663`으로 main에 병합했다. 해당 Core runtime release와 Pages runtime checksum 검증도 PASS. 병합 후 main CTest·결정론 PASS, 추가 365일 run 38384160386은 배포 closeout 시점에 진행 중이었다.

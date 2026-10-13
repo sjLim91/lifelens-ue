@@ -1,3 +1,14 @@
+## 2026-10-13 DONE — 발 접지 보정·직접 제작 동식물 시각화 (#710/#711)
+
+- Core #710 main `db4d93163948edc0c69f4c50f749a154a4769663`; 화면 #711 main `6135ea4afb5e9a4dfa163b1ba0c2e4526a130de8` 병합 완료. 최신 주민 의복/외형/동작 변경을 보존.
+- 실제 16×16/기존 10×10 렌더링 삼각형 접지, raycast 1,144점/음수 좌표/rebasing PASS.
+- 직접 제작 토끼·사슴·늑대·담수어와 기존 나무·풀·관목·꽃/열매. Core 관측만 표시하며 기존 저장에 동물을 생성하지 않음. 어린/성체 물고기 수면/바닥 검증 PASS.
+- Core 최종 PR 9개 workflow PASS(CMake/CTest·결정론·365일·WASM 포함). 화면 최종 PR Preflight + Web Checks 모두 PASS(typecheck/build/전체 회귀/실제 WebGL 화면 캡처).
+- Web Preview 38385310238 / Pages deployment 38385364177 / External Preview Probe 38385372273 모두 PASS. gh-pages `5e3135a919128c41c77415b19646aac06639f31a`, 화면 source `6135ea4`, Core runtime source `db4d931` 및 checksum 확인.
+- 실제 실행: https://sjlim91.github.io/lifelens-ue/index.html?v=6135ea4 . 동물 확인은 새 게임(v4). 연속 동물 보행/사냥은 후속 범위.
+- 병합 후 추가 main 검사: Core CTest·결정론 PASS, 365일 run 38384160386과 Web Checks run 38385310317은 이 기록 시점에 진행 중. 병합 전 검증·배포 결과와 구분함.
+- 상세: docs/TERRAIN_GROUNDING_WILDLIFE_VISUALS_2026-10-13.md / docs/WILDLIFE_WORLD_OBSERVATION_2026-10-13.md.
+
 ## 2026-10-13 DONE — CI 공통화와 변경 범위별 검수 (#714)
 
 - 사용자 승인 범위: 반복 Web install/typecheck/build/전체 회귀를 통합하고 화면·365일 검사를 관련 변경으로 제한.
