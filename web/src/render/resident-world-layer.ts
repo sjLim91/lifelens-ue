@@ -23,6 +23,7 @@ import {
   createResidentAppearanceProfile,
 } from './resident-appearance';
 import { syncResidentAuthoredHair, syncResidentAuthoredFace, setResidentFaceDetailVisibility } from './resident-authored-appearance';
+import { syncResidentAuthoredGarment } from './resident-authored-garment';
 import { ResidentInventoryProps, ResidentPropResources } from './resident-props';
 import { ResidentProductionTargets } from './resident-production-context';
 import { residentActionCue } from './resident-action-context';
@@ -969,6 +970,9 @@ export class ResidentWorldLayer {
         existing.lifeShape.install();
         existing.appearanceSignature = signature;
       }
+      // Only the Core-observed worn item can produce a new garment silhouette.
+      // Missing later observations explicitly invalidate previous clothing.
+      syncResidentAuthoredGarment(existing.model, resident.civilization?.wornGarment, appearance);
       existing.lifeShape.setFacts(facts, new THREE.Vector3(appearance.heightWorldUnits * appearance.widthScale,
         appearance.heightWorldUnits, appearance.heightWorldUnits * appearance.depthScale));
       existing.gaitRateBias = appearance.gaitRateBias;
@@ -990,6 +994,7 @@ export class ResidentWorldLayer {
     applyResidentMaterialVariant(model, appearance);
     syncResidentAuthoredHair(model, appearance);
     syncResidentAuthoredFace(model, appearance);
+    syncResidentAuthoredGarment(model, resident.civilization?.wornGarment, appearance);
 
     const visual = new THREE.Group();
     visual.name = 'LifeLensResidentVisual';
