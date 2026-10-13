@@ -58,7 +58,7 @@ for (const species of ['Hare', 'Deer', 'Wolf', 'FreshwaterFish', 'Tiger']) {
   assert(a.boundingBox.min.y >= -1e-6); assert(a.getAttribute('color'));
   a.dispose(); b.dispose();
 }
-console.log('PASS four original wildlife meshes are finite, deterministic and grounded');
+console.log('PASS five original wildlife meshes are finite, deterministic and grounded');
 const animals = ['Hare', 'Deer', 'Wolf'].map((species, i) => ({id: String(i), species, sex: 'Female',
   gridX: -2 * grid.gridCellsPerChunk + 16 + i, gridY: 3 * grid.gridCellsPerChunk + 16, ageDays: 900}));
 const wildlife = {available: true, geographicallyConditioned: false, regionalWeatherApplied: false, animals};
@@ -71,6 +71,15 @@ layer.setTerrain({...terrain, wildlife: {...wildlife, animals: [animals[0], anim
 assert.equal(layer.instanceCount, 1);
 layer.setTerrain({...terrain, wildlife: {...wildlife, animals: []}}); assert.equal(layer.instanceCount, 0);
 layer.setTerrain(snapshot); assert.equal(layer.instanceCount, 3);
+const moving={...terrain,wildlife:{...wildlife,animals:[
+  {...animals[0],gridX:animals[0].gridX+3,behavior:'Flee'},...animals.slice(1)
+]}};
+layer.setTerrain(moving);
+const m0=[...layer.group.children[0].instanceMatrix.array];
+layer.update(.016);
+const m1=[...layer.group.children[0].instanceMatrix.array];
+assert.notDeepEqual(m0,m1);
+for(let i=0;i<100;i++)layer.update(.1);
 layer.setTerrain(terrain); assert.equal(layer.instanceCount, 0);
 layer.setTerrain({...snapshot, available: false}); assert.equal(layer.instanceCount, 0);
 let disposed = 0; for (const mesh of layer.group.children) mesh.geometry.addEventListener('dispose', () => disposed++);

@@ -22,6 +22,7 @@ int main(){
     assert(observation.str().find("\"available\":true")!=std::string::npos);
     assert(observation.str().find("\"id\":")!=std::string::npos);
     assert(sim.world().rng==rng);
+    assert(observation.str().find("\\"behavior\\":")!=std::string::npos);
     sim.runMinutes(1000); assert(validNaturalEcology(sim.world()));
     for(const auto& p:sim.world().wildlifePopulations) assert(p.dayIndex==sim.world().minute/(24*60));
     SimulationStateSnapshot restored; std::string error;
