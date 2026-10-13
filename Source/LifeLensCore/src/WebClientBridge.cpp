@@ -1,3 +1,4 @@
+#include "lifelens/NaturalEcologyLifecycle.h"
 #include "lifelens/WebClientBridge.h"
 #include "lifelens/AutonomousGoalComposer.h"
 
@@ -827,7 +828,19 @@ std::string civilizationWorldObservationJson(
         out << "\"quantity\":" << resource.quantity << ",";
         out << "\"maxQuantity\":" << resource.maxQuantity << ",";
         out << "\"renewable\":" << (resource.renewable ? "true" : "false") << ",";
-        out << "\"regenerationPerDay\":" << resource.regenerationPerDay;
+        out << "\"regenerationPerDay\":" << resource.regenerationPerDay << ",";
+        out << "\"flower01\":"; appendDouble(out,resource.flower01); out << ",";
+        out << "\"fruit01\":"; appendDouble(out,resource.fruit01); out << ",";
+        out << "\"trees\":[";
+        for(std::size_t j=0;j<resource.trees.size();++j){
+            if(j) out << ",";
+            const auto& tree=resource.trees[j];
+            out << "{\"id\":\"" << resource.id << ":" << tree.ordinal << "\",\"ordinal\":" << tree.ordinal;
+            out << ",\"ageDays\":" << (resource.ecologyMinute-tree.bornMinute)/1440;
+            out << ",\"remainingWood\":" << tree.remainingWood << ",\"capacity\":" << tree.capacity;
+            out << ",\"felledMinute\":" << tree.felledMinute << ",\"generation\":" << tree.generation << "}";
+        }
+        out << "]";
         out << "}";
     }
     out << "],";
@@ -1980,6 +1993,7 @@ std::string WebClientBridge::dynamicEnvironmentJson(
     out << "\"windIntensity01\":"; appendDouble(out, environment.windIntensity01); out << ",";
     out << "\"humidity01\":"; appendDouble(out, environment.humidity01); out << ",";
     out << "\"visibility01\":"; appendDouble(out, environment.visibility01); out << ",";
+    out << "\"snowDepthMeters\":"; appendDouble(out,snowDepthAt(simulation_->world(),{centerChunkX,centerChunkY})); out << ",";
     out << "\"surfaceWetness01\":"; appendDouble(out, environment.surfaceWetness01); out << ",";
     out << "\"precipitationType\":\"" << precipitationTypeName(environment.precipitationType) << "\",";
     out << "\"summary\":\"" << weatherSummaryName(environment.summary) << "\",";
@@ -2188,6 +2202,21 @@ std::string WebClientBridge::terrainWindowJson(
             out << "\"x\":" << coord.x << ",";
             out << "\"y\":" << coord.y << ",";
             out << "\"elevation01\":"; appendDouble(out, terrain.elevation01); out << ",";
+            if(identity.generationVersion>=4){
+                const std::string key=std::to_string(identity.worldSeed)+":"+std::to_string(identity.populationSeed)+":"+std::to_string(identity.generationVersion)+":"+std::to_string(coord.x)+":"+std::to_string(coord.y);
+                auto cached=elevationSampleCache_.find(key);
+                if(cached==elevationSampleCache_.end()){
+                    std::ostringstream samples; samples << "[";
+                    for(int sy=0;sy<=16;++sy) for(int sx=0;sx<=16;++sx){
+                        if(sx || sy) samples << ",";
+                        appendDouble(samples,deriveContinuousSurfaceElevation01(identity,{origin.x+sx*2,origin.y+sy*2}));
+                    }
+                    samples << "]";
+                    if(elevationSampleCache_.size()>=256) elevationSampleCache_.erase(elevationSampleCache_.begin());
+                    cached=elevationSampleCache_.emplace(key,samples.str()).first;
+                }
+                out << "\"elevationSamples\":" << cached->second << ",";
+            }
             out << "\"gradientX\":"; appendDouble(out, terrain.gradientXPerGrid); out << ",";
             out << "\"gradientY\":"; appendDouble(out, terrain.gradientYPerGrid); out << ",";
             out << "\"waterKind\":\"" << surfaceWaterKindName(water.surfaceKind) << "\",";
@@ -2218,4 +2247,5 @@ std::string WebClientBridge::terrainWindowJson(
 }
 
 } // namespace lifelens
+
 

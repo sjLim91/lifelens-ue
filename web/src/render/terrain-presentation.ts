@@ -42,7 +42,7 @@ function elevationColor(elevation: number): string {
 export function terrainColor(chunk: TerrainChunk): string {
   switch (chunk.waterKind) {
     case 'Ocean': return '#1b4b63';
-    case 'Coast': return '#276878';
+    case 'Coast': return '#b7aa83';
     case 'Wetland': return '#496e58';
     default: break;
   }
@@ -95,3 +95,4 @@ export function shade(hex: string, factor: number): string {
 
   return `rgb(${red} ${green} ${blue})`;
 }
+

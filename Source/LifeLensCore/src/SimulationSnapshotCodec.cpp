@@ -1,3 +1,4 @@
+#include "lifelens/NaturalEcologySnapshotCodec.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/EnvironmentalResidueSnapshotCodec.h"
@@ -235,6 +236,9 @@ bool encodeSimulationSnapshot(
                     cognitionExtension.bytes.end());
     }
 
+    Writer ecologyExtension;
+    writeNaturalEcology(ecologyExtension,snapshot.world);
+    body.insert(body.end(),ecologyExtension.bytes.begin(),ecologyExtension.bytes.end());
     outBytes=std::move(body);
     if(error) error->clear();
     return true;
@@ -327,20 +331,22 @@ bool decodeSimulationSnapshot(
         && tradeJourneyMarker>rulesetMarker
         && (!hasHealthExtension || tradeJourneyMarker>healthMarker);
 
+    const auto ecologyMarker=std::find_end(bytes.begin()+12,bytes.end(),NaturalEcologyMagic,NaturalEcologyMagic+sizeof(NaturalEcologyMagic));
+    const auto extensionEnd=ecologyMarker!=bytes.end() ? ecologyMarker : bytes.end();
     const auto cognitionMarker=std::find_end(
         tradeJourneyMarker!=bytes.end() ? tradeJourneyMarker : rulesetMarker,
-        bytes.end(),CognitiveJournalSnapshotExtensionMagic,
+        extensionEnd,CognitiveJournalSnapshotExtensionMagic,
         CognitiveJournalSnapshotExtensionMagic
             +sizeof(CognitiveJournalSnapshotExtensionMagic));
     const bool hasCognitionExtension=
-        cognitionMarker!=bytes.end()
+        cognitionMarker!=extensionEnd
         && hasTradeJourneyExtension
         && cognitionMarker>tradeJourneyMarker;
 
     const auto rulesetEnd=
         hasHealthExtension
             ? healthMarker
-            : (hasTradeJourneyExtension ? tradeJourneyMarker : bytes.end());
+            : (hasTradeJourneyExtension ? tradeJourneyMarker : extensionEnd);
     std::vector<std::uint8_t> rulesetBytes(
         rulesetMarker,rulesetEnd);
 
@@ -348,19 +354,19 @@ bool decodeSimulationSnapshot(
     if(hasHealthExtension){
         healthBytes.assign(
             healthMarker,
-            hasTradeJourneyExtension ? tradeJourneyMarker : bytes.end());
+            hasTradeJourneyExtension ? tradeJourneyMarker : extensionEnd);
     }
 
     std::vector<std::uint8_t> tradeJourneyBytes;
     if(hasTradeJourneyExtension){
         tradeJourneyBytes.assign(
             tradeJourneyMarker,
-            hasCognitionExtension ? cognitionMarker : bytes.end());
+            hasCognitionExtension ? cognitionMarker : extensionEnd);
     }
 
     std::vector<std::uint8_t> cognitionBytes;
     if(hasCognitionExtension){
-        cognitionBytes.assign(cognitionMarker,bytes.end());
+        cognitionBytes.assign(cognitionMarker,extensionEnd);
     }
 
     SimulationStateSnapshot decoded;
@@ -440,9 +446,17 @@ bool decodeSimulationSnapshot(
         }
     }
 
+    if(ecologyMarker!=bytes.end()){
+        std::vector<std::uint8_t> ecologyBytes(ecologyMarker,bytes.end());
+        Reader ecologyReader(ecologyBytes);
+        if(!readNaturalEcology(ecologyReader,decoded.world) || !ecologyReader.done()){
+            setError(error,"invalid natural ecology snapshot extension"); return false;
+        }
+    }
     outSnapshot=std::move(decoded);
     if(error) error->clear();
     return true;
 }
 
 } // namespace lifelens
+

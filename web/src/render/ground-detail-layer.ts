@@ -1,3 +1,4 @@
+import { createFlowerGeometry, createFruitGeometry } from './plant-reproductive-geometry';
 import * as THREE from 'three';
 import { assetRandom, createGrassGeometry, createStoneGeometry } from './procedural-asset-kit';
 import { createShrubGeometry } from './procedural-tree-generator';
@@ -106,6 +107,9 @@ export class GroundDetailLayer {
     MAX_ROCKS,
   );
 
+  private readonly reproductiveMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: true, side: THREE.DoubleSide });
+  private readonly flowers = new THREE.InstancedMesh(createFlowerGeometry('wild-blooms'), this.reproductiveMaterial, MAX_SHRUBS);
+  private readonly fruits = new THREE.InstancedMesh(createFruitGeometry('wild-berries'), this.reproductiveMaterial, MAX_SHRUBS);
   private readonly matrix = new THREE.Matrix4();
   private readonly rotation = new THREE.Quaternion();
   private readonly scale = new THREE.Vector3();
@@ -121,10 +125,11 @@ export class GroundDetailLayer {
   }
 
   constructor() {
+    this.flowers.count = this.fruits.count = 0;
     this.plantWeather.install(this.grassMaterial, false, true);
     this.plantWeather.install(this.shrubMaterial);
     this.snowModifier.install(this.rockMaterial);
-    for (const mesh of [this.grass, this.shrubs, this.rocks]) {
+    for (const mesh of [this.grass, this.shrubs, this.rocks, this.flowers, this.fruits]) {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.castShadow = false;
       mesh.receiveShadow = true;
@@ -152,6 +157,7 @@ export class GroundDetailLayer {
 
     let grassIndex = 0;
     let shrubIndex = 0;
+    let flowerIndex = 0, fruitIndex = 0;
     let rockIndex = 0;
 
     for (const chunk of window.chunks.slice().sort((a, b) => a.y - b.y || a.x - b.x)) {
@@ -291,6 +297,10 @@ export class GroundDetailLayer {
           this.scale,
         );
         this.shrubs.setMatrixAt(shrubIndex, this.matrix);
+        if (clamp01(candidate.flower01) > candidateHash(candidate, seed, chunk, 601))
+          this.flowers.setMatrixAt(flowerIndex++, this.matrix);
+        if (clamp01(candidate.fruit01) > candidateHash(candidate, seed, chunk, 607))
+          this.fruits.setMatrixAt(fruitIndex++, this.matrix);
 
         const paletteIndex = Math.min(
           SHRUB_PALETTE.length - 1,
@@ -380,6 +390,8 @@ export class GroundDetailLayer {
     this.finalize(this.grass, grassIndex);
     this.finalize(this.shrubs, shrubIndex);
     this.finalize(this.rocks, rockIndex);
+    this.finalize(this.flowers, flowerIndex);
+    this.finalize(this.fruits, fruitIndex);
   }
 
   setWetness(wetness01: number): void {
@@ -396,13 +408,14 @@ export class GroundDetailLayer {
   }
 
   dispose(): void {
+    this.flowers.geometry.dispose(); this.fruits.geometry.dispose(); this.reproductiveMaterial.dispose();
     this.grassGeometry.dispose();
     this.shrubGeometry.dispose();
     this.rockGeometry.dispose();
     this.grassMaterial.dispose();
     this.shrubMaterial.dispose();
     this.rockMaterial.dispose();
-    for (const mesh of [this.grass, this.shrubs, this.rocks]) mesh.dispose();
+    for (const mesh of [this.grass, this.shrubs, this.rocks, this.flowers, this.fruits]) mesh.dispose();
     this.group.clear();
   }
 

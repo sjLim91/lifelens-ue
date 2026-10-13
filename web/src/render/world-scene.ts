@@ -317,6 +317,10 @@ export class WorldScene {
     );
   }
 
+  updateReflections(renderer: THREE.WebGLRenderer): void {
+    this.waterLayer.updateReflection(renderer, this.scene, this.camera);
+  }
+
   update(deltaSeconds: number): void {
     const t = 1 - Math.exp(-Math.max(0, deltaSeconds) * 9);
     const current = this.currentCameraState;

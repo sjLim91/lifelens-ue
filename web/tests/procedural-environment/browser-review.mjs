@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 import { source } from './compile.mjs';
 const root = resolve(import.meta.dirname, '../..'), out = resolve(import.meta.dirname, 'review');
 mkdirSync(out, { recursive: true });
-for (const p of ['vegetation-layer', 'ground-detail-layer', 'facility-layer', 'tree-asset-layer']) await source(`render/${p}.ts`);
+for (const p of ['vegetation-layer', 'ground-detail-layer', 'facility-layer', 'tree-asset-layer', 'water-layer']) await source(`render/${p}.ts`);
 cpSync(resolve(out, 'src'), resolve(out, 'baseline'), { recursive: true });
 const base = 'https://raw.githubusercontent.com/sjLim91/lifelens-ue/8ba73745e1bd8d20108f59202c714deae1af2f1d';
 const baselinePath = resolve(out, 'baseline-vegetation.ts');
@@ -49,7 +49,7 @@ try {
     await page.route('http://lifelens.local/**', serve);
     await page.goto('http://lifelens.local/tests/procedural-environment/fixture.html');
     await page.waitForFunction(() => window.proceduralReview?.ready);
-    for (const name of ['gallery', 'baseline', 'forest', 'autumn', 'winter', 'harvest', 'construction', 'operational', 'ruin']) {
+    for (const name of ['gallery', 'baseline', 'forest', 'autumn', 'winter', 'harvest', 'construction', 'operational', 'ruin', 'core-terrain', 'reflection']) {
       metrics.push({ viewport, ...await page.evaluate(name => window.proceduralReview.renderCase(name), name) });
       console.log('RENDER_CASE', JSON.stringify(metrics.at(-1)));
       writeFileSync(resolve(out, 'browser-metrics.partial.json'), JSON.stringify({ metrics, errors }, null, 2));
@@ -57,7 +57,7 @@ try {
       // software-browser compositor. Both paths use the same preserved buffer.
       const png = await page.evaluate(() => document.querySelector('canvas').toDataURL('image/png'));
       writeFileSync(resolve(out, `${viewport.width}-${name}.png`), Buffer.from(png.split(',')[1], 'base64'));
-      if (['gallery', 'baseline', 'forest'].includes(name)) {
+      if (['gallery', 'baseline', 'forest', 'core-terrain', 'reflection'].includes(name)) {
         // Bounded thumbnails let offline CI reviewers inspect captured pixels
         // through text-only job-log readers. Full frames remain in the artifact.
         const thumbnail = await page.evaluate(() => {

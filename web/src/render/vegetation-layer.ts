@@ -9,7 +9,7 @@ import { createTerrainElevationSampler } from './terrain-geometry';
 import { terrainDressingSignature } from './terrain-dressing-signature';
 import { createVisibleWaterFootprintTester } from './water-geometry';
 import { ProceduralTreeAsset, PROCEDURAL_TREE_VARIANTS, treeVariantForEnvironment } from './procedural-tree-layer';
-import { assetRandom } from './procedural-asset-kit';
+import { assetRandom, createTimberGeometry, installWoodGrain } from './procedural-asset-kit';
 import {
   TREE_FOLIAGE_PALETTE,
   VEGETATION_PRESENTATION_CONTRACT,
@@ -51,11 +51,15 @@ export class VegetationLayer {
   private readonly position = new THREE.Vector3();
   private readonly treeColor = new THREE.Color();
   private terrainSignature = '';
+  private readonly stumpMaterial = new THREE.MeshStandardMaterial({ color: 0x786047, vertexColors: true, roughness: 0.9 });
+  private readonly stumps = new THREE.InstancedMesh(createTimberGeometry('stump'), this.stumpMaterial, MAX_TREES);
 
   constructor() {
     this.actualTrees = PROCEDURAL_TREE_VARIANTS.map(variant =>
       new ProceduralTreeAsset(variant.species, variant.seed, MAX_TREES, this.mobileProfile));
     for (const asset of this.actualTrees) this.group.add(asset.group);
+    installWoodGrain(this.stumpMaterial);
+    this.stumps.count = 0; this.stumps.castShadow = true; this.group.add(this.stumps);
   }
 
   setEnvironment(environment: DynamicEnvironment | null, originX = 0, originZ = 0): void {
@@ -82,6 +86,7 @@ export class VegetationLayer {
       createVisibleWaterFootprintTester(window);
 
     let treeIndex = 0;
+    let stumpIndex = 0;
     const variantCounts = PROCEDURAL_TREE_VARIANTS.map(() => 0);
 
     for (const chunk of window.chunks.slice().sort((a, b) => a.y - b.y || a.x - b.x)) {
@@ -145,7 +150,18 @@ export class VegetationLayer {
           worldZ / chunkWorldSize + window.centerChunkY - sampleChunkY + 0.5,
         ) * WORLD_GRID_CONTRACT.elevationScale;
 
-        const fullTreeHeight = profile.treeHeightWorldUnits * treeScale;
+        if (candidate.tree && candidate.tree.felledMinute >= 0
+          && (candidate.tree.remainingWood === 0 || candidate.tree.ageDays < 365)) {
+          this.rotation.setFromAxisAngle(UP, yaw);
+          this.position.set(worldX, groundY + 0.12, worldZ);
+          this.scale.set(0.22, 0.24, 0.22);
+          this.matrix.compose(this.position, this.rotation, this.scale);
+          this.stumps.setMatrixAt(stumpIndex++, this.matrix);
+        }
+        if (candidate.tree?.remainingWood === 0) continue;
+        const ageScale = candidate.tree && candidate.tree.generation > 0
+          ? Math.min(1, 0.18 + Math.sqrt(candidate.tree.ageDays / (365 * 8)) * 0.82) : 1;
+        const fullTreeHeight = profile.treeHeightWorldUnits * treeScale * ageScale;
         this.rotation.setFromAxisAngle(UP, yaw);
         this.position.set(worldX, groundY, worldZ);
         this.scale.set(
@@ -183,6 +199,10 @@ export class VegetationLayer {
           ) * 0.06,
         );
 
+        if (candidate.tree) {
+          const damage = 1 - candidate.tree.remainingWood / Math.max(1, candidate.tree.capacity);
+          this.treeColor.lerp(new THREE.Color(0x82704a), damage * 0.65);
+        }
         const variantInstanceIndex = variantCounts[variantIndex];
         this.matrix.toArray(
           this.treeVariantMatrices[variantIndex],
@@ -211,7 +231,9 @@ export class VegetationLayer {
     }
 
     this.instanceCount = treeIndex;
+    this.stumps.count = stumpIndex; this.stumps.instanceMatrix.needsUpdate = true;
+    this.stumps.computeBoundingSphere();
   }
 
-  dispose(): void { for (const asset of this.actualTrees) asset.dispose(); this.group.clear(); }
+  dispose(): void { this.stumps.geometry.dispose(); this.stumpMaterial.dispose(); this.stumps.dispose(); for (const asset of this.actualTrees) asset.dispose(); this.group.clear(); }
 }

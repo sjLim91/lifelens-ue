@@ -1,4 +1,4 @@
-import type { CivilizationWorldPayload, CivilizationWorldResource, TerrainWindow } from '../runtime/core-types';
+import type { CivilizationWorldPayload, CivilizationWorldResource, CoreTreeState, TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { WORLD_PRESENTATION } from './world-presentation-config';
 
@@ -10,6 +10,9 @@ export interface DressingCandidate {
   material?: string;
   /** Stable presentation slot identity, independent of current stock. */
   assetKey?: string;
+  tree?: CoreTreeState;
+  flower01?: number;
+  fruit01?: number;
 }
 const kinds: Record<string, DressingKind> = {
   Wood: 'trees', Fiber: 'grass', PlantFood: 'shrubs', Stone: 'rocks',
@@ -61,11 +64,11 @@ export class NaturalResourceProjection {
     // part of terrainDressingSignature; same stock refresh does no mesh upload.
     this.signature = JSON.stringify(resources.map(r => [r.id, r.gridX, r.gridY,
       r.hasAccessGrid, r.accessGridX, r.accessGridY, r.material, r.quantity,
-      r.maxQuantity, r.renewable, r.regenerationPerDay]));
+      r.maxQuantity, r.renewable, r.regenerationPerDay, r.trees, r.flower01, r.fruit01]));
     const accessSignature = resources.map(r => [r.id, r.gridX, r.gridY,
       r.hasAccessGrid, r.accessGridX, r.accessGridY]);
     const stockSignature = (r: CivilizationWorldResource) => [r.id, r.material,
-      r.gridX, r.gridY, r.quantity, r.maxQuantity];
+      r.gridX, r.gridY, r.quantity, r.maxQuantity, r.trees, r.flower01, r.fruit01];
     // A mineral harvest must not upload the entire forest instance buffer.
     this.treeSignature = JSON.stringify([accessSignature,
       resources.filter(r => r.material === 'Wood').map(stockSignature)]);
@@ -115,14 +118,17 @@ export class NaturalResourceProjection {
         + (ownerIndex < reserved % owners.length ? 1 : 0);
       const ratio = resourceQuantityRatio(r), c = center(r);
       for (let i = 0; i < slots; i++) {
-        const progress = Math.max(0, Math.min(1, ratio * slots - i));
-        if (progress <= 0) continue;
-        const token = `${seed}:${r.id}:${r.material}:${i}`;
+        const tree = kind === 'trees' && r.trees?.length
+          ? r.trees[Math.floor(i * r.trees.length / slots)] : undefined;
+        const progress = tree ? Math.max(0, Math.min(1, tree.remainingWood / Math.max(1, tree.capacity)))
+          : Math.max(0, Math.min(1, ratio * slots - i));
+        if (progress <= 0 && (!tree || tree.felledMinute < 0)) continue;
+        const token = `${seed}:${r.id}:${r.material}:${tree?.ordinal ?? i}`;
         const angle = unit(token) * Math.PI * 2;
         const distance = radius * (profile.innerRadiusRatio + unit(`${token}:radius`) * profile.radiusSpreadRatio);
         const p = { x: c.x - (chunkX + 0.5) * size + Math.cos(angle) * distance,
           z: c.z - (chunkY + 0.5) * size + Math.sin(angle) * distance,
-          scale: profile.youngScale + (1 - profile.youngScale) * progress, material: r.material, assetKey: token };
+          scale: tree ? 1 : profile.youngScale + (1 - profile.youngScale) * progress, material: r.material, assetKey: token, tree, flower01: r.flower01, fruit01: r.fruit01 };
         // Nearest same-material node owns overlapping patches, including zero
         // stock. Other real materials may coexist; they are not duplicate props.
         const a = absolute(p);

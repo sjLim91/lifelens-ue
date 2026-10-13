@@ -9,6 +9,8 @@ export type WaterKind =
   | 'Ocean';
 
 export interface TerrainChunk {
+  /** Core v4 17×17 elevation lattice, row-major; shared by all grounding. */
+  elevationSamples?: number[];
   x: number;
   y: number;
   elevation01: number;
@@ -583,6 +585,7 @@ export interface SimulationCalendar {
 }
 
 export interface DynamicEnvironment {
+  snowDepthMeters?: number;
   available?: boolean;
   centerChunkX?: number;
   centerChunkY?: number;
@@ -633,7 +636,14 @@ export interface RecentSocialEventsPayload {
   events?: RecentSocialEvent[];
 }
 
+export interface CoreTreeState {
+  id: string; ordinal: number; ageDays: number; remainingWood: number;
+  capacity: number; felledMinute: number; generation: number;
+}
 export interface CivilizationWorldResource {
+  trees?: CoreTreeState[];
+  flower01?: number;
+  fruit01?: number;
   id: string;
   gridX: number;
   gridY: number;
@@ -1004,4 +1014,5 @@ export interface RuntimeClient {
 export interface CoreModule {
   LifeLensWebClient: new () => RuntimeClient;
 }
+
 

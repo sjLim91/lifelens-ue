@@ -325,6 +325,16 @@ inline bool transferPortableWater(
     return true;
 }
 
+// Persistent identities within a wood node; no simulation RNG is consumed.
+struct NaturalTreeState {
+    int ordinal=0;
+    int bornMinute=0;
+    int remainingWood=0;
+    int capacity=0;
+    int felledMinute=-1;
+    int generation=0;
+};
+
 struct ResourceNode {
     ResourceNodeId id=0;
     MaterialKind material=MaterialKind::Unknown;
@@ -334,11 +344,36 @@ struct ResourceNode {
     int regenerationPerDay=0;
     GridPos pos{};
 
+    std::vector<NaturalTreeState> trees;
+    int ecologyMinute=0;
+    double flower01=0.0;
+    double fruit01=0.0;
+
+    void ensureTrees()
+    {
+        if(material!=MaterialKind::Wood || !trees.empty() || maxQuantity<=0) return;
+        int stock=quantity;
+        for(int i=0;i<8;++i){
+            const int capacity=maxQuantity/8+(i<maxQuantity%8 ? 1 : 0);
+            const int remaining=std::min(stock,capacity);
+            stock-=remaining;
+            trees.push_back({i,ecologyMinute-30*365*1440,remaining,capacity,-1,0});
+        }
+    }
+
     int harvest(int requested,Inventory& destination,double efficiency=1.0)
     {
         if(requested<=0 || quantity<=0 || efficiency<=0.0) return 0;
         const int capacity=std::max(1,static_cast<int>(static_cast<double>(requested)*std::max(0.1,efficiency)));
         const int taken=std::min(quantity,capacity);
+        ensureTrees();
+        int left=taken;
+        for(auto& tree:trees){
+            const int cut=std::min(left,tree.remainingWood);
+            tree.remainingWood-=cut; left-=cut;
+            if(cut>0 && tree.remainingWood==0) tree.felledMinute=ecologyMinute;
+            if(left==0) break;
+        }
         quantity-=taken;
         destination.add({ItemKind::RawMaterial,material,taken,0.5,1.0});
         return taken;
@@ -347,7 +382,17 @@ struct ResourceNode {
     void regenerateDay()
     {
         if(!renewable || regenerationPerDay<=0 || maxQuantity<=quantity) return;
-        quantity=std::min(maxQuantity,quantity+regenerationPerDay);
+        ensureTrees();
+        int growth=std::min(maxQuantity-quantity,regenerationPerDay);
+        quantity+=growth;
+        for(auto& tree:trees){
+            const int added=std::min(growth,tree.capacity-tree.remainingWood);
+            if(added>0 && tree.remainingWood==0){
+                tree.bornMinute=ecologyMinute; ++tree.generation;
+            }
+            tree.remainingWood+=added; growth-=added;
+            if(growth==0) break;
+        }
     }
 };
 
@@ -947,3 +992,4 @@ inline CivilizationEvent retrieveItems(
 }
 
 } // namespace lifelens
+

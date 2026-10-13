@@ -42,6 +42,7 @@ export function terrainDressingSignature(
       numberToken(chunk.moisture01),
       numberToken(chunk.temperature01),
       numberToken(chunk.elevation01),
+      chunk.elevationSamples?.map(numberToken).join(',') ?? '',
       numberToken(chunk.waterAvailability),
       numberToken(chunk.flowPotential),
       numberToken(chunk.drainageAccumulationPotential),

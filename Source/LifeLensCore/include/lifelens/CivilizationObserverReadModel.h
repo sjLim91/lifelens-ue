@@ -77,6 +77,9 @@ struct CivilizationResourceObservation {
     int maxQuantity=0;
     bool renewable=false;
     int regenerationPerDay=0;
+    std::vector<NaturalTreeState> trees;
+    int ecologyMinute=0;
+    double flower01=0.0,fruit01=0.0;
 };
 
 struct CivilizationStorageObservation {
@@ -446,6 +449,10 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
         observed.hasAccessPos=resolveCivilizationResourceAccessGridPosition(
             world,node.id,observed.accessPos);
         observed.material=node.material;
+        observed.trees=node.trees;
+        observed.ecologyMinute=node.ecologyMinute;
+        observed.flower01=node.flower01;
+        observed.fruit01=node.fruit01;
         observed.quantity=node.quantity;
         observed.maxQuantity=node.maxQuantity;
         observed.renewable=node.renewable;
@@ -609,4 +616,5 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
 }
 
 } // namespace lifelens
+
 

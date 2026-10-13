@@ -13,6 +13,8 @@
 #include "Hydrology.h"
 #include "NaturalWorldChunk.h"
 namespace lifelens {
+struct SnowpackState { ChunkCoord coord{}; double depthMeters=0.0; int minute=0; };
+
 struct World {
     int minute=7*60;
     // `seed` remains the compatibility spelling for authoritative WorldSeed.
@@ -28,6 +30,7 @@ struct World {
     std::vector<PrimitiveSanitationSite> primitiveSanitationSites;
     EnvironmentalResidueField environmentalResidues;
     std::vector<GeneratedNaturalChunk> generatedNaturalChunks;
+    std::vector<SnowpackState> snowpacks;
     bool hasInitialStartRegionSelection=false;
     ChunkCoord initialStartRegionCoord{};
     double initialStartRegionViability=0.0;
@@ -142,6 +145,7 @@ struct World {
     void clearGeneratedNaturalWorld()
     {
         generatedNaturalChunks.clear();
+        snowpacks.clear();
         hasInitialStartRegionSelection=false;
         initialStartRegionCoord={};
         initialStartRegionViability=0.0;
@@ -173,3 +177,4 @@ struct World {
     }
 };
 }
+

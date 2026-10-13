@@ -268,3 +268,9 @@ if(EMSCRIPTEN)
     )
 endif()
 
+
+
+lifelens_add_test(test_natural_ecology_lifecycle)
+
+add_executable(ll_ecology_fixture harness/ecology_fixture.cpp)
+target_link_libraries(ll_ecology_fixture PRIVATE lifelens_core)
