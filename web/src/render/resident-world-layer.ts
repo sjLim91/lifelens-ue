@@ -1039,7 +1039,11 @@ export class ResidentWorldLayer {
     const sleepAction = mixer.clipAction(this.sleepClip, root);
     actions.set('sleep', sleepAction);
     const uniqueActions = [...new Set(actions.values())];
-    const sleepMotion = new ResidentSleepMotion(sleepAction, this.sleepCalibration, visual);
+    const skinnedAnatomy = model.getObjectByName('LifeLensAuthoredAnatomicalBody');
+    const sleepMotion = new ResidentSleepMotion(
+      sleepAction, this.sleepCalibration, visual,
+      skinnedAnatomy instanceof THREE.SkinnedMesh ? skinnedAnatomy : null,
+    );
     const idle = actions.get('idle'), walk = actions.get('walk');
     idle?.play();
     if (idle) idle.time = (appearance.seed % 997) / 997 * Math.max(.001, idle.getClip().duration);
