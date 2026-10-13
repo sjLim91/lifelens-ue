@@ -1,0 +1,37 @@
+name: Procedural Environment
+on:
+  pull_request:
+    paths: ['web/**', 'Tools/validate_web_presentation_v2_environment.py', '.github/workflows/procedural-environment-check.yml']
+  push:
+    branches: ['codex/procedural-ecology-*']
+  workflow_dispatch:
+jobs:
+  presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+        working-directory: web
+      - run: python3 Tools/prepare_web_character_assets.py
+      - run: npm run typecheck
+        working-directory: web
+      - run: python3 Tools/validate_web_presentation_v2_environment.py
+      - run: node tests/procedural-environment/run.mjs && node tests/facility-construction/run.mjs && node tests/presentation/run.mjs
+        working-directory: web
+      - run: node tests/environment-consequences/run.mjs && node tests/procedural-motion/run.mjs && node tests/resident-motion/run.mjs
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright && npx playwright install --with-deps chromium
+        working-directory: web
+      - run: node tests/procedural-environment/browser-review.mjs
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: procedural-environment-review
+          path: web/tests/procedural-environment/review/

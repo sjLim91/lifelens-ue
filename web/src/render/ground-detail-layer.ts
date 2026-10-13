@@ -1,5 +1,8 @@
 import * as THREE from 'three';
-import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
+import { assetRandom, createGrassGeometry, createStoneGeometry } from './procedural-asset-kit';
+import { createShrubGeometry } from './procedural-tree-generator';
+import { PlantWeatherMaterial } from './procedural-tree-layer';
+import type { DynamicEnvironment, TerrainChunk, TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import {
   facilityPresentationFootprints,
@@ -10,7 +13,7 @@ import { terrainDressingSignature } from './terrain-dressing-signature';
 import { createVisibleWaterFootprintTester } from './water-geometry';
 import { useMobileVegetationProfile } from './vegetation-profile';
 
-import { NaturalResourceProjection } from './natural-resource-projection';
+import { NaturalResourceProjection, type DressingCandidate } from './natural-resource-projection';
 import { WORLD_PRESENTATION } from './world-presentation-config';
 import { SurfaceSnowModifier } from './environment-surface-presentation';
 
@@ -61,50 +64,25 @@ function hash01(
   return (hash >>> 0) / 4294967295;
 }
 
-function createGrassGeometry(): THREE.BufferGeometry {
-  const halfWidth = 0.12;
-  const height = 0.68;
-  const positions = new Float32Array([
-    -halfWidth, 0, 0,
-    halfWidth, 0, 0,
-    halfWidth * 0.62, height, 0,
-    -halfWidth * 0.62, height, 0,
-
-    0, 0, -halfWidth,
-    0, 0, halfWidth,
-    0, height, halfWidth * 0.62,
-    0, height, -halfWidth * 0.62,
-  ]);
-  const indices = [
-    0, 1, 2, 0, 2, 3,
-    4, 5, 6, 4, 6, 7,
-  ];
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
-    'position',
-    new THREE.BufferAttribute(positions, 3),
-  );
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  geometry.computeBoundingSphere();
-  return geometry;
+function candidateHash(candidate: DressingCandidate, seed: string, chunk: TerrainChunk, salt: number): number {
+  return assetRandom(`${candidate.assetKey ?? `${seed}:${chunk.x}:${chunk.y}:${candidate.x}:${candidate.z}`}:${salt}`)();
 }
 
 export class GroundDetailLayer {
   readonly group = new THREE.Group();
 
   private readonly mobileProfile = useMobileVegetationProfile();
-  private readonly grassGeometry = createGrassGeometry();
-  private readonly shrubGeometry = new THREE.IcosahedronGeometry(1, 0);
-  private readonly rockGeometry = new THREE.DodecahedronGeometry(1, 0);
+  private readonly grassGeometry = createGrassGeometry('meadow', 9);
+  private readonly shrubGeometry = createShrubGeometry('wild-shrub');
+  private readonly rockGeometry = createStoneGeometry('ground-rock');
 
   private readonly grassMaterial = new THREE.MeshLambertMaterial({
     color: 0xffffff,
+    vertexColors: true,
     side: THREE.DoubleSide,
   });
   private readonly shrubMaterial = new THREE.MeshLambertMaterial({
-    color: 0xffffff,
+    color: 0xffffff, vertexColors: true, side: THREE.DoubleSide,
   });
   private readonly rockMaterial = new THREE.MeshStandardMaterial({
     color: 0xffffff,
@@ -136,7 +114,15 @@ export class GroundDetailLayer {
   private terrainSignature = '';
   private readonly snowModifier = new SurfaceSnowModifier();
 
+  private readonly plantWeather = new PlantWeatherMaterial();
+
+  setEnvironment(environment: DynamicEnvironment | null, originX = 0, originZ = 0): void {
+    this.plantWeather.setEnvironment(environment, originX, originZ);
+  }
+
   constructor() {
+    this.plantWeather.install(this.grassMaterial, false, true);
+    this.plantWeather.install(this.shrubMaterial);
     this.snowModifier.install(this.rockMaterial);
     for (const mesh of [this.grass, this.shrubs, this.rocks]) {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -168,7 +154,7 @@ export class GroundDetailLayer {
     let shrubIndex = 0;
     let rockIndex = 0;
 
-    for (const chunk of window.chunks) {
+    for (const chunk of window.chunks.slice().sort((a, b) => a.y - b.y || a.x - b.x)) {
       if (
         chunk.waterKind === 'Ocean'
         || chunk.waterKind === 'Coast'
@@ -225,17 +211,11 @@ export class GroundDetailLayer {
           worldX / chunkWorldSize + window.centerChunkX - sampleChunkX + 0.5,
           worldZ / chunkWorldSize + window.centerChunkY - sampleChunkY + 0.5,
         ) * WORLD_GRID_CONTRACT.elevationScale;
-        const size = 0.52 + hash01(
-          seed,
-          chunk.x,
-          chunk.y,
-          index,
-          109,
-        ) * 0.7;
+        const size = 0.52 + candidateHash(candidate, seed, chunk, 109) * 0.7;
 
         this.rotation.setFromAxisAngle(
           UP,
-          hash01(seed, chunk.x, chunk.y, index, 113) * Math.PI * 2,
+          candidateHash(candidate, seed, chunk, 113) * Math.PI * 2,
         );
         this.position.set(
           worldX,
@@ -253,7 +233,7 @@ export class GroundDetailLayer {
         const paletteIndex = Math.min(
           GRASS_PALETTE.length - 1,
           Math.floor(
-            hash01(seed, chunk.x, chunk.y, index, 127)
+            candidateHash(candidate, seed, chunk, 127)
             * GRASS_PALETTE.length,
           ),
         );
@@ -292,24 +272,12 @@ export class GroundDetailLayer {
           worldX / chunkWorldSize + window.centerChunkX - sampleChunkX + 0.5,
           worldZ / chunkWorldSize + window.centerChunkY - sampleChunkY + 0.5,
         ) * WORLD_GRID_CONTRACT.elevationScale;
-        const width = candidate.scale * (0.34 + hash01(
-          seed,
-          chunk.x,
-          chunk.y,
-          index,
-          223,
-        ) * 0.44);
-        const height = candidate.scale * (0.28 + hash01(
-          seed,
-          chunk.x,
-          chunk.y,
-          index,
-          227,
-        ) * 0.52);
+        const width = candidate.scale * (0.34 + candidateHash(candidate, seed, chunk, 223) * 0.44);
+        const height = candidate.scale * (0.28 + candidateHash(candidate, seed, chunk, 227) * 0.52);
 
         this.rotation.setFromAxisAngle(
           UP,
-          hash01(seed, chunk.x, chunk.y, index, 229) * Math.PI * 2,
+          candidateHash(candidate, seed, chunk, 229) * Math.PI * 2,
         );
         this.position.set(
           worldX,
@@ -327,7 +295,7 @@ export class GroundDetailLayer {
         const paletteIndex = Math.min(
           SHRUB_PALETTE.length - 1,
           Math.floor(
-            hash01(seed, chunk.x, chunk.y, index, 233)
+            candidateHash(candidate, seed, chunk, 233)
             * SHRUB_PALETTE.length,
           ),
         );
@@ -366,21 +334,15 @@ export class GroundDetailLayer {
           worldX / chunkWorldSize + window.centerChunkX - sampleChunkX + 0.5,
           worldZ / chunkWorldSize + window.centerChunkY - sampleChunkY + 0.5,
         ) * WORLD_GRID_CONTRACT.elevationScale;
-        const width = candidate.scale * (0.16 + hash01(
-          seed,
-          chunk.x,
-          chunk.y,
-          index,
-          311,
-        ) * 0.42) * (candidate.material === 'Clay' ? WORLD_PRESENTATION.naturalResources.clayWidthMultiplier : 1);
+        const width = candidate.scale * (0.16 + candidateHash(candidate, seed, chunk, 311) * 0.42) * (candidate.material === 'Clay' ? WORLD_PRESENTATION.naturalResources.clayWidthMultiplier : 1);
         const height = candidate.material === 'Clay'
           ? width * WORLD_PRESENTATION.naturalResources.clayHeightRatio : width * (
-          0.48 + hash01(seed, chunk.x, chunk.y, index, 313) * 0.54
+          0.48 + candidateHash(candidate, seed, chunk, 313) * 0.54
         );
 
         this.rotation.setFromAxisAngle(
           UP,
-          hash01(seed, chunk.x, chunk.y, index, 317) * Math.PI * 2,
+          candidateHash(candidate, seed, chunk, 317) * Math.PI * 2,
         );
         this.position.set(
           worldX,
@@ -391,7 +353,7 @@ export class GroundDetailLayer {
           width,
           height,
           width * (
-            0.72 + hash01(seed, chunk.x, chunk.y, index, 331) * 0.38
+            0.72 + candidateHash(candidate, seed, chunk, 331) * 0.38
           ),
         );
         this.matrix.compose(
@@ -404,7 +366,7 @@ export class GroundDetailLayer {
         const paletteIndex = Math.min(
           ROCK_PALETTE.length - 1,
           Math.floor(
-            hash01(seed, chunk.x, chunk.y, index, 337)
+            candidateHash(candidate, seed, chunk, 337)
             * ROCK_PALETTE.length,
           ),
         );
@@ -440,6 +402,8 @@ export class GroundDetailLayer {
     this.grassMaterial.dispose();
     this.shrubMaterial.dispose();
     this.rockMaterial.dispose();
+    for (const mesh of [this.grass, this.shrubs, this.rocks]) mesh.dispose();
+    this.group.clear();
   }
 
   private clusteredPlacement(
@@ -505,5 +469,6 @@ export class GroundDetailLayer {
     mesh.computeBoundingSphere();
   }
 }
+
 
 

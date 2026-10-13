@@ -64,8 +64,7 @@ assert "this.resourceProjectionCache.get(this.civilization, window)" in world_sc
 assert "this.groundDetailLayer.setWetness" in world_scene
 assert "this.groundDetailLayer.dispose()" in world_scene
 
-# The forest must use multiple pinned zero-cost silhouettes instead of one
-# repeated GLB while retaining the network-failure fallback.
+# Legacy provenance remains for comparison; production uses local procedural trees.
 for token in (
     "tree1.glb",
     "tree2.glb",
@@ -77,23 +76,16 @@ for token in (
         f"missing tree variant/provenance token: {token}"
     )
 
-assert "TREE_ASSET_VARIANTS.map" in vegetation
+assert "PROCEDURAL_TREE_VARIANTS.map" in vegetation
 assert "variantCounts" in vegetation
-assert "refreshFallbackVisibility" in vegetation
-assert "asset.isReady" in vegetation
-
-# Real GLB trees must preserve visual diversity after the procedural fallback is
-# hidden. Per-instance foliage tinting is applied to identified leaf materials,
-# while trunk/bark materials stay untouched.
-for token in (
-    "isFoliageMaterial",
-    "lifeLensFoliageTint",
-    "InstancedBufferAttribute",
-    "vLifeLensFoliageTint",
-    "#include <map_fragment>",
-    "lifelens-foliage-tint-v2",
-):
-    assert token in tree_asset, f"missing real-tree foliage tint token: {token}"
+assert "tree-asset-layer" not in vegetation
+assert "modelUrl" not in vegetation
+procedural = (root / "web/src/render/procedural-tree-layer.ts").read_text(encoding="utf-8")
+generator = (root / "web/src/render/procedural-tree-generator.ts").read_text(encoding="utf-8")
+for token in ("InstancedMesh", "acquireTreeGeometry", "llWind", "llLeafDensity", "setEnvironment"):
+    assert token in procedural
+for species in ("oak", "birch", "pine"):
+    assert f"id: '{species}'" in generator
 
 assert "treeVariantFoliageTints" in vegetation
 assert "this.treeVariantFoliageTints[index]" in vegetation
@@ -103,4 +95,5 @@ for warm_color in ("0xc19a46", "0xb84f58", "0xc96b78"):
     )
 
 print("LifeLens web presentation v2 environment foundation: PASS")
+
 

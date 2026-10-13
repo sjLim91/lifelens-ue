@@ -8,6 +8,8 @@ export interface DressingCandidate {
   z: number;
   scale: number;
   material?: string;
+  /** Stable presentation slot identity, independent of current stock. */
+  assetKey?: string;
 }
 const kinds: Record<string, DressingKind> = {
   Wood: 'trees', Fiber: 'grass', PlantFood: 'shrubs', Stone: 'rocks',
@@ -120,7 +122,7 @@ export class NaturalResourceProjection {
         const distance = radius * (profile.innerRadiusRatio + unit(`${token}:radius`) * profile.radiusSpreadRatio);
         const p = { x: c.x - (chunkX + 0.5) * size + Math.cos(angle) * distance,
           z: c.z - (chunkY + 0.5) * size + Math.sin(angle) * distance,
-          scale: profile.youngScale + (1 - profile.youngScale) * progress, material: r.material };
+          scale: profile.youngScale + (1 - profile.youngScale) * progress, material: r.material, assetKey: token };
         // Nearest same-material node owns overlapping patches, including zero
         // stock. Other real materials may coexist; they are not duplicate props.
         const a = absolute(p);
@@ -164,4 +166,5 @@ export class NaturalResourceProjectionCache {
     return this.value;
   }
 }
+
 
