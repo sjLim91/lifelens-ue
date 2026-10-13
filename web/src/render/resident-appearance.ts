@@ -390,6 +390,7 @@ function applyBodyColors(
   const headIndex = mesh.skeleton.bones.findIndex(bone => /^head$/i.test(bone.name));
   const positions = mesh.geometry.getAttribute('position');
   const headWeights = new Float32Array(joints.count);
+  const heights = new Float32Array(joints.count);
   const point = new THREE.Vector3();
   const relative = referenceInverse.clone().multiply(mesh.matrixWorld);
   let headBottom = Infinity;
@@ -401,6 +402,7 @@ function applyBodyColors(
       }
     }
     point.fromBufferAttribute(positions, vertex).applyMatrix4(relative);
+    heights[vertex] = point.y;
     if (headWeights[vertex] > 0.5) {
       headBottom = Math.min(headBottom, point.y);
       headTop = Math.max(headTop, point.y);
