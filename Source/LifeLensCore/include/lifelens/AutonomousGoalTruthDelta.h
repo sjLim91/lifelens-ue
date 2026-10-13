@@ -136,6 +136,13 @@ inline AutonomousGoalTruthDelta compareAutonomousGoalCoreTruth(
        ||baseline.seed!=observed.seed
        ||baseline.populationSeed!=observed.populationSeed
        ||baseline.generationVersion!=observed.generationVersion
+       ||baseline.hasInitialStartRegionSelection
+            !=observed.hasInitialStartRegionSelection
+       ||(baseline.hasInitialStartRegionSelection
+          &&(baseline.initialStartRegionCoord.x
+                !=observed.initialStartRegionCoord.x
+             ||baseline.initialStartRegionCoord.y
+                !=observed.initialStartRegionCoord.y))
        ||baseline.minute<0
        ||observed.minute<baseline.minute
        ||goal.createdMinute<0
@@ -159,6 +166,21 @@ inline AutonomousGoalTruthDelta compareAutonomousGoalCoreTruth(
             result.status=AutonomousGoalTruthDeltaStatus::InvalidContext;
             result.predicates.clear();
             return result;
+        }
+        // Duplicating a predicate must not artificially multiply its
+        // influence in a conjunctive objective.
+        for(const auto& previous:result.predicates){
+            const auto& p=previous.predicate;
+            if(p.metric==predicate.metric
+               &&p.need==predicate.need
+               &&p.material==predicate.material
+               &&p.targetResident==predicate.targetResident
+               &&p.comparison==predicate.comparison
+               &&p.threshold==predicate.threshold){
+                result.status=AutonomousGoalTruthDeltaStatus::InvalidContext;
+                result.predicates.clear();
+                return result;
+            }
         }
 
         if(predicate.metric==AutonomousGoalMetric::RelationshipTrust
