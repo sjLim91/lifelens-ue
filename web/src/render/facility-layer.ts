@@ -1,6 +1,6 @@
 import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
-import { createTimberGeometry, createStoneGeometry, installWoodGrain } from './procedural-asset-kit';
+import { createTimberGeometry, createStoneGeometry, createPlankGeometry, createVesselGeometry, installWoodGrain, installFiberWeave } from './procedural-asset-kit';
 import type { CivilizationWorldPayload, CivilizationWorldFacility, CivilizationWorldStorage, HumanTrace, TerrainWindow, Resident } from '../runtime/core-types';
 import { storedGoodsPiles } from './stored-goods-presentation';
 import { RESIDENT_PRESENTATION_CONTRACT, WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
@@ -93,7 +93,8 @@ export class FacilityLayer {
   readonly group = new THREE.Group();
   private disposed = false;
 
-  private readonly boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+  private readonly boxGeometry = createPlankGeometry();
+  private readonly vesselGeometry = createVesselGeometry();
   private readonly cylinderGeometry = createTimberGeometry('facility-timber');
   private readonly taperedCylinderGeometry = new THREE.CylinderGeometry(
     0.38,
@@ -293,6 +294,7 @@ export class FacilityLayer {
     for (const material of [this.woodMaterial, this.darkWoodMaterial]) {
       material.vertexColors = true; installWoodGrain(material);
     }
+    for (const material of [this.thatchMaterial, this.beddingMaterial]) installFiberWeave(material);
     this.activityGeometry.setAttribute('position', new THREE.BufferAttribute(this.activityPositions, 3));
     this.activityGeometry.setAttribute('color', new THREE.BufferAttribute(this.activityColors, 3));
     this.activityLines.frustumCulled = false;
@@ -461,6 +463,7 @@ export class FacilityLayer {
     this.glowMaterial.dispose();
     this.glowTexture.dispose();
     this.boxGeometry.dispose();
+    this.vesselGeometry.dispose();
     this.cylinderGeometry.dispose();
     this.taperedCylinderGeometry.dispose();
     this.stoneGeometry.dispose();
@@ -492,9 +495,16 @@ export class FacilityLayer {
     for (const [i, pile] of piles.entries()) {
       // Inside the existing store footprint: no extra buildings or free stock.
       const height = config.height * pile.fill;
-      this.addBox(group, trace, materials[pile.material ?? ''] ?? this.beddingMaterial,
-        [(i - (piles.length - 1) / 2) * config.width, 0.95 + height / 2, 0],
-        [config.width * 0.85, height, config.depth], [0, 0, 0], 950 + i);
+      const material = materials[pile.material ?? ''] ?? this.beddingMaterial;
+      const geometry = pile.material === 'Wood' ? this.cylinderGeometry
+        : pile.material === 'PlantFood' || pile.material === 'Clay' ? this.vesselGeometry
+          : pile.material && ['Stone', 'CopperOre', 'TinOre', 'IronOre'].includes(pile.material)
+            ? this.stoneGeometry : this.boxGeometry;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set((i - (piles.length - 1) / 2) * config.width, 0.95 + height / 2, 0);
+      if (pile.material === 'Wood') { mesh.scale.set(height, config.width * 0.85, config.depth); mesh.rotation.z = Math.PI / 2; }
+      else mesh.scale.set(config.width * 0.85, height, config.depth);
+      this.prepareMesh(mesh, trace, 950 + i); group.add(mesh);
       group.children[group.children.length - 1].userData.storedGoods = pile;
     }
   }
@@ -546,6 +556,8 @@ export class FacilityLayer {
       let material = this.wornMaterials.get(key);
       if (!material) {
         material = original.clone();
+        if (material.userData.llGrain) installWoodGrain(material);
+        if (material.userData.llWeave) installFiberWeave(material);
         const baseline = this.surfaceMaterials.get(original);
         // Build condition from dry base, then apply weather. Avoid double darkening
         // when a durability refresh occurs while the base material is already wet.
@@ -689,9 +701,19 @@ export class FacilityLayer {
     for (const [index, pile] of piles.entries()) {
       const size = CONSTRUCTION.pileSize;
       const height = size * pile.fill;
-      this.addBox(group, trace, materials[pile.material] ?? this.earthMaterial,
-        [-1.3 + index * CONSTRUCTION.pileSpacing, height / 2, 1.25],
-        [size * 0.85, height, size * 0.65], [0, 0.12 * index, 0], 90 + index);
+      if (pile.material === 'Wood') {
+        this.addCylinder(group, trace, this.woodMaterial,
+          [-1.3 + index * CONSTRUCTION.pileSpacing, height / 2, 1.25],
+          [height, size * 0.85, size * 0.65], [0, 0.12 * index, Math.PI / 2], 90 + index);
+      } else if (pile.material === 'Stone') {
+        this.addStoneAtProgress(group, trace, 1, 0,
+          [-1.3 + index * CONSTRUCTION.pileSpacing, height / 2, 1.25],
+          [size * 0.85, height, size * 0.65], [0, 0.12 * index, 0], 90 + index);
+      } else {
+        this.addBox(group, trace, materials[pile.material] ?? this.earthMaterial,
+          [-1.3 + index * CONSTRUCTION.pileSpacing, height / 2, 1.25],
+          [size * 0.85, height, size * 0.65], [0, 0.12 * index, 0], 90 + index);
+      }
       group.children[group.children.length - 1].userData.constructionMaterial = pile;
     }
   }

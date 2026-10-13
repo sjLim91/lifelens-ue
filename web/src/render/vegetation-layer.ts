@@ -84,7 +84,7 @@ export class VegetationLayer {
     let treeIndex = 0;
     const variantCounts = PROCEDURAL_TREE_VARIANTS.map(() => 0);
 
-    for (const chunk of window.chunks) {
+    for (const chunk of window.chunks.slice().sort((a, b) => a.y - b.y || a.x - b.x)) {
       if (treeIndex >= MAX_TREES) break;
       if (
         chunk.waterKind === 'Ocean'

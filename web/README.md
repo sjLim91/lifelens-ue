@@ -35,5 +35,5 @@ The web observer may use pinned zero-cost runtime assets when they materially im
 - Production trees: local oak/birch/pine generators with seeded variants, shared geometry, instancing and desktop distance/mobile LOD. No tree GLB request is made. Legacy models remain solely as a pinned QA reference (about 1.3 MB).
 - Compact/coarse-pointer devices reduce tree and ground-detail density rather than changing simulation truth.
 - Grass tufts, shrubs, and rocks are lightweight procedural presentation meshes driven only by authoritative Core coverage/elevation fields; they do not create resources, collision, or terrain height.
-- A procedural broadleaf mesh remains only as a network/asset-load failure fallback.
+- Species templates, seasonal appearance and wind are presentation-only. Stock/placement remain Core-driven. See [procedural environment implementation and limitations](../docs/PROCEDURAL_ENVIRONMENT_2026-10-13.md).
 

@@ -101,6 +101,23 @@ export function createStoneGeometry(seed: string, radius = 1): THREE.BufferGeome
   g.computeVertexNormals(); g.computeBoundingBox(); g.computeBoundingSphere(); return g;
 }
 
+export function createPlankGeometry(): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  shape.moveTo(-.475, -.475); shape.lineTo(.475, -.475);
+  shape.lineTo(.475, .475); shape.lineTo(-.475, .475); shape.closePath();
+  const g = new THREE.ExtrudeGeometry(shape, { depth: .95, bevelEnabled: true,
+    bevelThickness: .025, bevelSize: .025, bevelSegments: 1, steps: 1 });
+  g.translate(0, 0, -.475); g.computeBoundingBox(); g.computeBoundingSphere(); return g;
+}
+
+/** Open storage vessel with a thick lip and inner wall; no downloaded model. */
+export function createVesselGeometry(): THREE.BufferGeometry {
+  const profile = [[0, -.5], [.3, -.5], [.43, -.38], [.5, -.05], [.43, .3],
+    [.34, .43], [.36, .5], [.29, .5], [.27, .4], [.36, .25], [.42, -.04], [.35, -.32], [0, -.38]];
+  const g = new THREE.LatheGeometry(profile.map(([x, y]) => new THREE.Vector2(x, y)), 12);
+  g.computeBoundingBox(); g.computeBoundingSphere(); return g;
+}
+
 export function createGrassGeometry(seed: string, blades = 7): THREE.BufferGeometry {
   const random = assetRandom(seed), b = new AssetMeshBuilder(), white = new THREE.Color(0xffffff);
   for (let i = 0; i < blades; i++) {
@@ -122,6 +139,7 @@ export function createGrassGeometry(seed: string, blades = 7): THREE.BufferGeome
 
 /** Grain is analytical and local to each assembled component: no texture fetch. */
 export function installWoodGrain(material: THREE.MeshStandardMaterial): void {
+  material.userData.llGrain = true;
   const previous = material.onBeforeCompile;
   const previousKey = material.customProgramCacheKey();
   material.onBeforeCompile = (shader, renderer) => {
@@ -137,4 +155,20 @@ export function installWoodGrain(material: THREE.MeshStandardMaterial): void {
     `);
   };
   material.customProgramCacheKey = () => `${previousKey}:wood-grain-v1`;
+}
+
+export function installFiberWeave(material: THREE.MeshStandardMaterial): void {
+  material.userData.llWeave = true;
+  material.onBeforeCompile = shader => {
+    shader.vertexShader = 'varying vec3 llFiberPosition;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>',
+      '#include <begin_vertex>\nllFiberPosition = position;');
+    shader.fragmentShader = 'varying vec3 llFiberPosition;\n' + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `
+      #include <color_fragment>
+      float llWarp = sin(llFiberPosition.x * 110.0), llWeft = sin(llFiberPosition.z * 92.0);
+      diffuseColor.rgb *= 0.89 + 0.06 * llWarp + 0.05 * llWeft;
+    `);
+  };
+  material.customProgramCacheKey = () => 'lifelens-fiber-weave-v1';
 }

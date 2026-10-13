@@ -16,6 +16,7 @@ jobs:
           node-version: '24'
       - run: npm install --ignore-scripts --no-audit --no-fund
         working-directory: web
+      - run: python3 Tools/prepare_web_character_assets.py
       - run: npm run typecheck
         working-directory: web
       - run: python3 Tools/validate_web_presentation_v2_environment.py

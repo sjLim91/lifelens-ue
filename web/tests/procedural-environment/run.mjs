@@ -9,6 +9,8 @@ const { VegetationLayer } = await source('render/vegetation-layer.ts');
 const { GroundDetailLayer } = await source('render/ground-detail-layer.ts');
 const { NaturalResourceProjection } = await source('render/natural-resource-projection.ts');
 const { createTerrainElevationSampler } = await source('render/terrain-geometry.ts');
+const { createPlankGeometry, createVesselGeometry, installWoodGrain } = await source('render/procedural-asset-kit.ts');
+const { SurfaceSnowModifier } = await source('render/environment-surface-presentation.ts');
 const { WORLD_GRID_CONTRACT: grid } = await source('runtime/lifelens-contract.ts');
 let tests = 0;
 function test(name, run) { run(); tests++; console.log('PASS', name); }
@@ -112,6 +114,31 @@ test('ground detail stock clears real grass/shrub/rock batches and restores from
     const layer = new GroundDetailLayer(); layer.setTerrain(w, projection(w, 10, material)); assert.equal(layer[name].count, 3);
     layer.setTerrain(w, projection(w, 0, material)); assert.equal(layer[name].count, 0); layer.dispose();
   }
+});
+
+test('component geometry preserves bed/plank support bounds, vessel has an inner wall', () => {
+  const plank = createPlankGeometry(), vessel = createVesselGeometry();
+  for (const g of [plank, vessel]) {
+    assert(Math.abs(g.boundingBox.min.y + .5) < 1e-6); assert(Math.abs(g.boundingBox.max.y - .5) < 1e-6);
+    assert([...g.getAttribute('position').array].every(Number.isFinite));
+  }
+  assert(vessel.index.count > 600); plank.dispose(); vessel.dispose();
+});
+test('material grain and snow compose and use different shader cache keys', () => {
+  const wood = new THREE.MeshStandardMaterial(), stone = new THREE.MeshStandardMaterial();
+  installWoodGrain(wood); const snow = new SurfaceSnowModifier(); snow.install(wood); snow.install(stone);
+  assert.notEqual(wood.customProgramCacheKey(), stone.customProgramCacheKey());
+  const shader = { uniforms: {}, vertexShader: '#include <begin_vertex>\n#include <project_vertex>',
+    fragmentShader: '#include <color_fragment>\n#include <normal_fragment_maps>' };
+  wood.onBeforeCompile(shader, {}); assert(shader.vertexShader.includes('llGrainPosition'));
+  assert(shader.fragmentShader.includes('llCover')); wood.dispose(); stone.dispose();
+});
+test('reordered streamed chunks keep the same forest matrices', () => {
+  const w = terrain([chunk(1), chunk(), chunk(-1)]), a = new VegetationLayer(), b = new VegetationLayer();
+  a.setTerrain(w); b.setTerrain({ ...w, chunks: [...w.chunks].reverse() });
+  assert.equal(a.instanceCount, b.instanceCount);
+  assert.deepEqual(a.instanceMatrices.subarray(0, a.instanceCount * 16), b.instanceMatrices.subarray(0, b.instanceCount * 16));
+  a.dispose(); b.dispose();
 });
 
 const window = terrain(Array.from({ length: 121 }, (_, i) => chunk(i % 11 - 5, Math.floor(i / 11) - 5)));
