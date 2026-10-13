@@ -105,7 +105,7 @@ class RunnerTests(unittest.TestCase):
     def test_entrypoints_integrations_and_future_feature_tests_run_once(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            files = ("a/run.mjs", "b/run.mjs", "b/integration.mjs", "cognitive-agent/shadow-ui.mjs",
+            files = ("a/run.mjs", "b/run.mjs", "b/integration.mjs", "runtime-resilience/continuity.mjs", "cognitive-agent/shadow-ui.mjs",
                      "procedural-environment/lifecycle.mjs", "procedural-environment/grounding-wildlife.mjs")
             for name in files:
                 file = root / name; file.parent.mkdir(parents=True, exist_ok=True); file.touch()
