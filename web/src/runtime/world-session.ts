@@ -323,7 +323,7 @@ export class WorldSession {
         terrain = {
           ...terrain,
           humanTraces: traces.humanTraces,
-          wildlife: traces.wildlife,
+          ...(traces.wildlife === undefined ? {} : { wildlife: traces.wildlife }),
         };
       }
     }

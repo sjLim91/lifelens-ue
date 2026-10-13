@@ -5,6 +5,7 @@ const { ResidentGroundSurface } = await source('render/resident-grounding.ts');
 const { createTerrainGeometryBuilder } = await source('render/terrain-geometry.ts');
 const { WildlifeLayer } = await source('render/wildlife-layer.ts');
 const { createWildlifeGeometry } = await source('render/procedural-wildlife.ts');
+const { LifeLensCoreBridge } = await source('runtime/core-bridge.ts');
 const { WORLD_GRID_CONTRACT: grid } = await source('runtime/lifelens-contract.ts');
 const samples = Array.from({length: 289}, (_, i) => {
   const x = i % 17, y = Math.floor(i / 17);
@@ -16,6 +17,20 @@ const terrain = {available: true, worldSeed: 'wildlife', centerChunkX: -2,
   centerChunkY: 3, chunks: [chunk]};
 const ground = new ResidentGroundSurface();
 const ray = new THREE.Raycaster();
+const legacy = { available: true, centerChunkX: 0, centerChunkY: 0,
+  radiusChunks: 1, chunks: [], humanTraces: { total: 1, entries: [] } };
+const fallback = new LifeLensCoreBridge({ terrainWindowJson: () => JSON.stringify(legacy) });
+assert.deepEqual(fallback.humanTracesWindow(0, 0, 1), {
+  available: true, centerChunkX: 0, centerChunkY: 0, radiusChunks: 1,
+  humanTraces: legacy.humanTraces,
+});
+const observedWildlife = { available: true, geographicallyConditioned: false,
+  regionalWeatherApplied: false, animals: [] };
+const current = new LifeLensCoreBridge({ terrainWindowJson: () => JSON.stringify({ ...legacy, wildlife: observedWildlife }) });
+assert.deepEqual(current.humanTracesWindow(0, 0, 1).wildlife, observedWildlife);
+const direct = new LifeLensCoreBridge({ humanTracesWindowJson: () => JSON.stringify({ ...legacy, wildlife: observedWildlife }) });
+assert.deepEqual(direct.humanTracesWindow(0, 0, 1).wildlife, observedWildlife);
+console.log('PASS legacy observer response shape and actual wildlife forwarding');
 let assertions = 0;
 for (const detailed of [false, true]) {
   const window = {...terrain, chunks: [{...chunk, elevationSamples: detailed ? samples : undefined}]};

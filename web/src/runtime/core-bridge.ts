@@ -362,7 +362,7 @@ export class LifeLensCoreBridge {
         centerChunkY: terrain.centerChunkY,
         radiusChunks: terrain.radiusChunks,
         humanTraces: terrain.humanTraces,
-        wildlife: terrain.wildlife,
+        ...(terrain.wildlife === undefined ? {} : { wildlife: terrain.wildlife }),
       };
     }
 
