@@ -30,9 +30,24 @@ export class ResidentProceduralMotion {
   private gazeYaw = 0; private gazePitch = 0;
   private readonly worldRotation = new THREE.Quaternion();
   private readonly rootRotation = new THREE.Quaternion();
+  private readonly footSole = { left: .035, right: .035 };
   constructor(private readonly root: THREE.Object3D, model: THREE.Object3D) {
     this.rig = new ResidentRig(model);
     for (const object of this.rig.joints.values()) this.saved.set(object,object.quaternion.clone());
+    this.setAnatomicalBody(model.getObjectByName('LifeLensAuthoredAnatomicalBody'));
+  }
+  /** Bind the current authored anatomy after growth or phenotype changes.
+   * The skin mesh's real bare sole offsets replace the old fixed shoe clearance.
+   */
+  setAnatomicalBody(object: THREE.Object3D | null | undefined): void {
+    const soles = object instanceof THREE.SkinnedMesh
+      ? object.geometry.userData.residentFootSole as { left?: number; right?: number } | undefined
+      : undefined;
+    for (const side of ['left', 'right'] as const) {
+      const value = soles?.[side];
+      this.footSole[side] = Number.isFinite(value)
+        ? THREE.MathUtils.clamp(value!, .014, .095) : .035;
+    }
   }
   setFacts(resident: Resident): void { this.style = residentMotionStyle(resident); }
   beforeMotion(): void {
@@ -66,7 +81,7 @@ export class ResidentProceduralMotion {
       const upper=this.rig.joints.get(`${side}Thigh`),lower=this.rig.joints.get(`${side}Calf`),foot=this.rig.joints.get(`${side}Foot`);
       if(!upper || !lower || !foot)continue;
       foot.getWorldPosition(this.point);const h=frame.ground.height(this.point.x,this.point.z);
-      const height=Math.max(.01,this.root.scale.y),sole=.035*height;
+      const height=Math.max(.01,this.root.scale.y),sole=this.footSole[side]*height;
       // Swing feet keep authored clearance. Only a near-ground stance is solved.
       if(h===null || this.point.y-sole-h>.14*height || h-this.point.y>.22*height)continue;
       this.target.copy(this.point);this.target.y=h+sole;

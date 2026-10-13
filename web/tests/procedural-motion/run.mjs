@@ -20,6 +20,10 @@ const {ResidentProceduralMotion,residentMotionStyle}=await source('render/reside
 const {ResidentGroundSurface}=await source('render/resident-grounding.ts');
 const {ResidentPhysicalTargets}=await source('render/resident-interaction-context.ts');
 const {ResidentWorldLayer}=await source('render/resident-world-layer.ts');
+const {createResidentAppearanceProfile,applyResidentMaterialVariant}=
+  await source('render/resident-appearance.ts');
+const {syncResidentAnatomicalBody,ANATOMICAL_BODY_NAME}=
+  await source('render/resident-anatomical-body.ts');
 const {buildChunkGeometry}=await source('render/terrain-geometry.ts');
 const bytes=readFileSync(resolve(root,'public/vendor/characters/character.glb'));
 const asset=await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
@@ -33,6 +37,59 @@ const ground=new ResidentGroundSurface();ground.setTerrain(flat,0,0);
 test('actual production GLB has required skin and all 18 semantic joints',()=>{
  const rig=new ResidentRig(normalized);assert(rig.skinned);assert.deepEqual(rig.missing,[]);
  assert.equal(rig.joints.size,18);console.log('model meshes',asset.parser.json.meshes.length,'skins',asset.parser.json.skins.length,'base clips',asset.animations.length);
+});
+test('A6/A7 authored male/female anatomy and articulated digits reproduce from bind pose during animation',()=>{
+  const individuals=[];
+  for(const sex of ['Male','Female']){
+    const scene=clone(normalized);
+    const phenotype=createResidentAppearanceProfile({id:'a6-a7-repeat',name:'test',sex,ageYears:30,lifeStage:'Adult',
+      genetics:{heightPotential:.5,buildPotential:.5,faceShape:.5,skinTone:.5}});
+    applyResidentMaterialVariant(scene,phenotype);
+    assert(syncResidentAnatomicalBody(scene,phenotype));
+    const anatomy=scene.getObjectByName(ANATOMICAL_BODY_NAME);
+    assert(anatomy instanceof THREE.SkinnedMesh);
+    assert.equal(anatomy.geometry.userData.anatomyVersion,'A6-A7');
+    const geometry=anatomy.geometry,positions=geometry.getAttribute('position');
+    const skinIndices=geometry.getAttribute('skinIndex'),skinWeights=geometry.getAttribute('skinWeight');
+    const initial=[...positions.array];
+    assert(positions.count>=9000,'fully generated face, torso, hands and toes');
+    for(let i=0;i<positions.count;i++){
+      assert(Number.isFinite(positions.getX(i)+positions.getY(i)+positions.getZ(i)));
+      let total=0;
+      for(let k=0;k<4;k++){
+        const bone=skinIndices.getComponent(i,k);
+        assert(Number.isInteger(bone)&&bone>=0&&bone<anatomy.skeleton.bones.length);
+        total+=skinWeights.getComponent(i,k);
+      }
+      assert(Math.abs(total-1)<2e-4);
+    }
+    for(const name of ['index_02_l','middle_03_r','thumb_01_l','ball_l']){
+      const bone=anatomy.skeleton.bones.findIndex(b=>b.name===name);
+      assert(bone>=0,'missing rig '+name);
+      let used=0;
+      for(let i=0;i<skinIndices.count;i++)for(let k=0;k<4;k++)
+        if(skinIndices.getComponent(i,k)===bone&&skinWeights.getComponent(i,k)>.02)used++;
+      assert(used>3,'authored body lacks flexion on '+name);
+    }
+    for(const side of ['left','right'])
+      assert(geometry.userData.residentFootSole[side]>=.014
+        && geometry.userData.residentFootSole[side]<=.095);
+    // Recreate geometry while moving: underlying boneInverse rest coordinates
+    // must not stamp the middle of a walk into permanent body proportions.
+    const clip=createResidentAuthoredMotions(scene).get('walk');
+    const mixer=new THREE.AnimationMixer(scene);
+    mixer.clipAction(clip).play();mixer.setTime(clip.duration*.33);
+    scene.updateMatrixWorld(true);
+    assert(syncResidentAnatomicalBody(scene,phenotype));
+    const after=scene.getObjectByName(ANATOMICAL_BODY_NAME);
+    assert.deepEqual([...after.geometry.getAttribute('position').array],initial);
+    individuals.push(initial);
+  }
+  assert.equal(individuals[0].length,individuals[1].length);
+  let difference=0;
+  for(let i=0;i<individuals[0].length;i++)
+    difference+=Math.abs(individuals[0][i]-individuals[1][i]);
+  assert(difference>.1,'sex-dependent body geometry must actually differ');
 });
 test('authored library works without vendor clips and preserves finite loop endpoints',()=>{
  const library=createResidentAuthoredMotions(clone(normalized));assert(library.size>=29);
