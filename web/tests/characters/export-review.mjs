@@ -34,13 +34,15 @@ base.scene.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(base
 base.scene.position.sub(new THREE.Vector3(center.x,box.min.y,center.z));
 const template=new THREE.Group();template.add(base.scene);template.scale.setScalar(1/size.y);
 const result=[];
-let maleBareVertices=null;
+let maleBareVertices=null, maleAuthoredVertices=null;
 const cases=[
  ['Male / low','Male',0,'Idle_Loop',.7, ['StoneHammer','SharpFlake']],
  ['Female / low','Female',0,'Idle_Loop',.7,['SimpleContainer','DiggingStick']],
  ['Male / high','Male',1,'Idle_Loop',.7,['BronzeAxe','RecordTablet']],
  ['Female / high','Female',1,'Idle_Loop',.7,['Cordage','SharpFlake']],
- ...['Farm_PlantSeed','Farm_Watering','Farm_Harvest','Walk_Carry_Loop'].flatMap(c=>[.2,.5,.8].map(t=>[c+' '+t,'Female',.5,c,t,['SimpleContainer','DiggingStick']])),
+ ...['Farm_PlantSeed','Farm_Watering','Farm_Harvest','Walk_Carry_Loop',
+      'Walk_Loop','Crouch_Idle_Loop','Sitting_Idle_Loop','Swim_Fwd_Loop']
+      .flatMap(c=>[.2,.5,.8].map(t=>[c+' '+t,'Female',.5,c,t,['SimpleContainer','DiggingStick']])),
 ];
 for(let ci=0;ci<cases.length;ci++){
  const [label,sex,axis,clipName,phase,items]=cases[ci];
@@ -52,7 +54,28 @@ for(let ci=0;ci<cases.length;ci++){
  if(!(authored instanceof THREE.SkinnedMesh))
    throw Error('Authored anatomy is not a real skinned mesh: '+label);
  const sumVertices=authored.geometry.getAttribute('position').count;
- if(sumVertices<3500)throw Error('Anatomical mesh too sparse: '+label);
+ if(sumVertices<9000)throw Error('A6 anatomical shape too sparse: '+label);
+ if(authored.geometry.userData.anatomyVersion!=='A6-A7')
+   throw Error('Anatomy contract not updated: '+label);
+ if(ci===0)maleAuthoredVertices=[...authored.geometry.getAttribute('position').array];
+ if(ci===1){
+   const female=[...authored.geometry.getAttribute('position').array];
+   if(!maleAuthoredVertices || female.length!==maleAuthoredVertices.length)
+     throw Error('Male/female anatomy vertex counts must match');
+   let difference=0;for(let i=0;i<female.length;i++)
+     difference+=Math.abs(female[i]-maleAuthoredVertices[i]);
+   if(difference<.1)throw Error('Actual new anatomy does not distinguish sex morphology');
+ }
+ const digits=authored.geometry.getAttribute('skinIndex'),
+       weights=authored.geometry.getAttribute('skinWeight');
+ for(const fingerName of ['index_02_l','thumb_02_r','ring_03_r','ball_l']){
+   const bone=authored.skeleton.bones.findIndex(b=>b.name===fingerName);
+   if(bone<0)throw Error('Missing finger/toe bone '+fingerName);
+   let articulation=0;
+   for(let i=0;i<digits.count;i++)for(let k=0;k<4;k++)
+     if(digits.getComponent(i,k)===bone&&weights.getComponent(i,k)>.02)articulation++;
+   if(articulation<4)throw Error('Authoring failed to weight '+fingerName);
+ }
  const authoredWeights=authored.geometry.getAttribute('skinWeight');
  for(let i=0;i<authoredWeights.count;i++) {
    const total=authoredWeights.getX(i)+authoredWeights.getY(i)
