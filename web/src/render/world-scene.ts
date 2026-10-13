@@ -182,6 +182,8 @@ export class WorldScene {
     this.atmosphere.setEnvironment(environment);
     this.weatherLayer.setEnvironment(environment);
     this.waterLayer.setEnvironment(environment);
+    this.vegetationLayer.setEnvironment(environment, this.originX, this.originZ);
+    this.groundDetailLayer.setEnvironment(environment, this.originX, this.originZ);
 
     const precipitation = Math.max(
       0,
@@ -335,6 +337,7 @@ export class WorldScene {
     this.facilityLayer.update(deltaSeconds, this.camera);
     this.lifeEventLayer.update(this.camera, deltaSeconds);
     this.socialEventLayer.update(this.camera, this.lifeEventLayer.presentation.majorPairs);
+    this.vegetationLayer.update(this.camera);
     this.waterLayer.update(deltaSeconds);
     this.weatherLayer.update(deltaSeconds);
   }
@@ -556,6 +559,7 @@ export class WorldScene {
   }
 
 }
+
 
 
 

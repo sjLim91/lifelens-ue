@@ -1,5 +1,6 @@
 import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
+import { createTimberGeometry, createStoneGeometry, installWoodGrain } from './procedural-asset-kit';
 import type { CivilizationWorldPayload, CivilizationWorldFacility, CivilizationWorldStorage, HumanTrace, TerrainWindow, Resident } from '../runtime/core-types';
 import { storedGoodsPiles } from './stored-goods-presentation';
 import { RESIDENT_PRESENTATION_CONTRACT, WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
@@ -93,19 +94,14 @@ export class FacilityLayer {
   private disposed = false;
 
   private readonly boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-  private readonly cylinderGeometry = new THREE.CylinderGeometry(
-    0.5,
-    0.5,
-    1,
-    8,
-  );
+  private readonly cylinderGeometry = createTimberGeometry('facility-timber');
   private readonly taperedCylinderGeometry = new THREE.CylinderGeometry(
     0.38,
     0.56,
     1,
     10,
   );
-  private readonly stoneGeometry = new THREE.DodecahedronGeometry(0.5, 0);
+  private readonly stoneGeometry = createStoneGeometry('facility-masonry', 0.5);
   private readonly flameGeometry = new THREE.ConeGeometry(0.42, 0.95, 8);
   private readonly productionMaterial = new THREE.MeshStandardMaterial({color:0xffffff,roughness:.85});
   private readonly productionRocks = new THREE.InstancedMesh(this.stoneGeometry,this.productionMaterial,WORLD_PRESENTATION.production.maxProcessingStocks);
@@ -294,6 +290,9 @@ export class FacilityLayer {
 
   constructor() {
     this.group.name = 'facilities';
+    for (const material of [this.woodMaterial, this.darkWoodMaterial]) {
+      material.vertexColors = true; installWoodGrain(material);
+    }
     this.activityGeometry.setAttribute('position', new THREE.BufferAttribute(this.activityPositions, 3));
     this.activityGeometry.setAttribute('color', new THREE.BufferAttribute(this.activityColors, 3));
     this.activityLines.frustumCulled = false;
@@ -1375,6 +1374,7 @@ export class FacilityLayer {
     mesh.receiveShadow = true;
   }
 }
+
 
 
 

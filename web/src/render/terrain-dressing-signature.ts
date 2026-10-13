@@ -38,6 +38,9 @@ export function terrainDressingSignature(
       chunk.y,
       chunk.waterKind,
       chunk.salinity ?? '',
+      chunk.biome ?? '',
+      numberToken(chunk.moisture01),
+      numberToken(chunk.temperature01),
       numberToken(chunk.elevation01),
       numberToken(chunk.waterAvailability),
       numberToken(chunk.flowPotential),
@@ -60,3 +63,4 @@ export function terrainDressingSignature(
 
   return hash.toString(16);
 }
+

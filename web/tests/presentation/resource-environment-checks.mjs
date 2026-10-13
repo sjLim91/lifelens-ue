@@ -125,22 +125,21 @@ export function resourceEnvironmentChecks({ test, source, THREE, flatWindow }) {
   const resource = (quantity, material = 'Wood') => ({ id: 'node', gridX: span / 2, gridY: span / 2,
     material, quantity, maxQuantity: 10, renewable: true, regenerationPerDay: 1 });
   const project = (terrain, quantity, material) => new projection.NaturalResourceProjection({ available: true, resources: [resource(quantity, material)] }, terrain);
-  test('real tree GLTF instance matrices and fallback canopy deplete and restore together', () => {
+  test('procedural tree instances and both LODs deplete and restore together', () => {
     const layer = new VegetationLayer(), terrain = { ...flatWindow(), chunks: [flatWindow().chunks.find(c => c.x === 0 && c.y === 0)] };
     try {
       layer.setTerrain(terrain, project(terrain, 10, 'Wood'));
-      const full = layer.trunks.count;
-      const matrices = layer.actualTrees.map(a => [...a.matrices]);
+      const full = layer.instanceCount;
+      const matrices = layer.actualTrees.map(a => Array.from(a.matrices));
       assert.equal(full, 3);
-      layer.setTerrain(terrain, project(terrain, 4, 'Wood')); assert.ok(layer.trunks.count < full);
-      layer.setTerrain(terrain, project(terrain, 0, 'Wood')); assert.equal(layer.trunks.count, 0);
-      assert.equal(layer.crowns.count, 0); assert.ok(layer.actualTrees.every(a => a.count === 0));
-      layer.setTerrain(terrain, project(terrain, 10, 'Wood')); assert.equal(layer.trunks.count, full);
-      assert.deepEqual(layer.actualTrees.map(a => [...a.matrices]), matrices);
-      layer.trunks.instanceMatrix.needsUpdate = false;
-      const version = layer.trunks.instanceMatrix.version;
+      layer.setTerrain(terrain, project(terrain, 4, 'Wood')); assert.ok(layer.instanceCount < full);
+      layer.setTerrain(terrain, project(terrain, 0, 'Wood')); assert.equal(layer.instanceCount, 0);
+      assert.ok(layer.actualTrees.every(a => a.levels.every(l => l.bark.count === 0 && l.foliage.count === 0))); assert.ok(layer.actualTrees.every(a => a.count === 0));
+      layer.setTerrain(terrain, project(terrain, 10, 'Wood')); assert.equal(layer.instanceCount, full);
+      assert.deepEqual(layer.actualTrees.map(a => Array.from(a.matrices)), matrices);
+      const versions = layer.actualTrees.flatMap(a => a.levels.map(l => l.bark.instanceMatrix.version));
       layer.setTerrain(terrain, project(terrain, 10, 'Wood'));
-      assert.equal(layer.trunks.instanceMatrix.version, version);
+      assert.deepEqual(layer.actualTrees.flatMap(a => a.levels.map(l => l.bark.instanceMatrix.version)), versions);
     } finally { layer.dispose(); }
   });
   test('real ground meshes use quantity; clay lies flat and depleted resources have no proxy mesh', () => {
@@ -171,13 +170,16 @@ export function resourceEnvironmentChecks({ test, source, THREE, flatWindow }) {
         terrain.chunks = terrain.chunks.map(c => ({ ...c, waterKind, forestCoverage01: 1, grassCoverage01: 1, shrubCoverage01: 1, rockCoverage01: 1 }));
         terrain.humanTraces = { available: true, entries: [{ id: 'shelter', kind: 'Facility', facilityKind: 'Shelter', gridX: span / 2, gridY: span / 2 }] };
         const footprint = facilityPresentationFootprints(terrain), water = createVisibleWaterFootprintTester(terrain);
-        for (const [Layer, material, meshName, budget] of [[VegetationLayer, 'Wood', 'trunks', 6], [GroundDetailLayer, 'PlantFood', 'shrubs', 4], [GroundDetailLayer, 'Stone', 'rocks', 5]]) {
+        for (const [Layer, material, meshName, budget] of [[VegetationLayer, 'Wood', null, 6], [GroundDetailLayer, 'PlantFood', 'shrubs', 4], [GroundDetailLayer, 'Stone', 'rocks', 5]]) {
           const layer = new Layer();
           try {
             layer.setTerrain(terrain, project(terrain, 10, material));
-            const mesh = layer[meshName]; assert.ok(mesh.count <= budget * terrain.chunks.length);
-            for (let i = 0; i < mesh.count; i++) {
-              const matrix = new THREE.Matrix4(); mesh.getMatrixAt(i, matrix);
+            const count = meshName ? layer[meshName].count : layer.instanceCount;
+            assert.ok(count <= budget * terrain.chunks.length);
+            for (let i = 0; i < count; i++) {
+              const matrix = new THREE.Matrix4();
+              if (meshName) layer[meshName].getMatrixAt(i, matrix);
+              else matrix.fromArray(layer.instanceMatrices, i * 16);
               const pos = new THREE.Vector3().setFromMatrixPosition(matrix);
               assert.equal(water(pos.x, pos.z), false);
               assert.ok(outsideFacilityFootprints(pos.x, pos.z, footprint, Layer === VegetationLayer ? 0.55 : undefined));
@@ -189,3 +191,4 @@ export function resourceEnvironmentChecks({ test, source, THREE, flatWindow }) {
     } finally { if (oldWindow === undefined) delete globalThis.window; else globalThis.window = oldWindow; }
   });
 }
+

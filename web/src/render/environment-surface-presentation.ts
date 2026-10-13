@@ -55,6 +55,7 @@ export class SurfaceSnowModifier {
   install(material: THREE.MeshStandardMaterial): void {
     // One modifier per material, installed before its first GPU compilation.
     const previous = material.onBeforeCompile;
+    const previousKey = material.customProgramCacheKey();
     material.onBeforeCompile = (shader, renderer) => {
       previous.call(material, shader, renderer);
       Object.assign(shader.uniforms, this.uniforms);
@@ -81,7 +82,7 @@ export class SurfaceSnowModifier {
         roughnessFactor = mix(roughnessFactor, ${WORLD_PRESENTATION.weather.snowRoughness.toFixed(2)}, llCover);
       `);
     };
-    material.customProgramCacheKey = () => 'lifelens-surface-snow-v1';
+    material.customProgramCacheKey = () => `${previousKey}:lifelens-surface-snow-v1`;
   }
 
   setState(state: Pick<SurfaceState, 'snow' | 'originX' | 'originZ'>): void {
@@ -96,3 +97,4 @@ export function applyGroundWetness(material: THREE.MeshStandardMaterial, wetness
   material.color.setScalar(1 - wet * config.wetGroundDarkening);
   material.roughness = THREE.MathUtils.lerp(config.dryGroundRoughness, config.wetGroundRoughness, wet);
 }
+

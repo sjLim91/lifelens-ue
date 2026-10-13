@@ -1,5 +1,8 @@
 import * as THREE from 'three';
-import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
+import { createGrassGeometry, createStoneGeometry } from './procedural-asset-kit';
+import { createShrubGeometry } from './procedural-tree-generator';
+import { PlantWeatherMaterial } from './procedural-tree-layer';
+import type { DynamicEnvironment, TerrainChunk, TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import {
   facilityPresentationFootprints,
@@ -61,50 +64,21 @@ function hash01(
   return (hash >>> 0) / 4294967295;
 }
 
-function createGrassGeometry(): THREE.BufferGeometry {
-  const halfWidth = 0.12;
-  const height = 0.68;
-  const positions = new Float32Array([
-    -halfWidth, 0, 0,
-    halfWidth, 0, 0,
-    halfWidth * 0.62, height, 0,
-    -halfWidth * 0.62, height, 0,
-
-    0, 0, -halfWidth,
-    0, 0, halfWidth,
-    0, height, halfWidth * 0.62,
-    0, height, -halfWidth * 0.62,
-  ]);
-  const indices = [
-    0, 1, 2, 0, 2, 3,
-    4, 5, 6, 4, 6, 7,
-  ];
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
-    'position',
-    new THREE.BufferAttribute(positions, 3),
-  );
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  geometry.computeBoundingSphere();
-  return geometry;
-}
-
 export class GroundDetailLayer {
   readonly group = new THREE.Group();
 
   private readonly mobileProfile = useMobileVegetationProfile();
-  private readonly grassGeometry = createGrassGeometry();
-  private readonly shrubGeometry = new THREE.IcosahedronGeometry(1, 0);
-  private readonly rockGeometry = new THREE.DodecahedronGeometry(1, 0);
+  private readonly grassGeometry = createGrassGeometry('meadow', 9);
+  private readonly shrubGeometry = createShrubGeometry('wild-shrub');
+  private readonly rockGeometry = createStoneGeometry('ground-rock');
 
   private readonly grassMaterial = new THREE.MeshLambertMaterial({
     color: 0xffffff,
+    vertexColors: true,
     side: THREE.DoubleSide,
   });
   private readonly shrubMaterial = new THREE.MeshLambertMaterial({
-    color: 0xffffff,
+    color: 0xffffff, vertexColors: true, side: THREE.DoubleSide,
   });
   private readonly rockMaterial = new THREE.MeshStandardMaterial({
     color: 0xffffff,
@@ -136,7 +110,15 @@ export class GroundDetailLayer {
   private terrainSignature = '';
   private readonly snowModifier = new SurfaceSnowModifier();
 
+  private readonly plantWeather = new PlantWeatherMaterial();
+
+  setEnvironment(environment: DynamicEnvironment | null, originX = 0, originZ = 0): void {
+    this.plantWeather.setEnvironment(environment, originX, originZ);
+  }
+
   constructor() {
+    this.plantWeather.install(this.grassMaterial, false, true);
+    this.plantWeather.install(this.shrubMaterial);
     this.snowModifier.install(this.rockMaterial);
     for (const mesh of [this.grass, this.shrubs, this.rocks]) {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -440,6 +422,8 @@ export class GroundDetailLayer {
     this.grassMaterial.dispose();
     this.shrubMaterial.dispose();
     this.rockMaterial.dispose();
+    for (const mesh of [this.grass, this.shrubs, this.rocks]) mesh.dispose();
+    this.group.clear();
   }
 
   private clusteredPlacement(
@@ -505,5 +489,6 @@ export class GroundDetailLayer {
     mesh.computeBoundingSphere();
   }
 }
+
 
 
