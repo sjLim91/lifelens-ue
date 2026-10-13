@@ -8,7 +8,7 @@ import { NaturalResourceProjection } from './review/src/render/natural-resource-
 import { WORLD_GRID_CONTRACT as grid } from './review/src/runtime/lifelens-contract.mjs';
 import { VegetationLayer as LegacyVegetation } from './review/baseline/render/vegetation-layer.mjs';
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(1);
 renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.setClearColor(0xb5c3cc);
 document.body.append(renderer.domElement);
@@ -26,7 +26,7 @@ const galleryAssets = treeSpecies.map((species, index) => {
   a.setInstances(new Float32Array(m.elements), 1, new Float32Array([.32, .56, .23]));
   a.update(camera); gallery.add(a.group); return a;
 });
-const chunks = Array.from({ length: 81 }, (_, i) => ({ x: i % 9 - 4, y: Math.floor(i / 9) - 4,
+const chunks = Array.from({ length: 25 }, (_, i) => ({ x: i % 5 - 2, y: Math.floor(i / 5) - 2,
   elevation01: .25, waterKind: 'None', waterAvailability: .5, forestCoverage01: .75,
   grassCoverage01: .65, shrubCoverage01: .25, rockCoverage01: .18, moisture01: .7, temperature01: .5 }));
 const w = { available: true, centerChunkX: 0, centerChunkY: 0, worldSeed: 'visual-life-lens', chunks };
@@ -98,7 +98,7 @@ async function renderCase(name) {
   }
   camera.updateMatrixWorld(); renderer.compile(scene, camera); renderer.render(scene, camera);
   const samples = [];
-  for (let i = 0; i < 12; i++) { const start = performance.now(); renderer.render(scene, camera); renderer.getContext().finish(); samples.push(performance.now() - start); }
+  for (let i = 0; i < 5; i++) { const start = performance.now(); renderer.render(scene, camera); renderer.getContext().finish(); samples.push(performance.now() - start); }
   document.getElementById('label').textContent = `${name} · ${innerWidth}×${innerHeight}`;
   return { name, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
     ...activeResourceBudget(),

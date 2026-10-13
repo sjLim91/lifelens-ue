@@ -51,7 +51,12 @@ try {
     await page.waitForFunction(() => window.proceduralReview?.ready);
     for (const name of ['gallery', 'baseline', 'forest', 'autumn', 'winter', 'harvest', 'construction', 'operational', 'ruin']) {
       metrics.push({ viewport, ...await page.evaluate(name => window.proceduralReview.renderCase(name), name) });
-      await page.screenshot({ path: resolve(out, `${viewport.width}-${name}.png`) });
+      console.log('RENDER_CASE', JSON.stringify(metrics.at(-1)));
+      writeFileSync(resolve(out, 'browser-metrics.partial.json'), JSON.stringify({ metrics, errors }, null, 2));
+      // Capture the exact completed WebGL framebuffer, independent of the
+      // software-browser compositor. Both paths use the same preserved buffer.
+      const png = await page.evaluate(() => document.querySelector('canvas').toDataURL('image/png'));
+      writeFileSync(resolve(out, `${viewport.width}-${name}.png`), Buffer.from(png.split(',')[1], 'base64'));
     }
     await page.close();
   }

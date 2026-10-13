@@ -58,7 +58,7 @@
 - 실제 Wood/Fiber/PlantFood/Stone/광물/Clay 노드 quantity/maxQuantity → 기존 고정 슬롯의 감소·제거·회복. 자원 없는 인벤토리로 식생을 만들지 않음.
 - Core accessGrid 및 shared water/facility footprint → 채취 접근 위치에 장식물을 배치하지 않음.
 - 시설 trace의 actual progress·delivered materials·state와 일치하는 detail durability → 구성 요소 조립·마모·폐허. 주민이 도착했다는 이유로 완성/수리하지 않음.
-- 실제 storage inventory → 종류·수량에 따른 적재물. 바뀐 메시도 기존 bounded pile count와 데이터 연결을 사용.
+- 실제 storage inventory → 종류·수량에 따른 적재물. 열린 용기는 이미 존재하는 Operational 창고의 저장 칸을 표현하며 주민의 SimpleContainer 제작/보유를 추정하지 않는다. 원시 Clay는 완성된 도자기가 아닌 원석/점토 덩어리로 표현한다. 바뀐 메시도 기존 bounded pile count와 데이터 연결을 사용.
 - 관측 calendar season, windIntensity, simulationMinute, 현재 cold Snow → 가을 색·겨울 잎 밀도·바람·눈 표면 표현. 별도 성장/적설/융해 clock 없음.
 
 고도는 기존 공통 sampler 그대로 사용한다. 실제 resource 위치와 접근 위치를 옮기지 않으며 주민 hand/foot anchor도 변경하지 않는다.

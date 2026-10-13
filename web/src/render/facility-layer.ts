@@ -497,8 +497,8 @@ export class FacilityLayer {
       const height = config.height * pile.fill;
       const material = materials[pile.material ?? ''] ?? this.beddingMaterial;
       const geometry = pile.material === 'Wood' ? this.cylinderGeometry
-        : pile.material === 'PlantFood' || pile.material === 'Clay' ? this.vesselGeometry
-          : pile.material && ['Stone', 'CopperOre', 'TinOre', 'IronOre'].includes(pile.material)
+        : pile.material === 'PlantFood' ? this.vesselGeometry
+          : pile.material && ['Stone', 'Clay', 'CopperOre', 'TinOre', 'IronOre'].includes(pile.material)
             ? this.stoneGeometry : this.boxGeometry;
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set((i - (piles.length - 1) / 2) * config.width, 0.95 + height / 2, 0);
