@@ -184,7 +184,7 @@ export function resourceEnvironmentChecks({ test, source, THREE, flatWindow }) {
               assert.equal(water(pos.x, pos.z), false);
               assert.ok(outsideFacilityFootprints(pos.x, pos.z, footprint, Layer === VegetationLayer ? 0.55 : undefined));
             }
-            if (waterKind === 'Ocean') assert.equal(mesh.count, 0);
+            if (waterKind === 'Ocean') assert.equal(count, 0);
           } finally { layer.dispose(); }
         }
       }
