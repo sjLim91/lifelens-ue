@@ -48,7 +48,7 @@
 
 ## 4. 시각 비교
 
-첫 자체 수관은 기존 모델보다 성겨 보여 잎 크기/밀도와 침엽수 층별 가지를 보강했다. `export-review.mjs`와 Blender `render-review.py`로 **기존 GLB의 텍스처까지 포함한** 비교 화면을 생성했다. Blender 화면은 형태 진단이며 Three.js 런타임의 최종 품질 판정은 아니다.
+첫 자체 수관은 기존 모델보다 성겨 보여 잎 크기/밀도와 침엽수 층별 가지를 보강했다. 브라우저에서 과도한 수관 겹침과 평면적인 큰 잎이 확인되어 수관 폭을 줄이고 더 작은 잎의 회전·입체 분포를 보정했다. `export-review.mjs`와 Blender `render-review.py`로 **기존 GLB의 텍스처까지 포함한** 비교 화면을 생성했다. Blender 화면은 형태 진단이며 Three.js 런타임의 최종 품질 판정은 아니다.
 
 브라우저 fixture는 동일 seed/관측 상태/카메라에서 baseline, forest, autumn, winter, harvest, construction, operational, ruin을 1280×900 및 390×844로 캡처한다. GPU 셰이더 오류를 실패로 처리한다. CI artifact와 결과는 PR에서 확인한다. 화면 검토와 실제 기기 성능이 승인되기 전 외부 에셋 관련 코드를 삭제하거나 main에 병합하지 않는다.
 
@@ -76,8 +76,8 @@
 | 항목 | Desktop | Mobile |
 |---|---:|---:|
 | 나무 수 | 1089 | 726 |
-| 기본 distant LOD 삼각형 합계 | 1,804,884 | 1,165,008 |
-| geometry attribute/index bytes | 2,178,432 | 589,680 |
+| 기본 distant LOD 삼각형 합계 | 2,774,244 | 1,807,032 |
+| geometry attribute/index bytes | 2,975,872 | 909,552 |
 | instance matrix/color bytes | 480,256 | 143,360 |
 | 비어 있지 않은 tree batch | 12 | 12 |
 

@@ -61,11 +61,15 @@ export class AssetMeshBuilder {
     color: THREE.Color, rank = 0): void {
     const axis = new THREE.Vector3(Math.cos(yaw) * Math.cos(tilt), Math.sin(tilt), Math.sin(yaw) * Math.cos(tilt));
     const across = new THREE.Vector3(-Math.sin(yaw), 0, Math.cos(yaw));
+    // Leaves face several directions; a whole canopy must not become one
+    // sun-facing horizontal sheet. Roll is stable for each authored leaf.
+    across.applyAxisAngle(axis, Math.sin(yaw * 2.3 + rank * 7) * 1.2);
+    const fold = new THREE.Vector3().crossVectors(axis, across).normalize();
     const points = [center.clone().addScaledVector(axis, -length * 0.5),
       center.clone().addScaledVector(across, width * 0.5),
       center.clone().addScaledVector(axis, length * 0.5),
       center.clone().addScaledVector(across, -width * 0.5),
-      center.clone().add(new THREE.Vector3(0, width * 0.14, 0))];
+      center.clone().addScaledVector(fold, width * 0.14)];
     const ids = points.map(p => this.vertex(p, color, rank));
     for (let i = 0; i < 4; i++) this.triangle(ids[i], ids[(i + 1) % 4], ids[4]);
   }

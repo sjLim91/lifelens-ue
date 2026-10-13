@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { AssetMeshBuilder, assetRandom } from './procedural-asset-kit';
 
 export const TREE_TEMPLATES = [
-  { id: 'oak', branches: 7, spread: 0.29, trunk: 0.65, radius: 0.034, lean: 0.065, evergreen: false },
-  { id: 'birch', branches: 6, spread: 0.19, trunk: 0.91, radius: 0.021, lean: 0.025, evergreen: false },
-  { id: 'pine', branches: 25, spread: 0.25, trunk: 1, radius: 0.028, lean: 0.018, evergreen: true },
+  { id: 'oak', branches: 7, spread: 0.17, trunk: 0.78, radius: 0.034, lean: 0.065, evergreen: false },
+  { id: 'birch', branches: 6, spread: 0.12, trunk: 0.91, radius: 0.021, lean: 0.025, evergreen: false },
+  { id: 'pine', branches: 25, spread: 0.18, trunk: 1, radius: 0.028, lean: 0.018, evergreen: true },
 ] as const;
 export type TreeSpecies = typeof TREE_TEMPLATES[number]['id'];
 export interface TreeGeometry { bark: THREE.BufferGeometry; foliage: THREE.BufferGeometry; evergreen: boolean }
@@ -49,15 +49,15 @@ export function generateTree(species: TreeSpecies, seed: string, lowDetail = fal
 
   const leaves = (tip: THREE.Vector3, spread: number, yaw: number) => {
     const leafRandom = assetRandom(`${seed}:leaf:${tip.x}:${tip.y}:${tip.z}`);
-    const count = lowDetail ? 8 : 26;
+    const count = lowDetail ? (template.evergreen ? 12 : 18) : (template.evergreen ? 26 : 52);
     for (let i = 0; i < count; i++) {
       const a = leafRandom() * Math.PI * 2, radius = Math.sqrt(leafRandom()) * spread;
       const center = tip.clone().add(new THREE.Vector3(Math.cos(a) * radius,
-        (leafRandom() - 0.5) * spread * 0.9, Math.sin(a) * radius));
+        (leafRandom() - 0.5) * spread * 1.8, Math.sin(a) * radius));
       center.y = THREE.MathUtils.clamp(center.y, 0.16, 0.97);
-      const length = (lowDetail ? 0.155 : 0.088) * (0.75 + leafRandom() * 0.5);
+      const length = (lowDetail ? 0.060 : 0.040) * (0.75 + leafRandom() * 0.5);
       foliage.leaf(center, template.evergreen ? length * 1.8 : length,
-        template.evergreen ? length * 0.62 : length * 0.8,
+        template.evergreen ? length * 0.42 : length * 0.68,
         yaw + leafRandom() * 2, (leafRandom() - 0.5) * 0.9,
         new THREE.Color().setScalar(0.75 + leafRandom() * 0.35), leafRandom());
     }
@@ -65,7 +65,7 @@ export function generateTree(species: TreeSpecies, seed: string, lowDetail = fal
   const branch = (start: THREE.Vector3, end: THREE.Vector3, radius: number, depth: number, yaw: number) => {
     const mid = start.clone().lerp(end, 0.52); mid.y -= 0.012;
     bark.tube([start, mid, end], [radius, radius * 0.62, radius * 0.19], lowDetail ? 4 : 5, barkColor);
-    if (depth === 0) { leaves(end, template.evergreen ? 0.073 : 0.105, yaw); return; }
+    if (depth === 0) { leaves(end, template.evergreen ? 0.06 : 0.075, yaw); return; }
     for (let i = 0; i < 2; i++) {
       const a = yaw + (i === 0 ? -0.75 : 0.75) + (random() - 0.5) * 0.5;
       const length = start.distanceTo(end) * (0.45 + random() * 0.25);
@@ -74,7 +74,7 @@ export function generateTree(species: TreeSpecies, seed: string, lowDetail = fal
       next.y = Math.min(0.93, next.y);
       branch(end, next, radius * 0.47, depth - 1, a);
     }
-    leaves(end, template.evergreen ? 0.07 : 0.10, yaw);
+    leaves(end, template.evergreen ? 0.055 : 0.07, yaw);
   };
   for (let i = 0; i < template.branches; i++) {
     const fraction = template.evergreen ? Math.floor(i / 5) / 5 : i / template.branches;
@@ -95,6 +95,9 @@ export function createShrubGeometry(seed: string): THREE.BufferGeometry {
   // Normalized centered bounds keep existing shrub grounding/stock scaling.
   for (let stem = 0; stem < 7; stem++) {
     const yaw = stem * 2.39996, height = 0.55 + random() * 0.45;
+    const base = new THREE.Vector3(0, -.68, 0);
+    const tip = new THREE.Vector3(Math.cos(yaw) * .4, -.68 + height * 1.45, Math.sin(yaw) * .4);
+    b.tube([base, base.clone().lerp(tip, .55), tip], [.022, .012, .004], 4, new THREE.Color(0x8b795a));
     for (let leaf = 0; leaf < 12; leaf++) {
       const t = leaf / 12, radius = Math.sin(t * Math.PI) * 0.7;
       const a = yaw + leaf * 1.3;
