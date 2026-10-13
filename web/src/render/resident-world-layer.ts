@@ -24,6 +24,7 @@ import {
 } from './resident-appearance';
 import { syncResidentAuthoredHair, syncResidentAuthoredFace, setResidentFaceDetailVisibility } from './resident-authored-appearance';
 import { syncResidentAuthoredGarment } from './resident-authored-garment';
+import { syncResidentAnatomicalBody } from './resident-anatomical-body';
 import { ResidentInventoryProps, ResidentPropResources } from './resident-props';
 import { ResidentProductionTargets } from './resident-production-context';
 import { residentActionCue } from './resident-action-context';
@@ -134,7 +135,7 @@ function createActionCueSprite(): ResidentActionCueSprite | null {
     opacity: 0.96,
   });
   const sprite = new THREE.Sprite(material);
-  sprite.scale.set(4.8, 0.9, 1);
+  sprite.scale.set(2.4, 0.45, 1);
   sprite.renderOrder = 8;
   sprite.visible = false;
 
@@ -456,6 +457,15 @@ export class ResidentWorldLayer {
 
   setSelectedResident(residentId: string | null): void {
     this.selectedResidentId = residentId;
+    // A clear world is the default. The sole action caption belongs to the
+    // selected resident, never to every visible pedestrian.
+    for (const actor of this.actors.values())
+      if (actor.actionCue) actor.actionCue.sprite.visible = false;
+    if (residentId) {
+      const actor = this.actors.get(residentId);
+      if (actor?.root.visible)
+        this.updateActionCue(actor, actor.motionFacts, this.pendingResidents, false);
+    }
     this.updateSelectionRing();
   }
 
@@ -599,7 +609,7 @@ export class ResidentWorldLayer {
       if (actor.actionCue) {
         actor.actionCue.sprite.position.set(
           actor.current.x,
-          actor.current.y + 2.0,
+          actor.current.y + actor.root.scale.y * 1.16,
           actor.current.z,
         );
       }
@@ -963,6 +973,7 @@ export class ResidentWorldLayer {
       const signature = this.materialAppearanceSignature(appearance);
       if (signature !== existing.appearanceSignature) {
         applyResidentMaterialVariant(existing.model, appearance);
+        syncResidentAnatomicalBody(existing.model, appearance);
         // Rebuild only when an actual phenotype/pigment value changes,
         // never every observer refresh. The attachment follows its Head bone.
         syncResidentAuthoredHair(existing.model, appearance);
@@ -992,6 +1003,7 @@ export class ResidentWorldLayer {
 
     const model = cloneSkeleton(this.template) as THREE.Group;
     applyResidentMaterialVariant(model, appearance);
+    syncResidentAnatomicalBody(model, appearance);
     syncResidentAuthoredHair(model, appearance);
     syncResidentAuthoredFace(model, appearance);
     syncResidentAuthoredGarment(model, resident.civilization?.wornGarment, appearance);
@@ -1056,10 +1068,7 @@ export class ResidentWorldLayer {
       initialized: false,
     };
 
-    const actionCue = createActionCueSprite();
-    actor.actionCue = actionCue;
-    if (actionCue) this.group.add(actionCue.sprite);
-
+    // Allocate the expensive canvas/texture only when the resident is selected.
     actor.procedural.setFacts(resident);
     this.actors.set(resident.id, actor);
     this.group.add(root);
@@ -1077,11 +1086,20 @@ export class ResidentWorldLayer {
       residents,
       visuallyMoving,
     );
-    if (!actor.actionCue || !cue) {
+    if (resident.id !== this.selectedResidentId || !cue) {
       if (actor.actionCue) actor.actionCue.sprite.visible = false;
       return;
     }
-
+    if (!actor.actionCue) {
+      actor.actionCue = createActionCueSprite();
+      if (actor.actionCue) this.group.add(actor.actionCue.sprite);
+    }
+    if (!actor.actionCue) return;
+    actor.actionCue.sprite.position.set(
+      actor.current.x,
+      actor.current.y + actor.root.scale.y * 1.16,
+      actor.current.z,
+    );
     paintActionCue(actor.actionCue, cue.text, cue.phase);
     actor.actionCue.sprite.visible = true;
   }

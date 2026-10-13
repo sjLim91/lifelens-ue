@@ -25,6 +25,7 @@ const {createResidentAppearanceProfile,applyResidentMaterialVariant}=await impor
 const {ResidentInventoryProps}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-props.ts'))));
 const {syncResidentAuthoredHair,syncResidentAuthoredFace}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-authored-appearance.ts'))));
 const {syncResidentAuthoredGarment}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-authored-garment.ts'))));
+const {syncResidentAnatomicalBody,ANATOMICAL_BODY_NAME}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-anatomical-body.ts'))));
 const loader=new GLTFLoader();
 async function load(file){const b=readFileSync(new URL('../../public/vendor/characters/'+file,import.meta.url));return loader.parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),'');}
 const base=await load('character.glb'),ual1=await load('ual1.glb'),ual2=await load('ual2.glb');
@@ -45,6 +46,21 @@ for(let ci=0;ci<cases.length;ci++){
  const [label,sex,axis,clipName,phase,items]=cases[ci];
  const profile=createResidentAppearanceProfile({id:'same-person',sex,ageYears:30,genetics:{heightPotential:axis,buildPotential:axis,faceShape:axis,skinTone:axis,hairPigment:axis,eyePigment:axis}});
  const model=clone(template);applyResidentMaterialVariant(model,profile);
+ if(!syncResidentAnatomicalBody(model,profile))
+   throw Error('Anatomical body generation on real pinned GLB failed: '+label);
+ const authored=model.getObjectByName(ANATOMICAL_BODY_NAME);
+ if(!(authored instanceof THREE.SkinnedMesh))
+   throw Error('Authored anatomy is not a real skinned mesh: '+label);
+ const sumVertices=authored.geometry.getAttribute('position').count;
+ if(sumVertices<3500)throw Error('Anatomical mesh too sparse: '+label);
+ const authoredWeights=authored.geometry.getAttribute('skinWeight');
+ for(let i=0;i<authoredWeights.count;i++) {
+   const total=authoredWeights.getX(i)+authoredWeights.getY(i)
+     +authoredWeights.getZ(i)+authoredWeights.getW(i);
+   if(Math.abs(total-1)>1e-4)throw Error('Unnormalized anatomical bind weights: '+label);
+ }
+ if(model.getObjectByName('SuperHero_Male').material.visible!==false)
+   throw Error('Legacy template body still rendering: '+label);
  const body=model.getObjectByName('SuperHero_Male');
  if(!(body instanceof THREE.SkinnedMesh))throw Error('A4 pinned skinned body unavailable');
  const barePositions=[...body.geometry.getAttribute('position').array];
