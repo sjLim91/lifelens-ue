@@ -8,8 +8,10 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
+import html
 import json
 import pathlib
+import re
 import urllib.error
 import urllib.request
 
@@ -19,6 +21,29 @@ MODELS = {
     "orange-tiger-alternative": "0984e2d5f9ef44f7bdc50521be1fa176",
 }
 MAX_BYTES = 2 * 1024 * 1024
+
+
+def inspect_public_cc0_page() -> dict:
+    """Inspect an advertised public download page, without accessing viewer storage."""
+    url = "https://3dassets.dev/assets/exotic-wildlife-hd-bengal-tiger-prowling-b1de9790"
+    result = {"source_url": url, "asset_acquired": False, "admission": "pending-page-and-file-review"}
+    try:
+        request = urllib.request.Request(url, headers={"User-Agent": "LifeLens-source-review/1.0"})
+        with urllib.request.urlopen(request, timeout=15) as response:
+            body = response.read(MAX_BYTES + 1)
+            if len(body) > MAX_BYTES:
+                return {**result, "status": "oversized-response"}
+            page = html.unescape(body.decode("utf-8"))
+            result.update(http_status=response.status, response_sha256=hashlib.sha256(body).hexdigest())
+            # Public links and embedded structured data are review evidence only.
+            # Do not follow a file URL before checking the complete page's license.
+            result["links"] = sorted(set(re.findall(r'https://[^\s<>"\\]+', page)))[:200]
+            result["page_text"] = re.sub(r"<[^>]+>", " ", page)[-18000:]
+    except urllib.error.HTTPError as error:
+        result.update(http_status=error.code, status="http-error")
+    except (urllib.error.URLError, TimeoutError, OSError, UnicodeDecodeError) as error:
+        result.update(status="connection-failed", error_type=type(error).__name__)
+    return result
 
 
 def read_public(url: str) -> dict:
@@ -85,6 +110,7 @@ def main() -> None:
         "purpose": "public-source-evidence-only",
         "source_chain": {"9dd099d283e54f99b7cbd40b531b1a29": "51ed5186afb04487ae6adb51f8ffd09b"},
         "candidates": [summarize(name, uid) for name, uid in MODELS.items()],
+        "public_cc0_page": inspect_public_cc0_page(),
         "quality_gate": "NOT_RUN", "web_integration": "NOT_IMPLEMENTED",
         "mobile_performance": "NOT_MEASURED", "merge_allowed": False,
     }
@@ -93,6 +119,7 @@ def main() -> None:
     for candidate in report["candidates"]:
         print(candidate["candidate"], candidate["metadata_request"].get("http_status"),
               candidate["license"].get("slug"), candidate["anonymous_download_request"].get("status", "response-collected"))
+    print("PUBLIC_CC0_PAGE", json.dumps(report["public_cc0_page"], ensure_ascii=False))
     print("Evidence collected; no asset acquired; visual/web/mobile gates remain open.")
 
 
