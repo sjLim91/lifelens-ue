@@ -154,17 +154,24 @@ def tint_mesh(ob, species, female=False):
                 pale=ventral or muzzle
                 # Broken, tapering flank markings with dissimilar left/right
                 # sides. They do not encircle each torso section uniformly.
-                shear=(1.15*math.sin(z*7.4+abs(x)*2.9)
-                       +0.40*math.sin(14.1*z+9.3*x+y*4.2))
-                phase=(17.8*y+shear+0.25*math.sin(31*y+5*z))
-                width=(.63+.20*math.sin(7.1*y+z*11))
-                torso_stripe=(-.9<y<.58 and z>.44 and
-                              math.sin(phase)>width and
-                              not ventral and
-                              (z>.70 or abs(x)>.17))
+                # Several anatomically tapered flank stripes per metre,
+                # not four broad continuous black rings like a striped toy.
+                # Curved/branching strokes narrow toward the ventral pelage
+                # and have deterministic left/right phase asymmetry.
+                phase=(59.0*y + 2.55*math.sin(5.4*z+abs(x)*4.1)
+                       +.78*math.sin(21*y+6*z)
+                       +.22*math.sin(37*z+13*x))
+                taper=max(0.,min(1.,(z-.57)/.55))
+                threshold=(.91-.22*taper
+                           +.06*math.sin(11*y+7*z+3*x))
+                interrupted=math.sin(8*z+17*y+6*x)>-.83
+                torso_stripe=(-.94<y<.70 and z>.50
+                              and math.sin(phase)>threshold
+                              and interrupted
+                              and not ventral)
                 # Sparse rings on legs below the belly line.
-                leg_stripe=(z<.51 and abs(x)>.19 and
-                            math.sin(z*26+6*y+abs(x)*3)>.80)
+                leg_stripe=(z<.58 and abs(x)>.19 and
+                            math.sin(z*41+8*y+abs(x)*5)>.87)
                 # Tail carries irregular annular bands, including a dark tip.
                 tail_stripe=(y<-.90 and
                              (y< -2.03 or
