@@ -37,7 +37,7 @@ def main():
         assert len(obj.get('skins',[]))>=1,(species,'no actual skin')
         joint_count=max(len(skin['joints']) for skin in obj['skins'])
         assert joint_count >= (16 if species.startswith('resident-') else 10)
-        assert len(obj.get('animations',[]))>=1,(species,'missing authored motion')
+        assert len(obj.get('animations',[]))==1,(species,'stale animation clip contamination')
         channels=sum(len(anim.get('channels',[])) for anim in obj['animations'])
         assert channels>=6,(species,'motion not bound to bones')
         assert len(obj.get('materials',[]))>=1,(species,'missing surface material')
