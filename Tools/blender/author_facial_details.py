@@ -38,11 +38,11 @@ def build_palette():
         'hair':material('Q4 warm dark hair',(.070,.044,.025),.88),
         'hair_female':material('Q4 auburn hair',(.14,.066,.034),.81),
         'ear':material('Q4 inner ear',(.57,.26,.21),.78),
-        'tiger_nose':material('Q4 tiger nose',(.085,.052,.056),.43),
+        'tiger_nose':material('Q4 tiger nose',(.081,.062,.062),.43),
         'tiger_white':material('Q4 tiger cream',(.90,.79,.56),.91),
         'tiger_black':material('Q4 tiger stripes',(.055,.035,.025),.96),
-        'tiger_eye':material('Q4 tiger gold eye',(.53,.37,.07),.24),
-        'whisker':material('Q4 vibrissae',(.77,.73,.66),.7),
+        'tiger_eye':material('Q4 tiger gold eye',(.32,.25,.075),.24),
+        'whisker':material('Q4 vibrissae',(.78,.75,.68),.7),
         'claw':material('Q4 ivory claw',(.72,.64,.52),.51),
     }
 
@@ -222,21 +222,21 @@ def tiger_details(d):
     # skin pigment shader; rigid contrasting white balls are removed.
     for s in (-1,1):
         tag='right' if s<0 else 'left'
-        d.ellipsoid(tag+' recessed cream orbital skin',(s*.139,1.352,1.223),
-                    (.035,.012,.020),'head','tiger_white')
-        d.ellipsoid(tag+' deep amber iris',(s*.139,1.366,1.226),
-                    (.019,.006,.012),'head','tiger_eye')
-        d.ellipsoid(tag+' vertical pupil',(s*.139,1.373,1.226),
-                    (.0055,.0024,.0095),'head','tiger_black')
-        d.ellipsoid(tag+' tiny ocular specular',(s*.132,1.379,1.235),
+        d.ellipsoid(tag+' recessed almond eye socket',(s*.138,1.342,1.223),
+                    (.034,.010,.014),'head','tiger_black')
+        d.ellipsoid(tag+' deep amber iris',(s*.139,1.353,1.226),
+                    (.020,.006,.009),'head','tiger_eye')
+        d.ellipsoid(tag+' vertical pupil',(s*.139,1.359,1.226),
+                    (.005,.0024,.008),'head','tiger_black')
+        d.ellipsoid(tag+' tiny ocular specular',(s*.132,1.365,1.232),
                     (.0025,.0015,.0025),'head','glint',12,8)
         d.fiber(tag+' subtle upper lid',[
             (s*.100,1.366,1.237),(s*.129,1.373,1.244),
             (s*.159,1.364,1.242),(s*.179,1.351,1.223)],
             .0027,'head','tiger_black')
         # Inner ear recedes behind the orange pinna; no spherical black nubs.
-        d.ellipsoid(tag+' inner ear',(s*.166,1.112,1.349),
-                    (.020,.006,.019),'head','tiger_black',12,8)
+        d.ellipsoid(tag+' inner ear',(s*.167,1.114,1.342),
+                    (.017,.006,.015),'head','ear',12,8)
         # Small whisker pads are defined by coat pigmentation rather than
         # large separate, conspicuously white snout spheres.
         for k in range(4):
@@ -268,10 +268,10 @@ def tiger_details(d):
     d.fiber('philtrum',[(0,1.570,1.043),(0,1.555,1.018),
                         (0,1.542,.999)],.0025,'head','tiger_black')
     for s in (-1,1):
-        d.fiber('curved muzzle crease',[(0,1.552,1.000),
-                                      (s*.038,1.545,.995),
-                                      (s*.084,1.524,.998)],
-                .0026,'head','tiger_black')
+        d.fiber('closed feline lip line',[(0,1.552,.998),
+                                         (s*.028,1.547,.982),
+                                         (s*.054,1.532,.983)],
+                .002,'head','tiger_black')
 
     # Retractable cat claws project only a few centimeters from the paw,
     # rather than fantasy monster talons.
