@@ -158,7 +158,7 @@ def tint_mesh(ob, species, female=False):
                        +0.40*math.sin(14.1*z+9.3*x+y*4.2))
                 phase=(17.8*y+shear+0.25*math.sin(31*y+5*z))
                 width=(.63+.20*math.sin(7.1*y+z*11))
-                torso_stripe=(-.9<y<.91 and z>.44 and
+                torso_stripe=(-.9<y<.58 and z>.44 and
                               math.sin(phase)>width and
                               not ventral and
                               (z>.70 or abs(x)>.17))
@@ -169,13 +169,26 @@ def tint_mesh(ob, species, female=False):
                 tail_stripe=(y<-.90 and
                              (y< -2.03 or
                               math.sin(27*y+4*x+2*z)>.46))
-                # Facial markings follow cheek/temple asymmetry.
-                face_stripe=(1.0<y<1.38 and z>1.16 and abs(x)>.13 and
-                             math.sin(32*z+23*y+8*abs(x))>.76)
-                dark=torso_stripe or leg_stripe or tail_stripe or face_stripe
-                coat=(.67,.33,.118)
-                buff=(.79,.72,.59)
-                ebony=(.079,.047,.034)
+                # Feline face-specific pattern: broad M-shaped transverse
+                # forehead bars, diagonal cheek tear-lines and narrow dark
+                # nasal bridge. A generic flank stripe must not turn into a
+                # black collar around the neck.
+                brow_band=(
+                    1.17<y<1.37 and 1.18<z<1.34 and abs(x)<.215
+                    and math.sin(124*z+20*math.cos(12*x)+6*y)>.56
+                )
+                cheek_mark=(
+                    1.13<y<1.44 and 1.060<z<1.245 and abs(x)>.155
+                    and math.sin(53*y+47*z+11*abs(x))>.72
+                )
+                nose_bridge=(
+                    1.30<y<1.51 and 1.10<z<1.19
+                    and abs(x)<.013 and math.sin(37*y+9*z)>.12
+                )
+                dark=torso_stripe or leg_stripe or tail_stripe or brow_band or cheek_mark or nose_bridge
+                coat=(.58,.295,.125)
+                buff=(.78,.71,.57)
+                ebony=(.066,.045,.032)
                 base=ebony if dark else buff if pale else coat
                 # Subtle multi-frequency pelage variation baked per-vertex.
                 grain=(.962+.040*math.sin(73*x+34*y+18*z)
