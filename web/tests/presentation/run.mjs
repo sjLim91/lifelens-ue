@@ -16,7 +16,7 @@ const modules = new Map();
 class AssetLayer {
   group = new THREE.Group();
   setEnvironment() {} setCivilization() {} setTerrain() {} setResidents() {} setWetness() {} setSnowCoverage() {} update() {}
-  setSimulationSpeed() {} setSelectedResident() {} dispose() {}
+  setSimulationSpeed() {} setSelectedResident() {} setObservationFocus() {} dispose() {}
 }
 function load(path) {
   if (modules.has(path)) return modules.get(path).exports;

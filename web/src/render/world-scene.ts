@@ -83,6 +83,7 @@ export class WorldScene {
   private readonly weatherLayer = new WeatherLayer();
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
+  private readonly foliageLookTarget = new THREE.Vector3();
   private readonly atmosphere: AtmosphereLayer;
   private surfaceWetness01 = 0;
   private snowCoverage = 0;
@@ -345,6 +346,18 @@ export class WorldScene {
     this.facilityLayer.update(deltaSeconds, this.camera);
     this.lifeEventLayer.update(this.camera, deltaSeconds);
     this.socialEventLayer.update(this.camera, this.lifeEventLayer.presentation.majorPairs);
+    const selectedAnchor = this.selectedResidentId
+      ? this.residentLayer.socialEventAnchor(this.selectedResidentId) : null;
+    if (selectedAnchor) {
+      this.foliageLookTarget.set(selectedAnchor.x, selectedAnchor.y + .7, selectedAnchor.z);
+    } else {
+      const panX = Number(current.panX) || 0;
+      const panZ = Number(current.panZ) || 0;
+      this.foliageLookTarget.set(panX, this.sampleGroundHeight(panX, panZ) + .8, panZ);
+    }
+    this.vegetationLayer.setObservationFocus(
+      this.camera, this.foliageLookTarget, Boolean(selectedAnchor),
+    );
     this.vegetationLayer.update(this.camera);
     this.waterLayer.update(deltaSeconds);
     this.weatherLayer.update(deltaSeconds);
