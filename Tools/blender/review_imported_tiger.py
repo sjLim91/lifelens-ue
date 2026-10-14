@@ -22,12 +22,38 @@ def main():
     for obj in meshes:
         obj.matrix_world = rotate @ obj.matrix_world
     components = []
+    geometric_components = []
     for obj in meshes:
         adjacency = [[] for _ in obj.data.vertices]
         for edge in obj.data.edges:
             a, b = edge.vertices
             adjacency[a].append(b)
             adjacency[b].append(a)
+        position_groups = {}
+        for vertex in obj.data.vertices:
+            key = tuple(round(value, 5) for value in vertex.co)
+            position_groups.setdefault(key, []).append(vertex.index)
+        welded_adjacency = [list(neighbors) for neighbors in adjacency]
+        for indices in position_groups.values():
+            for index in indices:
+                welded_adjacency[index].extend(i for i in indices if i != index)
+        # Inspect geometry connectivity across UV/normal seams without welding
+        # or otherwise changing the original render mesh or its UV coordinates.
+        for neighbors, destination in [(welded_adjacency, geometric_components)]:
+            remaining = set(range(len(neighbors)))
+            while remaining:
+                seed = remaining.pop()
+                pending, indices = [seed], [seed]
+                while pending:
+                    for neighbor in neighbors[pending.pop()]:
+                        if neighbor in remaining:
+                            remaining.remove(neighbor)
+                            pending.append(neighbor)
+                            indices.append(neighbor)
+                points = [obj.matrix_world @ obj.data.vertices[index].co for index in indices]
+                destination.append({'vertices': len(indices),
+                                    'min': [min(p[i] for p in points) for i in range(3)],
+                                    'max': [max(p[i] for p in points) for i in range(3)]})
         remaining = set(range(len(adjacency)))
         while remaining:
             seed = remaining.pop()
@@ -44,6 +70,7 @@ def main():
                                'min': [min(p[i] for p in points) for i in range(3)],
                                'max': [max(p[i] for p in points) for i in range(3)]})
     components.sort(key=lambda item: -item['vertices'])
+    geometric_components.sort(key=lambda item: -item['vertices'])
     corners = [obj.matrix_world @ Vector(corner) for obj in meshes for corner in obj.bound_box]
     low = Vector([min(p[i] for p in corners) for i in range(3)])
     high = Vector([max(p[i] for p in corners) for i in range(3)])
@@ -95,6 +122,8 @@ def main():
         'armatures': len([obj for obj in bpy.context.scene.objects if obj.type == 'ARMATURE']),
         'connected_component_count': len(components),
         'connected_components': components[:40],
+        'geometric_component_count': len(geometric_components),
+        'geometric_components': geometric_components[:40],
         'review_orientation_change': 'source -X forward rotated +90 degrees about Blender Z',
         'visual_acceptance': 'PENDING_HUMAN_OR_AGENT_IMAGE_REVIEW',
         'observer_validation': 'NOT_RUN', 'performance': 'NOT_MEASURED',
