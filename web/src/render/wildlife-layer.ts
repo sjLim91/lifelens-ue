@@ -75,7 +75,7 @@ float beat=wildlifeTime*8.0+wildlifePhase;
 float gait=wildlifeMotion;
 if(wildlifePart>0.5&&wildlifePart<2.5){
   float alternate=wildlifePart<1.5?1.0:-1.0;
-  float attachment=smoothstep(0.99,0.1,position.y);
+  float attachment=(1.0-smoothstep(0.1,0.99,position.y));
   transformed.z+=gait*0.065*sin(beat+alternate*1.5707963)*attachment;
   transformed.y+=gait*0.029*abs(sin(beat+alternate*1.5707963))*attachment;
 }else if(wildlifePart>2.5&&wildlifePart<3.5){
