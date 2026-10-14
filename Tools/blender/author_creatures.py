@@ -343,6 +343,12 @@ def author(which,out):
     assert zmin < .08,(which,'incorrect ground contact origin',zmin)
     attach_weights(skin,rig,bones)
     tint_mesh(skin,kind,which=='resident-female')
+    if kind=='tiger':
+        # Additional geometry shares the authoritative skin skeleton and
+        # deforms with every pose; does not alter Core/wildlife behavior.
+        from author_tiger_microfur import create_tiger_fur
+        fur=create_tiger_fur(skin,rig,bones,attach_weights)
+        assert len(fur.data.polygons)>750
     # Eye, ear, hair, paw and claw topology is authored separately from the
     # body voxel loft, then fully skinned to the current creature's bones.
     sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent))
