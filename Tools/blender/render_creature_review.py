@@ -21,10 +21,11 @@ def main():
     out = pathlib.Path(args[0]).resolve()
     out.parent.mkdir(parents=True, exist_ok=True)
     tiger = 'tiger' in pathlib.Path(bpy.data.filepath).stem.lower()
+    portrait = 'portrait' in out.stem
     scene = bpy.context.scene
     bpy.ops.object.select_all(action='DESELECT')
-    target = Vector((0,.13,.88)) if not tiger else Vector((0,.22,.83))
-    origin = Vector((2.8,-4.3,2.55)) if not tiger else Vector((3.2,4.0,2.4))
+    target = (Vector((0,1.24,1.18)) if tiger else Vector((0,-.02,1.67))) if portrait else (Vector((0,.22,.83)) if tiger else Vector((0,.13,.88)))
+    origin = (Vector((.47,4.3,1.72)) if tiger else Vector((.12,-3.15,1.75))) if portrait else (Vector((3.2,4.0,2.4)) if tiger else Vector((2.8,-4.3,2.55)))
     camera_data = bpy.data.cameras.new('LifeLensOfflineReviewCamera')
     camera = bpy.data.objects.new('LifeLensOfflineReviewCamera', camera_data)
     scene.collection.objects.link(camera)
@@ -32,7 +33,7 @@ def main():
     direction = target - camera.location
     camera.rotation_euler = direction.to_track_quat('-Z','Y').to_euler()
     camera.data.type = 'ORTHO'
-    camera.data.ortho_scale = 2.38 if not tiger else 3.6
+    camera.data.ortho_scale = (.95 if tiger else .65) if portrait else (3.6 if tiger else 2.38)
     scene.camera = camera
 
     light_data = bpy.data.lights.new('LifeLensReviewSoftbox', 'AREA')
@@ -60,8 +61,8 @@ def main():
         if hasattr(layer, 'cycles') and hasattr(layer.cycles, 'use_denoising'):
             layer.cycles.use_denoising = False
     scene.cycles.samples = 12
-    scene.render.resolution_x = 640
-    scene.render.resolution_y = 640
+    scene.render.resolution_x = 768 if portrait else 640
+    scene.render.resolution_y = 768 if portrait else 640
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = 'PNG'
     scene.render.film_transparent = False
