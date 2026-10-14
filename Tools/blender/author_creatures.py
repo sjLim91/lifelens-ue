@@ -413,7 +413,7 @@ def author(which,out):
     # body voxel loft, then fully skinned to the current creature's bones.
     sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent))
     from author_facial_details import create_creature_details
-    detail_mesh=create_creature_details(which,rig)
+    detail_mesh=create_creature_details(which,rig,skin if kind=='tiger' else None)
     assert len(detail_mesh.data.vertices)>1000
     idle_and_walk(rig,kind)
     skin['lifelens_asset_stage']='experimental_blender_rig'
