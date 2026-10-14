@@ -4,7 +4,7 @@ import { resolve, extname } from 'node:path';
 import { chromium } from 'playwright';
 import * as THREE from 'three';
 import { source } from './compile.mjs';
-for (const file of ['procedural-wildlife', 'procedural-asset-kit', 'procedural-tree-generator']) await source(`render/${file}.ts`);
+for (const file of ['wildlife-layer', 'procedural-wildlife', 'procedural-asset-kit', 'procedural-tree-generator']) await source(`render/${file}.ts`);
 const root = resolve(import.meta.dirname, '../..');
 const browser = await chromium.launch({ headless: true,
   ...(process.env.LIFELENS_CHROMIUM_PATH ? { executablePath: process.env.LIFELENS_CHROMIUM_PATH } : {}),
@@ -42,6 +42,10 @@ try {
     throw new Error(`Wildlife gallery did not finish: ${errors.join('; ') || String(error)}`);
   }
   assert.deepEqual(errors, []);
+  const quality=await page.evaluate(()=>window.wildlifeReview.q1);
+  assert.equal(quality.lods,3);
+  assert.equal(quality.species,5);
+  assert.match(quality.productionShader,/q1-fused-wildlife/);
   await page.screenshot({ path: resolve(import.meta.dirname, 'review/wildlife-webgl.png') });
   console.log('PASS wildlife WebGL gallery', await page.evaluate(() => window.wildlifeReview.info));
 } finally { await browser.close(); }
