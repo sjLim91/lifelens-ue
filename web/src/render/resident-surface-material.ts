@@ -18,6 +18,10 @@ export function createResidentSkinMaterial(profile:ResidentAppearanceProfile):TH
   material.userData.llSkinUniforms=uniforms;
   material.onBeforeCompile=shader=>{
     Object.assign(shader.uniforms,uniforms);
+    // Some legacy lifecycle tests supply only a vertex-only test shader.
+    // Composition with the pregnancy/aging deformation must remain valid.
+    if(typeof shader.vertexShader!=='string'
+        ||typeof shader.fragmentShader!=='string')return;
     shader.vertexShader=shader.vertexShader.replace('#include <common>',
       `#include <common>
 varying vec3 llSkinLocal;`);
