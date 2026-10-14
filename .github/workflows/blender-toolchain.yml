@@ -28,11 +28,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends blender python3-numpy
           blender --version
-          blender --background --factory-startup --python-expr "import numpy; print('Blender NumPy:', numpy.__version__)"
+          blender --background --python-exit-code 1 --factory-startup --python-expr "import numpy; print('Blender NumPy:', numpy.__version__)"
       - name: Create a Blender file and a GLB export
         run: |
           mkdir -p "$RUNNER_TEMP/lifelens-blender"
-          blender --background --factory-startup --threads 2 --python Tools/blender/verify_toolchain.py -- "$RUNNER_TEMP/lifelens-blender"
+          blender --background --python-exit-code 1 --factory-startup --threads 2 --python Tools/blender/verify_toolchain.py -- "$RUNNER_TEMP/lifelens-blender"
       - name: Verify Blender artifacts
         run: |
           python3 - <<'PY'
@@ -52,11 +52,11 @@ jobs:
       - name: Author original rigged residents and tiger
         run: |
           mkdir -p "$RUNNER_TEMP/lifelens-creatures"
-          blender --background --factory-startup --threads 2 --python Tools/blender/author_creatures.py -- "$RUNNER_TEMP/lifelens-creatures"
+          blender --background --python-exit-code 1 --factory-startup --threads 2 --python Tools/blender/author_creatures.py -- "$RUNNER_TEMP/lifelens-creatures"
       - name: Verify evaluated skin and existing walk pose
         run: |
           for creature in resident-female resident-male tiger; do
-            blender --background "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/verify_creature_pose.py
+            blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/verify_creature_pose.py
           done
 
       - name: Validate GLB skinning, pigment and walk motion
@@ -64,8 +64,8 @@ jobs:
       - name: Render three actual models for visual review
         run: |
           for creature in resident-female resident-male tiger; do
-            blender --background "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/$creature-review.png"
-            blender --background "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/$creature-portrait.png"
+            blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/$creature-review.png"
+            blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/$creature-portrait.png"
           done
       - name: Verify model review renders
         run: |
