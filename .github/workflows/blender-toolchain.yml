@@ -53,6 +53,12 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/lifelens-creatures"
           blender --background --factory-startup --threads 2 --python Tools/blender/author_creatures.py -- "$RUNNER_TEMP/lifelens-creatures"
+      - name: Verify evaluated skin and existing walk pose
+        run: |
+          for creature in resident-female resident-male tiger; do
+            blender --background "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/verify_creature_pose.py
+          done
+
       - name: Validate GLB skinning, pigment and walk motion
         run: python3 Tools/blender/validate_creatures.py "$RUNNER_TEMP/lifelens-creatures"
       - name: Render three actual models for visual review
