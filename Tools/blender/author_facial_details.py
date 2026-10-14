@@ -231,18 +231,26 @@ def tiger_details(d):
     # skin pigment shader; rigid contrasting white balls are removed.
     for s in (-1,1):
         tag='right' if s<0 else 'left'
-        d.ellipsoid(tag+' recessed almond eye socket',(s*.138,1.342,1.223),
-                    (.034,.010,.014),'head','tiger_black')
-        d.ellipsoid(tag+' deep amber iris',(s*.139,1.353,1.226),
-                    (.020,.006,.009),'head','tiger_eye')
-        d.ellipsoid(tag+' vertical pupil',(s*.139,1.359,1.226),
-                    (.005,.0024,.008),'head','tiger_black')
-        d.ellipsoid(tag+' tiny ocular specular',(s*.132,1.365,1.232),
-                    (.0025,.0015,.0025),'head','glint',12,8)
-        d.fiber(tag+' subtle upper lid',[
-            (s*.100,1.366,1.237),(s*.129,1.373,1.244),
-            (s*.159,1.364,1.242),(s*.179,1.351,1.223)],
-            .0027,'head','tiger_black')
+        # Use fused skull ray intersection instead of detached fixed-depth eye.
+        # The far eye must remain attached in both frontal and oblique views.
+        x=s*.135
+        z=1.212
+        y=d.forehead_depth(x,z)
+        d.ellipsoid(tag+' recessed almond eye socket',(x,y+.003,z),
+                    (.030,.008,.014),'head','tiger_black')
+        d.ellipsoid(tag+' deep amber iris',(x,y+.011,z),
+                    (.019,.005,.008),'head','tiger_eye')
+        d.ellipsoid(tag+' vertical pupil',(x,y+.016,z),
+                    (.005,.0025,.007),'head','tiger_black')
+        d.ellipsoid(tag+' tiny ocular specular',(x-s*.006,y+.019,z+.005),
+                    (.002,.0015,.002),'head','glint',12,8)
+        lid=[]
+        for px,pz in [(s*.108,z+.007),(s*.124,z+.015),
+                      (s*.143,z+.013),(s*.162,z+.002)]:
+            lid.append((px,d.forehead_depth(px,pz)+.008,pz))
+        d.fiber(tag+' anatomical upper eyelid',lid,
+                .002,'head','tiger_black')
+        print('TIGER_EYE_SURFACE_ANCHORED',tag,round(y,5))
         # Inner ear recedes behind the orange pinna; no spherical black nubs.
         d.ellipsoid(tag+' inner ear',(s*.167,1.114,1.342),
                     (.017,.006,.015),'head','ear',12,8)
@@ -304,9 +312,9 @@ def tiger_details(d):
 
 
 
-def create_creature_details(which,rig):
+def create_creature_details(which,rig,surface=None):
     """New skinned mesh(s), absent from existing Q3 coarse voxel mesh."""
-    d=DetailBuilder(rig)
+    d=DetailBuilder(rig,surface)
     if which=='resident-female':
         human_details(d,True)
     elif which=='resident-male':
