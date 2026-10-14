@@ -2,6 +2,45 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { source } from './compile.mjs';
 const { ResidentGroundSurface } = await source('render/resident-grounding.ts');
+const { ObserverFoliageClarity, injectFoliageClarity } =
+  await source('render/observer-foliage-clarity.ts');
+const { PlantWeatherMaterial } = await source('render/procedural-tree-layer.ts');
+
+{
+  const clarity=new ObserverFoliageClarity();
+  const camera=new THREE.PerspectiveCamera(42,1,.1,500);
+  camera.position.set(0,6,11);
+  camera.updateWorldMatrix(true,false);
+  const target=new THREE.Vector3(0,.8,0);
+  clarity.set(camera,target,false);
+  assert(clarity.uniforms.llClarityStrength.value>0);
+  assert.deepEqual(clarity.uniforms.llClarityFocus.value.toArray(),target.toArray());
+  clarity.set(camera,target,true);
+  assert.equal(clarity.uniforms.llClarityStrength.value,.92);
+  clarity.set(camera,null,false);
+  assert.equal(clarity.uniforms.llClarityStrength.value,0);
+  camera.position.set(0,120,160);
+  camera.updateWorldMatrix(true,false);
+  clarity.set(camera,target,false);
+  assert.equal(clarity.uniforms.llClarityStrength.value,0,
+    'Zoomed-out globe must not contain transparent forest tunnels');
+  const shader={uniforms:{},
+    vertexShader:'#include <common>\n#include <begin_vertex>\n#include <project_vertex>',
+    fragmentShader:'#include <common>\n#include <color_fragment>\n#include <dithering_fragment>'};
+  const weather=new PlantWeatherMaterial(clarity);
+  const material=new THREE.MeshLambertMaterial({vertexColors:true});
+  weather.install(material);
+  material.onBeforeCompile(shader,{});
+  assert(shader.vertexShader.includes('llClarityVertex = instanceMatrix * llClarityVertex'));
+  assert(shader.fragmentShader.includes('separation < llClarityRadius'));
+  assert(shader.fragmentShader.includes('discard;'));
+  assert(shader.fragmentShader.includes('llLeafDensity'));
+  assert(shader.uniforms.llClarityFocus===clarity.uniforms.llClarityFocus);
+  assert(shader.uniforms.llWind===weather.uniforms.llWind);
+  material.dispose();
+  console.log('PASS near-focus and selected-resident foliage clarity preserves wind, depth and global forest');
+}
+
 const { createTerrainGeometryBuilder } = await source('render/terrain-geometry.ts');
 const { WildlifeLayer } = await source('render/wildlife-layer.ts');
 const { createWildlifeGeometry } = await source('render/procedural-wildlife.ts');
