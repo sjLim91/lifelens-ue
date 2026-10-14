@@ -59,7 +59,7 @@ def import_cc0_eyes(body,rig,source,attach):
         group=[p for p in vertices if (-1 if p[0]<0 else 1)==sign]
         assert len(group)>200,('CC0 eye group missing',sign,len(group))
         centers[sign]=tuple(sum(p[a] for p in group)/len(group) for a in range(3))
-    ratio=.61
+    ratio=.49
     fitted=[]
     for x,y,z in vertices:
         sign=-1 if x<0 else 1
@@ -95,8 +95,8 @@ def import_cc0_eyes(body,rig,source,attach):
     # while giving the scleral shell a warm, physically plausible tone.
     mix=nodes.new('ShaderNodeMixRGB')
     mix.blend_type='MIX'
-    mix.inputs[0].default_value=.16
-    mix.inputs[1].default_value=(.79,.76,.70,1.0)
+    mix.inputs[0].default_value=.08
+    mix.inputs[1].default_value=(.67,.62,.59,1.0)
     material.node_tree.links.new(image.outputs['Color'],mix.inputs[2])
     material.node_tree.links.new(mix.outputs['Color'],bsdf.inputs['Base Color'])
     bsdf.inputs['Roughness'].default_value=.33
