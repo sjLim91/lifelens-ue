@@ -308,6 +308,12 @@ def author(which,out):
     assert zmin < .08,(which,'incorrect ground contact origin',zmin)
     attach_weights(skin,rig,bones)
     tint_mesh(skin,kind,which=='resident-female')
+    # Eye, ear, hair, paw and claw topology is authored separately from the
+    # body voxel loft, then fully skinned to the current creature's bones.
+    sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent))
+    from author_facial_details import create_creature_details
+    detail_mesh=create_creature_details(which,rig)
+    assert len(detail_mesh.data.vertices)>1000
     idle_and_walk(rig,kind)
     skin['lifelens_asset_stage']='experimental_blender_rig'
     skin['lifelens_runtime_replacement']=False
