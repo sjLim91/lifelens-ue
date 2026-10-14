@@ -80,6 +80,16 @@ def import_hair(body,rig,source,full_morph,gender,attach):
         -(co[forward]-center_y)*scalar,
         (co[up]-low)*scalar)
         for co in coords]
+    # CC0 system hairstyles retain their intended character but are often
+    # exaggerated in crown volume. Compress the elevated sections around
+    # the anatomical forehead line, preserving roots and head binding.
+    def fit_crown(point):
+        x,y,z=point
+        pivot=1.690 if gender=='male' else 1.665
+        factor=.69 if gender=='male' else .86
+        return (x*(.96 if gender=='male' else 1.0),y,
+                pivot+(z-pivot)*factor if z>pivot else z)
+    positions=[fit_crown(p) for p in positions]
     # Hard spatial guard to reject malformed mapping, rather than approving a
     # large hair object hovering over the body like the Q3 helmet.
     min_z=min(p[2] for p in positions)
