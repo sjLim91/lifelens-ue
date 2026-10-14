@@ -1,4 +1,4 @@
-"""Acquire an openly published CC0 candidate for visual review, never for runtime admission."""
+"""Acquire an openly published CC BY candidate for review, never for runtime admission."""
 from __future__ import annotations
 
 import datetime as dt
@@ -9,8 +9,8 @@ import struct
 import sys
 import urllib.request
 
-SOURCE = 'https://3dassets.dev/assets/exotic-wildlife-hd-bengal-tiger-prowling-b1de9790'
-DOWNLOAD = 'https://cdn.3dassets.dev/assets/30235/v1/model.glb'
+SOURCE = 'https://www.sloyd.ai/free-3d-models/model/tiger-7m4ap2k1'
+DOWNLOAD = 'https://storage.googleapis.com/ai-services-quality/jobs/7m4ap2k1.glb'
 
 
 def main():
@@ -18,8 +18,8 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     request = urllib.request.Request(DOWNLOAD, headers={'User-Agent': 'LifeLens-source-review/1.0'})
     with urllib.request.urlopen(request, timeout=30) as response:
-        body = response.read(16 * 1024 * 1024 + 1)
-    if len(body) > 16 * 1024 * 1024 or len(body) < 20:
+        body = response.read(64 * 1024 * 1024 + 1)
+    if len(body) > 64 * 1024 * 1024 or len(body) < 20:
         raise ValueError('Candidate exceeds review size bound or is empty')
     magic, version, size = struct.unpack_from('<4sII', body)
     if magic != b'glTF' or version != 2 or size != len(body):
@@ -36,11 +36,13 @@ def main():
     record = {
         'status': 'CANDIDATE_ONLY_NOT_RUNTIME', 'merge_allowed': False,
         'source_url': SOURCE, 'download_url': DOWNLOAD,
-        'creator': '3D Assets (3dassets.dev)',
-        'license': 'CC0-1.0',
-        'license_url': 'https://creativecommons.org/publicdomain/zero/1.0/',
-        'attribution_required': False,
-        'license_evidence': 'Publisher source-page search index states CC0-1.0 and allows modification/redistribution. Live HTML returned 503; preserve this limitation until live verification.',
+        'creator': 'TopoForge',
+        'license': 'CC-BY-4.0',
+        'license_url': 'https://creativecommons.org/licenses/by/4.0/',
+        'attribution_required': True,
+        'attribution': '"Tiger" by TopoForge, generated with Sloyd, licensed under CC BY 4.0.',
+        'license_evidence': 'Live publisher page verified 2026-10-14: commercial use, modification and redistribution allowed with attribution. Published 2025-08-21.',
+        'modifications': 'None to source.glb; Blender import and neutral review staging only.',
         'downloaded_at': dt.datetime.now(dt.timezone.utc).isoformat(),
         'sha256': hashlib.sha256(body).hexdigest(), 'bytes': len(body),
         'generator': model.get('asset', {}).get('generator'),
@@ -54,6 +56,13 @@ def main():
         'extensions_used': model.get('extensionsUsed', []),
         'web_observer_validation': 'NOT_RUN', 'android_performance': 'NOT_MEASURED',
     }
+    (out / 'CREDITS.md').write_text(
+        '# Tiger source attribution\n\n'
+        '"Tiger" by TopoForge, generated with Sloyd, licensed under CC BY 4.0.\n\n'
+        + 'Source: ' + SOURCE + '\n\n'
+        + 'License: https://creativecommons.org/licenses/by/4.0/\n\n'
+        + 'Changes: source.glb is unmodified; Blender review adds camera, lighting and floor. '
+        + 'This is a candidate, not an accepted LifeLens runtime asset.\n')
     (out / 'source-record.json').write_text(json.dumps(record, indent=2) + '\n')
     print(json.dumps(record, indent=2))
 
