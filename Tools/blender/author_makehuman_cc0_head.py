@@ -170,7 +170,10 @@ def decorate(body,rig,gender,source):
     detail=[import_cc0_eyes(body,rig,source,attach)]
     for center in (-.033,.033):
         detail.extend(eyelid_sheets(center,rig,gender))
-    detail.append(anatomical_scalp(body,rig,gender,hair))
+    scalp=anatomical_scalp(body,rig,gender,hair)
+    detail.append(scalp)
+    from author_makehuman_hair import author_scalp_strands
+    detail.append(author_scalp_strands(scalp,rig,gender,hair,attach))
     if gender=='female':
         # Four narrow back-hair sections. Broad rectangular curtains looked
         # artificial and obscured the natural neck/ear silhouette.
