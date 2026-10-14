@@ -160,19 +160,39 @@ def tiger_trunk():
 
 
 def tiger_skull():
-    # Skull, temporal ridge, zygomatic arcade, cheek and narrowing muzzle.
-    # The forehead and jaw are *continuous along +Y*, unlike Q3's bulb stack.
-    return longitudinal_loft('Tiger cranium zygomatic and muzzle',[
-      (.78,0,1.06,.07,.08),
-      (.89,0,1.115,.168,.165),
-      (1.03,0,1.151,.248,.217),
-      (1.16,0,1.146,.247,.215),
-      (1.27,0,1.140,.205,.181),
-      (1.36,0,1.102,.174,.123),
-      (1.45,0,1.064,.14,.09),
-      (1.54,0,1.053,.070,.052),
-      (1.56,0,1.05,.02,.021),
-    ],axis='y',steps=64,sides=40)
+    """Build a feline wedge, not a round teddy-bear cranium.
+
+    Broad zygomatic arches taper sharply into a low bridge; the raised
+    supraorbital brows and shallow orbital sockets are formed on the
+    anatomical mesh BEFORE voxel fusion and skinning.
+    """
+    skull=longitudinal_loft('Tiger feline skull and cranial bridge',[
+      (.75,0,1.047,.070,.078),
+      (.86,0,1.10,.170,.161),
+      (1.00,0,1.143,.230,.186),
+      (1.13,0,1.146,.253,.174),
+      (1.23,0,1.138,.247,.159),
+      (1.31,0,1.116,.191,.127),
+      (1.38,0,1.078,.136,.088),
+      (1.46,0,1.049,.093,.059),
+      (1.52,0,1.04,.045,.035),
+      (1.55,0,1.04,.014,.018),
+    ],axis='y',steps=70,sides=44)
+    for vertex in skull.data.vertices:
+        x,y,z=vertex.co
+        ax=abs(x)
+        # Pronounced upper cheek/temporal arch but no spherical muzzle.
+        cheek=math.exp(-((y-1.205)/.125)**2-((z-1.072)/.103)**2)
+        vertex.co.x += math.copysign(.027*cheek,x) if ax>.012 else 0.
+        # Forehead glabella is lower than the brow's two outer ridges.
+        if z>1.19 and 1.06<y<1.37:
+            brow=math.exp(-((ax-.125)/.060)**2-((y-1.235)/.095)**2)
+            center=math.exp(-(x/.070)**2-((y-1.27)/.11)**2)
+            vertex.co.z+=.016*brow-.017*center
+    skull.data.update()
+    skull['lifelens_feline_head']='cranial bridge + cheek arches + eye socket ridges'
+    return skull
+
 
 
 def tiger_foreleg(s,y,front):
