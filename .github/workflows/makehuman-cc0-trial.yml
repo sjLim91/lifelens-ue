@@ -10,6 +10,7 @@ on:
       - 'Tools/blender/author_makehuman_cc0_head.py'
       - 'Tools/blender/author_makehuman_hair.py'
       - 'Tools/blender/author_makehuman_eyes.py'
+      - 'Tools/blender/author_makehuman_uv_skin.py'
       - 'Tools/blender/validate_cc0_trial.py'
       - 'Tools/blender/verify_cc0_live_skin.py'
       - '.github/workflows/makehuman-cc0-trial.yml'
@@ -19,6 +20,7 @@ on:
       - 'Tools/blender/author_makehuman_cc0_head.py'
       - 'Tools/blender/author_makehuman_hair.py'
       - 'Tools/blender/author_makehuman_eyes.py'
+      - 'Tools/blender/author_makehuman_uv_skin.py'
       - 'Tools/blender/validate_cc0_trial.py'
       - 'Tools/blender/verify_cc0_live_skin.py'
       - '.github/workflows/makehuman-cc0-trial.yml'
@@ -53,6 +55,19 @@ jobs:
           curl -fLsS --retry 3 --max-time 120 "$BASE/eyes/high-poly/high-poly.obj" -o "$RUNNER_TEMP/lifelens-cc0-source/high-poly.obj"
           curl -fLsS --retry 3 --max-time 120 "$BASE/eyes/materials/brown_eye.png" -o "$RUNNER_TEMP/lifelens-cc0-source/brown_eye.png"
           test "$(wc -c < "$RUNNER_TEMP/lifelens-cc0-source/high-poly.obj")" -gt 90000
+          ASSET_PIN="8cf9645b975a98eea056b140df11a1d278da0d10"
+          SKIN_BASE="https://media.githubusercontent.com/media/s20220526/makehuman-assets/$ASSET_PIN/base/skins/textures"
+          for gender in female male; do
+            file="young_lightskinned_$gender"_diffuse.png
+            curl -fLsS --retry 3 --max-time 120 "$SKIN_BASE/$file" -o "$RUNNER_TEMP/lifelens-cc0-source/$file"
+            # Fail instead of rendering a Git-LFS pointer or HTML response.
+            python3 - "$RUNNER_TEMP/lifelens-cc0-source/$file" <<'PY'
+import pathlib,sys
+p=pathlib.Path(sys.argv[1])
+assert p.read_bytes()[:8]==b'\x89PNG\r\n\x1a\n' and p.stat().st_size>100000,p
+print('VERIFIED_PINNED_CC0_SKIN',p.name,p.stat().st_size)
+PY
+          done
           test "$(wc -c < "$RUNNER_TEMP/lifelens-cc0-source/base.obj")" -gt 1000000
           sha256sum "$RUNNER_TEMP"/lifelens-cc0-source/*
       - name: Author CC0 adult male and female skinned basemeshes
