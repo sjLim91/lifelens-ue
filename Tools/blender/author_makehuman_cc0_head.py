@@ -112,24 +112,25 @@ def decorate(body,rig,gender):
         # In source rest coordinates real orbital cavities are about
         # +/-5cm across the nose and z=1.61m. These values are compared
         # against full mesh front-bound before being used as final assets.
-        x=side*.050
-        detail.append(add_ellipsoid('CC0 inset eye sclera',(x,-.031,1.618),
-                      (.020,.010,.011),sclera,rig))
-        detail.append(add_ellipsoid('CC0 realistic iris',(x,-.042,1.617),
-                      (.008,.0024,.008),iris,rig))
-        detail.append(add_ellipsoid('CC0 pupil',(x,-.045,1.617),
-                      (.004,.0015,.006),pupil,rig))
+        x=side*.029
+        detail.append(add_ellipsoid('CC0 inset eye sclera',(x,-.037,1.635),
+                      (.015,.009,.008),sclera,rig))
+        detail.append(add_ellipsoid('CC0 realistic iris',(x,-.047,1.635),
+                      (.006,.002,.006),iris,rig))
+        detail.append(add_ellipsoid('CC0 pupil',(x,-.050,1.635),
+                      (.003,.0015,.0045),pupil,rig))
     detail.append(anatomical_scalp(body,rig,gender,hair))
     if gender=='female':
-        # Fourteen tapered strips along the nape, no large frontal helmet.
-        for n in range(14):
-            x=(n-6.5)*.0145
+        # Four narrow back-hair sections. Broad rectangular curtains looked
+        # artificial and obscured the natural neck/ear silhouette.
+        for n in range(4):
+            x=(n-1.5)*.029
             detail.append(hair_ribbon('Anatomical back hair '+str(n),[
-                (x*.87,.055,1.728),
-                (x,.089,1.66),
-                (x*1.05,.096,1.56),
-                (x*1.1,.099,1.465),
-                (x*1.08,.094,1.42)],.0085,hair,rig))
+                (x*.87,.090,1.728),
+                (x,.115,1.66),
+                (x*1.05,.124,1.57),
+                (x*1.1,.130,1.53),
+                (x*1.08,.131,1.515)],.0045,hair,rig))
     assert len(detail)>=7
     print('MAKEHUMAN_CC0_HEAD_DETAIL_OK',gender,'skinned pieces',len(detail))
     return detail
