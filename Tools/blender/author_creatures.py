@@ -292,7 +292,10 @@ def tiger():
                 parts.append(volume('flattened digit',
                      (s*.290+digit*.057,y+.225,.081),(.027,.040,.023)))
     parts.append(tiger_tail())
-    body=mesh_union(parts,'LifeLensSeamlessTiger',.019)
+    # A denser high-detail near-view body preserves the small nasal bridge,
+    # narrow stripes and paw/toe contours. Production LODs remain a separate
+    # requirement; never send this near mesh to every distant animal.
+    body=mesh_union(parts,'LifeLensSeamlessTiger',.0125)
     bones=[
         ('pelvis',(0,-.55,.83),(0,-.3,.86),None),
         ('spine',(0,-.3,.86),(0,.65,.90),'pelvis'),
