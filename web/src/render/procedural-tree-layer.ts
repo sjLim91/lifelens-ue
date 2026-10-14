@@ -19,7 +19,7 @@ export function treeVariantForEnvironment(chunk: TerrainChunk, choice: number): 
 
 /** Uniform weather affects shape/color only, never stock or placement. */
 export class PlantWeatherMaterial {
-  constructor(private readonly clarity: ObserverFoliageClarity) {}
+  constructor(private readonly clarity: ObserverFoliageClarity = new ObserverFoliageClarity()) {}
   readonly uniforms = {
     llWind: { value: 0 }, llTime: { value: 0 }, llAutumn: { value: 0 },
     llLeafDensity: { value: 1 }, llSnow: { value: 0 }, llOrigin: { value: new THREE.Vector2() },
