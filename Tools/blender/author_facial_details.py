@@ -28,11 +28,11 @@ def material(name, rgb, roughness=.78, metallic=0.0):
 
 def build_palette():
     return {
-        'sclera':material('Q4 warm sclera',(.83,.79,.71),.27),
+        'sclera':material('Q5 subdued eye white',(.64,.61,.56),.40),
         'iris':material('Q4 amber iris',(.37,.25,.10),.22),
         'pupil':material('Q4 deep pupil',(.012,.011,.009),.13),
         'glint':material('Q4 highlight',(.94,.94,.87),.1),
-        'lip':material('Q4 soft lips',(.48,.24,.22),.61),
+        'lip':material('Q5 natural lip',(.64,.38,.32),.76),
         'skin':material('Q4 warm skin',(.71,.46,.33),.76),
         'nail':material('Q4 nail keratin',(.82,.64,.52),.42),
         'hair':material('Q4 warm dark hair',(.070,.044,.025),.88),
@@ -147,23 +147,23 @@ def human_details(d,female):
     for s in (-1,1):
         prefix='left' if s>0 else 'right'
         eyeX=s*.053
-        d.ellipsoid(prefix+' orbital sclera',(eyeX,-.133,1.666),
-                    (.025,.010,.013),'Head','sclera')
-        d.ellipsoid(prefix+' iris',(eyeX,-.145,1.666),
-                    (.010,.004,.010),'Head','iris')
-        d.ellipsoid(prefix+' pupil',(eyeX,-.149,1.666),
-                    (.005,.002,.007),'Head','pupil')
-        d.ellipsoid(prefix+' corneal highlight',(eyeX-s*.003,-.152,1.670),
+        d.ellipsoid(prefix+' orbital sclera',(eyeX,-.130,1.664),
+                    (.018,.008,.010),'Head','sclera')
+        d.ellipsoid(prefix+' iris',(eyeX,-.138,1.664),
+                    (.007,.003,.007),'Head','iris')
+        d.ellipsoid(prefix+' pupil',(eyeX,-.142,1.664),
+                    (.0035,.0018,.005),'Head','pupil')
+        d.ellipsoid(prefix+' corneal highlight',(eyeX-s*.003,-.146,1.668),
                     (.002,.0015,.002),'Head','glint',10,6)
         # Eyelid contours and natural eyebrows, not huge exposed spheres.
         d.fiber(prefix+' upper eyelid',[
-            (eyeX-s*.031,-.143,1.667),(eyeX-s*.018,-.147,1.681),
-            (eyeX,-.149,1.683),(eyeX+s*.020,-.143,1.676),
-            (eyeX+s*.030,-.136,1.667)],.002,'Head','lip')
+            (eyeX-s*.024,-.139,1.664),(eyeX-s*.014,-.142,1.673),
+            (eyeX,-.144,1.676),(eyeX+s*.014,-.139,1.670),
+            (eyeX+s*.023,-.135,1.665)],.0014,'Head','lip')
         d.fiber(prefix+' eyebrow',[
             (eyeX-s*.032,-.129,1.711),(eyeX-s*.014,-.141,1.724),
             (eyeX+s*.015,-.139,1.719),(eyeX+s*.028,-.128,1.711)],
-            .0036 if not female else .003,'Head','hair_female' if female else 'hair')
+            .0025 if not female else .0021,'Head','hair_female' if female else 'hair')
         # Ear helix plus darker concha follows the head bone.
         d.ellipsoid(prefix+' inner ear',(s*.117,-.032,1.650),
                     (.004,.014,.019),'Head','ear',12,8)
@@ -171,37 +171,37 @@ def human_details(d,female):
     # Separate philtrum / nostrils / Cupid bow and mandibular lip topology.
     for s in (-1,1):
         d.ellipsoid('nostril',(s*.017,-.176,1.601),
-                    (.006,.002,.003),'Head','ear',12,6)
+                    (.004,.0015,.002),'Head','ear',12,6)
     d.fiber('cupid bow',[
         (-.040,-.128,1.566),(-.018,-.138,1.575),(0,-.140,1.570),
-        (.018,-.138,1.575),(.040,-.128,1.566)],.0038,'Head','lip')
+        (.018,-.138,1.575),(.040,-.128,1.566)],.0024,'Head','lip')
     d.fiber('lower vermillion',[
         (-.034,-.127,1.558),(-.015,-.136,1.549),
-        (0,-.138,1.546),(.015,-.136,1.549),(.034,-.127,1.558)],.0035,'Head','lip')
+        (0,-.138,1.546),(.015,-.136,1.549),(.034,-.127,1.558)],.0024,'Head','lip')
 
     # Crown/temple hair has distinct head-bound topology and anatomy-driven
     # sex/identity silhouette; never hard-code scalp colour as the face.
     crown=d.ellipsoid('sculpted crown',(0,.015,1.782),
-                     (.116,.105,.064) if female else (.112,.099,.049),
+                     (.114,.101,.047) if female else (.112,.100,.038),
                      'Head','hair_female' if female else 'hair',24,14)
     crown['lifelens_hair_style']='shoulder-length' if female else 'short'
     for s in (-1,1):
         if female:
             d.ellipsoid('temple hair',(s*.112,.014,1.668),
-                        (.028,.064,.105),'Head','hair_female')
+                        (.021,.047,.089),'Head','hair_female')
             d.fiber('layered hair strands',[
                 (s*.118,.008,1.77),(s*.13,.007,1.68),
                 (s*.13,.016,1.57),(s*.122,.033,1.49)],
-                .014,'Head','hair_female')
+                .0065,'Head','hair_female')
             d.fiber('front swept fringe',[
                 (s*.025,-.085,1.815),(s*.06,-.115,1.77),
-                (s*.084,-.130,1.73)],.010,'Head','hair_female')
+                (s*.084,-.130,1.73)],.0038,'Head','hair_female')
         else:
             d.ellipsoid('short side hair',(s*.104,.01,1.733),
                         (.018,.070,.039),'Head','hair')
             d.fiber('short hairline',[
                 (s*.11,-.05,1.76),(s*.075,-.105,1.782),
-                (s*.027,-.110,1.794)],.010,'Head','hair')
+                (s*.027,-.110,1.794)],.0050,'Head','hair')
 
     # The Q3 remesh erased nearly all nail/finger separation. Q4 overlays
     # independent keratin plates and creases; use real hand/foot deformation.
@@ -211,7 +211,7 @@ def human_details(d,female):
             d.ellipsoid('fingernail',(x,-.050,.846),
                         (.012,.004,.015),'hand_'+side,'nail',12,8)
         for digit in range(4):
-            x=(.080+digit*.035)*s*(1.19 if female else .96)
+            x=(.080+digit*.035)*s*(1.16 if female else .96)
             d.ellipsoid('toenail',(x,-.284,.053),
                         (.017,.006,.013),'foot_'+side,'nail',12,8)
 
