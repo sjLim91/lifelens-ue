@@ -7,11 +7,13 @@ on:
       - 'feat/q4-anatomical-creature-detail-*'
     paths:
       - 'Tools/blender/author_makehuman_cc0_trial.py'
+      - 'Tools/blender/author_makehuman_cc0_head.py'
       - 'Tools/blender/validate_cc0_trial.py'
       - '.github/workflows/makehuman-cc0-trial.yml'
   pull_request:
     paths:
       - 'Tools/blender/author_makehuman_cc0_trial.py'
+      - 'Tools/blender/author_makehuman_cc0_head.py'
       - 'Tools/blender/validate_cc0_trial.py'
       - '.github/workflows/makehuman-cc0-trial.yml'
 
