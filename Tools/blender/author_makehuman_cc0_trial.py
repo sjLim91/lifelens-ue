@@ -85,6 +85,10 @@ def import_basemesh(input_dir,gender):
                        (v[forward]-center_depth)*scale,
                        (v[up]-lowest)*scale))
     mesh=bpy.data.meshes.new('MakeHumanCC0Topology_'+gender)
+    # Odd axis permutations invert polygon handedness; keep exterior-facing
+    # normals after converting MakeHuman Y-up to Blender Z-up.
+    if up in (0,1):
+        faces=[list(reversed(face)) for face in faces]
     mesh.from_pydata(coords,[],faces)
     mesh.validate(clean_customdata=False)
     mesh.update()
