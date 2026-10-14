@@ -1,0 +1,29 @@
+{
+  "status": "CANDIDATE_ONLY_NOT_RUNTIME",
+  "merge_allowed": false,
+  "source_url": "https://www.sloyd.ai/free-3d-models/model/a-ferocious-tiger-figurine-with-a-muscular-body-inzht46x",
+  "download_url": "https://storage.googleapis.com/ai-services-quality/jobs/inzht46x.glb",
+  "creator": "a Sloyd creator",
+  "license": "CC-BY-4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "attribution_required": true,
+  "attribution": "\"A Ferocious Tiger Figurine With A Muscular Body\" by a Sloyd creator, generated with Sloyd, licensed under CC BY 4.0.",
+  "license_evidence": "Live publisher page verified 2026-10-14: commercial use, modification and redistribution allowed with attribution.",
+  "modifications": "None to source.glb; Blender import and neutral review staging only.",
+  "downloaded_at": "2026-10-14T17:03:34.364731+00:00",
+  "sha256": "b62a99cbe6d41e2f669e4c717e52f7c24f448623479d73ada1508dd7db4953e8",
+  "bytes": 6470204,
+  "generator": "Khronos glTF Blender I/O v4.2.83",
+  "asset_extras": null,
+  "mesh_count": 1,
+  "skin_count": 0,
+  "animation_names": [],
+  "material_count": 1,
+  "materials": [
+    "Tiger Character_115508248"
+  ],
+  "uv_primitives": 1,
+  "extensions_used": [],
+  "web_observer_validation": "NOT_RUN",
+  "android_performance": "NOT_MEASURED"
+}
