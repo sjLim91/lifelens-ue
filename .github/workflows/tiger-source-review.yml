@@ -1,0 +1,33 @@
+name: LifeLens Tiger Source Evidence
+
+on:
+  push:
+    branches: ['feat/tiger-source-web-integration-*']
+    paths:
+      - 'Tools/assets/probe_tiger_sources.py'
+      - '.github/workflows/tiger-source-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tiger-source-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-source-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect public license and anonymous download responses
+        run: python3 Tools/assets/probe_tiger_sources.py --output review/tiger-source-evidence.json
+      - name: Preserve inspection evidence (not quality acceptance)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiger-source-evidence
+          path: review/tiger-source-evidence.json
+          if-no-files-found: error
+          retention-days: 14
