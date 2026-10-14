@@ -176,6 +176,10 @@ def decorate(body,rig,gender,source,full_morph):
     # CC0 head-helper vertices. It replaces the artificial helmet cap, ribbon
     # curtain and porcupine fiber proxies.
     from author_makehuman_hair_proxy import import_hair
+    # A 2.5-mm anatomical scalp cap below the styled CC0 hairstyle prevents
+    # polygon gaps from exposing bright skin at the crown in 3/4 views.
+    # Unlike the former helmet model, this is only the close-fitting scalp.
+    detail.append(anatomical_scalp(body,rig,gender,hair))
     detail.append(import_hair(body,rig,source,full_morph,gender,attach))
     assert len(detail)>=2
     print('MAKEHUMAN_CC0_HEAD_DETAIL_OK',gender,'skinned pieces',len(detail))
