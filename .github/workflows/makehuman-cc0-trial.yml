@@ -8,6 +8,7 @@ on:
     paths:
       - 'Tools/blender/author_makehuman_cc0_trial.py'
       - 'Tools/blender/author_makehuman_cc0_head.py'
+      - 'Tools/blender/author_makehuman_eyes.py'
       - 'Tools/blender/validate_cc0_trial.py'
       - 'Tools/blender/verify_cc0_live_skin.py'
       - '.github/workflows/makehuman-cc0-trial.yml'
@@ -15,6 +16,7 @@ on:
     paths:
       - 'Tools/blender/author_makehuman_cc0_trial.py'
       - 'Tools/blender/author_makehuman_cc0_head.py'
+      - 'Tools/blender/author_makehuman_eyes.py'
       - 'Tools/blender/validate_cc0_trial.py'
       - 'Tools/blender/verify_cc0_live_skin.py'
       - '.github/workflows/makehuman-cc0-trial.yml'
@@ -46,6 +48,9 @@ jobs:
               curl -fLsS --retry 3 --max-time 120 "$BASE/targets/macrodetails/$target.target" -o "$RUNNER_TEMP/lifelens-cc0-source/$target.target"
             done
           done
+          curl -fLsS --retry 3 --max-time 120 "$BASE/eyes/high-poly/high-poly.obj" -o "$RUNNER_TEMP/lifelens-cc0-source/high-poly.obj"
+          curl -fLsS --retry 3 --max-time 120 "$BASE/eyes/materials/brown_eye.png" -o "$RUNNER_TEMP/lifelens-cc0-source/brown_eye.png"
+          test "$(wc -c < "$RUNNER_TEMP/lifelens-cc0-source/high-poly.obj")" -gt 90000
           test "$(wc -c < "$RUNNER_TEMP/lifelens-cc0-source/base.obj")" -gt 1000000
           sha256sum "$RUNNER_TEMP"/lifelens-cc0-source/*
       - name: Author CC0 adult male and female skinned basemeshes
