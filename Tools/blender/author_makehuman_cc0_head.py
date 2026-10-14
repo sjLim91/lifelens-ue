@@ -123,8 +123,10 @@ def eyelid_sheets(eye_x, rig, gender):
             aperture=(.0052 if upper else -.0039)*closing
             z_inner=1.625+aperture+(.0015 if upper else -.0002)
             z_outer=z_inner+(.0065 if upper else -.0055)
-            y_inner=-.052+.008*(abs(t)**1.5)
-            y_outer=-.042+.002*(abs(t)**1.5)
+            # Position the eyelid margin only millimeters in front of the
+            # corneal surface (not 2 cm ahead like the old goggle mask).
+            y_inner=-.0385+.004*(abs(t)**1.5)
+            y_outer=-.0285+.002*(abs(t)**1.5)
             vertices.extend([(x,y_inner,z_inner),(x,y_outer,z_outer)])
             margin_points.append((x,y_inner-.0002,z_inner))
             if i:
