@@ -1,36 +1,41 @@
 {
   "status": "EXPERIMENTAL_NOT_RUNTIME",
   "source_vertices_welded": 19420,
-  "retained_vertices_before_cut": 9480,
+  "retained_vertices_before_cut": 8490,
   "faces_before": 39200,
-  "faces_removed": 20437,
-  "sole_cap_faces": 7,
-  "remaining_boundary_edges": 67,
-  "body_seeds": 5868,
-  "base_seeds": 4642,
+  "faces_removed": 22360,
+  "sole_cap_faces": 3,
+  "remaining_boundary_edges": 21,
+  "body_seeds": 5841,
+  "base_seeds": 3577,
   "foot_anchors": [
     [
-      -0.26,
-      -1.17,
-      0.69
+      -0.29,
+      -1.3,
+      0.67
     ],
     [
-      0.22,
-      -1.0,
-      0.73
+      0.05,
+      -0.71,
+      0.51
     ],
     [
-      -0.24,
-      1.1,
-      0.38
+      0.17,
+      1.08,
+      0.32
     ],
     [
-      0.19,
-      0.72,
-      0.43
+      -0.25,
+      0.21,
+      0.45
     ]
   ],
   "visual_acceptance": "NOT_REVIEWED",
   "web_observer_validation": "NOT_RUN",
-  "merge_allowed": false
+  "merge_allowed": false,
+  "created_at": "2026-10-14T17:43:58.505571+00:00",
+  "files_sha256": {
+    "body-extraction.glb": "c80f598467db6da3cdeaa693ab30a8b8b69ce96255bc38a2a5f7059b610dbe74",
+    "body-extraction.blend": "56d6536cff48c73028b4db968aaf0b8d2730ffb453116d3da15d10c7f2404db5"
+  }
 }
