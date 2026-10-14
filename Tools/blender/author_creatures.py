@@ -130,24 +130,60 @@ def attach_weights(ob, rig, bone_specs):
 
 
 def tint_mesh(ob, species, female=False):
+    # Q5 colour belongs to actual GLB vertex data rather than renderer-only
+    # Blender procedural nodes. Flank stripes taper, bifurcate and bend with
+    # anatomy; face, legs, belly and tail get different biologically plausible
+    # regions. Every coordinate is deterministic and in the bind-rest frame.
     attr = ob.data.vertex_colors.new(name='Col')
     for poly in ob.data.polygons:
         for li in poly.loop_indices:
             p = ob.data.vertices[ob.data.loops[li].vertex_index].co
             if species == 'human':
-                tone = (0.77, .51, .37) if female else (.70, .45, .32)
-                varied = 0.98 + 0.025 * math.sin(17*p.x+6*p.z)
-                rgb = [min(1., t*varied) for t in tone]
+                tone = (.72,.47,.36) if female else (.67,.43,.32)
+                grain = (0.970+0.016*math.sin(41*p.x+19*p.y)
+                         +0.012*math.sin(67*p.z-21*p.y))
+                rgb=[max(0.0,min(1.0,t*grain)) for t in tone]
             else:
-                # Model-space stripe bands follow the barrel, not pixel-space
-                # fake overlays. Cream underbelly, ochre flanks, dark tiger bands.
-                under = p.z < .60 and abs(p.y) < .55 and abs(p.x) < .26
-                band = math.sin(p.y*23.0+3.5*math.sin(8*p.z+5*p.x))
-                stripe = not under and band > .69 and -.9 < p.y < 1.0
-                rgb = ([.17, .10, .075] if stripe else
-                       [.83, .73, .59] if under else [.78, .39, .155])
-            attr.data[li].color = (*rgb, 1.0)
-    ob.data.materials.append(colored_surface(species.capitalize() + ' vertex PBR'))
+                x,y,z=p.x,p.y,p.z
+                # Buff ventral pelage and small pale cheek muzzle patches
+                # are painted onto the surface, not detached ellipsoids.
+                ventral = (z<.70 and abs(x)<.19 and -.72<y<.67)
+                muzzle = (y>1.34 and z<1.083 and abs(x)<.20)
+                pale=ventral or muzzle
+                # Broken, tapering flank markings with dissimilar left/right
+                # sides. They do not encircle each torso section uniformly.
+                shear=(1.15*math.sin(z*7.4+abs(x)*2.9)
+                       +0.40*math.sin(14.1*z+9.3*x+y*4.2))
+                phase=(17.8*y+shear+0.25*math.sin(31*y+5*z))
+                width=(.63+.20*math.sin(7.1*y+z*11))
+                torso_stripe=(-.9<y<.91 and z>.44 and
+                              math.sin(phase)>width and
+                              not ventral and
+                              (z>.70 or abs(x)>.17))
+                # Sparse rings on legs below the belly line.
+                leg_stripe=(z<.51 and abs(x)>.19 and
+                            math.sin(z*26+6*y+abs(x)*3)>.80)
+                # Tail carries irregular annular bands, including a dark tip.
+                tail_stripe=(y<-.90 and
+                             (y< -2.03 or
+                              math.sin(27*y+4*x+2*z)>.46))
+                # Facial markings follow cheek/temple asymmetry.
+                face_stripe=(1.0<y<1.38 and z>1.16 and abs(x)>.13 and
+                             math.sin(32*z+23*y+8*abs(x))>.76)
+                dark=torso_stripe or leg_stripe or tail_stripe or face_stripe
+                coat=(.67,.33,.118)
+                buff=(.79,.72,.59)
+                ebony=(.079,.047,.034)
+                base=ebony if dark else buff if pale else coat
+                # Subtle multi-frequency pelage variation baked per-vertex.
+                grain=(.962+.040*math.sin(73*x+34*y+18*z)
+                       *.5 + .021*math.sin(115*y-29*z+9*x))
+                rgb=[max(0.0,min(1.0,c*grain)) for c in base]
+            attr.data[li].color=(*rgb,1.0)
+    ob.data.materials.append(colored_surface(
+        ('Resident' if species=='human' else 'Tiger')+' authentic vertex pigmentation',
+        roughness=.89 if species=='human' else .94))
+
 
 
 def human(female):
