@@ -148,7 +148,9 @@ def tint_mesh(ob, species, female=False):
                 # Buff ventral pelage and small pale cheek muzzle patches
                 # are painted onto the surface, not detached ellipsoids.
                 ventral = (z<.70 and abs(x)<.19 and -.72<y<.67)
-                muzzle = (y>1.34 and z<1.083 and abs(x)<.20)
+                # Cream occurs on lower cheek/jowl, not as a huge uniform
+                # cartoon smile across the entire front of the face.
+                muzzle = (1.405<y<1.54 and z<1.034 and abs(x)<.148)
                 pale=ventral or muzzle
                 # Broken, tapering flank markings with dissimilar left/right
                 # sides. They do not encircle each torso section uniformly.
