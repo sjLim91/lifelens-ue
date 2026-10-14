@@ -20,3 +20,9 @@
 - MPFB2 최신은 Blender >=4.2가 필요하다. 프로젝트의 현재 Blender 4.0.2 CI에 무작정 애드온을 설치하지 않고 CC0 베이스 메시·타깃만 직접 해석한다.
 - Blender 측 형태/리그/렌더 확인을 해도 기존 CC0 donor + Three.js Web Observer 동작에 즉시 사용되는 것은 아니다.
 - 호랑이 등 동물에는 MakeHuman 인체 메시를 전용하거나 가짜 동물 형상에 사용하지 않는다.
+## Q8 — UV/skin-material enhancement (experimental)
+- MakeHuman original `base.obj` UV coordinates are preserved by LifeLens-owned OBJ parsing; face-only original CC0 topology uses matching UV seams, no planar approximations.
+- Pinned graphical-source repository `s20220526/makehuman-assets` commit `8cf9645b975a98eea056b140df11a1d278da0d10`, under its repository CC0 asset grant. Only two young light-skinned diffuse maps are downloaded from Git LFS media endpoint for this initial neutral comparison; additional skin tones should be parametrized by identity later.
+- Each input PNG is signature/size checked before Blender processing to reject LFS pointer files; embedded in `.blend` and `.glb` via Image Texture Base Color, with physically plausible roughness/subsurface.
+- Source: https://github.com/s20220526/makehuman-assets and https://static.makehumancommunity.org/makehuman/faq/are_makehuman_files_free.html
+- The visible 13,380 body vertices are a morphology/truth visualization only. Adult age/growth, identity/genetics, retarget to current Web Observer, actual deployment and performance remain open, so neither main nor production models change.
