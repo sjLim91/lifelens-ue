@@ -65,6 +65,11 @@ def mesh_union(objs, label, voxel=.025):
     bpy.context.view_layer.objects.active = objs[0]
     bpy.ops.object.join()
     ob = bpy.context.object
+    # Joined primitives inherit the first primitive's local origin. Rebase
+    # vertices to armature/world-rest coordinates BEFORE skin weights and
+    # species pigment sampling: otherwise head vertices bind near the pelvis
+    # and tiger ventral pigment incorrectly blankets almost the whole body.
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     ob.name = label
     mod = ob.modifiers.new('Seamless organic surface', 'REMESH')
     mod.mode = 'VOXEL'
