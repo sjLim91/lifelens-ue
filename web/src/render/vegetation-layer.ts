@@ -9,6 +9,7 @@ import { createTerrainElevationSampler } from './terrain-geometry';
 import { terrainDressingSignature } from './terrain-dressing-signature';
 import { createVisibleWaterFootprintTester } from './water-geometry';
 import { ProceduralTreeAsset, PROCEDURAL_TREE_VARIANTS, treeVariantForEnvironment } from './procedural-tree-layer';
+import { ObserverFoliageClarity } from './observer-foliage-clarity';
 import { assetRandom, createTimberGeometry, installWoodGrain } from './procedural-asset-kit';
 import {
   TREE_FOLIAGE_PALETTE,
@@ -34,6 +35,7 @@ function hash01(seed: string, x: number, y: number, index: number): number {
 
 export class VegetationLayer {
   readonly group = new THREE.Group();
+  private readonly observerClarity = new ObserverFoliageClarity();
 
   private readonly mobileProfile = useMobileVegetationProfile();
   private readonly treeVariantMatrices = PROCEDURAL_TREE_VARIANTS.map(
@@ -56,7 +58,8 @@ export class VegetationLayer {
 
   constructor() {
     this.actualTrees = PROCEDURAL_TREE_VARIANTS.map(variant =>
-      new ProceduralTreeAsset(variant.species, variant.seed, MAX_TREES, this.mobileProfile));
+      new ProceduralTreeAsset(variant.species, variant.seed, MAX_TREES, this.mobileProfile,
+        this.observerClarity));
     for (const asset of this.actualTrees) this.group.add(asset.group);
     installWoodGrain(this.stumpMaterial);
     this.stumps.count = 0; this.stumps.castShadow = true; this.group.add(this.stumps);
@@ -66,6 +69,10 @@ export class VegetationLayer {
     for (const asset of this.actualTrees) asset.weather.setEnvironment(environment, originX, originZ);
   }
   update(camera: THREE.Camera): void { for (const asset of this.actualTrees) asset.update(camera); }
+  setObservationFocus(camera: THREE.Camera, target: THREE.Vector3 | null,
+    selected: boolean): void {
+    this.observerClarity.set(camera, target, selected);
+  }
 
   setTerrain(window: TerrainWindow, resources = new NaturalResourceProjection({ available: false }, window)): void {
     const nextSignature = terrainDressingSignature(window) + resources.treeSignature;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { DynamicEnvironment, TerrainChunk } from '../runtime/core-types';
 import { clamp01, snowPresentationCoverage } from './environment-surface-presentation';
+import { injectFoliageClarity, ObserverFoliageClarity } from './observer-foliage-clarity';
 import { acquireTreeGeometry, TREE_TEMPLATES, type TreeSpecies } from './procedural-tree-generator';
 
 export const PROCEDURAL_TREE_VARIANTS = TREE_TEMPLATES.flatMap(t =>
@@ -18,6 +19,7 @@ export function treeVariantForEnvironment(chunk: TerrainChunk, choice: number): 
 
 /** Uniform weather affects shape/color only, never stock or placement. */
 export class PlantWeatherMaterial {
+  constructor(private readonly clarity: ObserverFoliageClarity) {}
   readonly uniforms = {
     llWind: { value: 0 }, llTime: { value: 0 }, llAutumn: { value: 0 },
     llLeafDensity: { value: 1 }, llSnow: { value: 0 }, llOrigin: { value: new THREE.Vector2() },
@@ -47,8 +49,9 @@ export class PlantWeatherMaterial {
         ${evergreen ? '' : 'diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.32, 0.79, 0.56), llAutumn);'}
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.84, 0.88, 0.89), llSnow * 0.5);
       `);
+      injectFoliageClarity(shader, this.clarity);
     };
-    material.customProgramCacheKey = () => `lifelens-plant-weather-v1:${evergreen}:${grass}`;
+    material.customProgramCacheKey = () => `lifelens-plant-weather-v2:focus:${evergreen}:${grass}`;
   }
   setEnvironment(environment: DynamicEnvironment | null, originX = 0, originZ = 0): void {
     const e = environment?.available === false ? null : environment;
@@ -64,7 +67,7 @@ export class PlantWeatherMaterial {
 export class ProceduralTreeAsset {
   readonly group = new THREE.Group();
   readonly levels: { bark: THREE.InstancedMesh; foliage: THREE.InstancedMesh }[];
-  readonly weather = new PlantWeatherMaterial();
+  readonly weather: PlantWeatherMaterial;
   private readonly packed: Float32Array;
   private readonly tints: Float32Array;
   private readonly matrix = new THREE.Matrix4();
@@ -77,7 +80,9 @@ export class ProceduralTreeAsset {
   count = 0;
   get matrices(): Float32Array { return this.packed.subarray(0, this.count * 16); }
 
-  constructor(species: TreeSpecies, seed: string, private readonly capacity: number, private readonly mobile = false) {
+  constructor(species: TreeSpecies, seed: string, private readonly capacity: number,
+    private readonly mobile = false, clarity = new ObserverFoliageClarity()) {
+    this.weather = new PlantWeatherMaterial(clarity);
     this.packed = new Float32Array(capacity * 16); this.tints = new Float32Array(capacity * 3);
     this.selected = new Uint8Array(capacity); this.selected.fill(255);
     const barkMaterial = new THREE.MeshLambertMaterial({ vertexColors: true });
