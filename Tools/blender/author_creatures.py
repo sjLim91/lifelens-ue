@@ -80,8 +80,10 @@ def mesh_union(objs, label, voxel=.025):
     mod.voxel_size = voxel
     bpy.ops.object.modifier_apply(modifier=mod.name)
     smooth = ob.modifiers.new('Relax voxel surface', 'SMOOTH')
-    smooth.factor = 1.15
-    smooth.iterations = 2
+    # The same heavy two-pass smoothing that is acceptable for a distant
+    # human silhouette rounds a tiger's nose, brows and paws into a toy.
+    smooth.factor = .76 if label=='LifeLensSeamlessTiger' else 1.15
+    smooth.iterations = 1 if label=='LifeLensSeamlessTiger' else 2
     bpy.ops.object.modifier_apply(modifier=smooth.name)
     for poly in ob.data.polygons:
         poly.use_smooth = True
