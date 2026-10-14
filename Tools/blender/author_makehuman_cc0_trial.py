@@ -75,6 +75,7 @@ def import_basemesh(input_dir,gender):
     # Keep only real body faces and discard helper vertices before bounds/rig.
     assert len(vertices)==19158,('Unexpected upstream HM08 topology',len(vertices))
     body_count=13380
+    morph_full=[tuple(v) for v in vertices]
     faces=[face for face in faces if all(i<body_count for i in face)]
     vertices=vertices[:body_count]
     assert len(faces)>10000,('Missing anatomical body faces',len(faces))
@@ -129,7 +130,7 @@ def import_basemesh(input_dir,gender):
     print('MAKEHUMAN_IMPORTED',gender,'verts',len(vertices),'faces',len(faces),
           'bounds',tuple(round(v,4) for v in extents),'source_up',up,
           'morphs',affected,affected2)
-    return obj
+    return obj,morph_full
 
 
 def rig_human(mesh):
@@ -168,10 +169,10 @@ def main():
         bpy.ops.object.delete(use_global=False)
         for action in list(bpy.data.actions):
             bpy.data.actions.remove(action,do_unlink=True)
-        mesh=import_basemesh(source,gender)
+        mesh,morphed_source=import_basemesh(source,gender)
         rig=rig_human(mesh)
         from author_makehuman_cc0_head import decorate
-        decorate(mesh,rig,gender,source)
+        decorate(mesh,rig,gender,source,morphed_source)
         assert len(mesh.data.vertices)>10000
         assert len(rig.data.bones)>=18
         filepath=out/('resident-'+gender+'-cc0')
