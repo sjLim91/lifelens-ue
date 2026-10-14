@@ -110,7 +110,7 @@ class DetailBuilder:
         direction=Vector(b)-Vector(a)
         bpy.ops.mesh.primitive_cone_add(vertices=vertices,
                                        radius1=radius,radius2=.001,
-                                       depth=direction.length(),
+                                       depth=direction.length,
                                        location=mid)
         ob=bpy.context.object
         ob.name=name
@@ -132,6 +132,7 @@ class DetailBuilder:
         bpy.ops.object.join()
         obj=bpy.context.object
         obj.name='LifeLensIndependentAnatomicalDetails'
+        obj.data.name='LifeLensIndependentAnatomicalDetailsMesh'
         obj['lifelens_q4_topology']='separate skinned facial/paw surfaces; never voxel welded'
         assert obj.parent==self.rig
         assert any(m.type=='ARMATURE' and m.object==self.rig for m in obj.modifiers)
