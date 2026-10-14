@@ -1,0 +1,36 @@
+{
+  "status": "EXPERIMENTAL_NOT_RUNTIME",
+  "source_vertices_welded": 19420,
+  "retained_vertices_before_cut": 9480,
+  "faces_before": 39200,
+  "faces_removed": 20437,
+  "sole_cap_faces": 7,
+  "remaining_boundary_edges": 67,
+  "body_seeds": 5868,
+  "base_seeds": 4642,
+  "foot_anchors": [
+    [
+      -0.26,
+      -1.17,
+      0.69
+    ],
+    [
+      0.22,
+      -1.0,
+      0.73
+    ],
+    [
+      -0.24,
+      1.1,
+      0.38
+    ],
+    [
+      0.19,
+      0.72,
+      0.43
+    ]
+  ],
+  "visual_acceptance": "NOT_REVIEWED",
+  "web_observer_validation": "NOT_RUN",
+  "merge_allowed": false
+}
