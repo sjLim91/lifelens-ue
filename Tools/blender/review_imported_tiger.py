@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 
 def main():
@@ -16,6 +16,34 @@ def main():
     meshes = [obj for obj in bpy.context.scene.objects if obj.type == 'MESH']
     if not meshes:
         raise ValueError('Imported candidate has no meshes')
+    # This particular source faces -X, whereas the observer's animals face +Z
+    # in glTF (= -Y in Blender). Correct the review labels using a root transform.
+    rotate = Matrix.Rotation(math.pi/2, 4, 'Z')
+    for obj in meshes:
+        obj.matrix_world = rotate @ obj.matrix_world
+    components = []
+    for obj in meshes:
+        adjacency = [[] for _ in obj.data.vertices]
+        for edge in obj.data.edges:
+            a, b = edge.vertices
+            adjacency[a].append(b)
+            adjacency[b].append(a)
+        remaining = set(range(len(adjacency)))
+        while remaining:
+            seed = remaining.pop()
+            pending = [seed]
+            indices = [seed]
+            while pending:
+                for neighbor in adjacency[pending.pop()]:
+                    if neighbor in remaining:
+                        remaining.remove(neighbor)
+                        pending.append(neighbor)
+                        indices.append(neighbor)
+            points = [obj.matrix_world @ obj.data.vertices[index].co for index in indices]
+            components.append({'vertices': len(indices),
+                               'min': [min(p[i] for p in points) for i in range(3)],
+                               'max': [max(p[i] for p in points) for i in range(3)]})
+    components.sort(key=lambda item: -item['vertices'])
     corners = [obj.matrix_world @ Vector(corner) for obj in meshes for corner in obj.bound_box]
     low = Vector([min(p[i] for p in corners) for i in range(3)])
     high = Vector([max(p[i] for p in corners) for i in range(3)])
@@ -38,6 +66,8 @@ def main():
     camera.data.type = 'ORTHO'
     camera.data.ortho_scale = max(size) * 1.2
     scene.camera = camera
+    camera.location = center + Vector((0, -radius, radius*.22))
+    camera.rotation_euler = (center-camera.location).to_track_quat('-Z', 'Y').to_euler()
     for position, energy, light_size in [((2, -3, 5), 1100, 5), ((-3, 1, 3), 800, 4)]:
         bpy.ops.object.light_add(type='AREA', location=center + Vector(position))
         light = bpy.context.object
@@ -63,6 +93,9 @@ def main():
         'triangles': sum(sum(len(p.vertices)-2 for p in obj.data.polygons) for obj in meshes),
         'bounds_blender': {'min': list(low), 'max': list(high)},
         'armatures': len([obj for obj in bpy.context.scene.objects if obj.type == 'ARMATURE']),
+        'connected_component_count': len(components),
+        'connected_components': components[:40],
+        'review_orientation_change': 'source -X forward rotated +90 degrees about Blender Z',
         'visual_acceptance': 'PENDING_HUMAN_OR_AGENT_IMAGE_REVIEW',
         'observer_validation': 'NOT_RUN', 'performance': 'NOT_MEASURED',
     }
