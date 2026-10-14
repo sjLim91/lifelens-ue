@@ -68,7 +68,7 @@ jobs:
           HAIR_BASE="https://raw.githubusercontent.com/s20220526/makehuman-assets/$ASSET_PIN/base/hair"
           HAIR_MEDIA="https://media.githubusercontent.com/media/s20220526/makehuman-assets/$ASSET_PIN/base/hair"
           for gender in female male; do
-            if [ "$gender" = female ]; then hairstyle=bob01; else hairstyle=short01; fi
+            if [ "$gender" = female ]; then hairstyle=ponytail01; else hairstyle=short02; fi
             for ext in obj mhclo; do
               curl -fLsS --retry 3 --max-time 120 "$HAIR_BASE/$hairstyle/$hairstyle.$ext" -o "$RUNNER_TEMP/lifelens-cc0-source/$hairstyle.$ext"
             done
