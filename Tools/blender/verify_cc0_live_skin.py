@@ -26,7 +26,7 @@ def main():
     sex='female' if 'female' in name else 'male'
     body=bpy.data.objects.get('LifeLensMakeHumanCC0_'+sex)
     rig=bpy.data.objects.get('LifeLensCC0TrialRig')
-    scalp=bpy.data.objects.get('LifeLensHairScalp_'+sex)
+    scalp=bpy.data.objects.get('CC0 Styled '+sex+' Hair')
     assert body and rig and scalp
     eye=next((o for o in bpy.data.objects if o.name.startswith('CC0 anatomical textured eyes')),None)
     assert eye is not None
