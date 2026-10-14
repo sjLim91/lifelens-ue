@@ -43,6 +43,15 @@ def import_cc0_eyes(body,rig,source,attach):
         vertices.append((-(raw[side]-origin_x)*scale,
                          -(raw[forward]-origin_y)*scale,
                          (raw[up]-origin_z)*scale))
+    # MakeHuman eye proxy OBJ uses a different local eye-group origin than
+    # the HM08 body. Fit its two eyeballs to the original body's anatomical
+    # orbital plane (the CC0 body is normalized to 1.75 metres). Without
+    # this calibration the source eyes float nearly a metre above the head.
+    eye_center=(min(v[2] for v in vertices)+max(v[2] for v in vertices))*.5
+    eye_z=1.626
+    dz=eye_z-eye_center
+    vertices=[(x,y,z+dz) for x,y,z in vertices]
+    print('CC0 anatomical eye proxy calibration dz:',round(dz,5))
     # Same winding conversion as visible body extraction.
     if up in (0,1):
         polygons=[list(reversed(p)) for p in polygons]
