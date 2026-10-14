@@ -51,7 +51,25 @@ def import_cc0_eyes(body,rig,source,attach):
     eye_z=1.626
     dz=eye_z-eye_center
     vertices=[(x,y,z+dz) for x,y,z in vertices]
-    print('CC0 anatomical eye proxy calibration dz:',round(dz,5))
+    # Q6 visual audit: 1:1 imported eyeballs looked like enormous black
+    # marbles. Fit each independently to the anatomical orbit without
+    # destroying the CC0 high-poly topology or its source UV coordinates.
+    centers={}
+    for sign in (-1,1):
+        group=[p for p in vertices if (-1 if p[0]<0 else 1)==sign]
+        assert len(group)>200,('CC0 eye group missing',sign,len(group))
+        centers[sign]=tuple(sum(p[a] for p in group)/len(group) for a in range(3))
+    ratio=.70
+    fitted=[]
+    for x,y,z in vertices:
+        sign=-1 if x<0 else 1
+        cx,cy,cz=centers[sign]
+        fitted.append((sign*.033+(x-cx)*ratio,
+                       -.034+(y-cy)*ratio,
+                       1.626+(z-cz)*ratio))
+    vertices=fitted
+    print('CC0 anatomical eye proxy calibrated, source dz',round(dz,5),
+          'eye scale',ratio,'source centers',centers)
     # Same winding conversion as visible body extraction.
     if up in (0,1):
         polygons=[list(reversed(p)) for p in polygons]
@@ -72,8 +90,16 @@ def import_cc0_eyes(body,rig,source,attach):
     image=nodes.new('ShaderNodeTexImage')
     image.image=bpy.data.images.load(str(imagefile),check_existing=True)
     image.image.pack()
-    material.node_tree.links.new(image.outputs['Color'],bsdf.inputs['Base Color'])
-    bsdf.inputs['Roughness'].default_value=.27
+    # Some upstream eye UVs make the entire eye look nearly black under
+    # neutral studio illumination. Preserve a muted CC0 image influence
+    # while giving the scleral shell a warm, physically plausible tone.
+    mix=nodes.new('ShaderNodeMixRGB')
+    mix.blend_type='MIX'
+    mix.inputs[0].default_value=.16
+    mix.inputs[1].default_value=(.79,.76,.70,1.0)
+    material.node_tree.links.new(image.outputs['Color'],mix.inputs[2])
+    material.node_tree.links.new(mix.outputs['Color'],bsdf.inputs['Base Color'])
+    bsdf.inputs['Roughness'].default_value=.33
     mesh.materials.append(material)
     eye=bpy.data.objects.new('CC0 anatomical textured eyes',mesh)
     bpy.context.collection.objects.link(eye)
@@ -81,6 +107,18 @@ def import_cc0_eyes(body,rig,source,attach):
     for face in mesh.polygons:
         face.use_smooth=True
     attach(eye,rig)
+    # Small iris/pupil disks lie on the spherical cornea; separate surface
+    # elements preserve legibility without replacing anatomical CC0 eyeballs.
+    from author_makehuman_cc0_head import simple_material,add_ellipsoid
+    iris=simple_material('CC0 natural warm brown iris',(.28,.17,.075),.25)
+    pupil=simple_material('CC0 black pupil',(.018,.013,.011),.19)
+    for sign in (-1,1):
+        add_ellipsoid('CC0 subtle iris '+str(sign),
+                      (sign*.033,-.044,1.626),(.0058,.0015,.0058),
+                      iris,rig)
+        add_ellipsoid('CC0 subtle pupil '+str(sign),
+                      (sign*.033,-.046,1.626),(.0028,.0012,.0041),
+                      pupil,rig)
     print('CC0_ANATOMICAL_EYE_ASSET_OK',len(vertices),'vertices',
           len(polygons),'faces',len(texcoords),'UVs')
     return eye
