@@ -268,7 +268,7 @@ def human(female):
 
 
 def tiger():
-    from anatomical_lofts import tiger_trunk, tiger_skull, tiger_foreleg, tiger_tail
+    from anatomical_lofts import tiger_trunk, tiger_skull, tiger_foreleg, tiger_tail, tiger_pinna
     parts=[
         tiger_trunk(),
         tiger_skull(),
@@ -287,8 +287,7 @@ def tiger():
         # separate cartoon-white balls on the outside of the muzzle.
         parts.append(volume('zygomatic muscle',(s*.165,1.242,1.095),
                             (.075,.113,.074)))
-        parts.append(volume('tiger auricle',(s*.177,1.075,1.329),
-                            (.063,.063,.073)))
+        parts.append(tiger_pinna(s))
         for y in (.46,-.57):
             for digit in (-1,0,1):
                 parts.append(volume('flattened digit',
