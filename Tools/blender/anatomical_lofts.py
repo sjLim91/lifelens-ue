@@ -195,6 +195,23 @@ def tiger_skull():
 
 
 
+def tiger_pinna(side):
+    """Triangular rounded feline ear emerging from actual skull outline.
+
+    Ear bases are wide/flat toward the face and narrow to a soft outer tip,
+    avoiding the spherical 'teddy bear ears' of Q3-Q12.
+    """
+    s=side
+    return curving_limb('Tiger tapered anatomical pinna',[
+      (s*.166,1.076,1.282,.068,.049),
+      (s*.178,1.082,1.325,.070,.043),
+      (s*.194,1.082,1.372,.058,.034),
+      (s*.206,1.077,1.409,.038,.027),
+      (s*.211,1.071,1.432,.018,.019),
+      (s*.210,1.067,1.440,.007,.010),
+    ],steps=30,sides=20)
+
+
 def tiger_foreleg(s,y,front):
     x=s
     if front:
