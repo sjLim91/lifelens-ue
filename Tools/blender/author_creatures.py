@@ -290,7 +290,7 @@ def tiger():
         for y in (.46,-.57):
             for digit in (-1,0,1):
                 parts.append(volume('flattened digit',
-                     (s*.290+digit*.065,y+.31,.077),(.037,.050,.030)))
+                     (s*.290+digit*.057,y+.225,.081),(.027,.040,.023)))
     parts.append(tiger_tail())
     body=mesh_union(parts,'LifeLensSeamlessTiger',.019)
     bones=[
