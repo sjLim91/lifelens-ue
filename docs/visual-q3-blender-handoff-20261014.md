@@ -20,6 +20,7 @@ Core의 시뮬레이션 진실, 성별·유전·연령·행동·위치, 결정�
 ## 자동 검증 및 전달
 - Tools/blender/author_creatures.py: 남·여·호랑이 mesh / armature / skinned weights / walk motion .blend + GLB 생성.
 - Tools/blender/validate_creatures.py: GLB 2.0 header, JOINTS_0, WEIGHTS_0, COLOR_0, animation channels 및 모델별 애니메이션 클립 격리 점검.
+- Tools/blender/render_creature_review.py: 생성된 .blend에서 Cycles CPU 실제 render PNG 3장 제작. 스크린샷은 외형 평가 입력이며 품질 합격 판정은 아니다.
 - Blender workflow artifact lifelens-authored-creature-prototypes는 7일 보존. 프로덕션 채택 시 원본/런타임 산출물 영구 보존 방식 별도 필요.
 
 중요: Blender 스모크 성공 != 모델 제작 완료. 스킨과 클립 존재 != 정상 애니메이션. CI green != 시각 품질 승인. 런타임 미연결은 완료가 아니다.
