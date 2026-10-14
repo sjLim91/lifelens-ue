@@ -28,7 +28,7 @@ def main():
     rig=bpy.data.objects.get('LifeLensCC0TrialRig')
     scalp=bpy.data.objects.get('LifeLensHairScalp_'+sex)
     assert body and rig and scalp
-    eye=next((o for o in bpy.data.objects if o.name.startswith('CC0 inset eye sclera')),None)
+    eye=next((o for o in bpy.data.objects if o.name.startswith('CC0 anatomical textured eyes')),None)
     assert eye is not None
     for obj in (body,scalp,eye):
         assert obj.parent==rig
