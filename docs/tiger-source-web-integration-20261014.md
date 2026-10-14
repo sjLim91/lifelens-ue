@@ -2,10 +2,41 @@
 
 ## 현재 판정
 
-이 개발 단위는 **미완료**다. 원본 파일, Blender 원본, GLB, 실제 웹 렌더,
-발 접지 검증, Android 실기 성능을 아직 확보하지 않았다. CI의 원본 정보 조회
-성공은 시각 품질 합격 또는 웹 통합 완료가 아니다. 기존 Core와 렌더 경로는
-변경하지 않았다. 외부 유료 API/모델/클라우드 작업을 사용하지 않는다.
+이 개발 단위는 **미완료 / 현재 시각 품질 Gate FAIL**이다. 공개 CC BY 원본
+두 개와 원본 GLB, 편집 가능한 Blender 검수 파일, 실제 4방향 PNG, UTC 다운로드
+기록과 SHA-256을 확보했다. 실제 웹 연동, 발 접지 검증, Android 실기 성능은
+아직 미확보다. 제품 Core와 렌더 경로는 변경하지 않았다. 외부 유료 API/모델/
+클라우드 작업을 사용하지 않는다. 아래 실제 결함이 해결되기 전 병합하지 않는다.
+
+## 확보 자산 및 직접 이미지 검수 결과
+
+| 자산 | 제작자 / 허가 | 원본 SHA-256 | 실제 검수 |
+| --- | --- | --- | --- |
+| [Tiger](https://www.sloyd.ai/free-3d-models/model/tiger-7m4ap2k1) | TopoForge / CC BY 4.0 / generated with Sloyd | `f7e3b63e83efd92ba379f750f02e9971f52679173c6a268a29f352ad0c2092be` | 8,298,328 bytes, UV 포함, 28,973 vertices / 39,200 triangles. 통나무와 본체가 연결됨. 골격·클립 없음. 그대로 런타임에 쓸 수 없음. |
+| [A Ferocious Tiger Figurine With A Muscular Body](https://www.sloyd.ai/free-3d-models/model/a-ferocious-tiger-figurine-with-a-muscular-body-inzht46x) | a Sloyd creator / CC BY 4.0 / generated with Sloyd | `b62a99cbe6d41e2f669e4c717e52f7c24f448623479d73ada1508dd7db4953e8` | 6,470,204 bytes. 실제 PNG가 이족 보행 humanoid 캐릭터임을 확인해 제외. |
+
+두 모델은 신규 생성 API를 호출하지 않고 제작자가 게시한 공개 GLB 링크로
+직접 받았다. `docs/asset-reviews/tiger-topoforge/`와
+`docs/asset-reviews/tiger-ferocious/`에 `source.glb`, `source-review.blend`,
+4방향 PNG, 원본 URL·UTC·파일 해시·제작자·라이선스·표기 문구 JSON 및 CREDITS를 보존했다.
+다운로드 도구는 위 두 SHA-256과 다른 파일을 받으면 중단한다.
+
+TopoForge source는 UV seam 때문에 index connectivity가 1,078개로 나뉜다.
+좌표가 같은 정점을 분석상 연결하면 실제 geometry component는 3개이며 본체와
+통나무가 같은 큰 표면이다. UV 조각을 독립 오브젝트로 간주해 삭제하지 않는다.
+
+### 첫 받침 분리 실험 — 불합격
+
+원본 corner UV를 유지하고 seam의 중복 위치만 연결한 뒤 graph cut으로 받침을
+분리했다. voxel/remesh/새 primitive 몸체는 만들지 않았다. 실제 결과는
+`body-*.png`, `body-extraction.blend`, `body-extraction.glb`, `body-extraction.json`에 있다.
+첫 결과는 뒷다리 일부를 잃고 앞발 아래 나무 조각이 남아 **불합격**이다.
+20,437 faces 제거, 67 boundary edges 잔존이라는 구조 수치도 함께 기록했다.
+그 결과에 골격을 붙여 웹에 도입하지 않는다. 원본 paw anchor를 실제 orthogonal
+진단 렌더에서 확인하고 절단 경계를 보정하는 단계다.
+
+Blender 성공은 원본/검수 산출물 생성 성공만 뜻한다. 실제 Observer 화면,
+새 모델의 스킨 변형/행동 연결/접지 및 실기 FPS 합격은 아직 아니다.
 
 ## 원본 후보 확인 (2026-10-14 UTC)
 
@@ -18,7 +49,8 @@
 | Ares rigged and HQ | https://blendswap.com/blend/12238 / zingzong | CC BY-NC | 제외. |
 | Merlin Tiger Rig | https://merlin3d.gumroad.com/l/TigerRig | 무료 표시만으로 상업 이용/재배포 허용을 확정할 수 없다. 관련 제작자 게시물에 개인·비상업 용도 제한이 보인다. | 명확한 허용 라이선스 확보 전 제외. |
 
-모든 후보의 모델 다운로드 시점·파일 SHA-256은 **미확보(null)**다. 웹페이지나
+위 초기 후보들의 모델 다운로드 시점·파일 SHA-256은 **미확보(null)**다.
+확보한 두 Sloyd 원본의 기록은 앞 절과 각 source-record.json을 따른다. 웹페이지나
 API 응답의 해시를 모델 파일 해시로 대신하지 않는다. 최종 CC BY 자산은
 모델·텍스처·애니메이션 각각의 제작자, 원본/파생 URL, 정확한 라이선스 버전,
 변경 내역과 표시 문구를 기록하고 배포 화면의 크레딧에서 접근 가능하게 한다.

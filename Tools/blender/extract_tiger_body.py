@@ -4,6 +4,8 @@ Only the imported source is edited. This creates review artifacts, not accepted
 runtime models. Original UVs remain per face corner; no voxel/remesh is used.
 """
 import json
+import hashlib
+import datetime as dt
 from pathlib import Path
 import sys
 
@@ -13,6 +15,8 @@ import numpy as np
 from mathutils import Matrix, Vector
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import maximum_flow
+
+FOOT_ANCHORS = [(-.29,-1.30,.67),(.05,-.71,.51),(.17,1.08,.32),(-.25,.21,.45)]
 
 
 def main():
@@ -48,16 +52,18 @@ def main():
         capacity = max(1, int(e.calc_length()*100000 / (1+abs(angle)*4)))
         edge(a.index, b.index, capacity)
         edge(b.index, a.index, capacity)
-    foot_anchors = [(-.26,-1.17,.69),(.22,-1.00,.73),(-.24,1.10,.38),(.19,.72,.43)]
+    foot_anchors = FOOT_ANCHORS
     body_seeds, base_seeds = 0, 0
     for v in bm.verts:
         x, y, z = v.co
-        paw = any(((x-a)/.19)**2+((y-b)/.24)**2+((z-c)/.15)**2 < 1
+        # Seeds lie on the upper paw coat, not in the supporting wood below it.
+        # These four centers were calibrated from orthogonal source renders.
+        paw = any(((x-a)/.14)**2+((y-b)/.18)**2+((z-c-.07)/.08)**2 < 1
                   for a,b,c in foot_anchors)
         if z > .98 or paw:
             edge(source, v.index, 100000000)
             body_seeds += 1
-        elif z < .16 or (z < .65 and abs(x) > .42):
+        elif z < .12 or (z < .65 and abs(x) > .50):
             edge(v.index, sink, 100000000)
             base_seeds += 1
     if body_seeds < 1000 or base_seeds < 100:
@@ -100,7 +106,15 @@ def main():
               'remaining_boundary_edges':remaining,'body_seeds':body_seeds,'base_seeds':base_seeds,
               'foot_anchors':foot_anchors,'visual_acceptance':'NOT_REVIEWED',
               'web_observer_validation':'NOT_RUN','merge_allowed':False}
+    report['created_at'] = dt.datetime.now(dt.timezone.utc).isoformat()
+    report['files_sha256'] = {name:hashlib.sha256((out/name).read_bytes()).hexdigest()
+                             for name in ['body-extraction.glb','body-extraction.blend']}
     (out/'body-extraction.json').write_text(json.dumps(report,indent=2)+'\n')
+    with (out/'CREDITS.md').open('a') as credits:
+        credits.write('\nExperimental derivative changes: seam-position welding with corner UV preservation, '
+                      'graph cut of the display base, and limited boundary caps. The first extraction '
+                      'failed visual review (lost hind-limb surface and retained wood); it is not '
+                      'an accepted runtime asset. Original source.glb remains unmodified.\n')
     print('BODY_EXTRACTION',json.dumps(report))
 
 

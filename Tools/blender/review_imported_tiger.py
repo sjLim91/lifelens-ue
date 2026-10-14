@@ -25,6 +25,31 @@ def main():
     rotate = Matrix.Identity(4) if extracted else Matrix.Rotation(math.pi/2, 4, 'Z')
     for obj in meshes:
         obj.matrix_world = rotate @ obj.matrix_world
+    if not extracted and out.name == 'tiger-topoforge' and len(meshes)==1:
+        source = meshes[0]
+        positions = [[round(value,6) for value in source.matrix_world @ v.co] for v in source.data.vertices]
+        triangles = [[p.vertices[0],p.vertices[i],p.vertices[i+1]]
+                     for p in source.data.polygons for i in range(1,len(p.vertices)-1)]
+        texcoords = [None]*len(positions)
+        uv_layer = source.data.uv_layers.active
+        if uv_layer:
+            for loop in source.data.loops:
+                uv = [round(value,7) for value in uv_layer.data[loop.index].uv]
+                texcoords[loop.vertex_index] = uv
+        for name,data in [('positions',positions),('triangles',triangles),('uv',texcoords)]:
+            (out/('inspection-'+name+'.json')).write_text(json.dumps(
+                {'purpose':'INSPECTION_ONLY_COORDINATES_ROUNDED_NOT_RUNTIME','data':data},separators=(',',':'))+'\n')
+        images = [node.image for material in source.data.materials if material and material.use_nodes
+                  for node in material.node_tree.nodes if node.type=='TEX_IMAGE' and node.image]
+        if images:
+            preview = images[0].copy()
+            width,height = preview.size
+            factor = min(1,1024/max(width,height))
+            preview.scale(max(1,round(width*factor)),max(1,round(height*factor)))
+            preview.filepath_raw = str(out/'inspection-albedo-1024.jpg')
+            preview.file_format = 'JPEG'
+            preview.save()
+            bpy.data.images.remove(preview)
     components = []
     geometric_components = []
     for obj in meshes:
@@ -121,7 +146,9 @@ def main():
     if not extracted and out.name == 'tiger-topoforge':
         camera.location = center + Vector((radius*.707,-radius*.707,radius*.22))
         camera.rotation_euler = (center-camera.location).to_track_quat('-Z','Y').to_euler()
-        anchors = [(-.26,-1.17,.69),(.22,-1.00,.73),(-.24,1.10,.38),(.19,.72,.43)]
+        sys.path.insert(0,str(Path(__file__).resolve().parent))
+        from extract_tiger_body import FOOT_ANCHORS
+        anchors = FOOT_ANCHORS
         colors = [(1,.02,.02,1),(.02,1,.02,1),(.02,.15,1,1),(1,.1,1,1)]
         diagnostic_labels = []
         for number, (anchor, color) in enumerate(zip(anchors,colors),1):
