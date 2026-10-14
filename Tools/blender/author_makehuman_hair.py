@@ -12,7 +12,7 @@ from mathutils import Vector
 def author_scalp_strands(scalp, rig, gender, material, attach):
     hair=bpy.data.curves.new('LifeLens Skinned Scalp Fibers','CURVE')
     hair.dimensions='3D'
-    hair.bevel_depth=.00060 if gender=='female' else .00044
+    hair.bevel_depth=.00034 if gender=='female' else .00030
     hair.bevel_resolution=1
     hair.resolution_u=4
     candidates=[v for v in scalp.data.vertices
@@ -26,14 +26,14 @@ def author_scalp_strands(scalp, rig, gender, material, attach):
     for idx,root in enumerate(candidates[::stride]):
         p=Vector(root.co)
         normal=Vector(root.normal)
-        start=p+normal*.0033
+        start=p+normal*.00025
         jitter=.003*math.sin(idx*4.33)
-        flow=(.039 if gender=='female' else .026)*(0.84+.20*math.cos(idx*2.71))
+        flow=(.030 if gender=='female' else .022)*(0.84+.20*math.cos(idx*2.71))
         path=[
             start,
-            start+Vector((jitter*.3,flow*.35,-.003)),
-            start+Vector((jitter*.65,flow*.73,-.011)),
-            start+Vector((jitter,flow,-.020)),
+            start+Vector((jitter*.3,flow*.35,-.005)),
+            start+Vector((jitter*.65,flow*.73,-.017)),
+            start+Vector((jitter,flow,-.036)),
         ]
         spline=hair.splines.new('POLY')
         spline.points.add(len(path)-1)
