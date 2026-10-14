@@ -111,6 +111,13 @@ def import_basemesh(input_dir,gender):
                 (.68,.445,.345) if gender=='female' else (.63,.397,.307),
                 roughness=.76)
     obj.data.materials.append(skin)
+    obj['source_up_axis']=up
+    obj['source_side_axis']=side
+    obj['source_forward_axis']=forward
+    obj['source_scale']=scale
+    obj['source_side_center']=center_side
+    obj['source_forward_center']=center_depth
+    obj['source_min_height']=lowest
     obj['CC0_SOURCE']='makehumancommunity/makehuman'
     obj['CC0_SOURCE_COMMIT']=UPSTREAM_COMMIT
     obj['CC0_MORPHED_VERTICES']=affected+affected2
@@ -160,7 +167,7 @@ def main():
         mesh=import_basemesh(source,gender)
         rig=rig_human(mesh)
         from author_makehuman_cc0_head import decorate
-        decorate(mesh,rig,gender)
+        decorate(mesh,rig,gender,source)
         assert len(mesh.data.vertices)>10000
         assert len(rig.data.bones)>=18
         filepath=out/('resident-'+gender+'-cc0')
