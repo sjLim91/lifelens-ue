@@ -118,6 +118,31 @@ def main():
         camera.rotation_euler = (center-camera.location).to_track_quat('-Z', 'Y').to_euler()
         scene.render.filepath = str(out / (prefix + name + '.png'))
         bpy.ops.render.render(write_still=True)
+    if not extracted and out.name == 'tiger-topoforge':
+        camera.location = center + Vector((radius*.707,-radius*.707,radius*.22))
+        camera.rotation_euler = (center-camera.location).to_track_quat('-Z','Y').to_euler()
+        anchors = [(-.26,-1.17,.69),(.22,-1.00,.73),(-.24,1.10,.38),(.19,.72,.43)]
+        colors = [(1,.02,.02,1),(.02,1,.02,1),(.02,.15,1,1),(1,.1,1,1)]
+        for number, (anchor, color) in enumerate(zip(anchors,colors),1):
+            material = bpy.data.materials.new('DIAGNOSTIC_MARKER_'+str(number))
+            material.use_nodes = True
+            tree = material.node_tree
+            tree.nodes.clear()
+            emission = tree.nodes.new('ShaderNodeEmission')
+            emission.inputs['Color'].default_value = color
+            output = tree.nodes.new('ShaderNodeOutputMaterial')
+            tree.links.new(emission.outputs[0],output.inputs['Surface'])
+            bpy.ops.mesh.primitive_uv_sphere_add(segments=12,ring_count=8,radius=.055,location=anchor)
+            bpy.context.object.data.materials.append(material)
+            point = Vector(anchor)
+            bpy.ops.object.text_add(location=point+Vector((0,0,.20)))
+            label = bpy.context.object
+            label.data.body = str(number)
+            label.data.size = .16
+            label.rotation_euler = camera.rotation_euler
+            label.data.materials.append(material)
+        scene.render.filepath = str(out/'source-foot-anchor-diagnostic.png')
+        bpy.ops.render.render(write_still=True)
     report = {
         'mesh_objects': len(meshes),
         'vertices': sum(len(obj.data.vertices) for obj in meshes),
