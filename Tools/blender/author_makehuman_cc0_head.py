@@ -161,7 +161,7 @@ def eyelid_sheets(eye_x, rig, gender):
     return parts
 
 
-def decorate(body,rig,gender,source):
+def decorate(body,rig,gender,source,full_morph):
     # Replace circular hand-authored eyes with official anatomically positioned
     # and UV-textured high-poly eyeballs from the same CC0 MakeHuman topology.
     from author_makehuman_eyes import import_cc0_eyes
@@ -170,21 +170,11 @@ def decorate(body,rig,gender,source):
     detail=[import_cc0_eyes(body,rig,source,attach)]
     for center in (-.033,.033):
         detail.extend(eyelid_sheets(center,rig,gender))
-    scalp=anatomical_scalp(body,rig,gender,hair)
-    detail.append(scalp)
-    from author_makehuman_hair import author_scalp_strands
-    detail.append(author_scalp_strands(scalp,rig,gender,hair,attach))
-    if gender=='female':
-        # Four narrow back-hair sections. Broad rectangular curtains looked
-        # artificial and obscured the natural neck/ear silhouette.
-        for n in range(4):
-            x=(n-1.5)*.029
-            detail.append(hair_ribbon('Anatomical back hair '+str(n),[
-                (x*.87,.090,1.728),
-                (x,.115,1.66),
-                (x*1.05,.124,1.57),
-                (x*1.1,.130,1.53),
-                (x*1.08,.131,1.515)],.0045,hair,rig))
+    # Authentic styled hair is barycentrically bound to the morphed original
+    # CC0 head-helper vertices. It replaces the artificial helmet cap, ribbon
+    # curtain and porcupine fiber proxies.
+    from author_makehuman_hair_proxy import import_hair
+    detail.append(import_hair(body,rig,source,full_morph,gender,attach))
     assert len(detail)>=2
     print('MAKEHUMAN_CC0_HEAD_DETAIL_OK',gender,'skinned pieces',len(detail))
     return detail
