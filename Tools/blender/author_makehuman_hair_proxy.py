@@ -87,8 +87,12 @@ def import_hair(body,rig,source,full_morph,gender,attach):
         x,y,z=point
         pivot=1.690 if gender=='male' else 1.665
         factor=.69 if gender=='male' else .86
-        return (x*(.96 if gender=='male' else 1.0),y,
-                pivot+(z-pivot)*factor if z>pivot else z)
+        fitted_z=pivot+(z-pivot)*factor if z>pivot else z
+        # Crown holes were visible at oblique angles after volume compression.
+        # Lift only upper cap strands, not the forehead/temple hairline.
+        if fitted_z>1.735:
+            fitted_z += .016 if gender=='female' else .011
+        return (x*(.96 if gender=='male' else 1.0),y,fitted_z)
     positions=[fit_crown(p) for p in positions]
     # Hard spatial guard to reject malformed mapping, rather than approving a
     # large hair object hovering over the body like the Q3 helmet.
