@@ -147,62 +147,58 @@ def human_details(d,female):
     for s in (-1,1):
         prefix='left' if s>0 else 'right'
         eyeX=s*.053
-        d.ellipsoid(prefix+' orbital sclera',(eyeX,-.130,1.666),
-                    (.032,.019,.019),'Head','sclera')
-        d.ellipsoid(prefix+' iris',(eyeX,-.150,1.665),
-                    (.015,.0055,.015),'Head','iris')
-        d.ellipsoid(prefix+' pupil',(eyeX,-.1555,1.665),
-                    (.007,.0035,.009),'Head','pupil')
-        d.ellipsoid(prefix+' corneal highlight',(eyeX-s*.004,-.159,1.670),
-                    (.003,.002,.003),'Head','glint',10,6)
+        d.ellipsoid(prefix+' orbital sclera',(eyeX,-.133,1.666),
+                    (.025,.010,.013),'Head','sclera')
+        d.ellipsoid(prefix+' iris',(eyeX,-.145,1.666),
+                    (.010,.004,.010),'Head','iris')
+        d.ellipsoid(prefix+' pupil',(eyeX,-.149,1.666),
+                    (.005,.002,.007),'Head','pupil')
+        d.ellipsoid(prefix+' corneal highlight',(eyeX-s*.003,-.152,1.670),
+                    (.002,.0015,.002),'Head','glint',10,6)
         # Eyelid contours and natural eyebrows, not huge exposed spheres.
         d.fiber(prefix+' upper eyelid',[
             (eyeX-s*.031,-.143,1.667),(eyeX-s*.018,-.147,1.681),
             (eyeX,-.149,1.683),(eyeX+s*.020,-.143,1.676),
-            (eyeX+s*.030,-.136,1.667)],.0028,'Head','lip')
+            (eyeX+s*.030,-.136,1.667)],.002,'Head','lip')
         d.fiber(prefix+' eyebrow',[
             (eyeX-s*.032,-.129,1.711),(eyeX-s*.014,-.141,1.724),
             (eyeX+s*.015,-.139,1.719),(eyeX+s*.028,-.128,1.711)],
-            .0048 if not female else .0036,'Head','hair_female' if female else 'hair')
+            .0036 if not female else .003,'Head','hair_female' if female else 'hair')
         # Ear helix plus darker concha follows the head bone.
-        d.ellipsoid(prefix+' ear helix',(s*.121,-.018,1.652),
-                    (.019,.035,.046),'Head','skin')
-        d.ellipsoid(prefix+' inner ear',(s*.133,-.033,1.648),
-                    (.006,.021,.027),'Head','ear',12,8)
+        d.ellipsoid(prefix+' inner ear',(s*.117,-.032,1.650),
+                    (.004,.014,.019),'Head','ear',12,8)
 
     # Separate philtrum / nostrils / Cupid bow and mandibular lip topology.
     for s in (-1,1):
-        d.ellipsoid('nasal wing',(s*.020,-.170,1.603),
-                    (.019,.021,.012),'Head','skin',12,8)
-        d.ellipsoid('nostril',(s*.018,-.191,1.596),
-                    (.009,.003,.004),'Head','ear',12,6)
+        d.ellipsoid('nostril',(s*.017,-.176,1.601),
+                    (.006,.002,.003),'Head','ear',12,6)
     d.fiber('cupid bow',[
         (-.040,-.128,1.566),(-.018,-.138,1.575),(0,-.140,1.570),
-        (.018,-.138,1.575),(.040,-.128,1.566)],.0065,'Head','lip')
+        (.018,-.138,1.575),(.040,-.128,1.566)],.0038,'Head','lip')
     d.fiber('lower vermillion',[
         (-.034,-.127,1.558),(-.015,-.136,1.549),
-        (0,-.138,1.546),(.015,-.136,1.549),(.034,-.127,1.558)],.007,'Head','lip')
+        (0,-.138,1.546),(.015,-.136,1.549),(.034,-.127,1.558)],.0035,'Head','lip')
 
     # Crown/temple hair has distinct head-bound topology and anatomy-driven
     # sex/identity silhouette; never hard-code scalp colour as the face.
     crown=d.ellipsoid('sculpted crown',(0,.015,1.782),
-                     (.120,.111,.092) if female else (.115,.101,.053),
+                     (.116,.105,.064) if female else (.112,.099,.049),
                      'Head','hair_female' if female else 'hair',24,14)
     crown['lifelens_hair_style']='shoulder-length' if female else 'short'
     for s in (-1,1):
         if female:
             d.ellipsoid('temple hair',(s*.112,.014,1.668),
-                        (.041,.084,.139),'Head','hair_female')
+                        (.028,.064,.105),'Head','hair_female')
             d.fiber('layered hair strands',[
                 (s*.118,.008,1.77),(s*.13,.007,1.68),
                 (s*.13,.016,1.57),(s*.122,.033,1.49)],
-                .022,'Head','hair_female')
+                .014,'Head','hair_female')
             d.fiber('front swept fringe',[
                 (s*.025,-.085,1.815),(s*.06,-.115,1.77),
-                (s*.084,-.130,1.73)],.017,'Head','hair_female')
+                (s*.084,-.130,1.73)],.010,'Head','hair_female')
         else:
             d.ellipsoid('short side hair',(s*.104,.01,1.733),
-                        (.025,.076,.047),'Head','hair')
+                        (.018,.070,.039),'Head','hair')
             d.fiber('short hairline',[
                 (s*.11,-.05,1.76),(s*.075,-.105,1.782),
                 (s*.027,-.110,1.794)],.010,'Head','hair')
@@ -225,22 +221,22 @@ def tiger_details(d):
     # separate materials, not flattened into Q3's smooth orange bulk.
     for s in (-1,1):
         tag='right' if s<0 else 'left'
-        d.ellipsoid(tag+' white eye surround',(s*.137,1.292,1.231),
-                    (.093,.035,.070),'head','tiger_white')
-        d.ellipsoid(tag+' gold eye',(s*.135,1.329,1.241),
-                    (.043,.018,.038),'head','tiger_eye')
-        d.ellipsoid(tag+' vertical pupil',(s*.137,1.351,1.241),
-                    (.012,.008,.033),'head','tiger_black')
-        d.ellipsoid(tag+' eye reflection',(s*.123,1.358,1.256),
-                    (.007,.003,.008),'head','glint',12,8)
+        d.ellipsoid(tag+' white eye surround',(s*.137,1.305,1.225),
+                    (.064,.017,.044),'head','tiger_white')
+        d.ellipsoid(tag+' gold eye',(s*.135,1.322,1.232),
+                    (.030,.009,.022),'head','tiger_eye')
+        d.ellipsoid(tag+' vertical pupil',(s*.137,1.333,1.232),
+                    (.009,.005,.021),'head','tiger_black')
+        d.ellipsoid(tag+' eye reflection',(s*.128,1.341,1.244),
+                    (.004,.002,.005),'head','glint',12,8)
         d.fiber(tag+' black eyeliner',[
             (s*.077,1.331,1.260),(s*.122,1.345,1.286),
             (s*.17,1.32,1.282),(s*.204,1.283,1.256)],
             .009,'head','tiger_black')
         d.ellipsoid(tag+' inner triangular ear',(s*.169,1.190,1.402),
-                    (.072,.035,.083),'head','tiger_black')
-        d.ellipsoid(tag+' muzzle cheek',(s*.104,1.47,1.026),
-                    (.114,.095,.069),'head','tiger_white')
+                    (.050,.017,.054),'head','tiger_black')
+        d.ellipsoid(tag+' muzzle cheek',(s*.103,1.495,1.022),
+                    (.085,.042,.040),'head','tiger_white')
         for j in range(4):
             # Facial tiger pattern = anatomical cheek/forehead markings.
             d.fiber(tag+' cheek stripe '+str(j),[
@@ -256,13 +252,13 @@ def tiger_details(d):
                         'head','tiger_black',10,6)
         for k in range(5):
             start=(s*(.13+k*.01),1.50,1.00+k*.014)
-            end=(s*(.38+k*.03),1.58,1.07+k*.019)
+            end=(s*(.32+k*.020),1.58,1.07+k*.013)
             mid=((start[0]+end[0])*.5,1.56,1.045+k*.014)
-            d.fiber('tiger whisker '+tag,[start,mid,end],.0018,'head','whisker')
+            d.fiber('tiger whisker '+tag,[start,mid,end],.0012,'head','whisker')
 
     # Detailed nasal leather and philtrum / lower jaw line.
-    d.ellipsoid('triangular tiger nose',(0,1.573,1.061),
-                (.084,.029,.044),'head','tiger_nose',18,12)
+    d.ellipsoid('triangular tiger nose',(0,1.580,1.062),
+                (.057,.020,.027),'head','tiger_nose',18,12)
     d.fiber('tiger nasal seam',[(0,1.596,1.04),(0,1.58,1.002),
                                (0,1.557,.978)],.006,'head','tiger_black')
     for s in (-1,1):
