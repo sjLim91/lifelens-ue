@@ -103,6 +103,8 @@ def import_basemesh(input_dir,gender):
     mesh.from_pydata(coords,[],faces)
     mesh.validate(clean_customdata=False)
     mesh.update()
+    from author_makehuman_uv_skin import populate_original_skin_uv
+    populate_original_skin_uv(mesh,source,body_count,reverse=(up in (0,1)))
     obj=bpy.data.objects.new('LifeLensMakeHumanCC0_'+gender,mesh)
     bpy.context.collection.objects.link(obj)
     for p in mesh.polygons:
@@ -111,6 +113,8 @@ def import_basemesh(input_dir,gender):
                 (.68,.445,.345) if gender=='female' else (.63,.397,.307),
                 roughness=.76)
     obj.data.materials.append(skin)
+    from author_makehuman_uv_skin import apply_original_cc0_pbr_skin
+    apply_original_cc0_pbr_skin(obj,input_dir,gender)
     obj['source_up_axis']=up
     obj['source_side_axis']=side
     obj['source_forward_axis']=forward
