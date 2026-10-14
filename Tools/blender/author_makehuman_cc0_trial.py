@@ -69,6 +69,15 @@ def import_basemesh(input_dir,gender):
     racial=input_dir/('caucasian-'+gender+'-young.target')
     affected=apply_morph(vertices,target,1.0,min_affected=0)
     affected2=apply_morph(vertices,racial,1.0)
+    # Official MakeHuman HM08 topology: visible body vertices 0..13379;
+    # 13380..19157 are hidden joint cubes, helper hair, skirt, tights etc.
+    # Rendering those helpers produced a false wig/gown instead of a person.
+    # Keep only real body faces and discard helper vertices before bounds/rig.
+    assert len(vertices)==19158,('Unexpected upstream HM08 topology',len(vertices))
+    body_count=13380
+    faces=[face for face in faces if all(i<body_count for i in face)]
+    vertices=vertices[:body_count]
+    assert len(faces)>10000,('Missing anatomical body faces',len(faces))
     extents=[max(v[i] for v in vertices)-min(v[i] for v in vertices)
              for i in range(3)]
     up=max(range(3),key=extents.__getitem__)
@@ -83,8 +92,8 @@ def import_basemesh(input_dir,gender):
     lowest=min(v[up] for v in vertices)
     coords=[]
     for v in vertices:
-        coords.append(((v[side]-center_side)*scale,
-                       (v[forward]-center_depth)*scale,
+        coords.append((-(v[side]-center_side)*scale,
+                       -(v[forward]-center_depth)*scale,
                        (v[up]-lowest)*scale))
     mesh=bpy.data.meshes.new('MakeHumanCC0Topology_'+gender)
     # Odd axis permutations invert polygon handedness; keep exterior-facing
