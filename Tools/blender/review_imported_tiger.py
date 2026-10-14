@@ -9,16 +9,20 @@ from mathutils import Matrix, Vector
 
 
 def main():
-    out = Path(sys.argv[sys.argv.index('--') + 1]).resolve()
+    args = sys.argv[sys.argv.index('--') + 1:]
+    out = Path(args[0]).resolve()
+    source_file = args[1] if len(args)>1 else 'source.glb'
+    extracted = source_file == 'body-extraction.glb'
+    prefix = 'body-' if extracted else ''
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete(use_global=False)
-    bpy.ops.import_scene.gltf(filepath=str(out / 'source.glb'))
+    bpy.ops.import_scene.gltf(filepath=str(out / source_file))
     meshes = [obj for obj in bpy.context.scene.objects if obj.type == 'MESH']
     if not meshes:
         raise ValueError('Imported candidate has no meshes')
     # This particular source faces -X, whereas the observer's animals face +Z
     # in glTF (= -Y in Blender). Correct the review labels using a root transform.
-    rotate = Matrix.Rotation(math.pi/2, 4, 'Z')
+    rotate = Matrix.Identity(4) if extracted else Matrix.Rotation(math.pi/2, 4, 'Z')
     for obj in meshes:
         obj.matrix_world = rotate @ obj.matrix_world
     components = []
@@ -108,11 +112,11 @@ def main():
     plane.data.materials.append(material)
     # Source geometry/materials are untouched. Only review stage objects are added.
     bpy.ops.file.pack_all()
-    bpy.ops.wm.save_as_mainfile(filepath=str(out / 'source-review.blend'))
+    bpy.ops.wm.save_as_mainfile(filepath=str(out / (prefix + 'source-review.blend')))
     for name, angle in [('front', 0), ('side', math.pi/2), ('three-quarter', math.pi/4), ('back', math.pi)]:
         camera.location = center + Vector((math.sin(angle)*radius, -math.cos(angle)*radius, radius*.22))
         camera.rotation_euler = (center-camera.location).to_track_quat('-Z', 'Y').to_euler()
-        scene.render.filepath = str(out / (name + '.png'))
+        scene.render.filepath = str(out / (prefix + name + '.png'))
         bpy.ops.render.render(write_still=True)
     report = {
         'mesh_objects': len(meshes),
@@ -124,11 +128,11 @@ def main():
         'connected_components': components[:40],
         'geometric_component_count': len(geometric_components),
         'geometric_components': geometric_components[:40],
-        'review_orientation_change': 'source -X forward rotated +90 degrees about Blender Z',
+        'review_orientation_change': 'canonical -Y forward' if extracted else 'source -X forward rotated +90 degrees about Blender Z',
         'visual_acceptance': 'PENDING_HUMAN_OR_AGENT_IMAGE_REVIEW',
         'observer_validation': 'NOT_RUN', 'performance': 'NOT_MEASURED',
     }
-    (out / 'blender-inspection.json').write_text(json.dumps(report, indent=2) + '\n')
+    (out / (prefix + 'blender-inspection.json')).write_text(json.dumps(report, indent=2) + '\n')
     print('BLENDER_INSPECTION', json.dumps(report))
 
 

@@ -6,6 +6,7 @@ on:
     paths:
       - 'Tools/assets/**'
       - 'Tools/blender/review_imported_tiger.py'
+      - 'Tools/blender/extract_tiger_body.py'
       - '.github/workflows/tiger-source-review.yml'
   workflow_dispatch:
 
@@ -31,11 +32,15 @@ jobs:
       - name: Install free Blender on ephemeral runner
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends blender python3-numpy
+          sudo apt-get install -y --no-install-recommends blender python3-numpy python3-scipy
       - name: Inspect original geometry and render four views
         run: |
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-ferocious
+      - name: Inspect bounded source-preserving body extraction (not runtime acceptance)
+        run: |
+          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/extract_tiger_body.py -- docs/asset-reviews/tiger-topoforge
+          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge body-extraction.glb
       - name: Preserve review files on the Draft branch only
         env:
           REVIEW_BRANCH: ${{ github.ref_name }}

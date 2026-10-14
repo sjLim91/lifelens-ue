@@ -28,6 +28,10 @@ def main():
         body = response.read(64 * 1024 * 1024 + 1)
     if len(body) > 64 * 1024 * 1024 or len(body) < 20:
         raise ValueError('Candidate exceeds review size bound or is empty')
+    expected = ('b62a99cbe6d41e2f669e4c717e52f7c24f448623479d73ada1508dd7db4953e8'
+                if alternative else 'f7e3b63e83efd92ba379f750f02e9971f52679173c6a268a29f352ad0c2092be')
+    if hashlib.sha256(body).hexdigest() != expected:
+        raise ValueError('Publisher bytes differ from the inspected source; stop for review')
     magic, version, size = struct.unpack_from('<4sII', body)
     if magic != b'glTF' or version != 2 or size != len(body):
         raise ValueError('Not a complete GLB 2.0 file')
