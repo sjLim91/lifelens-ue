@@ -26,12 +26,16 @@ jobs:
         run: python3 Tools/assets/probe_tiger_sources.py --output review/tiger-source-evidence.json
       - name: Acquire openly published CC BY TopoForge candidate for review only
         run: python3 Tools/assets/review_public_tiger.py docs/asset-reviews/tiger-topoforge
+      - name: Acquire second CC BY candidate for comparison
+        run: python3 Tools/assets/review_public_tiger.py docs/asset-reviews/tiger-ferocious ferocious
       - name: Install free Blender on ephemeral runner
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends blender python3-numpy
       - name: Inspect original geometry and render four views
-        run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge
+        run: |
+          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge
+          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-ferocious
       - name: Preserve review files on the Draft branch only
         env:
           REVIEW_BRANCH: ${{ github.ref_name }}
@@ -39,7 +43,7 @@ jobs:
           case "$REVIEW_BRANCH" in feat/tiger-source-web-integration-*) ;; *) exit 1 ;; esac
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/asset-reviews/tiger-topoforge
+          git add docs/asset-reviews/tiger-topoforge docs/asset-reviews/tiger-ferocious
           if ! git diff --cached --quiet; then
             git commit -m 'Preserve CC BY tiger candidate source and four-view review; not runtime approved [skip ci]'
             git push origin "HEAD:$REVIEW_BRANCH"
@@ -52,5 +56,6 @@ jobs:
           path: |
             review/tiger-source-evidence.json
             docs/asset-reviews/tiger-topoforge/
+            docs/asset-reviews/tiger-ferocious/
           if-no-files-found: error
           retention-days: 14

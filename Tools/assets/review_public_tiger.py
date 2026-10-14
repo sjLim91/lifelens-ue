@@ -14,6 +14,13 @@ DOWNLOAD = 'https://storage.googleapis.com/ai-services-quality/jobs/7m4ap2k1.glb
 
 
 def main():
+    global SOURCE, DOWNLOAD
+    alternative = len(sys.argv) > 2 and sys.argv[2] == 'ferocious'
+    creator = 'a Sloyd creator' if alternative else 'TopoForge'
+    title = 'A Ferocious Tiger Figurine With A Muscular Body' if alternative else 'Tiger'
+    if alternative:
+        SOURCE = 'https://www.sloyd.ai/free-3d-models/model/a-ferocious-tiger-figurine-with-a-muscular-body-inzht46x'
+        DOWNLOAD = 'https://storage.googleapis.com/ai-services-quality/jobs/inzht46x.glb'
     out = pathlib.Path(sys.argv[1])
     out.mkdir(parents=True, exist_ok=True)
     request = urllib.request.Request(DOWNLOAD, headers={'User-Agent': 'LifeLens-source-review/1.0'})
@@ -36,12 +43,12 @@ def main():
     record = {
         'status': 'CANDIDATE_ONLY_NOT_RUNTIME', 'merge_allowed': False,
         'source_url': SOURCE, 'download_url': DOWNLOAD,
-        'creator': 'TopoForge',
+        'creator': creator,
         'license': 'CC-BY-4.0',
         'license_url': 'https://creativecommons.org/licenses/by/4.0/',
         'attribution_required': True,
-        'attribution': '"Tiger" by TopoForge, generated with Sloyd, licensed under CC BY 4.0.',
-        'license_evidence': 'Live publisher page verified 2026-10-14: commercial use, modification and redistribution allowed with attribution. Published 2025-08-21.',
+        'attribution': f'"{title}" by {creator}, generated with Sloyd, licensed under CC BY 4.0.',
+        'license_evidence': 'Live publisher page verified 2026-10-14: commercial use, modification and redistribution allowed with attribution.',
         'modifications': 'None to source.glb; Blender import and neutral review staging only.',
         'downloaded_at': dt.datetime.now(dt.timezone.utc).isoformat(),
         'sha256': hashlib.sha256(body).hexdigest(), 'bytes': len(body),
@@ -58,7 +65,7 @@ def main():
     }
     (out / 'CREDITS.md').write_text(
         '# Tiger source attribution\n\n'
-        '"Tiger" by TopoForge, generated with Sloyd, licensed under CC BY 4.0.\n\n'
+        + record['attribution'] + '\n\n'
         + 'Source: ' + SOURCE + '\n\n'
         + 'License: https://creativecommons.org/licenses/by/4.0/\n\n'
         + 'Changes: source.glb is unmodified; Blender review adds camera, lighting and floor. '
