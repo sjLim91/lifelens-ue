@@ -1,0 +1,21 @@
+{
+  "mesh_objects": 1,
+  "vertices": 28973,
+  "triangles": 39200,
+  "bounds_blender": {
+    "min": [
+      -1.7903084754943848,
+      -0.6136689186096191,
+      0.0
+    ],
+    "max": [
+      1.7903084754943848,
+      0.6136689186096191,
+      2.5
+    ]
+  },
+  "armatures": 0,
+  "visual_acceptance": "PENDING_HUMAN_OR_AGENT_IMAGE_REVIEW",
+  "observer_validation": "NOT_RUN",
+  "performance": "NOT_MEASURED"
+}

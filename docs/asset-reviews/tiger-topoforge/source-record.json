@@ -1,0 +1,29 @@
+{
+  "status": "CANDIDATE_ONLY_NOT_RUNTIME",
+  "merge_allowed": false,
+  "source_url": "https://www.sloyd.ai/free-3d-models/model/tiger-7m4ap2k1",
+  "download_url": "https://storage.googleapis.com/ai-services-quality/jobs/7m4ap2k1.glb",
+  "creator": "TopoForge",
+  "license": "CC-BY-4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "attribution_required": true,
+  "attribution": "\"Tiger\" by TopoForge, generated with Sloyd, licensed under CC BY 4.0.",
+  "license_evidence": "Live publisher page verified 2026-10-14: commercial use, modification and redistribution allowed with attribution. Published 2025-08-21.",
+  "modifications": "None to source.glb; Blender import and neutral review staging only.",
+  "downloaded_at": "2026-10-14T16:53:59.962664+00:00",
+  "sha256": "f7e3b63e83efd92ba379f750f02e9971f52679173c6a268a29f352ad0c2092be",
+  "bytes": 8298328,
+  "generator": "https://github.com/mikedh/trimesh",
+  "asset_extras": null,
+  "mesh_count": 1,
+  "skin_count": 0,
+  "animation_names": [],
+  "material_count": 1,
+  "materials": [
+    null
+  ],
+  "uv_primitives": 1,
+  "extensions_used": [],
+  "web_observer_validation": "NOT_RUN",
+  "android_performance": "NOT_MEASURED"
+}
