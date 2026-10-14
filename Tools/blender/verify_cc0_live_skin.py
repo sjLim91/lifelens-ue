@@ -30,9 +30,16 @@ def main():
     assert body and rig and scalp
     eye=next((o for o in bpy.data.objects if o.name.startswith('CC0 anatomical textured eyes')),None)
     assert eye is not None
-    for obj in (body,scalp,eye):
+    lids=[obj for obj in bpy.data.objects if 'anatomical eyelid' in obj.name]
+    assert len(lids)==4,('two upper/two lower eyelids required',len(lids))
+    for obj in (body,scalp,eye,*lids):
         assert obj.parent==rig
         assert any(m.type=='ARMATURE' and m.object==rig for m in obj.modifiers)
+    for eyelid in lids:
+        xs=[p.co.x for p in eyelid.data.vertices]
+        zs=[p.co.z for p in eyelid.data.vertices]
+        assert max(xs)-min(xs)>.035,('eyelid too narrow',eyelid.name)
+        assert 1.598<min(zs)<1.635 and 1.621<max(zs)<1.660,('eyelid out of orbit',eyelid.name)
     bpy.context.scene.frame_set(1)
     rest=sample(body)
     bpy.context.scene.frame_set(7)
@@ -42,6 +49,7 @@ def main():
     bpy.context.scene.frame_set(1)
     hair_rest=sample(scalp)
     eye_rest=sample(eye)
+    lid_rest=[sample(o) for o in lids]
     head=rig.pose.bones.get('Head')
     assert head
     head.rotation_mode='XYZ'
@@ -49,9 +57,11 @@ def main():
     bpy.context.view_layer.update()
     hair_move=delta(hair_rest,sample(scalp))
     eye_move=delta(eye_rest,sample(eye))
-    assert hair_move>.004 and eye_move>.004,(hair_move,eye_move)
+    lid_motions=[delta(rest,sample(o)) for rest,o in zip(lid_rest,lids)]
+    assert hair_move>.004 and eye_move>.004 and min(lid_motions)>.004,(hair_move,eye_move,lid_motions)
     print('CC0_LIVE_SKINNING_PASS',sex,'body',round(d,4),
-          'scalp',round(hair_move,4),'eyeball',round(eye_move,4))
+          'scalp',round(hair_move,4),'eyeball',round(eye_move,4),
+          'eyelids',len(lids),'minHeadMotion',round(min(lid_motions),4))
 
 
 if __name__=='__main__':
