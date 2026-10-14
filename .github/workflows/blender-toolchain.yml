@@ -1,0 +1,57 @@
+name: LifeLens Blender Toolchain
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'chore/blender-toolchain-*'
+    paths:
+      - '.github/workflows/blender-toolchain.yml'
+      - 'Tools/blender/**'
+  pull_request:
+    paths:
+      - '.github/workflows/blender-toolchain.yml'
+      - 'Tools/blender/**'
+
+permissions:
+  contents: read
+
+jobs:
+  blender-headless:
+    name: Blender headless and GLB export
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install free Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
+          blender --version
+          blender --background --factory-startup --python-expr "import numpy; print('Blender NumPy:', numpy.__version__)"
+      - name: Create a Blender file and a GLB export
+        run: |
+          mkdir -p "$RUNNER_TEMP/lifelens-blender"
+          blender --background --factory-startup --threads 2 --python Tools/blender/verify_toolchain.py -- "$RUNNER_TEMP/lifelens-blender"
+      - name: Verify Blender artifacts
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, struct
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'lifelens-blender'
+          glb = root / 'toolchain-smoke.glb'
+          blend = root / 'toolchain-smoke.blend'
+          assert blend.is_file() and blend.stat().st_size > 1024
+          with glb.open('rb') as file:
+              header = file.read(12)
+          magic, version, length = struct.unpack('<4sII', header)
+          assert magic == b'glTF' and version == 2
+          assert length == glb.stat().st_size
+          print('PASS Blender native project:', blend.stat().st_size, 'bytes')
+          print('PASS glTF 2.0 binary:', glb.stat().st_size, 'bytes')
+          PY
+      - name: Upload editable project and exported GLB
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifelens-blender-toolchain-smoke
+          path: ${{ runner.temp }}/lifelens-blender/
+          retention-days: 7
