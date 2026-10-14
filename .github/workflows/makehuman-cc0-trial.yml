@@ -11,6 +11,7 @@ on:
       - 'Tools/blender/author_makehuman_hair.py'
       - 'Tools/blender/author_makehuman_eyes.py'
       - 'Tools/blender/author_makehuman_uv_skin.py'
+      - 'Tools/blender/author_makehuman_hair_proxy.py'
       - 'Tools/blender/validate_cc0_trial.py'
       - 'Tools/blender/verify_cc0_live_skin.py'
       - '.github/workflows/makehuman-cc0-trial.yml'
@@ -21,6 +22,7 @@ on:
       - 'Tools/blender/author_makehuman_hair.py'
       - 'Tools/blender/author_makehuman_eyes.py'
       - 'Tools/blender/author_makehuman_uv_skin.py'
+      - 'Tools/blender/author_makehuman_hair_proxy.py'
       - 'Tools/blender/validate_cc0_trial.py'
       - 'Tools/blender/verify_cc0_live_skin.py'
       - '.github/workflows/makehuman-cc0-trial.yml'
@@ -63,13 +65,23 @@ jobs:
             # Fail instead of rendering a Git-LFS pointer or HTML response.
             python3 -c "import pathlib,sys; p=pathlib.Path(sys.argv[1]); assert p.read_bytes()[:4]==bytes((137,80,78,71)) and p.stat().st_size>100000, p; print('VERIFIED_CC0_SKIN',p.name,p.stat().st_size)" "$RUNNER_TEMP/lifelens-cc0-source/$file"
           done
+          HAIR_BASE="https://raw.githubusercontent.com/s20220526/makehuman-assets/$ASSET_PIN/base/hair"
+          HAIR_MEDIA="https://media.githubusercontent.com/media/s20220526/makehuman-assets/$ASSET_PIN/base/hair"
+          for gender in female male; do
+            if [ "$gender" = female ]; then hairstyle=bob01; else hairstyle=short01; fi
+            for ext in obj mhclo; do
+              curl -fLsS --retry 3 --max-time 120 "$HAIR_BASE/$hairstyle/$hairstyle.$ext" -o "$RUNNER_TEMP/lifelens-cc0-source/$hairstyle.$ext"
+            done
+            curl -fLsS --retry 3 --max-time 120 "$HAIR_MEDIA/$hairstyle/$hairstyle"_diffuse.png -o "$RUNNER_TEMP/lifelens-cc0-source/$hairstyle"_diffuse.png
+            python3 -c "import pathlib,sys; p=pathlib.Path(sys.argv[1]); assert p.read_bytes()[:4]==bytes((137,80,78,71)) and p.stat().st_size>100000, p" "$RUNNER_TEMP/lifelens-cc0-source/$hairstyle"_diffuse.png
+          done
           test "$(wc -c < "$RUNNER_TEMP/lifelens-cc0-source/base.obj")" -gt 1000000
           sha256sum "$RUNNER_TEMP"/lifelens-cc0-source/*
       - name: Author CC0 adult male and female skinned basemeshes
         run: |
           mkdir -p "$RUNNER_TEMP/lifelens-cc0-trial"
           blender --background --factory-startup --python-exit-code 1 --threads 2 --python Tools/blender/author_makehuman_cc0_trial.py -- "$RUNNER_TEMP/lifelens-cc0-source" "$RUNNER_TEMP/lifelens-cc0-trial"
-      - name: Verify actual skinned body/eyes/scalp are animated
+      - name: Verify actual skinned body/eyes/eyelids/hair are animated
         run: |
           for gender in female male; do
             blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-cc0-trial/resident-$gender-cc0.blend" --threads 2 --python Tools/blender/verify_cc0_live_skin.py
