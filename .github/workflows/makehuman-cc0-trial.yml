@@ -95,6 +95,7 @@ jobs:
             src="$RUNNER_TEMP/lifelens-cc0-trial/resident-$gender-cc0.blend"
             blender --background --python-exit-code 1 "$src" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-cc0-trial/resident-$gender-review.png"
             blender --background --python-exit-code 1 "$src" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-cc0-trial/resident-$gender-portrait.png"
+            blender --background --python-exit-code 1 "$src" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-cc0-trial/resident-$gender-threequarter.png"
           done
       - name: Preserve design/skin/visual review evidence
         uses: actions/upload-artifact@v4
