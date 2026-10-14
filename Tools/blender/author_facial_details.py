@@ -38,7 +38,7 @@ def build_palette():
         'hair':material('Q4 warm dark hair',(.070,.044,.025),.88),
         'hair_female':material('Q4 auburn hair',(.14,.066,.034),.81),
         'ear':material('Q4 inner ear',(.57,.26,.21),.78),
-        'tiger_nose':material('Q4 tiger nose',(.081,.062,.062),.43),
+        'tiger_nose':material('Q4 tiger nose',(.043,.033,.038),.69),
         'tiger_white':material('Q4 tiger cream',(.90,.79,.56),.91),
         'tiger_black':material('Q4 tiger stripes',(.055,.035,.025),.96),
         'tiger_eye':material('Q4 tiger gold eye',(.32,.25,.075),.24),
@@ -245,11 +245,17 @@ def tiger_details(d):
             y=1.548-(k//2)*.028
             d.ellipsoid('whisker pore',(x,y,z),(.0035,.0035,.0030),
                         'head','tiger_black',10,6)
-        for k in range(3):
-            start=(s*(.11+k*.011),1.536,1.014+k*.011)
-            end=(s*(.26+k*.015),1.569,1.042+k*.019)
-            mid=((start[0]+end[0])*.5,1.563,1.039+k*.016)
-            d.fiber('fine facial vibrissa '+tag,[start,mid,end],.00075,'head','whisker')
+        for k in range(9):
+            row=k//3
+            column=k%3
+            start=(s*(.081+column*.028),1.526-column*.009,
+                   1.010+row*.015)
+            end=(s*(.31+column*.025),1.603,
+                 1.013+row*.017-column*.009)
+            mid=(s*(.195+column*.025),1.584,
+                 1.031+row*.016)
+            d.fiber('fine anatomical vibrissa '+tag,
+                    [start,mid,end],.00048,'head','whisker')
 
     # Low-poly triangular nasal leather, not a round purple marble.
     triangles=[
