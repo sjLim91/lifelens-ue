@@ -29,7 +29,7 @@ jobs:
       - name: Install free Blender on ephemeral runner
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends blender
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
       - name: Inspect original geometry and render four views
         run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge
       - name: Preserve review files on the Draft branch only
