@@ -116,6 +116,33 @@ if(vWildlifeSpecies>3.5){
   float scales=.025*sin(vWildlifeLocal.z*124.0+sin(vWildlifeLocal.y*94.0));
   diffuseColor.rgb*=1.0+scales;
 }
+// Face detail sits on the existing fused skull surface rather than hovering
+// as separate bead eyes. Symmetric masks include an iris and small highlight.
+vec3 eyeCenter=vec3(.115,.42,.305);
+vec3 eyeSize=vec3(.05,.06,.09);
+vec3 noseCenter=vec3(0.0,.33,.43);
+if(vWildlifeSpecies>3.5){
+  eyeCenter=vec3(.195,1.22,.68);eyeSize=vec3(.070,.075,.13);
+  noseCenter=vec3(0.0,.97,.94);
+}else if(vWildlifeSpecies>2.5){
+  eyeCenter=vec3(.083,.2,.255);eyeSize=vec3(.044,.048,.082);
+  noseCenter=vec3(0.0,.16,.34);
+}else if(vWildlifeSpecies>1.5){
+  eyeCenter=vec3(.17,.99,.66);eyeSize=vec3(.060,.070,.11);
+  noseCenter=vec3(0.0,.83,.94);
+}else if(vWildlifeSpecies>.5){
+  eyeCenter=vec3(.16,1.43,.76);eyeSize=vec3(.062,.075,.11);
+  noseCenter=vec3(0.0,1.34,.98);
+}
+vec3 eyeOffset=vec3(abs(vWildlifeLocal.x),vWildlifeLocal.y,vWildlifeLocal.z)-eyeCenter;
+float eyeDistance=length(eyeOffset/eyeSize);
+float iris=1.0-smoothstep(.60,.96,eyeDistance);
+float sparkle=1.0-smoothstep(.10,.31,length((eyeOffset-vec3(-eyeSize.x*.18,eyeSize.y*.24,eyeSize.z*.3))/eyeSize));
+diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.065,.058,.038),iris*.90);
+diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.98,.89,.73),sparkle*iris*.75);
+vec3 noseDist=(vWildlifeLocal-noseCenter)/vec3(.115,.075,.13);
+float noseMask=1.0-smoothstep(.43,.9,length(noseDist));
+diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
 `);
     };
     this.material.customProgramCacheKey=()=> 'lifelens-q1-fused-wildlife-triplanar-v1';
