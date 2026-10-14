@@ -306,35 +306,65 @@ def tiger():
 
 
 def idle_and_walk(rig, creature):
+    """Looping gait with real joint deformation and no root-path invention.
+
+    The Core remains the source of world motion. This animation changes only
+    local limb/spine/tail poses. Tiger uses a four-beat walking footfall rather
+    than an in-place synchronized puppet trot.
+    """
     action=bpy.data.actions.new('LifeLensWalkCycle')
     rig.animation_data_create()
     rig.animation_data.action=action
     rig.rotation_mode='XYZ'
-    for frame in (1,7,13,19,25):
-        phase=math.pi*2*(frame-1)/24
+    total_frames=49 if creature=='tiger' else 25
+    for frame in range(1,total_frames+1,6):
+        phase=(frame-1)/(total_frames-1)
         for pb in rig.pose.bones:
             pb.rotation_mode='XYZ'
             pb.rotation_euler=(0,0,0)
-            side=-1 if pb.name.endswith('_r') else 1
             if creature=='human':
+                side=-1 if pb.name.endswith('_r') else 1
+                theta=math.tau*phase
                 if pb.name.startswith('thigh_'):
-                    pb.rotation_euler.x=side*.27*math.sin(phase)
+                    pb.rotation_euler.x=side*.27*math.sin(theta)
                 elif pb.name.startswith('calf_'):
-                    pb.rotation_euler.x=.21*max(0,math.cos(phase*side))
+                    pb.rotation_euler.x=.21*max(0,math.cos(theta*side))
                 elif pb.name.startswith('upperarm_'):
-                    pb.rotation_euler.x=-side*.2*math.sin(phase)
+                    pb.rotation_euler.x=-side*.2*math.sin(theta)
             else:
-                if pb.name.startswith('front_') or pb.name.startswith('back_'):
-                    phase_shift=0 if pb.name.startswith('front_') else math.pi
-                    pb.rotation_euler.x=side*.19*math.sin(phase+phase_shift)
+                # LH / LF / RH / RF follow four distinct quarter-cycle
+                # offsets; left/right and front/hind are NOT duplicates.
+                offsets={
+                    'front_l':0.0,
+                    'back_r':.25,
+                    'front_r':.50,
+                    'back_l':.75,
+                }
+                if pb.name.startswith(('front_','back_')):
+                    prefix='_'.join(pb.name.split('_')[:2])
+                    local=math.tau*(phase+offsets[prefix])
+                    if pb.name.endswith('_upper'):
+                        pb.rotation_euler.x=.225*math.sin(local)
+                    else:
+                        # Swing phase flexes elbows/hocks; stance phase is
+                        # nearly extended to reduce apparent foot skating.
+                        pb.rotation_euler.x=.30*max(0.,math.sin(local+.65))
+                elif pb.name=='spine':
+                    pb.rotation_euler.z=.018*math.sin(2*math.tau*phase)
+                elif pb.name=='neck':
+                    pb.rotation_euler.x=-.015*math.cos(2*math.tau*phase)
+                elif pb.name=='head':
+                    pb.rotation_euler.x=.008*math.cos(2*math.tau*phase)
                 elif pb.name.startswith('tail_'):
-                    pb.rotation_euler.z=.14*math.sin(phase+.45)
+                    shift=.35 if pb.name=='tail_02' else 0.
+                    pb.rotation_euler.z=.18*math.sin(math.tau*phase+shift)
+                    pb.rotation_euler.x=.038*math.cos(math.tau*phase+shift)
             pb.keyframe_insert(data_path='rotation_euler',frame=frame,group=pb.name)
-    # Keep the Action linked to armature so glTF exports a real animation clip.
     bpy.context.scene.frame_start=1
-    bpy.context.scene.frame_end=25
+    bpy.context.scene.frame_end=total_frames
     bpy.context.scene.frame_set(1)
     return action
+
 
 
 def author(which,out):
