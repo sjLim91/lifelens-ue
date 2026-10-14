@@ -46,6 +46,21 @@ def main():
         assert any('JOINTS_0' in p.get('attributes',{}) and
                    'WEIGHTS_0' in p.get('attributes',{}) for p in primitives),(species,'no GPU skin')
         assert any('COLOR_0' in p.get('attributes',{}) for p in primitives),(species,'missing authored pigmentation')
+        detail=[m for m in obj.get('meshes',[]) if 'IndependentAnatomicalDetails' in m.get('name','')]
+        assert detail,(species,'missing separately authored anatomical topology')
+        detail_prims=[p for mesh in detail for p in mesh.get('primitives',[])]
+        assert len(detail_prims)>=5,(species,'insufficient independent facial/paw materials')
+        assert all('JOINTS_0' in p.get('attributes',{}) and 'WEIGHTS_0' in p.get('attributes',{}) for p in detail_prims),(species,'unspecified rigid facial/paw attachments')
+        assert len(obj['materials'])>=7,(species,'missing independent face/eye/coat materials')
+        if species=='tiger':
+            fur=[m for m in obj.get('meshes',[]) if 'TigerSkinnedMicroFur' in m.get('name','')]
+            assert fur,('tiger','no skinned microfur model exported')
+            fur_prims=[p for mesh in fur for p in mesh.get('primitives',[])]
+            assert len(fur_prims)>=3,('tiger','pelage pigmentation regions missing')
+            assert all('JOINTS_0' in p.get('attributes',{}) and
+                       'WEIGHTS_0' in p.get('attributes',{}) for p in fur_prims),('tiger','fur detached from armature')
+            print('PASS Q10 tiger microfur rigged GLB:',len(fur_prims),'fur primitives')
+        print('PASS Q4 anatomical face/paws:',species,len(detail_prims),'skin-weighted material primitives')
         print('PASS',species,glb.stat().st_size,'bytes,',
               joint_count,'joints,',len(obj['animations']),'animations,',
               channels,'animated channels,',len(primitives),'mesh primitives')

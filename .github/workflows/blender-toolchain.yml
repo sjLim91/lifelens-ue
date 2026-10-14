@@ -28,11 +28,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends blender python3-numpy
           blender --version
-          blender --background --factory-startup --python-expr "import numpy; print('Blender NumPy:', numpy.__version__)"
+          blender --background --python-exit-code 1 --factory-startup --python-expr "import numpy; print('Blender NumPy:', numpy.__version__)"
       - name: Create a Blender file and a GLB export
         run: |
           mkdir -p "$RUNNER_TEMP/lifelens-blender"
-          blender --background --factory-startup --threads 2 --python Tools/blender/verify_toolchain.py -- "$RUNNER_TEMP/lifelens-blender"
+          blender --background --python-exit-code 1 --factory-startup --threads 2 --python Tools/blender/verify_toolchain.py -- "$RUNNER_TEMP/lifelens-blender"
       - name: Verify Blender artifacts
         run: |
           python3 - <<'PY'
@@ -52,24 +52,37 @@ jobs:
       - name: Author original rigged residents and tiger
         run: |
           mkdir -p "$RUNNER_TEMP/lifelens-creatures"
-          blender --background --factory-startup --threads 2 --python Tools/blender/author_creatures.py -- "$RUNNER_TEMP/lifelens-creatures"
+          blender --background --python-exit-code 1 --factory-startup --threads 2 --python Tools/blender/author_creatures.py -- "$RUNNER_TEMP/lifelens-creatures"
+      - name: Verify evaluated skin and existing walk pose
+        run: |
+          for creature in resident-female resident-male tiger; do
+            blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/verify_creature_pose.py
+          done
+
       - name: Validate GLB skinning, pigment and walk motion
         run: python3 Tools/blender/validate_creatures.py "$RUNNER_TEMP/lifelens-creatures"
       - name: Render three actual models for visual review
         run: |
           for creature in resident-female resident-male tiger; do
-            blender --background "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/$creature-review.png"
+            blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/$creature-review.png"
+            blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/$creature-portrait.png"
           done
+          blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-creatures/tiger.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/tiger-threequarter.png"
       - name: Verify model review renders
         run: |
           python3 - <<'PY'
           import os, pathlib
           root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'lifelens-creatures'
           for kind in ('resident-female', 'resident-male', 'tiger'):
-              path = root / f'{kind}-review.png'
-              assert path.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n', kind
-              assert path.stat().st_size > 10000, kind
-              print('PASS visual-review image', kind, path.stat().st_size)
+              for view in ('review','portrait'):
+                  path = root / f'{kind}-{view}.png'
+                  assert path.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n', (kind, view)
+                  assert path.stat().st_size > 10000, (kind, view)
+                  print('PASS Blender review render', kind, view, path.stat().st_size)
+          profile=root / 'tiger-threequarter.png'
+          assert profile.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n'
+          assert profile.stat().st_size > 10000
+          print('PASS tiger 3/4 head and leg visual audit',profile.stat().st_size)
           PY
 
       - name: Upload editable creature models and rigged GLBs

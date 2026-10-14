@@ -1,0 +1,106 @@
+name: LifeLens CC0 Anatomy Trial
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'feat/q4-anatomical-creature-detail-*'
+    paths:
+      - 'Tools/blender/author_makehuman_cc0_trial.py'
+      - 'Tools/blender/author_makehuman_cc0_head.py'
+      - 'Tools/blender/author_makehuman_hair.py'
+      - 'Tools/blender/author_makehuman_eyes.py'
+      - 'Tools/blender/author_makehuman_uv_skin.py'
+      - 'Tools/blender/author_makehuman_hair_proxy.py'
+      - 'Tools/blender/validate_cc0_trial.py'
+      - 'Tools/blender/verify_cc0_live_skin.py'
+      - '.github/workflows/makehuman-cc0-trial.yml'
+  pull_request:
+    paths:
+      - 'Tools/blender/author_makehuman_cc0_trial.py'
+      - 'Tools/blender/author_makehuman_cc0_head.py'
+      - 'Tools/blender/author_makehuman_hair.py'
+      - 'Tools/blender/author_makehuman_eyes.py'
+      - 'Tools/blender/author_makehuman_uv_skin.py'
+      - 'Tools/blender/author_makehuman_hair_proxy.py'
+      - 'Tools/blender/validate_cc0_trial.py'
+      - 'Tools/blender/verify_cc0_live_skin.py'
+      - '.github/workflows/makehuman-cc0-trial.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  cc0-anatomy-evaluation:
+    name: Download pinned CC0 body targets and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender locally on ephemeral runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
+      - name: Download immutable upstream CC0 assets only
+        env:
+          PIN: a8bc2d54ff0ac92e78ff71431b1023eda42bf482
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/lifelens-cc0-source"
+          BASE="https://raw.githubusercontent.com/makehumancommunity/makehuman/$PIN/makehuman/data"
+          curl -fLsS --retry 3 --max-time 120 "$BASE/3dobjs/base.obj" -o "$RUNNER_TEMP/lifelens-cc0-source/base.obj"
+          for gender in female male; do
+            for target in "universal-$gender-young-averagemuscle-averageweight" "caucasian-$gender-young"; do
+              curl -fLsS --retry 3 --max-time 120 "$BASE/targets/macrodetails/$target.target" -o "$RUNNER_TEMP/lifelens-cc0-source/$target.target"
+            done
+          done
+          curl -fLsS --retry 3 --max-time 120 "$BASE/eyes/high-poly/high-poly.obj" -o "$RUNNER_TEMP/lifelens-cc0-source/high-poly.obj"
+          curl -fLsS --retry 3 --max-time 120 "$BASE/eyes/materials/brown_eye.png" -o "$RUNNER_TEMP/lifelens-cc0-source/brown_eye.png"
+          test "$(wc -c < "$RUNNER_TEMP/lifelens-cc0-source/high-poly.obj")" -gt 90000
+          ASSET_PIN="8cf9645b975a98eea056b140df11a1d278da0d10"
+          SKIN_BASE="https://media.githubusercontent.com/media/s20220526/makehuman-assets/$ASSET_PIN/base/skins/textures"
+          for gender in female male; do
+            file="young_lightskinned_$gender"_diffuse.png
+            curl -fLsS --retry 3 --max-time 120 "$SKIN_BASE/$file" -o "$RUNNER_TEMP/lifelens-cc0-source/$file"
+            # Fail instead of rendering a Git-LFS pointer or HTML response.
+            python3 -c "import pathlib,sys; p=pathlib.Path(sys.argv[1]); assert p.read_bytes()[:4]==bytes((137,80,78,71)) and p.stat().st_size>100000, p; print('VERIFIED_CC0_SKIN',p.name,p.stat().st_size)" "$RUNNER_TEMP/lifelens-cc0-source/$file"
+          done
+          HAIR_BASE="https://raw.githubusercontent.com/s20220526/makehuman-assets/$ASSET_PIN/base/hair"
+          HAIR_MEDIA="https://media.githubusercontent.com/media/s20220526/makehuman-assets/$ASSET_PIN/base/hair"
+          for gender in female male; do
+            if [ "$gender" = female ]; then hairstyle=ponytail01; else hairstyle=short02; fi
+            for ext in obj mhclo; do
+              curl -fLsS --retry 3 --max-time 120 "$HAIR_BASE/$hairstyle/$hairstyle.$ext" -o "$RUNNER_TEMP/lifelens-cc0-source/$hairstyle.$ext"
+            done
+            curl -fLsS --retry 3 --max-time 120 "$HAIR_MEDIA/$hairstyle/$hairstyle"_diffuse.png -o "$RUNNER_TEMP/lifelens-cc0-source/$hairstyle"_diffuse.png
+            python3 -c "import pathlib,sys; p=pathlib.Path(sys.argv[1]); assert p.read_bytes()[:4]==bytes((137,80,78,71)) and p.stat().st_size>100000, p" "$RUNNER_TEMP/lifelens-cc0-source/$hairstyle"_diffuse.png
+          done
+          test "$(wc -c < "$RUNNER_TEMP/lifelens-cc0-source/base.obj")" -gt 1000000
+          sha256sum "$RUNNER_TEMP"/lifelens-cc0-source/*
+      - name: Author CC0 adult male and female skinned basemeshes
+        run: |
+          mkdir -p "$RUNNER_TEMP/lifelens-cc0-trial"
+          blender --background --factory-startup --python-exit-code 1 --threads 2 --python Tools/blender/author_makehuman_cc0_trial.py -- "$RUNNER_TEMP/lifelens-cc0-source" "$RUNNER_TEMP/lifelens-cc0-trial"
+      - name: Verify actual skinned body/eyes/eyelids/hair are animated
+        run: |
+          for gender in female male; do
+            blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-cc0-trial/resident-$gender-cc0.blend" --threads 2 --python Tools/blender/verify_cc0_live_skin.py
+          done
+
+      - name: Validate actual mesh, skins and shape distinction
+        run: python3 Tools/blender/validate_cc0_trial.py "$RUNNER_TEMP/lifelens-cc0-trial"
+      - name: Render unbiased front and near portrait comparison
+        run: |
+          for gender in female male; do
+            src="$RUNNER_TEMP/lifelens-cc0-trial/resident-$gender-cc0.blend"
+            blender --background --python-exit-code 1 "$src" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-cc0-trial/resident-$gender-review.png"
+            blender --background --python-exit-code 1 "$src" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-cc0-trial/resident-$gender-portrait.png"
+            blender --background --python-exit-code 1 "$src" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-cc0-trial/resident-$gender-threequarter.png"
+          done
+      - name: Preserve design/skin/visual review evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lifelens-makehuman-cc0-anatomy-trial
+          path: ${{ runner.temp }}/lifelens-cc0-trial/
+          retention-days: 7
