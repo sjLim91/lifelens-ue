@@ -67,6 +67,7 @@ jobs:
             blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/$creature-review.png"
             blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/$creature-portrait.png"
           done
+          blender --background --python-exit-code 1 "$RUNNER_TEMP/lifelens-creatures/tiger.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/tiger-threequarter.png"
       - name: Verify model review renders
         run: |
           python3 - <<'PY'
@@ -78,6 +79,10 @@ jobs:
                   assert path.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n', (kind, view)
                   assert path.stat().st_size > 10000, (kind, view)
                   print('PASS Blender review render', kind, view, path.stat().st_size)
+          profile=root / 'tiger-threequarter.png'
+          assert profile.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n'
+          assert profile.stat().st_size > 10000
+          print('PASS tiger 3/4 head and leg visual audit',profile.stat().st_size)
           PY
 
       - name: Upload editable creature models and rigged GLBs
