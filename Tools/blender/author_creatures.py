@@ -281,6 +281,10 @@ def idle_and_walk(rig, creature):
 def author(which,out):
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete(use_global=False)
+    # Previous rig Actions are orphaned after object deletion. Remove them
+    # before export so a male/tiger GLB never inherits a female skeleton clip.
+    for stale in list(bpy.data.actions):
+        bpy.data.actions.remove(stale, do_unlink=True)
     if which=='resident-female':
         skin, rig, bones=human(True)
         kind='human'
