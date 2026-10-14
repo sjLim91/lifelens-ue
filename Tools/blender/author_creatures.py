@@ -147,44 +147,43 @@ def tint_mesh(ob, species, female=False):
 
 
 def human(female):
-    w = .84 if female else 1.05
-    hip = 1.19 if female else .96
+    from anatomical_lofts import human_torso, human_arm, human_leg
+    shoulder = .86 if female else 1.05
+    hip = 1.16 if female else .96
+    # Q5 trunk, upper & lower limbs are authored continuous anatomical
+    # cross-section lofts, not stacked spheres. This replaces the egg-collage.
     parts = [
-        volume('pelvic girdle', (0,0,.94), (.22*hip,.145,.175)),
-        volume('abdomen', (0,-.015,1.16), (.20,.14,.23)),
-        volume('thorax', (0,0,1.39), (.245*w,.162,.220)),
-        volume('cranium', (0,0,1.68), (.108,.099,.138)),
-        volume('face & cheeks',(0,-.063,1.615),(.097,.068,.095)),
-        volume('mandible',(0,-.047,1.562),(.079,.069,.046)),
-        volume('nose bridge',(0,-.14,1.63),(.021,.031,.055)),
-        volume('nose tip',(0,-.165,1.612),(.028,.026,.019)),
-        capsule('neck',(0,0,1.47),(0,0,1.60),.071,.066),
+        human_torso(female),
+        volume('cranium', (0,0,1.68), (.115,.105,.137)),
+        volume('facial midface',(0,-.059,1.622),(.098,.067,.092)),
+        volume('jaw angle',(0,-.048,1.560),(.078,.070,.052)),
+        volume('nasal bridge',(0,-.139,1.632),(.020,.026,.048)),
+        volume('nasal tip',(0,-.162,1.610),(.025,.021,.015)),
+        capsule('trapezius and neck',(0,0,1.472),(0,0,1.585),.069,.063),
     ]
-    for side in (-1,1):
-        s=side
-        parts += [
-            volume('deltoid',(.28*s*w,.012,1.43),(.115,.12,.118)),
-            capsule('biceps',(.29*s*w,0,1.4),(.37*s*w,-.015,1.20),.084),
-            capsule('forearm',(.37*s*w,-.015,1.20),(.40*s*w,-.03,1.015),.062),
-            volume('palm',(.408*s*w,-.032,.97),(.064,.037,.082)),
-            capsule('thigh',(.135*s*hip,0,.88),(.14*s*hip,-.022,.50),.119),
-            capsule('calf',(.14*s*hip,-.022,.49),(.135*s*hip,-.035,.115),.073),
-            volume('foot',(.135*s*hip,-.12,.072),(.099,.187,.064)),
-            volume('ear',(s*.116,0,1.65),(.024,.032,.048)),
-        ]
-        for d in range(4):
-            x=(.37+d*.025)*s*w
-            parts.append(capsule('independent fingers',(x,-.03,.93),(x,-.044,.84),.014))
-        for d in range(4):
-            x=(.080+d*.035)*s*hip
-            parts.append(volume('toes',(x,-.254,.050),(.019,.035,.022)))
-    if female:
-        for s in (-1,1):
-            parts.append(volume('pectoral anatomy',(s*.118,-.136,1.38),(.102,.075,.092)))
-    else:
-        for s in (-1,1):
-            parts.append(volume('pectoralis major',(s*.122,-.134,1.40),(.128,.051,.092)))
-    body=mesh_union(parts,'LifeLensSeamlessHuman',.019)
+    for s in (-1,1):
+        parts.extend([
+            human_arm(s,shoulder),
+            human_leg(s,hip),
+            volume('palm',(s*.403*shoulder,-.030,.960),(.050,.033,.064)),
+            volume('forefoot',(s*.134*hip,-.115,.069),(.093,.170,.055)),
+            volume('auricle',(s*.115,0,1.653),(.016,.027,.044)),
+        ])
+        for digit in range(4):
+            x=(.37+digit*.025)*s*shoulder
+            parts.append(capsule('individual finger',
+                                  (x,-.032,.922),(x,-.046,.850),.011))
+        for digit in range(4):
+            x=(.080+digit*.035)*s*hip
+            parts.append(volume('toe',(x,-.245,.052),(.016,.027,.017)))
+    for s in (-1,1):
+        if female:
+            parts.append(volume('pectoral soft anatomy',
+                                (s*.111,-.115,1.375),(.087,.071,.086)))
+        else:
+            parts.append(volume('pectoral muscle plane',
+                                (s*.122,-.128,1.398),(.119,.039,.071)))
+    body=mesh_union(parts,'LifeLensSeamlessHuman',.017)
     bones=[
         ('pelvis',(0,0,.93),(0,0,1.05),None),
         ('spine_02',(0,0,1.05),(0,0,1.47),'pelvis'),
@@ -193,54 +192,50 @@ def human(female):
     ]
     for s,suffix in [(-1,'r'),(1,'l')]:
         bones+= [
-           ('clavicle_'+suffix,(0,0,1.45),(.27*s*w,0,1.44),'spine_02'),
-           ('upperarm_'+suffix,(.27*s*w,0,1.44),(.37*s*w,0,1.20),'clavicle_'+suffix),
-           ('lowerarm_'+suffix,(.37*s*w,0,1.20),(.40*s*w,0,1.01),'upperarm_'+suffix),
-           ('hand_'+suffix,(.40*s*w,0,1.01),(.40*s*w,0,.85),'lowerarm_'+suffix),
-           ('thigh_'+suffix,(s*.135*hip,0,.91),(s*.14*hip,0,.49),'pelvis'),
-           ('calf_'+suffix,(s*.14*hip,0,.49),(s*.135*hip,-.035,.12),'thigh_'+suffix),
-           ('foot_'+suffix,(s*.135*hip,-.035,.12),(s*.135*hip,-.23,.06),'calf_'+suffix),
+            ('clavicle_'+suffix,(0,0,1.45),(.27*s*shoulder,0,1.44),'spine_02'),
+            ('upperarm_'+suffix,(.27*s*shoulder,0,1.44),(.37*s*shoulder,0,1.20),'clavicle_'+suffix),
+            ('lowerarm_'+suffix,(.37*s*shoulder,0,1.20),(.40*s*shoulder,0,1.01),'upperarm_'+suffix),
+            ('hand_'+suffix,(.40*s*shoulder,0,1.01),(.40*s*shoulder,0,.85),'lowerarm_'+suffix),
+            ('thigh_'+suffix,(s*.135*hip,0,.91),(s*.14*hip,0,.49),'pelvis'),
+            ('calf_'+suffix,(s*.14*hip,0,.49),(s*.135*hip,-.035,.12),'thigh_'+suffix),
+            ('foot_'+suffix,(s*.135*hip,-.035,.12),(s*.135*hip,-.23,.06),'calf_'+suffix),
         ]
     return body, make_armature('LifeLensHumanoidRig',bones), bones
 
 
 def tiger():
+    from anatomical_lofts import tiger_trunk, tiger_skull, tiger_foreleg, tiger_tail
     parts=[
-      volume('barrel',(0,0,.81),(.31,.73,.35)),
-      volume('shoulder mantle',(0,.49,.90),(.34,.30,.35)),
-      volume('hindquarters',(0,-.53,.85),(.35,.32,.34)),
-      capsule('neck',(0,.58,.96),(0,.93,1.11),.25),
-      volume('head',(0,1.10,1.13),(.218,.268,.210)),
-      volume('muzzle',(0,1.36,1.035),(.160,.145,.102)),
-      volume('nose',(0,1.51,1.053),(.062,.041,.045)),
-      volume('chin',(0,1.40,.948),(.14,.132,.048)),
+        tiger_trunk(),
+        tiger_skull(),
+        capsule('heavy tiger nape',(0,.65,.93),(0,.99,1.12),.248),
+        volume('short lower jaw',(0,1.365,.993),(.133,.150,.061)),
+        volume('upper muzzle',(0,1.452,1.063),(.145,.115,.077)),
     ]
     for s in (-1,1):
-        for forward in (True,False):
-            y=.46 if forward else -.57
-            parts += [
-              capsule('anatomical upper leg',(s*.265,y,.82),(s*.29,y,.44),.125 if forward else .145),
-              capsule('lower leg',(s*.29,y,.44),(s*.29,y+.07,.11),.091),
-              volume('digitigrade paw',(s*.29,y+.15,.105),(.137,.20,.085)),
-            ]
+        parts.append(tiger_foreleg(s,.46,True))
+        parts.append(tiger_foreleg(s,-.57,False))
+        # Lobed cheek/zygomatic arch is blended with the face, not two
+        # separate cartoon-white balls on the outside of the muzzle.
+        parts.append(volume('zygomatic pad',(s*.153,1.28,1.088),
+                            (.069,.10,.082)))
+        parts.append(volume('tiger auricle',(s*.17,1.07,1.345),
+                            (.059,.067,.065)))
+        for y in (.46,-.57):
             for digit in (-1,0,1):
-                parts.append(volume('toe',(s*.29+digit*.075,y+.31,.077),(.040,.074,.043)))
-        parts.append(volume('ear',(s*.165,1.10,1.355),(.072,.068,.087)))
-        parts.append(volume('cheek fluff',(s*.204,1.33,1.03),(.096,.14,.11)))
-    for i in range(10):
-        t=i/9
-        parts.append(volume('tail segment',(0,-.79-t*.9,.83+.25*math.sin(math.pi*t)),
-                            (.085-.040*t,.125,.085-.04*t)))
-    body=mesh_union(parts,'LifeLensSeamlessTiger',.025)
+                parts.append(volume('flattened digit',
+                     (s*.290+digit*.065,y+.31,.077),(.037,.050,.030)))
+    parts.append(tiger_tail())
+    body=mesh_union(parts,'LifeLensSeamlessTiger',.019)
     bones=[
-      ('pelvis',(0,-.55,.83),(0,-.3,.86),None),
-      ('spine',(0,-.3,.86),(0,.65,.90),'pelvis'),
-      ('neck',(0,.65,.90),(0,.96,1.12),'spine'),
-      ('head',(0,.96,1.12),(0,1.48,1.08),'neck'),
-      ('tail_01',(0,-.73,.81),(0,-1.17,.99),'pelvis'),
-      ('tail_02',(0,-1.17,.99),(0,-1.62,.89),'tail_01'),
+        ('pelvis',(0,-.55,.83),(0,-.3,.86),None),
+        ('spine',(0,-.3,.86),(0,.65,.90),'pelvis'),
+        ('neck',(0,.65,.90),(0,.96,1.12),'spine'),
+        ('head',(0,.96,1.12),(0,1.48,1.08),'neck'),
+        ('tail_01',(0,-.78,.84),(0,-1.42,.65),'pelvis'),
+        ('tail_02',(0,-1.42,.65),(0,-2.12,.93),'tail_01'),
     ]
-    for s, suffix in [(-1,'r'),(1,'l')]:
+    for s,suffix in [(-1,'r'),(1,'l')]:
         for kind,y,parent in [('front',.48,'spine'),('back',-.57,'pelvis')]:
             a=f'{kind}_{suffix}_upper'
             b=f'{kind}_{suffix}_lower'
