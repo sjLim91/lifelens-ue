@@ -538,6 +538,48 @@
       ]
     }
   ],
+  "geometric_component_count": 3,
+  "geometric_components": [
+    {
+      "vertices": 28909,
+      "min": [
+        -0.6136689186096191,
+        -1.7903084754943848,
+        0.0
+      ],
+      "max": [
+        0.6136688590049744,
+        1.7903084754943848,
+        2.5
+      ]
+    },
+    {
+      "vertices": 41,
+      "min": [
+        0.5421390533447266,
+        -1.106311559677124,
+        1.7580095529556274
+      ],
+      "max": [
+        0.5654718279838562,
+        -1.0445481538772583,
+        1.816473126411438
+      ]
+    },
+    {
+      "vertices": 23,
+      "min": [
+        0.5528832077980042,
+        -1.008877158164978,
+        1.7789407968521118
+      ],
+      "max": [
+        0.5670434832572937,
+        -0.9355393052101135,
+        1.8168169260025024
+      ]
+    }
+  ],
   "review_orientation_change": "source -X forward rotated +90 degrees about Blender Z",
   "visual_acceptance": "PENDING_HUMAN_OR_AGENT_IMAGE_REVIEW",
   "observer_validation": "NOT_RUN",
