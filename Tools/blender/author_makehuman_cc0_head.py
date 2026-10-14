@@ -118,13 +118,13 @@ def eyelid_sheets(eye_x, rig, gender):
         margin_points=[]
         for i in range(count+1):
             t=-1+2*i/count
-            x=eye_x+t*.027
+            x=eye_x+t*.0205
             closing=max(0.0,1-t*t)**.72
-            aperture=(.0070 if upper else -.0048)*closing
+            aperture=(.0052 if upper else -.0039)*closing
             z_inner=1.625+aperture+(.0015 if upper else -.0002)
-            z_outer=z_inner+(.016 if upper else -.013)
-            y_inner=-.058+.010*(abs(t)**1.5)
-            y_outer=-.042+.003*(abs(t)**1.5)
+            z_outer=z_inner+(.0065 if upper else -.0055)
+            y_inner=-.052+.008*(abs(t)**1.5)
+            y_outer=-.042+.002*(abs(t)**1.5)
             vertices.extend([(x,y_inner,z_inner),(x,y_outer,z_outer)])
             margin_points.append((x,y_inner-.0002,z_inner))
             if i:
@@ -141,7 +141,7 @@ def eyelid_sheets(eye_x, rig, gender):
         parts.append(attach(obj,rig))
         curve=bpy.data.curves.new('Eyelid soft rim','CURVE')
         curve.dimensions='3D'
-        curve.bevel_depth=.00075
+        curve.bevel_depth=.00048
         curve.resolution_u=16
         curve.bevel_resolution=1
         spline=curve.splines.new('POLY')
