@@ -142,18 +142,23 @@ export function createQualityWildlifeSurface(
     point.set(bounds.min.x+x*step,bounds.min.y+y*step,bounds.min.z+z*step);
     values[sample(x,y,z)]=field(point,form.volumes);
   }
+  // Build lattice gradients ONCE from the cached scalar field. Evaluating
+  // the full SDF six more times for every triangle vertex was prohibitive on
+  // phones (thousands of instances share only six geometries).
+  const gradient=new Float32Array(count*3);
+  for(let z=0;z<nz;z++)for(let y=0;y<ny;y++)for(let x=0;x<nx;x++){
+    const gx=values[sample(Math.min(nx-1,x+1),y,z)]
+      -values[sample(Math.max(0,x-1),y,z)];
+    const gy=values[sample(x,Math.min(ny-1,y+1),z)]
+      -values[sample(x,Math.max(0,y-1),z)];
+    const gz=values[sample(x,y,Math.min(nz-1,z+1))]
+      -values[sample(x,y,Math.max(0,z-1))];
+    const d=V(gx,gy,gz).normalize(),offset=sample(x,y,z)*3;
+    gradient[offset]=d.x;gradient[offset+1]=d.y;gradient[offset+2]=d.z;
+  }
   const vertices:number[]=[],normals:number[]=[],colors:number[]=[],parts:number[]=[];
   const speciesIds:number[]=[];
   const indexList:number[]=[];
-  const grade=(p:THREE.Vector3)=>{
-    const delta=step*.5;
-    const d=V(
-      field(V(p.x+delta,p.y,p.z),form.volumes)-field(V(p.x-delta,p.y,p.z),form.volumes),
-      field(V(p.x,p.y+delta,p.z),form.volumes)-field(V(p.x,p.y-delta,p.z),form.volumes),
-      field(V(p.x,p.y,p.z+delta),form.volumes)-field(V(p.x,p.y,p.z-delta),form.volumes),
-    );
-    return d.lengthSq()>.0000001?d.normalize():V(0,1,0);
-  };
   const partAt=(p:THREE.Vector3)=>{
     let best=Infinity,result=0;
     for(const vol of form.volumes){
@@ -166,15 +171,15 @@ export function createQualityWildlifeSurface(
   const speciesIndex:{[k in WildlifeSpecies]:number}={
     Hare:0,Deer:1,Wolf:2,FreshwaterFish:3,Tiger:4,
   };
-  const triangle=(a:THREE.Vector3,b:THREE.Vector3,c:THREE.Vector3)=>{
-    const normalA=grade(a),normalB=grade(b),normalC=grade(c);
-    const cross=new THREE.Vector3().subVectors(b,a)
-      .cross(new THREE.Vector3().subVectors(c,a));
-    const orient=cross.dot(normalA.clone().add(normalB).add(normalC));
+  type SurfaceVertex={p:THREE.Vector3;n:THREE.Vector3};
+  const triangle=(a:SurfaceVertex,b:SurfaceVertex,c:SurfaceVertex)=>{
+    const cross=new THREE.Vector3().subVectors(b.p,a.p)
+      .cross(new THREE.Vector3().subVectors(c.p,a.p));
+    const orient=cross.dot(a.n.clone().add(b.n).add(c.n));
     const face=orient<0?[a,c,b]:[a,b,c];
-    for(const pos of face){
-      vertices.push(pos.x,pos.y,pos.z);
-      const n=grade(pos); normals.push(n.x,n.y,n.z);
+    for(const v of face){
+      const pos=v.p;vertices.push(pos.x,pos.y,pos.z);
+      normals.push(v.n.x,v.n.y,v.n.z);
       const col=speciesPigment(species,pos);
       colors.push(col.r,col.g,col.b);
       parts.push(partAt(pos));speciesIds.push(speciesIndex[species]);
@@ -182,16 +187,23 @@ export function createQualityWildlifeSurface(
     const offset=vertices.length/3;
     indexList.push(offset-3,offset-2,offset-1);
   };
-  const crossing=(a:number,b:number,positions:THREE.Vector3[],v:number[])=>
-    positions[a].clone().lerp(positions[b],clamp(v[a]/(v[a]-v[b]),0,1));
+  const crossing=(a:number,b:number,positions:THREE.Vector3[],
+    v:number[],g:THREE.Vector3[]):SurfaceVertex=>{
+    const t=clamp(v[a]/(v[a]-v[b]),0,1);
+    return {p:positions[a].clone().lerp(positions[b],t),
+      n:g[a].clone().lerp(g[b],t).normalize()};
+  };
   const corners:THREE.Vector3[]=Array.from({length:8},()=>V(0,0,0));
+  const cornerGradients:THREE.Vector3[]=Array.from({length:8},()=>V(0,1,0));
   for(let z=0;z<nz-1;z++)for(let y=0;y<ny-1;y++)for(let x=0;x<nx-1;x++){
     const values8:number[]=[];
     for(let c=0;c<8;c++){
       const [dx,dy,dz]=CORNERS[c];
       corners[c].set(bounds.min.x+(x+dx)*step,
         bounds.min.y+(y+dy)*step,bounds.min.z+(z+dz)*step);
-      values8[c]=values[sample(x+dx,y+dy,z+dz)];
+      const offset=sample(x+dx,y+dy,z+dz);
+      values8[c]=values[offset];
+      cornerGradients[c].fromArray(gradient,offset*3);
     }
     if(values8.every(v=>v>=0)||values8.every(v=>v<0))continue;
     for(const tet of TETS){
@@ -199,17 +211,17 @@ export function createQualityWildlifeSurface(
       if(!inside.length||!outside.length)continue;
       if(inside.length===1){
         const a=inside[0];
-        triangle(...outside.map(i=>crossing(a,i,corners,values8)) as
-          [THREE.Vector3,THREE.Vector3,THREE.Vector3]);
+        triangle(...outside.map(i=>crossing(a,i,corners,values8,cornerGradients)) as
+          [SurfaceVertex,SurfaceVertex,SurfaceVertex]);
       } else if(inside.length===3){
         const a=outside[0];
-        triangle(...inside.map(i=>crossing(a,i,corners,values8)) as
-          [THREE.Vector3,THREE.Vector3,THREE.Vector3]);
+        triangle(...inside.map(i=>crossing(a,i,corners,values8,cornerGradients)) as
+          [SurfaceVertex,SurfaceVertex,SurfaceVertex]);
       } else {
-        const a=crossing(inside[0],outside[0],corners,values8);
-        const b=crossing(inside[0],outside[1],corners,values8);
-        const c=crossing(inside[1],outside[0],corners,values8);
-        const d=crossing(inside[1],outside[1],corners,values8);
+        const a=crossing(inside[0],outside[0],corners,values8,cornerGradients);
+        const b=crossing(inside[0],outside[1],corners,values8,cornerGradients);
+        const c=crossing(inside[1],outside[0],corners,values8,cornerGradients);
+        const d=crossing(inside[1],outside[1],corners,values8,cornerGradients);
         triangle(a,c,b);triangle(b,c,d);
       }
     }
