@@ -16,7 +16,7 @@ namespace lifelens {
 
 // ECO-A2: opt-in wildlife-only binary state, separate from existing Core
 // World/SimulationSnapshot. No automatic world tick, inventory or AI changes.
-inline constexpr std::uint32_t WildlifeBinaryFormatVersion=1;
+inline constexpr std::uint32_t WildlifeBinaryFormatVersion=2;
 inline constexpr std::uint32_t WildlifeMaxPersistedAnimals=1024;
 inline constexpr std::size_t WildlifeMaxBinaryBytes=65536;
 
@@ -217,8 +217,10 @@ inline bool decodeWildlifePopulation(
         return fail("wildlife binary size");
     wildlife_binary_detail::Reader reader{bytes};
     if(reader.byte()!='L'||reader.byte()!='L'
-       ||reader.byte()!='W'||reader.byte()!='F'
-       ||reader.u32()!=WildlifeBinaryFormatVersion)
+       ||reader.byte()!='W'||reader.byte()!='F')
+        return fail("invalid wildlife magic");
+    const std::uint32_t version=reader.u32();
+    if(version!=1 && version!=WildlifeBinaryFormatVersion)
         return fail("invalid wildlife magic/version");
     WildlifePopulation result;
     result.worldSeed=reader.u64();
@@ -243,10 +245,12 @@ inline bool decodeWildlifePopulation(
     habitat.forage01=reader.f64();
     habitat.shelter01=reader.f64();
     habitat.moisture01=reader.f64();
-    for(int& cap:habitat.carryingCapacity){
+    // v1 stored exactly four capacities; v2 appends Tiger without shifting
+    // any existing species ordinal. Old populations never spawn a new species.
+    for(std::size_t i=0;i<(version==1?4U:WildlifeSpeciesCount);++i){
         const std::uint32_t value=reader.u32();
         if(value>256) return fail("invalid wildlife capacity");
-        cap=static_cast<int>(value);
+        habitat.carryingCapacity[i]=static_cast<int>(value);
     }
     const std::uint32_t count=reader.u32();
     if(!reader.ok ||count>WildlifeMaxPersistedAnimals)

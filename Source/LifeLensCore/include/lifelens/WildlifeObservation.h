@@ -9,8 +9,21 @@ inline const char* wildlifeSpeciesName(WildlifeSpecies species){
         case WildlifeSpecies::Deer: return "Deer";
         case WildlifeSpecies::Wolf: return "Wolf";
         case WildlifeSpecies::FreshwaterFish: return "FreshwaterFish";
+        case WildlifeSpecies::Tiger: return "Tiger";
     }
     return "Unknown";
+}
+inline const char* wildlifeBehaviorName(WildlifeBehavior behavior){
+    switch(behavior){
+        case WildlifeBehavior::Rest: return "Rest";
+        case WildlifeBehavior::Roam: return "Roam";
+        case WildlifeBehavior::Forage: return "Forage";
+        case WildlifeBehavior::Drink: return "Drink";
+        case WildlifeBehavior::Flee: return "Flee";
+        case WildlifeBehavior::Hunt: return "Hunt";
+        case WildlifeBehavior::Swim: return "Swim";
+    }
+    return "Rest";
 }
 // Read-only observation of materialized Core populations. Camera movement does
 // not create populations, advance ecology or consume the resident RNG.
@@ -30,7 +43,9 @@ inline void appendWildlifeObservation(std::ostringstream& out,const World& world
                 << "\",\"species\":\"" << wildlifeSpeciesName(animal.species)
                 << "\",\"sex\":\"" << (animal.sex==WildlifeSex::Male ? "Male" : "Female")
                 << "\",\"gridX\":" << animal.position.x << ",\"gridY\":" << animal.position.y
-                << ",\"ageDays\":" << animal.ageDays << '}';
+                << ",\"ageDays\":" << animal.ageDays
+                << ",\"behavior\":\"" << wildlifeBehaviorName(wildlifeBehavior(p,animal))
+                << "\"}";
         }
     }
     out << "]}";

@@ -71,6 +71,23 @@ int main()
     WildlifePopulation restored{};
     assert(decodeWildlifePopulation(bytes,restored));
     equalState(original,restored);
+    // Original V1 population binary keeps exact four-species ordinal and data.
+    {
+        auto old=bytes;
+        old[4]=1;
+        constexpr std::size_t offset=4+4+8+4+8+4+4+4+4+8+8+8+4*4;
+        old.erase(old.begin()+offset,old.begin()+offset+4);
+        old.resize(old.size()-8);
+        const auto checksum=wildlife_binary_detail::checksum(old,old.size());
+        for(int i=0;i<8;++i)old.push_back(
+            static_cast<std::uint8_t>(checksum>>(i*8)));
+        WildlifePopulation upgraded;
+        assert(decodeWildlifePopulation(old,upgraded));
+        assert(upgraded.habitat.carryingCapacity[4]==0);
+        equalState(original,upgraded);
+        assert(encodeWildlifePopulation(upgraded,otherBytes));
+        assert(otherBytes[4]==WildlifeBinaryFormatVersion);
+    }
     assert(stepWildlifeDay(original,1).advanced);
     assert(stepWildlifeDay(restored,1).advanced);
     equalState(original,restored);

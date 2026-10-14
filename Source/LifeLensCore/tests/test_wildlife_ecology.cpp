@@ -66,7 +66,7 @@ int main()
     eco.forage01=0.93;
     eco.shelter01=0.83;
     eco.moisture01=0.81;
-    eco.carryingCapacity={{22,10,3,22}};
+    eco.carryingCapacity={{22,10,3,22,2}};
 
     // Spatial truth: a predator at the other end of the chunk may not
     // magically kill prey without chasing into range.
@@ -96,6 +96,16 @@ int main()
             [&](const WildlifeAnimal& animal){return animal.id==preyId;}));
     }
 
+    auto tigerFounders=startWildlifePopulation(identity,eco);
+    assert(wildlifeAliveCount(tigerFounders,WildlifeSpecies::Tiger)==2);
+    auto hourlyA=tigerFounders,hourlyB=tigerFounders;
+    int motion=0;
+    for(int h=1;h<24;++h){
+        const int changed=stepWildlifeHour(hourlyA,h);
+        assert(changed==stepWildlifeHour(hourlyB,h));
+        motion+=changed; samePopulation(hourlyA,hourlyB);
+    }
+    assert(motion>0);
     auto a=startWildlifePopulation(identity,eco);
     auto b=startWildlifePopulation(identity,eco);
     auto otherPopulationSeed=startWildlifePopulation(alternativePopulationSeed,eco);
@@ -140,7 +150,7 @@ int main()
                 assert(animal.position.y==WildlifeCellsPerChunk/2);
             }
         }
-        assert(a.animals.size()<=static_cast<std::size_t>(22+10+3+22));
+        assert(a.animals.size()<=static_cast<std::size_t>(22+10+3+22+2));
     }
     assert(births>0);
     assert(deaths>0);
@@ -161,6 +171,6 @@ int main()
 
     // The standalone ECO-A1 model must never create meat without a verified
     // hunt/carcass/inventory pipeline in the future ECO-B phase.
-    static_assert(WildlifeSpeciesCount==4);
+    static_assert(WildlifeSpeciesCount==5);
     return 0;
 }
