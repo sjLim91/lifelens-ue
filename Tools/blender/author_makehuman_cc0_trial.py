@@ -159,6 +159,8 @@ def main():
             bpy.data.actions.remove(action,do_unlink=True)
         mesh=import_basemesh(source,gender)
         rig=rig_human(mesh)
+        from author_makehuman_cc0_head import decorate
+        decorate(mesh,rig,gender)
         assert len(mesh.data.vertices)>10000
         assert len(rig.data.bones)>=18
         filepath=out/('resident-'+gender+'-cc0')
