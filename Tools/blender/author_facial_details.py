@@ -48,11 +48,20 @@ def build_palette():
 
 
 class DetailBuilder:
-    def __init__(self, rig):
+    def __init__(self, rig, surface=None):
         self.rig=rig
+        self.surface=surface
         self.items=[]
         self.palette=build_palette()
         self.parts=set(rig.data.bones.keys())
+
+    def forehead_depth(self,x,z):
+        # Anatomically anchored to the frontmost actual skull intersection.
+        assert self.surface is not None,'Tiger requires a true skull surface'
+        hit, location, normal, index=self.surface.ray_cast(
+            Vector((x,2.0,z)),Vector((0,-1,0)),distance=2.5)
+        assert hit and 1.05<location.y<1.56,('Eye detached',x,z,hit,tuple(location))
+        return location.y
 
     def attach(self,obj,bone):
         if bone not in self.parts:
