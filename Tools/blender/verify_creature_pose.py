@@ -45,6 +45,30 @@ def main():
     displacement=max_delta(before,moving)
     assert displacement>.004, f'Walk clip fails to deform actual body surface: {displacement}'
 
+    if kind=='tiger':
+        fur=bpy.data.objects.get('LifeLensSkinnedTigerGuardHairs')
+        assert fur and fur.parent==rig,'Pelage must share actual tiger skeleton'
+        scene.frame_set(1)
+        fur_start=sampled_world_vertices(fur)
+        scene.frame_set(7)
+        fur_motion=max_delta(fur_start,sampled_world_vertices(fur))
+        assert fur_motion>.004,('Tiger fur does not follow walk joints',fur_motion)
+        front_left=rig.pose.bones['front_l_upper'].rotation_euler.x
+        front_right=rig.pose.bones['front_r_upper'].rotation_euler.x
+        assert abs(front_left-front_right)>.12,'Tiger front feet must alternate'
+        scene.frame_set(1)
+        hind_left=rig.pose.bones['back_l_upper'].rotation_euler.x
+        hind_right=rig.pose.bones['back_r_upper'].rotation_euler.x
+        assert abs(hind_left-hind_right)>.20,'Tiger rear feet must alternate'
+        first=[tuple(round(x,5) for x in rig.pose.bones[n].rotation_euler)
+               for n in ('front_l_upper','front_r_upper','back_l_upper','back_r_upper','tail_01')]
+        scene.frame_set(49)
+        last=[tuple(round(x,5) for x in rig.pose.bones[n].rotation_euler)
+              for n in ('front_l_upper','front_r_upper','back_l_upper','back_r_upper','tail_01')]
+        assert first==last,('Tiger gait is not an exact loop',first,last)
+        assert scene.frame_end==49,'Expect 4-beat 48-frame gait'
+        print('PASS Q11 independent quadruped footfalls / fur / seamless loop',round(fur_motion,4))
+
     # Independent face/paw detail should move with its assigned bone, not
     # float at its initial position when animation/pose changes.
     scene.frame_set(1)
