@@ -217,68 +217,64 @@ def human_details(d,female):
 
 
 def tiger_details(d):
-    # Tiger forward direction = +Y. Face/paws have their own surfaces and
-    # separate materials, not flattened into Q3's smooth orange bulk.
+    # A realistic tiger's eye is an inset, oblique almond, not a round
+    # white cartoon eyeball. Muzzle fur and cheek stripes belong to the
+    # skin pigment shader; rigid contrasting white balls are removed.
     for s in (-1,1):
         tag='right' if s<0 else 'left'
-        d.ellipsoid(tag+' white eye surround',(s*.137,1.305,1.225),
-                    (.064,.017,.044),'head','tiger_white')
-        d.ellipsoid(tag+' gold eye',(s*.135,1.322,1.232),
-                    (.030,.009,.022),'head','tiger_eye')
-        d.ellipsoid(tag+' vertical pupil',(s*.137,1.333,1.232),
-                    (.009,.005,.021),'head','tiger_black')
-        d.ellipsoid(tag+' eye reflection',(s*.128,1.341,1.244),
-                    (.004,.002,.005),'head','glint',12,8)
-        d.fiber(tag+' black eyeliner',[
-            (s*.077,1.331,1.260),(s*.122,1.345,1.286),
-            (s*.17,1.32,1.282),(s*.204,1.283,1.256)],
-            .009,'head','tiger_black')
-        d.ellipsoid(tag+' inner triangular ear',(s*.164,1.167,1.385),
-                    (.043,.012,.043),'head','tiger_black')
-        d.ellipsoid(tag+' muzzle cheek',(s*.103,1.495,1.022),
-                    (.085,.042,.040),'head','tiger_white')
-        for j in range(4):
-            # Facial tiger pattern = anatomical cheek/forehead markings.
-            d.fiber(tag+' cheek stripe '+str(j),[
-                (s*(.20+j*.006),1.16+j*.04,1.195-j*.018),
-                (s*(.241+j*.010),1.23+j*.035,1.154-j*.023),
-                (s*(.242+j*.013),1.32+j*.027,1.12-j*.023)],
-                .009 if j<2 else .007,'head','tiger_black')
-        for k in range(7):
-            z=1.002+(k%3)*.024
-            x=s*(.08+(k//3)*.028)
-            y=1.548-(k//3)*.021
-            d.ellipsoid('whisker follicle',(x,y,z),(.005,.008,.005),
+        d.ellipsoid(tag+' recessed cream orbital skin',(s*.139,1.295,1.214),
+                    (.044,.010,.022),'head','tiger_white')
+        d.ellipsoid(tag+' deep amber iris',(s*.139,1.304,1.215),
+                    (.022,.006,.014),'head','tiger_eye')
+        d.ellipsoid(tag+' vertical pupil',(s*.139,1.311,1.215),
+                    (.006,.0025,.012),'head','tiger_black')
+        d.ellipsoid(tag+' tiny ocular specular',(s*.132,1.314,1.220),
+                    (.0025,.0015,.0025),'head','glint',12,8)
+        d.fiber(tag+' subtle upper lid',[
+            (s*.093,1.306,1.225),(s*.129,1.309,1.232),
+            (s*.164,1.302,1.228),(s*.181,1.291,1.215)],
+            .0027,'head','tiger_black')
+        # Inner ear recedes behind the orange pinna; no spherical black nubs.
+        d.ellipsoid(tag+' inner ear',(s*.166,1.145,1.359),
+                    (.027,.009,.026),'head','tiger_black',12,8)
+        # Small whisker pads are defined by coat pigmentation rather than
+        # large separate, conspicuously white snout spheres.
+        for k in range(4):
+            x=s*(.072+(k//2)*.032)
+            z=1.019+(k%2)*.020
+            y=1.548-(k//2)*.028
+            d.ellipsoid('whisker pore',(x,y,z),(.0035,.0035,.0030),
                         'head','tiger_black',10,6)
-        for k in range(5):
-            start=(s*(.13+k*.01),1.50,1.00+k*.014)
-            end=(s*(.32+k*.020),1.58,1.07+k*.013)
-            mid=((start[0]+end[0])*.5,1.56,1.045+k*.014)
-            d.fiber('tiger whisker '+tag,[start,mid,end],.0012,'head','whisker')
+        for k in range(3):
+            start=(s*(.11+k*.011),1.536,1.014+k*.011)
+            end=(s*(.26+k*.015),1.569,1.042+k*.019)
+            mid=((start[0]+end[0])*.5,1.563,1.039+k*.016)
+            d.fiber('fine facial vibrissa '+tag,[start,mid,end],.00075,'head','whisker')
 
-    # Detailed nasal leather and philtrum / lower jaw line.
-    d.ellipsoid('triangular tiger nose',(0,1.580,1.062),
-                (.057,.020,.027),'head','tiger_nose',18,12)
-    d.fiber('tiger nasal seam',[(0,1.596,1.04),(0,1.58,1.002),
-                               (0,1.557,.978)],.006,'head','tiger_black')
+    d.ellipsoid('soft triangular black nose',(0,1.567,1.059),
+                (.047,.013,.023),'head','tiger_nose',16,10)
+    d.fiber('philtrum',[(0,1.570,1.043),(0,1.555,1.018),
+                        (0,1.542,.999)],.0025,'head','tiger_black')
     for s in (-1,1):
-        d.fiber('upper jowl seam',[(0,1.564,.977),(s*.046,1.564,.968),
-                                  (s*.099,1.529,.971)],
-                .006,'head','tiger_black')
+        d.fiber('curved muzzle crease',[(0,1.552,1.000),
+                                      (s*.038,1.545,.995),
+                                      (s*.084,1.524,.998)],
+                .0026,'head','tiger_black')
 
-    # Actual paw claws retain their own hard surface, rotate/deform with
-    # front and hind lower-leg joints independently.
+    # Retractable cat claws project only a few centimeters from the paw,
+    # rather than fantasy monster talons.
     for s,side in ((-1,'r'),(1,'l')):
         for front,y in ((True,.46),(False,-.57)):
             bone=('front_' if front else 'back_')+side+'_lower'
             for digit in (-1,0,1):
-                x=s*.29+digit*.075
-                d.tapered('curved keratin claw',
-                          (x,y+.355,.085),(x,y+.424,.047),.020,
-                          bone,'claw',vertices=12)
-                d.fiber('paw digit crease',[
-                    (x-.028,y+.257,.157),(x,y+.292,.161),
-                    (x+.028,y+.260,.157)],.004,bone,'tiger_black')
+                x=s*.29+digit*.065
+                d.tapered('small retractable claw',
+                          (x,y+.340,.086),(x,y+.391,.060),.009,
+                          bone,'claw',vertices=9)
+                d.fiber('paw crease',[
+                    (x-.022,y+.265,.129),(x,y+.287,.135),
+                    (x+.022,y+.265,.129)],.002,bone,'tiger_black')
+
 
 
 def create_creature_details(which,rig):
