@@ -137,22 +137,22 @@ def tint_mesh(ob, species, female=False):
             else:
                 # Model-space stripe bands follow the barrel, not pixel-space
                 # fake overlays. Cream underbelly, ochre flanks, dark tiger bands.
-                under = p.z < .37
+                under = p.z < .60 and abs(p.y) < .55 and abs(p.x) < .26
                 band = math.sin(p.y*23.0+3.5*math.sin(8*p.z+5*p.x))
                 stripe = not under and band > .69 and -.9 < p.y < 1.0
                 rgb = ([.17, .10, .075] if stripe else
-                       [.90, .79, .60] if under else [.91, .44, .105])
+                       [.83, .73, .59] if under else [.78, .39, .155])
             attr.data[li].color = (*rgb, 1.0)
     ob.data.materials.append(colored_surface(species.capitalize() + ' vertex PBR'))
 
 
 def human(female):
-    w = .90 if female else 1.06
-    hip = 1.11 if female else .96
+    w = .84 if female else 1.05
+    hip = 1.19 if female else .96
     parts = [
         volume('pelvic girdle', (0,0,.94), (.22*hip,.145,.175)),
         volume('abdomen', (0,-.015,1.16), (.20,.14,.23)),
-        volume('thorax', (0,0,1.39), (.265*w,.167,.225)),
+        volume('thorax', (0,0,1.39), (.245*w,.162,.220)),
         volume('cranium', (0,0,1.68), (.108,.099,.138)),
         volume('face & cheeks',(0,-.063,1.615),(.097,.068,.095)),
         volume('mandible',(0,-.047,1.562),(.079,.069,.046)),
@@ -207,12 +207,12 @@ def human(female):
 def tiger():
     parts=[
       volume('barrel',(0,0,.81),(.31,.73,.35)),
-      volume('shoulder mantle',(0,.49,.90),(.38,.32,.38)),
+      volume('shoulder mantle',(0,.49,.90),(.34,.30,.35)),
       volume('hindquarters',(0,-.53,.85),(.35,.32,.34)),
       capsule('neck',(0,.58,.96),(0,.93,1.11),.25),
-      volume('head',(0,1.10,1.13),(.245,.29,.23)),
-      volume('muzzle',(0,1.38,1.035),(.18,.16,.113)),
-      volume('nose',(0,1.54,1.053),(.082,.045,.054)),
+      volume('head',(0,1.10,1.13),(.218,.268,.210)),
+      volume('muzzle',(0,1.36,1.035),(.160,.145,.102)),
+      volume('nose',(0,1.51,1.053),(.062,.041,.045)),
       volume('chin',(0,1.40,.948),(.14,.132,.048)),
     ]
     for s in (-1,1):
@@ -225,7 +225,7 @@ def tiger():
             ]
             for digit in (-1,0,1):
                 parts.append(volume('toe',(s*.29+digit*.075,y+.31,.077),(.040,.074,.043)))
-        parts.append(volume('ear',(s*.17,1.11,1.38),(.105,.082,.135)))
+        parts.append(volume('ear',(s*.165,1.10,1.355),(.072,.068,.087)))
         parts.append(volume('cheek fluff',(s*.204,1.33,1.03),(.096,.14,.11)))
     for i in range(10):
         t=i/9
