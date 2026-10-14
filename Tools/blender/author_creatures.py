@@ -251,18 +251,22 @@ def tiger():
         tiger_trunk(),
         tiger_skull(),
         capsule('heavy tiger nape',(0,.65,.93),(0,.99,1.12),.248),
-        volume('short lower jaw',(0,1.365,.993),(.133,.150,.061)),
-        volume('upper muzzle',(0,1.452,1.063),(.145,.115,.077)),
+        volume('short lower jaw',(0,1.389,.988),(.135,.132,.047)),
+        # Low rounded muzzle with two distinct whisker-pad volumes, not
+        # a single sausage-shaped, permanently smiling mouth.
+        volume('nasal bridge',(0,1.427,1.083),(.076,.098,.061)),
+        volume('upper lip left',(-.074,1.478,1.029),(.086,.083,.049)),
+        volume('upper lip right',(.074,1.478,1.029),(.086,.083,.049)),
     ]
     for s in (-1,1):
         parts.append(tiger_foreleg(s,.46,True))
         parts.append(tiger_foreleg(s,-.57,False))
         # Lobed cheek/zygomatic arch is blended with the face, not two
         # separate cartoon-white balls on the outside of the muzzle.
-        parts.append(volume('zygomatic pad',(s*.153,1.28,1.088),
-                            (.069,.10,.082)))
-        parts.append(volume('tiger auricle',(s*.17,1.07,1.345),
-                            (.059,.067,.065)))
+        parts.append(volume('zygomatic muscle',(s*.165,1.242,1.095),
+                            (.075,.113,.074)))
+        parts.append(volume('tiger auricle',(s*.177,1.075,1.329),
+                            (.063,.063,.073)))
         for y in (.46,-.57):
             for digit in (-1,0,1):
                 parts.append(volume('flattened digit',
