@@ -207,11 +207,11 @@ def human_details(d,female):
     # independent keratin plates and creases; use real hand/foot deformation.
     for s,side in ((-1,'r'),(1,'l')):
         for digit in range(4):
-            x=(.37+digit*.025)*s*(.90 if female else 1.06)
+            x=(.37+digit*.025)*s*(.84 if female else 1.05)
             d.ellipsoid('fingernail',(x,-.050,.846),
                         (.012,.004,.015),'hand_'+side,'nail',12,8)
         for digit in range(4):
-            x=(.080+digit*.035)*s*(1.11 if female else .96)
+            x=(.080+digit*.035)*s*(1.19 if female else .96)
             d.ellipsoid('toenail',(x,-.284,.053),
                         (.017,.006,.013),'foot_'+side,'nail',12,8)
 
@@ -233,8 +233,8 @@ def tiger_details(d):
             (s*.077,1.331,1.260),(s*.122,1.345,1.286),
             (s*.17,1.32,1.282),(s*.204,1.283,1.256)],
             .009,'head','tiger_black')
-        d.ellipsoid(tag+' inner triangular ear',(s*.169,1.190,1.402),
-                    (.050,.017,.054),'head','tiger_black')
+        d.ellipsoid(tag+' inner triangular ear',(s*.164,1.167,1.385),
+                    (.043,.012,.043),'head','tiger_black')
         d.ellipsoid(tag+' muzzle cheek',(s*.103,1.495,1.022),
                     (.085,.042,.040),'head','tiger_white')
         for j in range(4):
