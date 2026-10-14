@@ -63,7 +63,7 @@ def _parse_mhclo(path,body):
 
 
 def import_hair(body,rig,source,full_morph,gender,attach):
-    identity='bob01' if gender=='female' else 'short01'
+    identity='ponytail01' if gender=='female' else 'short02'
     path=pathlib.Path(source)
     count,faces,texcoords,uvrefs=_parse_hair_obj(path/(identity+'.obj'))
     coords=_parse_mhclo(path/(identity+'.mhclo'),full_morph)
