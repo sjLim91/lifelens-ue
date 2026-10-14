@@ -123,6 +123,7 @@ def main():
         camera.rotation_euler = (center-camera.location).to_track_quat('-Z','Y').to_euler()
         anchors = [(-.26,-1.17,.69),(.22,-1.00,.73),(-.24,1.10,.38),(.19,.72,.43)]
         colors = [(1,.02,.02,1),(.02,1,.02,1),(.02,.15,1,1),(1,.1,1,1)]
+        diagnostic_labels = []
         for number, (anchor, color) in enumerate(zip(anchors,colors),1):
             material = bpy.data.materials.new('DIAGNOSTIC_MARKER_'+str(number))
             material.use_nodes = True
@@ -141,8 +142,16 @@ def main():
             label.data.size = .16
             label.rotation_euler = camera.rotation_euler
             label.data.materials.append(material)
+            diagnostic_labels.append(label)
         scene.render.filepath = str(out/'source-foot-anchor-diagnostic.png')
         bpy.ops.render.render(write_still=True)
+        for name, angle in [('front',0),('side',math.pi/2)]:
+            camera.location = center + Vector((math.sin(angle)*radius,-math.cos(angle)*radius,radius*.22))
+            camera.rotation_euler = (center-camera.location).to_track_quat('-Z','Y').to_euler()
+            for label in diagnostic_labels:
+                label.rotation_euler = camera.rotation_euler
+            scene.render.filepath = str(out/('source-foot-anchor-'+name+'.png'))
+            bpy.ops.render.render(write_still=True)
     report = {
         'mesh_objects': len(meshes),
         'vertices': sum(len(obj.data.vertices) for obj in meshes),
