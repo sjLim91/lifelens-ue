@@ -41,7 +41,7 @@ def parse_obj(source):
     return vertices,faces
 
 
-def apply_morph(vertices,target,weight):
+def apply_morph(vertices,target,weight,min_affected=300):
     affected=0
     with target.open('rt',encoding='utf-8',errors='replace') as file:
         for line in file:
@@ -56,7 +56,9 @@ def apply_morph(vertices,target,weight):
             for k in range(3):
                 vertices[index][k]+=float(entry[1+k])*weight
             affected+=1
-    assert affected>300,(target,affected)
+    # The average-muscle/average-weight neutral target is intentionally
+    # empty in upstream MakeHuman; empty means zero displacement, not error.
+    assert affected>=min_affected,(target,affected)
     return affected
 
 
@@ -65,8 +67,8 @@ def import_basemesh(input_dir,gender):
     vertices,faces=parse_obj(source)
     target=input_dir/('universal-'+gender+'-young-averagemuscle-averageweight.target')
     racial=input_dir/('caucasian-'+gender+'-young.target')
-    affected=apply_morph(vertices,target,1.0)
-    affected2=apply_morph(vertices,racial,.35)
+    affected=apply_morph(vertices,target,1.0,min_affected=0)
+    affected2=apply_morph(vertices,racial,1.0)
     extents=[max(v[i] for v in vertices)-min(v[i] for v in vertices)
              for i in range(3)]
     up=max(range(3),key=extents.__getitem__)
