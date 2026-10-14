@@ -59,13 +59,13 @@ def import_cc0_eyes(body,rig,source,attach):
         group=[p for p in vertices if (-1 if p[0]<0 else 1)==sign]
         assert len(group)>200,('CC0 eye group missing',sign,len(group))
         centers[sign]=tuple(sum(p[a] for p in group)/len(group) for a in range(3))
-    ratio=.70
+    ratio=.61
     fitted=[]
     for x,y,z in vertices:
         sign=-1 if x<0 else 1
         cx,cy,cz=centers[sign]
         fitted.append((sign*.033+(x-cx)*ratio,
-                       -.034+(y-cy)*ratio,
+                       -.030+(y-cy)*ratio,
                        1.626+(z-cz)*ratio))
     vertices=fitted
     print('CC0 anatomical eye proxy calibrated, source dz',round(dz,5),
@@ -114,10 +114,10 @@ def import_cc0_eyes(body,rig,source,attach):
     pupil=simple_material('CC0 black pupil',(.018,.013,.011),.19)
     for sign in (-1,1):
         add_ellipsoid('CC0 subtle iris '+str(sign),
-                      (sign*.033,-.044,1.626),(.0058,.0015,.0058),
+                      (sign*.033,-.040,1.626),(.0046,.0012,.0046),
                       iris,rig)
         add_ellipsoid('CC0 subtle pupil '+str(sign),
-                      (sign*.033,-.046,1.626),(.0028,.0012,.0041),
+                      (sign*.033,-.042,1.626),(.0023,.0010,.0034),
                       pupil,rig)
     print('CC0_ANATOMICAL_EYE_ASSET_OK',len(vertices),'vertices',
           len(polygons),'faces',len(texcoords),'UVs')
