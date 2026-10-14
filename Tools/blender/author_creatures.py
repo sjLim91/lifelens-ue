@@ -14,6 +14,10 @@ import sys
 import bpy
 from mathutils import Vector
 
+# GitHub Actions invokes Blender from the repository root, so sibling authoring
+# modules need an explicit location rather than relying on CWD/sys.path.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
 SEGMENTS = 20
 RINGS = 12
 
