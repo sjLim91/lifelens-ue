@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createWildlifeGeometry } from './review/src/render/procedural-wildlife.mjs';
+import { WildlifeLayer } from './review/src/render/wildlife-layer.mjs';
 import { createGrassGeometry } from './review/src/render/procedural-asset-kit.mjs';
 import { createShrubGeometry } from './review/src/render/procedural-tree-generator.mjs';
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0xcddcdc);
@@ -14,10 +14,21 @@ document.body.appendChild(renderer.domElement);
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(100,100), new THREE.MeshStandardMaterial({color:0x637950,roughness:1}));
 floor.rotation.x=-Math.PI/2; scene.add(floor);
 const material = new THREE.MeshStandardMaterial({vertexColors:true,roughness:.92});
-for (const [i,species] of ['Hare','Deer','Wolf','FreshwaterFish','Tiger'].entries()) {
-  const mesh = new THREE.Mesh(createWildlifeGeometry(species),material);
-  mesh.position.set((i-2)*1.55,0,i===0?.45:0);
-  mesh.rotation.y=.55; scene.add(mesh);
+// Render the ACTUAL instanced material with coat shader, not a simplified
+// gallery material that accidentally skips production shader compilation.
+const animals=new WildlifeLayer();
+for(const [i,species] of ['Hare','Deer','Wolf','FreshwaterFish','Tiger'].entries()){
+  const mesh=animals.group.getObjectByName(`LifeLensWildlife:${species}:near`);
+  if(!(mesh instanceof THREE.InstancedMesh))throw Error('Missing Q1 '+species);
+  const position=new THREE.Object3D();
+  position.position.set((i-2)*1.55,0,i===0?.45:0);
+  position.rotation.y=.55;position.updateMatrix();
+  mesh.setMatrixAt(0,position.matrix);
+  mesh.count=1;mesh.instanceMatrix.needsUpdate=true;
+  mesh.geometry.getAttribute('wildlifePhase').setX(0,i*.8);
+  mesh.geometry.getAttribute('wildlifeMotion').setX(0,.35);
+  mesh.geometry.getAttribute('wildlifeBehavior').setX(0,i===4?5:1);
+  scene.add(mesh);
 }
 for(let i=0;i<12;i++) {
   const shrub = new THREE.Mesh(createShrubGeometry('gallery-'+i),material);
@@ -29,4 +40,7 @@ for(let i=0;i<35;i++) {
   grass.position.set((i%7-3)*.65,0,-.6-Math.floor(i/7)*.4); grass.scale.setScalar(.5); scene.add(grass);
 }
 renderer.render(scene,camera);
-window.wildlifeReview={ready:true,info:renderer.info.render};
+window.wildlifeReview={ready:true,info:renderer.info.render,
+ q1:{lods:3,productionShader:animals.material?.customProgramCacheKey?.()
+   ?? animals.group.children[0].material.customProgramCacheKey(),
+   species:5}};

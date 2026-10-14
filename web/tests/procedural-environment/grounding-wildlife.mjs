@@ -58,7 +58,27 @@ for (const species of ['Hare', 'Deer', 'Wolf', 'FreshwaterFish', 'Tiger']) {
   assert(a.boundingBox.min.y >= -1e-6); assert(a.getAttribute('color'));
   a.dispose(); b.dispose();
 }
-console.log('PASS five original wildlife meshes are finite, deterministic and grounded');
+// Q1 authored seamless body: near/mid/far use genuinely reduced geometry
+// density and preserve pose, grounded sole, deterministic identity/pigment.
+for(const species of ['Hare','Deer','Wolf','FreshwaterFish','Tiger']){
+  const near=createWildlifeGeometry(species,'Female','near');
+  const mid=createWildlifeGeometry(species,'Female','mid');
+  const far=createWildlifeGeometry(species,'Female','far');
+  assert.equal(near.userData.wildlifeSurfaceKind,'fused-implicit');
+  assert.equal(near.userData.wildlifeAuthoredVersion,'Q1');
+  assert(near.index.count>mid.index.count*1.3,'Near mesh insufficiently detailed '+species);
+  assert(mid.index.count>far.index.count*1.3,'Far LOD insufficiently lighter '+species);
+  assert(near.boundingBox.min.y>=-1e-6&&mid.boundingBox.min.y>=-1e-6);
+  assert(near.getAttribute('wildlifeSpeciesId'));
+  assert(near.getAttribute('normal').array.every(Number.isFinite));
+  near.dispose();mid.dispose();far.dispose();
+}
+const doe=createWildlifeGeometry('Deer','Female','near'),
+  buck=createWildlifeGeometry('Deer','Male','near');
+assert(buck.boundingBox.max.y>doe.boundingBox.max.y+.15,
+  'Male deer must grow true authored antlers');
+doe.dispose();buck.dispose();
+console.log('PASS 5 seamless fur surfaces, sex differences and 3 actual GPU LODs');
 const animals = ['Hare', 'Deer', 'Wolf'].map((species, i) => ({id: String(i), species, sex: 'Female',
   gridX: -2 * grid.gridCellsPerChunk + 16 + i, gridY: 3 * grid.gridCellsPerChunk + 16, ageDays: 900}));
 const wildlife = {available: true, geographicallyConditioned: false, regionalWeatherApplied: false, animals};
@@ -83,7 +103,7 @@ for(let i=0;i<100;i++)layer.update(.1);
 layer.setTerrain(terrain); assert.equal(layer.instanceCount, 0);
 layer.setTerrain({...snapshot, available: false}); assert.equal(layer.instanceCount, 0);
 let disposed = 0; for (const mesh of layer.group.children) mesh.geometry.addEventListener('dispose', () => disposed++);
-layer.dispose(); assert.equal(disposed, 6); assert.equal(layer.group.children.length, 0);
+layer.dispose(); assert.equal(disposed, 18); assert.equal(layer.group.children.length, 0);
 console.log('PASS Core-only observation, deduplication, removal, legacy runtime, reload, disposal');
 
 // Use the actual rendered freshwater surface and body bounds: adult fish must

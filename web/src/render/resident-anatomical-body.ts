@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RESIDENT_JOINTS, type ResidentJoint } from './resident-rig';
 import type { ResidentAppearanceProfile } from './resident-appearance';
+import { createResidentSkinMaterial } from './resident-surface-material';
 
 // The visual body is new, LifeLens-authored parametric anatomy. The imported
 // CC0 GLB contributes ONLY its existing joint positions, inverse bind matrices
@@ -603,10 +604,7 @@ export function syncResidentAnatomicalBody(
   if (old instanceof THREE.SkinnedMesh) removeResidentAnatomicalBody(model);
   const authored = addAnatomy(donor, profile);
   if (!authored || !donor.parent) return false;
-  const material = new THREE.MeshStandardMaterial({
-    color: profile.skinColor, roughness: .92, metalness: 0,
-    side: THREE.DoubleSide,
-  });
+  const material = createResidentSkinMaterial(profile);
   const body = new THREE.SkinnedMesh(authored.geometry, material);
   body.name = ANATOMICAL_BODY_NAME;
   body.userData.residentProceduralAppearance = true;

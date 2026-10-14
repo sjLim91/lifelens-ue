@@ -94,11 +94,34 @@ function strand(
   end: THREE.Vector3,
   thickness: number,
 ): void {
+  // Sculpted tapered lock, not the old constant-radius rigid hair pipe.
   const curve = new THREE.CatmullRomCurve3([start, middle, end]);
-  const mesh = authoredMesh(
-    new THREE.TubeGeometry(curve, 7, thickness, 5, false),
-    materialColor, 'LifeLensResidentHairLock',
-  );
+  const vertices: number[] = [], indices: number[] = [];
+  const up = new THREE.Vector3(0,0,1), tangent = new THREE.Vector3();
+  for (let ring=0;ring<=12;ring++) {
+    const t=ring/12,p=curve.getPoint(t);
+    tangent.copy(curve.getTangent(t)).normalize();
+    let across=new THREE.Vector3().crossVectors(tangent,up);
+    if(across.lengthSq()<.001)across=new THREE.Vector3().crossVectors(tangent,new THREE.Vector3(1,0,0));
+    across.normalize();
+    const other=new THREE.Vector3().crossVectors(tangent,across).normalize();
+    const radius=thickness*(.94-.88*THREE.MathUtils.smoothstep(t,.33,1));
+    for(let edge=0;edge<8;edge++){
+      const angle=edge/8*Math.PI*2;
+      const v=p.clone().addScaledVector(across,Math.sin(angle)*radius)
+        .addScaledVector(other,Math.cos(angle)*radius*.46);
+      vertices.push(v.x,v.y,v.z);
+    }
+  }
+  for(let ring=0;ring<12;ring++)for(let edge=0;edge<8;edge++){
+    const a=ring*8+edge,b=ring*8+(edge+1)%8,c=(ring+1)*8+edge,
+      d=(ring+1)*8+(edge+1)%8;
+    indices.push(a,c,b,b,c,d);
+  }
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+  geometry.setIndex(indices);geometry.computeVertexNormals();
+  const mesh=authoredMesh(geometry,materialColor,'LifeLensResidentHairLock');
   parent.add(mesh);
 }
 
@@ -233,6 +256,13 @@ export function syncResidentAuthoredFace(
   const group = new THREE.Group();
   group.name = FACE_GROUP_NAME;
   group.userData.residentProceduralAppearance = true;
+  // Q1: the new authored head already models nose bridge, nostrils, lips and
+  // jaw within its skin surface. Do not overlay a bead nose or rigid lip tube.
+  // Legacy unsupported fixtures keep A2 overlays so the old rig still works.
+  if (model.getObjectByName('LifeLensAuthoredAnatomicalBody')) {
+    bone.add(group);
+    return true;
+  }
   // Unitless local head dimensions; works for both growing child and adult
   // because the parent ResidentWorldLayer already owns world-space scaling.
   const skin = new THREE.Color(appearance.skinColor);
