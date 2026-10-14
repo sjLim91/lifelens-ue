@@ -101,6 +101,66 @@ def hair_ribbon(name,positions,width,mat,rig):
     return attach(ob,rig)
 
 
+def eyelid_sheets(eye_x, rig, gender):
+    """Upper/lower lid tissue occludes the globe for a natural eye aperture.
+
+    Doll-like exposed eyes are avoided by two bone-skinned anatomical sheets,
+    tapered toward the inner and outer canthi.
+    """
+    tone=(.69,.46,.345) if gender=='female' else (.65,.415,.31)
+    skin=simple_material('CC0 eyelid warm skin '+gender,tone,.77)
+    wet=simple_material('CC0 eyelid margin '+gender,
+                        (.42,.27,.225),.65)
+    parts=[]
+    count=16
+    for upper in (True,False):
+        vertices=[];faces=[]
+        margin_points=[]
+        for i in range(count+1):
+            t=-1+2*i/count
+            x=eye_x+t*.027
+            closing=max(0.0,1-t*t)**.72
+            aperture=(.0070 if upper else -.0048)*closing
+            z_inner=1.625+aperture+(.0015 if upper else -.0002)
+            z_outer=z_inner+(.016 if upper else -.013)
+            y_inner=-.058+.010*(abs(t)**1.5)
+            y_outer=-.042+.003*(abs(t)**1.5)
+            vertices.extend([(x,y_inner,z_inner),(x,y_outer,z_outer)])
+            margin_points.append((x,y_inner-.0002,z_inner))
+            if i:
+                a=(i-1)*2
+                faces.append((a,a+1,a+3,a+2) if upper else (a+2,a+3,a+1,a))
+        mesh=bpy.data.meshes.new('CC0 '+gender+('Upper' if upper else 'Lower')+'LidTopology')
+        mesh.from_pydata(vertices,[],faces)
+        mesh.update()
+        mesh.materials.append(skin)
+        obj=bpy.data.objects.new(('upper' if upper else 'lower')+' anatomical eyelid '+str(eye_x),mesh)
+        bpy.context.collection.objects.link(obj)
+        for face in mesh.polygons:
+            face.use_smooth=True
+        parts.append(attach(obj,rig))
+        curve=bpy.data.curves.new('Eyelid soft rim','CURVE')
+        curve.dimensions='3D'
+        curve.bevel_depth=.00075
+        curve.resolution_u=16
+        curve.bevel_resolution=1
+        spline=curve.splines.new('POLY')
+        spline.points.add(len(margin_points)-1)
+        for j,p in enumerate(margin_points):
+            spline.points[j].co=(*p,1.0)
+        rim=bpy.data.objects.new('CC0 eyelid wet line',curve)
+        bpy.context.collection.objects.link(rim)
+        bpy.ops.object.select_all(action='DESELECT')
+        rim.select_set(True)
+        bpy.context.view_layer.objects.active=rim
+        bpy.ops.object.convert(target='MESH')
+        rim=bpy.context.object
+        rim.data.materials.append(wet)
+        parts.append(attach(rim,rig))
+    assert len(parts)==4
+    return parts
+
+
 def decorate(body,rig,gender,source):
     # Replace circular hand-authored eyes with official anatomically positioned
     # and UV-textured high-poly eyeballs from the same CC0 MakeHuman topology.
@@ -108,6 +168,8 @@ def decorate(body,rig,gender,source):
     hair=simple_material('CC0 natural hair '+gender,
                          (.095,.058,.033) if gender=='female' else (.044,.035,.029),.83)
     detail=[import_cc0_eyes(body,rig,source,attach)]
+    for center in (-.033,.033):
+        detail.extend(eyelid_sheets(center,rig,gender))
     detail.append(anatomical_scalp(body,rig,gender,hair))
     if gender=='female':
         # Four narrow back-hair sections. Broad rectangular curtains looked
