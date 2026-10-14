@@ -73,14 +73,18 @@ def longitudinal_loft(name,knots,axis='z',steps=48,sides=32):
             b=j*sides+(s+1)%sides
             c=(j+1)*sides+(s+1)%sides
             d=(j+1)*sides+s
-            faces.append((a,b,c,d))
+            faces.append((a,b,c,d) if axis=='z' else (d,c,b,a))
     first=len(verts)
     verts.append(tuple(sum(verts[s][i] for s in range(sides))/sides for i in range(3)))
     last=len(verts)
     verts.append(tuple(sum(verts[steps*sides+s][i] for s in range(sides))/sides for i in range(3)))
     for s in range(sides):
-        faces.append((first,(s+1)%sides,s))
-        faces.append((last,steps*sides+s,steps*sides+(s+1)%sides))
+        if axis=='z':
+            faces.append((first,(s+1)%sides,s))
+            faces.append((last,steps*sides+s,steps*sides+(s+1)%sides))
+        else:
+            faces.append((first,s,(s+1)%sides))
+            faces.append((last,steps*sides+(s+1)%sides,steps*sides+s))
     return _finish(name,verts,faces)
 
 
