@@ -61,12 +61,7 @@ jobs:
             file="young_lightskinned_$gender"_diffuse.png
             curl -fLsS --retry 3 --max-time 120 "$SKIN_BASE/$file" -o "$RUNNER_TEMP/lifelens-cc0-source/$file"
             # Fail instead of rendering a Git-LFS pointer or HTML response.
-            python3 - "$RUNNER_TEMP/lifelens-cc0-source/$file" <<'PY'
-import pathlib,sys
-p=pathlib.Path(sys.argv[1])
-assert p.read_bytes()[:8]==b'\x89PNG\r\n\x1a\n' and p.stat().st_size>100000,p
-print('VERIFIED_PINNED_CC0_SKIN',p.name,p.stat().st_size)
-PY
+            python3 -c "import pathlib,sys; p=pathlib.Path(sys.argv[1]); assert p.read_bytes()[:4]==bytes((137,80,78,71)) and p.stat().st_size>100000, p; print('VERIFIED_CC0_SKIN',p.name,p.stat().st_size)" "$RUNNER_TEMP/lifelens-cc0-source/$file"
           done
           test "$(wc -c < "$RUNNER_TEMP/lifelens-cc0-source/base.obj")" -gt 1000000
           sha256sum "$RUNNER_TEMP"/lifelens-cc0-source/*
