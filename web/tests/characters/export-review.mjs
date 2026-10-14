@@ -53,6 +53,8 @@ for(let ci=0;ci<cases.length;ci++){
  const authored=model.getObjectByName(ANATOMICAL_BODY_NAME);
  if(!(authored instanceof THREE.SkinnedMesh))
    throw Error('Authored anatomy is not a real skinned mesh: '+label);
+ if(authored.material.name!=='LifeLensResidentSkinQ1')
+   throw Error('Q1 skin PBR shader absent on actual GLB: '+label);
  const sumVertices=authored.geometry.getAttribute('position').count;
  if(sumVertices<9000)throw Error('A6 anatomical shape too sparse: '+label);
  if(authored.geometry.userData.anatomyVersion!=='A6-A7')

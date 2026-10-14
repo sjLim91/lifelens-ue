@@ -44,6 +44,29 @@ try {
     const before = profile(resident); profile({ id: 'another' });
     assert.deepEqual(profile(resident), before);
   });
+  const {createResidentSkinMaterial,setResidentSkinMaterialQuality,SKIN_QUALITY_NAME}=
+    await source('render/resident-surface-material.ts');
+  test('Q1 procedural PBR skin retains Core pigment/aging and reduces shader work at a distance',()=>{
+    const appearance=profile({id:'q1-skin-identity',sex:'Female',ageYears:71,
+      lifeCondition:{appearanceAgeFactor:.85}});
+    const material=createResidentSkinMaterial(appearance);
+    assert.equal(material.name,SKIN_QUALITY_NAME);
+    assert.equal(material.color.getHex(),appearance.skinColor);
+    const shader={uniforms:{},vertexShader:'#include <common>\n#include <begin_vertex>',
+      fragmentShader:'#include <common>\n#include <color_fragment>\n#include <roughnessmap_fragment>'};
+    material.onBeforeCompile(shader,{});
+    assert(shader.vertexShader.includes('llSkinLocal=position'));
+    assert(shader.fragmentShader.includes('llSkinNoise'));
+    assert(shader.fragmentShader.includes('roughnessFactor'));
+    assert.equal(shader.uniforms.llAge.value,.85);
+    const root=new THREE.Group(),body=new THREE.SkinnedMesh(new THREE.BoxGeometry(),material);
+    body.name='LifeLensAuthoredAnatomicalBody';root.add(body);
+    setResidentSkinMaterialQuality(root,2);assert.equal(shader.uniforms.llQuality.value,1);
+    setResidentSkinMaterialQuality(root,11);assert.equal(shader.uniforms.llQuality.value,.5);
+    setResidentSkinMaterialQuality(root,40);assert.equal(shader.uniforms.llQuality.value,0);
+    assert.equal(material.color.getHex(),appearance.skinColor);
+    body.geometry.dispose();material.dispose();
+  });
   const { syncResidentAuthoredHair, removeResidentAuthoredHair } =
     await source('render/resident-authored-appearance.ts');
   function headFixture() {
