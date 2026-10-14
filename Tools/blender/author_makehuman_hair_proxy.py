@@ -54,8 +54,10 @@ def _parse_mhclo(path,body):
                 coords.append(tuple(
                     sum(w[k]*body[ids[k]][axis] for k in range(3))
                     +offset[axis]*scale[axis] for axis in range(3)))
-            elif in_verts:
-                raise RuntimeError('Unexpected hair mapping record '+str(parts))
+            elif in_verts and parts[0].lstrip('-').isdigit():
+                raise RuntimeError('Malformed hair mapping vertex '+str(parts))
+            # Material and metadata declarations may be interleaved between
+            # 'verts 0' and the first barycentric mapping row.
     assert len(coords)>1000,(path,len(coords))
     return coords
 
