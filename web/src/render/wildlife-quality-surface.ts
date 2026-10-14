@@ -56,7 +56,6 @@ function anatomy(species: WildlifeSpecies, sex:'Male'|'Female'): Anatomy {
     eye=V(.15,1.43,.75);
   }else if(species==='Wolf'||species==='Tiger'){
     const tiger=species==='Tiger',k=tiger?1.22:1;
-    const shift=tiger?.04:0;
     add(0,.66*k,-.12,.265*k,.27*k,.58*k);
     add(0,.80*k,.29,.245*k,.275*k,.34);
     add(0,.81*k,-.52,.23*k,.26*k,.25);
@@ -103,7 +102,7 @@ const TETS=[[0,5,1,6],[0,1,2,6],[0,2,3,6],
   [0,3,7,6],[0,7,4,6],[0,4,5,6]] as const;
 const CORNERS=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],
   [0,0,1],[1,0,1],[1,1,1],[0,1,1]] as const;
-function speciesPigment(species:WildlifeSpecies,p:THREE.Vector3,part:number):THREE.Color {
+function speciesPigment(species:WildlifeSpecies,p:THREE.Vector3):THREE.Color {
   const h=p.y;
   const palettes:Record<WildlifeSpecies,[number,number,number]> = {
     Hare:[0x77604b,0xae9272,0xd9caba],
@@ -146,7 +145,6 @@ export function createQualityWildlifeSurface(
   const vertices:number[]=[],normals:number[]=[],colors:number[]=[],parts:number[]=[];
   const speciesIds:number[]=[];
   const indexList:number[]=[];
-  const currentPosition=V(0,0,0);
   const grade=(p:THREE.Vector3)=>{
     const delta=step*.5;
     const d=V(
@@ -177,7 +175,7 @@ export function createQualityWildlifeSurface(
     for(const pos of face){
       vertices.push(pos.x,pos.y,pos.z);
       const n=grade(pos); normals.push(n.x,n.y,n.z);
-      const col=speciesPigment(species,pos,partAt(pos));
+      const col=speciesPigment(species,pos);
       colors.push(col.r,col.g,col.b);
       parts.push(partAt(pos));speciesIds.push(speciesIndex[species]);
     }
