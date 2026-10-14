@@ -8,6 +8,7 @@ on:
     paths:
       - 'Tools/blender/author_makehuman_cc0_trial.py'
       - 'Tools/blender/author_makehuman_cc0_head.py'
+      - 'Tools/blender/author_makehuman_hair.py'
       - 'Tools/blender/author_makehuman_eyes.py'
       - 'Tools/blender/validate_cc0_trial.py'
       - 'Tools/blender/verify_cc0_live_skin.py'
@@ -16,6 +17,7 @@ on:
     paths:
       - 'Tools/blender/author_makehuman_cc0_trial.py'
       - 'Tools/blender/author_makehuman_cc0_head.py'
+      - 'Tools/blender/author_makehuman_hair.py'
       - 'Tools/blender/author_makehuman_eyes.py'
       - 'Tools/blender/validate_cc0_trial.py'
       - 'Tools/blender/verify_cc0_live_skin.py'
