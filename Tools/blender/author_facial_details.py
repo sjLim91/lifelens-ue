@@ -222,21 +222,21 @@ def tiger_details(d):
     # skin pigment shader; rigid contrasting white balls are removed.
     for s in (-1,1):
         tag='right' if s<0 else 'left'
-        d.ellipsoid(tag+' recessed cream orbital skin',(s*.139,1.295,1.214),
-                    (.044,.010,.022),'head','tiger_white')
-        d.ellipsoid(tag+' deep amber iris',(s*.139,1.304,1.215),
-                    (.022,.006,.014),'head','tiger_eye')
-        d.ellipsoid(tag+' vertical pupil',(s*.139,1.311,1.215),
-                    (.006,.0025,.012),'head','tiger_black')
-        d.ellipsoid(tag+' tiny ocular specular',(s*.132,1.314,1.220),
+        d.ellipsoid(tag+' recessed cream orbital skin',(s*.139,1.352,1.223),
+                    (.035,.012,.020),'head','tiger_white')
+        d.ellipsoid(tag+' deep amber iris',(s*.139,1.366,1.226),
+                    (.019,.006,.012),'head','tiger_eye')
+        d.ellipsoid(tag+' vertical pupil',(s*.139,1.373,1.226),
+                    (.0055,.0024,.0095),'head','tiger_black')
+        d.ellipsoid(tag+' tiny ocular specular',(s*.132,1.379,1.235),
                     (.0025,.0015,.0025),'head','glint',12,8)
         d.fiber(tag+' subtle upper lid',[
-            (s*.093,1.306,1.225),(s*.129,1.309,1.232),
-            (s*.164,1.302,1.228),(s*.181,1.291,1.215)],
+            (s*.100,1.366,1.237),(s*.129,1.373,1.244),
+            (s*.159,1.364,1.242),(s*.179,1.351,1.223)],
             .0027,'head','tiger_black')
         # Inner ear recedes behind the orange pinna; no spherical black nubs.
-        d.ellipsoid(tag+' inner ear',(s*.166,1.145,1.359),
-                    (.027,.009,.026),'head','tiger_black',12,8)
+        d.ellipsoid(tag+' inner ear',(s*.166,1.112,1.349),
+                    (.020,.006,.019),'head','tiger_black',12,8)
         # Small whisker pads are defined by coat pigmentation rather than
         # large separate, conspicuously white snout spheres.
         for k in range(4):
@@ -251,8 +251,20 @@ def tiger_details(d):
             mid=((start[0]+end[0])*.5,1.563,1.039+k*.016)
             d.fiber('fine facial vibrissa '+tag,[start,mid,end],.00075,'head','whisker')
 
-    d.ellipsoid('soft triangular black nose',(0,1.567,1.059),
-                (.047,.013,.023),'head','tiger_nose',16,10)
+    # Low-poly triangular nasal leather, not a round purple marble.
+    triangles=[
+        (-.040,1.578,1.071),(.040,1.578,1.071),
+        (0,1.591,1.043),(-.035,1.560,1.072),
+        (.035,1.560,1.072),(0,1.570,1.044)
+    ]
+    faces=[(0,1,2),(0,3,4,1),(0,2,5,3),(1,4,5,2),(3,5,4)]
+    mesh=bpy.data.meshes.new('TigerAnatomicalNoseTopology')
+    mesh.from_pydata(triangles,[],faces)
+    mesh.update()
+    nose=bpy.data.objects.new('Triangular tiger nasal leather',mesh)
+    bpy.context.collection.objects.link(nose)
+    mesh.materials.append(d.palette['tiger_nose'])
+    d.attach(nose,'head')
     d.fiber('philtrum',[(0,1.570,1.043),(0,1.555,1.018),
                         (0,1.542,.999)],.0025,'head','tiger_black')
     for s in (-1,1):
