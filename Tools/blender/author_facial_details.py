@@ -279,13 +279,13 @@ def tiger_details(d):
         for front,y in ((True,.46),(False,-.57)):
             bone=('front_' if front else 'back_')+side+'_lower'
             for digit in (-1,0,1):
-                x=s*.29+digit*.065
+                x=s*.29+digit*.057
                 d.tapered('small retractable claw',
-                          (x,y+.340,.086),(x,y+.391,.060),.009,
+                          (x,y+.237,.093),(x,y+.283,.067),.0065,
                           bone,'claw',vertices=9)
                 d.fiber('paw crease',[
-                    (x-.022,y+.265,.129),(x,y+.287,.135),
-                    (x+.022,y+.265,.129)],.002,bone,'tiger_black')
+                    (x-.020,y+.195,.125),(x,y+.215,.132),
+                    (x+.020,y+.195,.125)],.002,bone,'tiger_black')
 
 
 
