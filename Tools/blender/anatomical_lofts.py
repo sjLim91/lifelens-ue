@@ -220,10 +220,10 @@ def tiger_tail():
 def human_arm(side,shoulder):
     s=side
     return curving_limb('Human deltoid elbow forearm wrist',[
-      (s*.24*shoulder,-.001,1.465,.091,.102),
-      (s*.286*shoulder,.008,1.40,.105,.117),
-      (s*.32*shoulder,.001,1.31,.082,.080),
-      (s*.355*shoulder,-.018,1.21,.071,.069),
+      (s*.230*shoulder,-.001,1.465,.057,.065),
+      (s*.276*shoulder,.008,1.40,.084,.092),
+      (s*.31*shoulder,.001,1.31,.082,.078),
+      (s*.352*shoulder,-.018,1.21,.069,.069),
       (s*.365*shoulder,-.023,1.165,.065,.071),
       (s*.395*shoulder,-.030,1.063,.057,.050),
       (s*.399*shoulder,-.032,1.015,.045,.041),
