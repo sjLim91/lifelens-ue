@@ -299,6 +299,13 @@ def author(which,out):
     else:
         skin, rig, bones=tiger()
         kind='tiger'
+    # Skin weights and coat pigmentation require world-rest-space vertices,
+    # never positions relative to the first joined primitive's original origin.
+    zmax=max(v.co.z for v in skin.data.vertices)
+    zmin=min(v.co.z for v in skin.data.vertices)
+    assert max(abs(v) for v in skin.location) < 1e-6
+    assert zmax > (1.68 if kind=='human' else 1.34),(which,'incorrect mesh bind origin',zmax)
+    assert zmin < .08,(which,'incorrect ground contact origin',zmin)
     attach_weights(skin,rig,bones)
     tint_mesh(skin,kind,which=='resident-female')
     idle_and_walk(rig,kind)
