@@ -101,24 +101,13 @@ def hair_ribbon(name,positions,width,mat,rig):
     return attach(ob,rig)
 
 
-def decorate(body,rig,gender):
-    sclera=simple_material('CC0 muted moist sclera',(.75,.70,.65),.27)
-    iris=simple_material('CC0 brown iris',(.30,.19,.095),.29)
-    pupil=simple_material('CC0 deep pupil',(.013,.010,.010),.17)
+def decorate(body,rig,gender,source):
+    # Replace circular hand-authored eyes with official anatomically positioned
+    # and UV-textured high-poly eyeballs from the same CC0 MakeHuman topology.
+    from author_makehuman_eyes import import_cc0_eyes
     hair=simple_material('CC0 natural hair '+gender,
                          (.095,.058,.033) if gender=='female' else (.044,.035,.029),.83)
-    detail=[]
-    for side in (-1,1):
-        # In source rest coordinates real orbital cavities are about
-        # +/-5cm across the nose and z=1.61m. These values are compared
-        # against full mesh front-bound before being used as final assets.
-        x=side*.029
-        detail.append(add_ellipsoid('CC0 inset eye sclera',(x,-.037,1.635),
-                      (.015,.009,.008),sclera,rig))
-        detail.append(add_ellipsoid('CC0 realistic iris',(x,-.047,1.635),
-                      (.006,.002,.006),iris,rig))
-        detail.append(add_ellipsoid('CC0 pupil',(x,-.050,1.635),
-                      (.003,.0015,.0045),pupil,rig))
+    detail=[import_cc0_eyes(body,rig,source,attach)]
     detail.append(anatomical_scalp(body,rig,gender,hair))
     if gender=='female':
         # Four narrow back-hair sections. Broad rectangular curtains looked
@@ -131,6 +120,6 @@ def decorate(body,rig,gender):
                 (x*1.05,.124,1.57),
                 (x*1.1,.130,1.53),
                 (x*1.08,.131,1.515)],.0045,hair,rig))
-    assert len(detail)>=7
+    assert len(detail)>=2
     print('MAKEHUMAN_CC0_HEAD_DETAIL_OK',gender,'skinned pieces',len(detail))
     return detail
