@@ -339,7 +339,7 @@ export class WorldScene {
     this.applyCamera(current);
 
     this.residentLayer.update(deltaSeconds, this.camera);
-    this.wildlifeLayer.update(deltaSeconds);
+    this.wildlifeLayer.update(deltaSeconds,this.camera);
     this.settlementFocusLayer.update(this.camera, this.selectedResidentId
       ? this.residentLayer.socialEventAnchor(this.selectedResidentId) : null);
     this.facilityLayer.update(deltaSeconds, this.camera);

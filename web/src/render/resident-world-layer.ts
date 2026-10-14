@@ -24,6 +24,7 @@ import {
 } from './resident-appearance';
 import { syncResidentAuthoredHair, syncResidentAuthoredFace, setResidentFaceDetailVisibility } from './resident-authored-appearance';
 import { syncResidentAuthoredGarment } from './resident-authored-garment';
+import { setResidentSkinMaterialQuality } from './resident-surface-material';
 import { syncResidentAnatomicalBody } from './resident-anatomical-body';
 import { ResidentInventoryProps, ResidentPropResources } from './resident-props';
 import { ResidentProductionTargets } from './resident-production-context';
@@ -514,6 +515,9 @@ export class ResidentWorldLayer {
     for (const actor of this.actors.values()) {
       if (!actor.root.visible) continue;
       actor.lifeShape.updateScale(this.simulationSpeed > 0 ? dt : 0);
+      if (camera) setResidentSkinMaterialQuality(
+        actor.model, this.cameraPosition.distanceTo(actor.root.position),
+      );
       // Reverse procedural overlays before reversing lifecycle overlays.
       actor.procedural.beforeMotion();
       actor.lifeShape.beforeMotion();
