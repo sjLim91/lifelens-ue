@@ -16,8 +16,11 @@ Codex는 고품질 사람/호랑이 원본 확보·리깅·Web Observer 통합�
   CC-BY-NC/ND/불명확한 유료 자산을 배제한다.
 - 인체 남녀 `near` 모델의 실제 POSITION 정점 형상이 완전히 동일하면 실패.
   (파일명·재질만 다른 가짜 성별 구분 차단, 해부학적 사실감은 별도 검수.)
-- 각 개체 `near/mid/far` 3가지 실제 GLB와 핀된 SHA-256. 헤더·BIN 경계·스킨
+- 각 개체 `near/mid` 실제 스킨 GLB와 핀된 SHA-256. 헤더·BIN 경계·스킨
   joint/weights, 삼각형 면/normal/색 또는 UV, 데이터 무결성.
+- `far`는 저폴리곤 GLB **또는** 기존 Web Observer `InstancedMesh` fallback을 허용.
+  fallback은 별도 실행 보고서에 Core ID/위치 보존, 중복 렌더 없음, 실 테스트 성공을 요구한다.
+  (Codex #728의 2LOD + far instanced 구조를 의도적으로 지원.)
 - 예산: near 85k / mid 30k / far 6k 삼각형 상한, LOD 감소율 각 1.5배 이상.
   GLB 크기 상한 22 / 10 / 4 MiB. 모바일 프레임 레이트는 **별도 실측** 필요.
 - 웹 연동 검증 리포트: Core 기반 개체 키, 실제 Three.js runtime, animation clip
@@ -35,6 +38,8 @@ Codex는 고품질 사람/호랑이 원본 확보·리깅·Web Observer 통합�
 
 `web/public/vendor/creatures/release-manifest.json`
 
+- 후보 단계에서 호랑이 한 종만 납품하는 경우 `candidate-manifest.json`은
+  `--allow-partial`로 검사한다. `release-manifest.json`은 최종 남녀·호랑이 3종 필수.
 - `web/public/vendor/creatures/` 아래에서만 상대 경로를 허용한다.
 - GLB, 증거 PNG, `web-motion.json` 파일들을 포함한다.
 - 코드는 GitHub Actions 표준 라이브러리에서 실행되며 유료 API/Blender/Node
@@ -76,6 +81,23 @@ Codex는 고품질 사람/호랑이 원본 확보·리깅·Web Observer 통합�
 
 샘플을 그대로 복사하면 파일·실제 해시·출처가 없으므로 실패한다. 실제 인수
 단계에서는 3종 모두 필요하다.
+
+### 원거리 기존 InstancedMesh fallback 예시 (선택)
+
+이 구조를 쓰는 개체는 `lods.far`를 생략하고 아래 항목을 추가할 수 있다.
+
+```json
+"far_fallback": {
+  "mode": "existing-instanced",
+  "test_report": "tiger/far-fallback.json"
+}
+```
+
+`test_report`의 실제 웹 테스트 결과에는
+`creature_id`, `runtime: "web-threejs"`, `tested: true`,
+`core_id_preserved: true`, `core_transform_preserved: true`,
+`no_double_draw: true`가 필요하다.
+검증기를 통과시키기 위한 임의 값 입력은 실험 증거로 인정하지 않는다.
 
 ### 실제 Web Motion report 예시
 
