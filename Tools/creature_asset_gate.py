@@ -162,6 +162,39 @@ def mesh_metrics(doc: dict[str, Any], *, skinned: bool, textured: bool) -> dict[
     return {"triangles": total, "joints": joints, "primitives": prim_count}
 
 
+
+def geometry_fingerprint(path: pathlib.Path) -> str:
+    """Hash *position accessor bytes*, not filenames/materials/GLB metadata.
+
+    An unchanged male/female silhouette must fail even if a vendor modified
+    the node names, hair material, filename, hash or source metadata.
+    """
+    doc = parse_glb(path)
+    data = path.read_bytes()
+    json_len = struct.unpack_from("<I", data, 12)[0]
+    bin_chunk = 20 + json_len
+    require(bin_chunk + 8 < len(data), f"{path.name}: geometry has no embedded BIN chunk")
+    bin_size, kind = struct.unpack_from("<I4s", data, bin_chunk)
+    require(kind == b"BIN\x00", f"{path.name}: missing BIN chunk")
+    start = bin_chunk + 8
+    digest = hashlib.sha256()
+    n_positions = 0
+    component_bytes = {5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4}
+    for mesh in doc.get("meshes", []):
+        for primitive in mesh.get("primitives", []):
+            accessor = doc["accessors"][primitive["attributes"]["POSITION"]]
+            view = doc["bufferViews"][accessor["bufferView"]]
+            size = component_bytes[accessor["componentType"]] * 3
+            require(accessor["type"] == "VEC3", f"{path.name}: positions must be vectors")
+            stride = view.get("byteStride", size)
+            off = start + view.get("byteOffset", 0) + accessor.get("byteOffset", 0)
+            for i in range(accessor["count"]):
+                digest.update(data[off+i*stride:off+i*stride+size])
+            n_positions += accessor["count"]
+    require(n_positions >= 3, f"{path.name}: no position vertices")
+    return digest.hexdigest()
+
+
 def check_picture(root: pathlib.Path, name: str, orientation: str) -> dict[str, int]:
     p = mapped_path(root, name)
     with p.open("rb") as f:
@@ -256,6 +289,12 @@ def validate_manifest(manifest: dict[str, Any], root: pathlib.Path, allow_partia
     if not allow_partial:
         require(set(ids) == REQUIRED, f"Release requires all three models: {sorted(REQUIRED - set(ids))}")
     reports = [inspect_candidate(root, model) for model in models]
+    by_id = {model["id"]: model for model in models}
+    if "resident-female" in by_id and "resident-male" in by_id:
+        female_path = mapped_path(root, by_id["resident-female"]["lods"]["near"]["file"])
+        male_path = mapped_path(root, by_id["resident-male"]["lods"]["near"]["file"])
+        require(geometry_fingerprint(female_path) != geometry_fingerprint(male_path),
+                "Male and female near meshes have identical vertex geometry")
     return {"status": "structural-pass-visual-review-required",
             "release_approved": False, "review_required": True, "creatures": reports}
 
