@@ -237,10 +237,12 @@ def inspect_candidate(root: pathlib.Path, model: dict[str, Any]) -> dict[str, An
     require(name in REQUIRED, f"Invalid creature id: {name!r}")
     provenance = check_license(model.get("source", {}), name)
     lods = model.get("lods", {})
-    require(isinstance(lods, dict) and set(lods) == set(LIMITS),
-            f"{name}: near/mid/far LOD files mandatory")
+    tiers = set(lods)
+    require(isinstance(lods, dict) and tiers in (
+                {"near", "mid"}, {"near", "mid", "far"}),
+            f"{name}: near/mid required; far needs GLB or audited instanced fallback")
     stats = {}
-    for tier in ("near", "mid", "far"):
+    for tier in ("near", "mid") + (("far",) if "far" in tiers else ()):
         record = lods[tier]
         path = mapped_path(root, record["file"])
         expected = record.get("sha256", "")
@@ -257,8 +259,22 @@ def inspect_candidate(root: pathlib.Path, model: dict[str, Any]) -> dict[str, An
         stats[tier] = {"file": record["file"], "bytes": path.stat().st_size, **metric}
     require(stats["near"]["triangles"] >= stats["mid"]["triangles"] * 1.5,
             f"{name}: no meaningful near-to-mid LOD reduction")
-    require(stats["mid"]["triangles"] >= stats["far"]["triangles"] * 1.5,
-            f"{name}: no meaningful mid-to-far LOD reduction")
+    if "far" in tiers:
+        require(stats["mid"]["triangles"] >= stats["far"]["triangles"] * 1.5,
+                f"{name}: no meaningful mid-to-far LOD reduction")
+    else:
+        fallback = model.get("far_fallback", {})
+        require(isinstance(fallback, dict) and fallback.get("mode") == "existing-instanced",
+                f"{name}: missing approved far instanced fallback")
+        evidence = json.loads(mapped_path(root, fallback.get("test_report", "")).read_text(encoding="utf-8"))
+        require(evidence.get("creature_id") == name and
+                evidence.get("runtime") == "web-threejs" and
+                evidence.get("tested") is True and
+                evidence.get("core_id_preserved") is True and
+                evidence.get("core_transform_preserved") is True and
+                evidence.get("no_double_draw") is True,
+                f"{name}: original Web Observer far fallback is not proven")
+        stats["far"] = {"mode": "existing-instanced", "test_report": fallback["test_report"]}
     report_path = mapped_path(root, model["web_motion_report"])
     report = json.loads(report_path.read_text(encoding="utf-8"))
     required_clips = ("idle", "walk", "sleep", "work") if name.startswith("resident-") \
