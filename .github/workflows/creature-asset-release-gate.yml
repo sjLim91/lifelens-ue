@@ -1,0 +1,54 @@
+name: LifeLens Creature Asset Release Gate
+
+on:
+  pull_request:
+    paths:
+      - 'Tools/creature_asset_gate.py'
+      - 'Tools/tests/test_creature_asset_gate.py'
+      - 'docs/creature-asset-acceptance-contract.md'
+      - '.github/workflows/creature-asset-release-gate.yml'
+      - 'web/public/vendor/creatures/**'
+  push:
+    branches: [main]
+    paths:
+      - 'Tools/creature_asset_gate.py'
+      - 'Tools/tests/test_creature_asset_gate.py'
+      - 'web/public/vendor/creatures/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  structural-asset-release-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Negative and positive contract regression tests
+        run: python3 -m unittest discover -s Tools/tests -p 'test_creature_asset_gate.py' -v
+      - name: Check any candidate production creature manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f web/public/vendor/creatures/release-manifest.json ]; then
+            python3 Tools/creature_asset_gate.py \
+              web/public/vendor/creatures/release-manifest.json \
+              --root web/public/vendor/creatures \
+              --report creature-asset-gate-report.json
+          else
+            echo 'No production candidate manifest: structural verifier unit tests passed;'
+            echo 'NO model is approved or released by this job.'
+            python3 -c "import json;print(json.dumps({'status':'not-submitted','release_approved':False,'review_required':True}))" > creature-asset-gate-report.json
+          fi
+      - name: Publish independent audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: creature-asset-release-gate-report
+          path: creature-asset-gate-report.json
+          if-no-files-found: ignore
+          retention-days: 14
