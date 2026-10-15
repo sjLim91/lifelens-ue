@@ -20,6 +20,7 @@ FOOT_ANCHORS = [(-.29,-1.30,.67),(.05,-.71,.51),(.17,1.08,.32),(-.25,.21,.45)]
 
 
 def main():
+    bpy.context.preferences.filepaths.save_version=0
     out = Path(sys.argv[sys.argv.index('--') + 1]).resolve()
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete(use_global=False)

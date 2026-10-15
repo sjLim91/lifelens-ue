@@ -7,7 +7,13 @@ on:
       - 'Tools/assets/**'
       - 'Tools/blender/review_imported_tiger.py'
       - 'Tools/blender/extract_tiger_body.py'
+      - 'Tools/blender/rig_imported_tiger.py'
+      - 'Tools/blender/verify_imported_tiger_motion.py'
       - '.github/workflows/tiger-source-review.yml'
+      - 'web/src/render/imported-tiger.ts'
+      - 'web/src/render/wildlife-layer.ts'
+      - 'web/tests/procedural-environment/imported-tiger.mjs'
+      - 'web/tests/procedural-environment/tiger-*'
   workflow_dispatch:
 
 permissions:
@@ -20,20 +26,23 @@ concurrency:
 jobs:
   public-source-evidence:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Inspect public license and anonymous download responses
         run: python3 Tools/assets/probe_tiger_sources.py --output review/tiger-source-evidence.json
       - name: Acquire openly published CC BY TopoForge candidate for review only
+        if: hashFiles('docs/asset-reviews/tiger-topoforge/source.glb') == ''
         run: python3 Tools/assets/review_public_tiger.py docs/asset-reviews/tiger-topoforge
       - name: Acquire second CC BY candidate for comparison
+        if: hashFiles('docs/asset-reviews/tiger-ferocious/source.glb') == ''
         run: python3 Tools/assets/review_public_tiger.py docs/asset-reviews/tiger-ferocious ferocious
       - name: Install free Blender on ephemeral runner
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends blender python3-numpy python3-scipy
       - name: Inspect original geometry and render four views
+        if: hashFiles('docs/asset-reviews/tiger-topoforge/inspection-positions.json') == ''
         run: |
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-ferocious
@@ -41,6 +50,36 @@ jobs:
         run: |
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/extract_tiger_body.py -- docs/asset-reviews/tiger-topoforge
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge body-extraction.glb
+      - name: Author source-preserving skin, seven clips and two bounded LODs
+        run: |
+          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/rig_imported_tiger.py -- docs/asset-reviews/tiger-topoforge
+          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/verify_imported_tiger_motion.py -- docs/asset-reviews/tiger-topoforge
+          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge tiger-rigged.glb
+          python3 Tools/assets/stage_tiger_candidate.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install free Web test dependencies
+        working-directory: web
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Produce authoritative Core observations without changing Core
+        run: |
+          cmake -S Source/LifeLensCore -B /tmp/tiger-core -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/tiger-core --target ll_ecology_fixture -j2
+          mkdir -p web/tests/procedural-environment/review
+          /tmp/tiger-core/ll_ecology_fixture web/tests/procedural-environment/review/core-fixture.json
+      - name: Verify source skins, production layer binding and existing wildlife regressions
+        working-directory: web
+        run: |
+          node tests/procedural-environment/imported-tiger.mjs
+          node tests/procedural-environment/grounding-wildlife.mjs
+          npm run typecheck
+      - name: Install free browser for subsystem captures
+        working-directory: web
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright && npx playwright install --with-deps chromium
+      - name: Capture production layer comparison (not full Observer acceptance)
+        working-directory: web
+        run: node tests/procedural-environment/tiger-capture.mjs
       - name: Preserve review files on the Draft branch only
         env:
           REVIEW_BRANCH: ${{ github.ref_name }}
@@ -48,9 +87,10 @@ jobs:
           case "$REVIEW_BRANCH" in feat/tiger-source-web-integration-*) ;; *) exit 1 ;; esac
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/asset-reviews/tiger-topoforge docs/asset-reviews/tiger-ferocious
+          find docs/asset-reviews/tiger-topoforge docs/asset-reviews/tiger-ferocious -maxdepth 1 -name '*.blend1' -delete
+          git add docs/asset-reviews/tiger-topoforge docs/asset-reviews/tiger-ferocious web/public/vendor/wildlife
           if ! git diff --cached --quiet; then
-            git commit -m 'Preserve CC BY tiger candidate source and four-view review; not runtime approved [skip ci]'
+            git commit -m 'Preserve source-derived tiger skin, LODs and rig evidence; Observer gate pending [skip ci]'
             git push origin "HEAD:$REVIEW_BRANCH"
           fi
       - name: Preserve inspection evidence (not quality acceptance)
@@ -62,5 +102,6 @@ jobs:
             review/tiger-source-evidence.json
             docs/asset-reviews/tiger-topoforge/
             docs/asset-reviews/tiger-ferocious/
+            web/tests/procedural-environment/review/
           if-no-files-found: error
           retention-days: 14

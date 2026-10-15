@@ -9,17 +9,29 @@ from mathutils import Matrix, Vector
 
 
 def main():
+    bpy.context.preferences.filepaths.save_version=0
     args = sys.argv[sys.argv.index('--') + 1:]
     out = Path(args[0]).resolve()
     source_file = args[1] if len(args)>1 else 'source.glb'
-    extracted = source_file == 'body-extraction.glb'
-    prefix = 'body-' if extracted else ''
+    extracted = source_file != 'source.glb'
+    prefix = ('rig-' if source_file == 'tiger-rigged.glb' else 'body-') if extracted else ''
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete(use_global=False)
     bpy.ops.import_scene.gltf(filepath=str(out / source_file))
-    meshes = [obj for obj in bpy.context.scene.objects if obj.type == 'MESH']
+    bone_shapes = {pose.custom_shape for armature in bpy.context.scene.objects if armature.type=='ARMATURE'
+                   for pose in armature.pose.bones if pose.custom_shape}
+    meshes = [obj for obj in bpy.context.scene.objects if obj.type == 'MESH' and obj not in bone_shapes]
     if not meshes:
         raise ValueError('Imported candidate has no meshes')
+    if source_file=='tiger-rigged.glb':
+        for armature in bpy.context.scene.objects:
+            if armature.type!='ARMATURE':continue
+            idle=next((action for action in bpy.data.actions
+                       if action.name in ('tiger_idle','tiger_idle_'+armature.name)),None)
+            armature.animation_data_create()
+            for track in armature.animation_data.nla_tracks:track.mute=True
+            if idle:armature.animation_data.action=idle
+        bpy.context.scene.frame_set(1)
     # This particular source faces -X, whereas the observer's animals face +Z
     # in glTF (= -Y in Blender). Correct the review labels using a root transform.
     rotate = Matrix.Identity(4) if extracted else Matrix.Rotation(math.pi/2, 4, 'Z')
@@ -100,7 +112,10 @@ def main():
                                'max': [max(p[i] for p in points) for i in range(3)]})
     components.sort(key=lambda item: -item['vertices'])
     geometric_components.sort(key=lambda item: -item['vertices'])
-    corners = [obj.matrix_world @ Vector(corner) for obj in meshes for corner in obj.bound_box]
+    bpy.context.view_layer.update()
+    depsgraph=bpy.context.evaluated_depsgraph_get()
+    evaluated=[obj.evaluated_get(depsgraph) for obj in meshes]
+    corners = [obj.matrix_world @ Vector(corner) for obj in evaluated for corner in obj.bound_box]
     low = Vector([min(p[i] for p in corners) for i in range(3)])
     high = Vector([max(p[i] for p in corners) for i in range(3)])
     center = (low + high) * .5
@@ -130,7 +145,8 @@ def main():
         light.data.energy = energy
         light.data.size = light_size
         light.rotation_euler = (center - light.location).to_track_quat('-Z', 'Y').to_euler()
-    bpy.ops.mesh.primitive_plane_add(size=max(size)*4, location=(center.x, center.y, low.z - .003))
+    floor=0 if source_file=='tiger-rigged.glb' else low.z
+    bpy.ops.mesh.primitive_plane_add(size=max(size)*4, location=(center.x, center.y, floor - .003))
     plane = bpy.context.object
     material = bpy.data.materials.new('ReviewNeutralGround')
     material.diffuse_color = (.18, .18, .18, 1)

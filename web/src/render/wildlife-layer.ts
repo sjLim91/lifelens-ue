@@ -7,6 +7,7 @@ import { ResidentGroundSurface } from './resident-grounding';
 import { buildFlowWaterSurfaceGeometry, createVisibleWaterFootprintTester } from './water-geometry';
 import { facilityPresentationFootprints, outsideFacilityFootprints } from './facility-layer';
 import { terrainDressingSignature } from './terrain-dressing-signature';
+import { ImportedTigerPool, type TigerAssetLoader } from './imported-tiger';
 
 // Actual 3D anatomy has three levels of detail. Near uses fused surfaces and
 // shader fur, mid reduces topology and far preserves just essential silhouette.
@@ -21,7 +22,7 @@ const behaviorCode=(name:WildlifeAnimalObservation['behavior'])=>
 type Visible = {
   id:string;species:WildlifeSpecies;key:string;behavior:WildlifeAnimalObservation['behavior'];
   x:number;z:number;goalX:number;goalZ:number;heading:number;phase:number;
-  scale:number;motion:number;fish:boolean;
+  scale:number;motion:number;speed:number;fish:boolean;
 };
 const stablePhase=(id:string):number=>{
   let h=2166136261>>>0;
@@ -49,8 +50,10 @@ export class WildlifeLayer {
   private animals=new Map<string,Visible>();
   private readonly scratch=new Map<string,number>();
   private readonly cameraPosition=new THREE.Vector3();
+  private readonly tigers:ImportedTigerPool;
   instanceCount=0;
-  constructor(){
+  constructor(tigerLoader?:TigerAssetLoader){
+    this.tigers=new ImportedTigerPool(tigerLoader);
     // Fragment-space stripes and fur variation belong to the animal surface
     // itself. The earlier tiger's black tubular stripes looked like cords.
     this.material.onBeforeCompile=shader=>{
@@ -201,7 +204,7 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
       const pose:Visible=old&&old.key===key?old:{
         id:animal.id,species:animal.species,key,behavior:animal.behavior,
         x:goalX,z:goalZ,goalX,goalZ,heading:0,phase:stablePhase(animal.id),
-        scale,motion:0,fish,
+        scale,motion:0,speed:0,fish,
       };
       pose.goalX=goalX;pose.goalZ=goalZ;pose.scale=scale;
       pose.behavior=animal.behavior;pose.fish=fish;
@@ -219,33 +222,41 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
       const distance=Math.hypot(dx,dz);
       if(distance>1e-4){
         const step=Math.min(distance,dt*speed);
+        pose.speed=dt>0?step/dt:0;
         pose.x+=dx/distance*step;pose.z+=dz/distance*step;
         pose.heading=Math.atan2(dx,dz);
         pose.motion=THREE.MathUtils.lerp(pose.motion,
           Math.min(1,.5+step/Math.max(dt,.0001)*.12),1-Math.exp(-dt*9));
       }else{
         pose.x=pose.goalX;pose.z=pose.goalZ;
+        pose.speed=0;
         pose.motion*=Math.exp(-dt*8);
       }
     }
-    this.render(camera);
+    this.render(camera,dt);
   }
-  private render(camera?:THREE.Camera):void {
+  private render(camera?:THREE.Camera,dt=0):void {
     this.scratch.clear();this.instanceCount=0;
+    this.tigers.begin();
     const offsetX=(this.centerChunkX+.5)*grid.worldUnitsPerChunk;
     const offsetZ=(this.centerChunkY+.5)*grid.worldUnitsPerChunk;
     if(camera){camera.updateWorldMatrix(true,false);camera.getWorldPosition(this.cameraPosition);}
-    for(const pose of this.animals.values()){
+    // Spend the bounded skinned-model budget on the animals nearest the observer.
+    const visible=[...this.animals.values()];
+    if(camera)visible.sort((a,b)=>
+      Math.hypot(a.x-offsetX-this.cameraPosition.x,a.z-offsetZ-this.cameraPosition.z)
+      -Math.hypot(b.x-offsetX-this.cameraPosition.x,b.z-offsetZ-this.cameraPosition.z));
+    for(const pose of visible){
       const x=pose.x-offsetX,z=pose.z-offsetZ;
+      let y=this.ground.height(x,z);
+      if(y===null)continue;
       const cameraDistance=camera
         ?Math.hypot(x-this.cameraPosition.x,z-this.cameraPosition.z,
-          this.cameraPosition.y-.5):0;
+          this.cameraPosition.y-y-.5):0;
       const lod:WildlifeLod=cameraDistance>25?'far':cameraDistance>11?'mid':'near';
       const mesh=this.batches.get(`${pose.key}:${lod}`)!;
       const i=this.scratch.get(mesh.name)??0;
       if(i>=LIMIT)continue;
-      let y=this.ground.height(x,z);
-      if(y===null)continue;
       if(pose.fish){
         if(!this.water)continue;
         this.rayOrigin.set(x,1000,z);
@@ -260,6 +271,10 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
         for(const dx of [-width,width])for(const dz of [-length,length])
           y=Math.max(y,this.ground.height(x+dx,z+dz)??y);
       }
+      if(pose.species==='Tiger'&&lod!=='far'&&this.tigers.draw({
+        id:pose.id,x,y,z,heading:pose.heading,scale:pose.scale,speed:pose.speed,
+        phase:pose.phase,behavior:pose.behavior,
+      },lod,dt)){this.instanceCount++;continue;}
       this.transform.position.set(x,y,z);
       this.transform.rotation.set(0,pose.heading,0);
       this.transform.scale.setScalar(pose.scale);
@@ -273,6 +288,7 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
         behaviorCode(pose.behavior));
       this.scratch.set(mesh.name,i+1);this.instanceCount++;
     }
+    this.tigers.end(this.group);
     for(const mesh of this.batches.values()){
       mesh.count=this.scratch.get(mesh.name)??0;
       mesh.instanceMatrix.needsUpdate=true;
@@ -281,9 +297,11 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
     }
   }
   dispose():void {
+    this.tigers.dispose();
     for(const mesh of this.batches.values()){mesh.geometry.dispose();mesh.dispose();}
     this.batches.clear();this.animals.clear();
     this.water?.geometry.dispose();this.waterMaterial.dispose();this.material.dispose();
     this.group.clear();
   }
 }
+
