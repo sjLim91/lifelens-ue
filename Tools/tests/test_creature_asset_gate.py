@@ -6,6 +6,7 @@ import copy
 import hashlib
 import json
 import pathlib
+import random
 import struct
 import sys
 import tempfile
@@ -83,13 +84,9 @@ def png_chunk(kind: bytes, payload: bytes):
 
 def png(width: int, height: int, seed=1):
     # Real PNG/DEFLATE, with nontrivial test imagery, not a signature-only file.
-    raw=bytearray()
-    value=seed
-    for y in range(height):
-        raw.append(0)
-        for x in range(width):
-            value=(1103515245*value+12345)&0x7fffffff
-            raw.extend(((value>>7)&255,(value>>11)&255,(value>>15)&255))
+    generator=random.Random(seed)
+    pixels=generator.randbytes(width*height*3)
+    raw=b"".join(b"\x00"+pixels[i*width*3:(i+1)*width*3] for i in range(height))
     compressed=zlib.compress(raw,4)
     return (b"\x89PNG\r\n\x1a\n"+
             png_chunk(b"IHDR",struct.pack(">IIBBBBB",width,height,8,2,0,0,0))+
