@@ -51,6 +51,8 @@ export class WildlifeLayer {
   private animals=new Map<string,Visible>();
   private readonly scratch=new Map<string,number>();
   private readonly cameraPosition=new THREE.Vector3();
+  private readonly cameraAbsolute=new THREE.Vector3();
+  private hasCamera=false;
   private readonly tigers:ImportedTigerPool;
   instanceCount=0;
   constructor(tigerLoader?:TigerAssetLoader){
@@ -241,17 +243,22 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
     this.tigers.begin();
     const offsetX=(this.centerChunkX+.5)*grid.worldUnitsPerChunk;
     const offsetZ=(this.centerChunkY+.5)*grid.worldUnitsPerChunk;
-    if(camera){camera.updateWorldMatrix(true,false);camera.getWorldPosition(this.cameraPosition);}
+    if(camera){
+      camera.updateWorldMatrix(true,false);camera.getWorldPosition(this.cameraAbsolute);
+      this.cameraAbsolute.x+=offsetX;this.cameraAbsolute.z+=offsetZ;this.hasCamera=true;
+    }
+    this.cameraPosition.copy(this.cameraAbsolute);
+    this.cameraPosition.x-=offsetX;this.cameraPosition.z-=offsetZ;
     // Spend the bounded skinned-model budget on the animals nearest the observer.
     const visible=[...this.animals.values()];
-    if(camera)visible.sort((a,b)=>
+    if(this.hasCamera)visible.sort((a,b)=>
       Math.hypot(a.x-offsetX-this.cameraPosition.x,a.z-offsetZ-this.cameraPosition.z)
       -Math.hypot(b.x-offsetX-this.cameraPosition.x,b.z-offsetZ-this.cameraPosition.z));
     for(const pose of visible){
       const x=pose.x-offsetX,z=pose.z-offsetZ;
       let y=this.ground.height(x,z);
       if(y===null)continue;
-      const cameraDistance=camera
+      const cameraDistance=this.hasCamera
         ?Math.hypot(x-this.cameraPosition.x,z-this.cameraPosition.z,
           this.cameraPosition.y-y-.5):0;
       const lod:WildlifeLod=cameraDistance>25?'far':cameraDistance>11?'mid':'near';

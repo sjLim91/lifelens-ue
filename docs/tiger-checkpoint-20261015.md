@@ -37,6 +37,22 @@ inspection derivative, minimum sole contact errors became approximately
 actual deformed skin against Core terrain, including a visible-window boundary.
 Exact-source CI and new Observer images are still required for this change.
 
+The next exact-source run also passed the slope/sole tests (-1.081 / -0.040 /
+-0.158 / +0.383 cm contact errors) and the corrected terrain-ray capture check.
+The full React/WASM app remained ready, but browser-compositor screenshots still
+timed out after stopping the render loop. Its diagnostic recorded 121 draw calls
+and 2,716,492 triangles. This is a software-GPU test count, not Android FPS.
+QA now exports the actual app's `threeWorldCanvas` immediately after its own
+WorldRenderer renders; it asserts the real canvas/app identity, context validity
+and pixel budget. Full UI-composite screenshots are not claimed by that export.
+
+An additional renderer fix retains the last camera in absolute world coordinates
+between Core refreshes. Previously a refresh with no camera argument selected
+near LOD for every actor, then the next frame recreated mid LOD. The new test
+checks that an unchanged authoritative refresh retains the same mid-LOD skeleton,
+including after observation-origin rebasing. Local tests passed; latest CI must
+verify the committed revision.
+
 Android device FPS, turning foot locks, full clip deformation and final face/fur
 quality remain unaccepted. No overall completion or main merge is authorized
 by these intermediate checks.

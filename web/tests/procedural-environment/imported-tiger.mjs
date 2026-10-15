@@ -116,10 +116,17 @@ if(existsSync(fixturePath)){
   camera.position.x-=grid.worldUnitsPerChunk;layer.update(.016,camera);
   assert.equal(layer.group.getObjectByName(`LifeLensTiger:${tiger.id}`),actor);
   assert(Math.abs(actor.position.x-(x-grid.worldUnitsPerChunk))<1e-8);
+  camera.position.set(actor.position.x+15,y+2,z);
+  layer.update(.016,camera);await new Promise(resolve=>setImmediate(resolve));layer.update(.016,camera);
+  const midActor=layer.group.getObjectByName(`LifeLensTiger:${tiger.id}`);
+  assert.equal(midActor.userData.tier,'mid');
+  layer.setTerrain({...terrain,centerChunkX:terrain.centerChunkX+1});
+  assert.equal(layer.group.getObjectByName(`LifeLensTiger:${tiger.id}`),midActor,
+    'An unchanged Core refresh must retain the mid-LOD skeleton instead of rebuilding near then mid');
   layer.setTerrain({...terrain,wildlife:{...terrain.wildlife,animals:[]}});
   assert.equal(layer.instanceCount,0);assert.equal(layer.group.getObjectByName('LifeLensImportedTigers'),undefined);
   layer.dispose();coreBinding={status:'PASS_NATIVE_CORE_FIXTURE_BINDING',coreId:tiger.id,coreBehavior:tiger.behavior,
-    soleContacts,checked:['skin-path','identity','position','behavior','observation-immutability','sloped-terrain-soles','origin-rebase','removal']};
+    soleContacts,checked:['skin-path','identity','position','behavior','observation-immutability','sloped-terrain-soles','origin-rebase','lod-refresh-stability','removal']};
 }
 pool.dispose();assert.equal(pool.draw(pose,'near',0),false);
 

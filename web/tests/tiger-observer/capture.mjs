@@ -10,6 +10,24 @@ const out=resolve(import.meta.dirname,'review');mkdirSync(out,{recursive:true});
 const port=8766;const base=`http://127.0.0.1:${port}`;
 const server=spawn(process.execPath,[resolve(root,'node_modules/vite/bin/vite.js'),'--host','127.0.0.1','--port',String(port)],{cwd:root,stdio:'ignore'});
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function bounded(promise,ms,label){
+ let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{
+  timer=setTimeout(()=>reject(Error(`${label} timed out after ${ms}ms`)),ms);
+ })]);}finally{clearTimeout(timer);}
+}
+async function captureObserverCanvas(page,path){
+ const result=await bounded(page.evaluate(()=>{
+  const q=window.__tigerObserver;q.still();
+  const canvas=q.renderer.renderer.domElement;
+  if(canvas.id!=='threeWorldCanvas'||!document.querySelector('#app .brand'))throw Error('Capture is not the actual Observer canvas');
+  if(q.renderer.renderer.getContext().isContextLost())throw Error('Actual Observer WebGL context was lost');
+  if(canvas.width*canvas.height>4_000_000)throw Error('Actual Observer canvas exceeds the capture pixel budget');
+  return {data:canvas.toDataURL('image/jpeg',.88),width:canvas.width,height:canvas.height,canvasId:canvas.id};
+ }),30000,'Actual Observer canvas export');
+ if(!result.data.startsWith('data:image/jpeg;base64,'))throw Error('Observer canvas could not be exported');
+ writeFileSync(path,Buffer.from(result.data.split(',')[1],'base64'));
+ return {width:result.width,height:result.height,canvasId:result.canvasId};
+}
 let browser;let activePage;const results=[];const errors=[];
 try{
  for(let i=0;i<50;i++){try{if((await fetch(base)).ok)break;}catch{}await delay(100);}
@@ -54,7 +72,10 @@ try{
      core:tiger?{id:tiger.id,species:tiger.species,gridX:tiger.gridX,gridY:tiger.gridY,behavior:tiger.behavior}:null,
      actor:actor?{id:actor.userData.coreId,position:actor.position.toArray(),clip:actor.userData.clip,tier:actor.userData.tier}:null,
      runtime:snapshot.runtime,simulationSpeed:snapshot.simulationSpeed,
-     renderStats:qa.renderer?{...qa.renderer.renderer.info.render}:null};
+     renderStats:qa.renderer?{...qa.renderer.renderer.info.render}:null,
+     renderMemory:qa.renderer?{...qa.renderer.renderer.info.memory}:null,
+     canvas:qa.renderer?{width:qa.renderer.renderer.domElement.width,height:qa.renderer.renderer.domElement.height,
+      contextLost:qa.renderer.renderer.getContext().isContextLost()}:null};
    };
    qa.still=()=>{
     qa.renderer.stop();qa.world.update(.016);
@@ -68,8 +89,8 @@ try{
   if(!baseline)await page.waitForFunction(()=>Boolean(window.__tigerObserver.sample().actor),{},{timeout:30000});
   const frozen=await page.evaluate(()=>JSON.stringify(window.__tigerObserver.store.getSnapshot().terrain));
   for(const view of ['front','side','quarter','back','face']){
-   await page.evaluate(view=>{const q=window.__tigerObserver;q.view=view;q.still();},view);await delay(300);
-   await page.screenshot({path:resolve(out,`${baseline?'baseline':'candidate'}-${view}.jpg`),type:'jpeg',quality:88,timeout:60000,animations:'disabled'});
+   await page.evaluate(view=>{window.__tigerObserver.view=view;},view);
+   await captureObserverCanvas(page,resolve(out,`${baseline?'baseline':'candidate'}-${view}.jpg`));
   }
   const after=await page.evaluate(()=>JSON.stringify(window.__tigerObserver.store.getSnapshot().terrain));
   if(after!==frozen)throw Error('Paused Core observation changed during camera-only captures');
@@ -84,16 +105,15 @@ try{
     const samples=[];const record=()=>{samples.push(window.__tigerObserver.sample());if(samples.length<30)requestAnimationFrame(record);else resolve(samples);};record();
    }));
    result.motionObserved=result.motion.some(frame=>frame.actor&&['walk','run','hunt'].includes(frame.actor.clip));
-   await page.evaluate(()=>window.__tigerObserver.still());
-   await page.screenshot({path:resolve(out,'candidate-after-core-hour.jpg'),type:'jpeg',quality:88,timeout:60000,animations:'disabled'});
+   await captureObserverCanvas(page,resolve(out,'candidate-after-core-hour.jpg'));
    await page.setViewportSize({width:412,height:915});await delay(500);
-   await page.evaluate(()=>window.__tigerObserver.still());
-   await page.screenshot({path:resolve(out,'candidate-mobile-viewport.jpg'),type:'jpeg',quality:88,timeout:60000,animations:'disabled'});
+   result.mobileCanvas=await captureObserverCanvas(page,resolve(out,'candidate-mobile-viewport.jpg'));
    result.mobileViewportOnly=true;
   }
   results.push(result);await page.close();activePage=null;
  }
- const result={status:errors.length?'FAIL_OBSERVER_RUNTIME_ERRORS':'PASS_REACT_WASM_RENDER_PATH_ONLY',
+ const result={status:errors.length?'FAIL_OBSERVER_RUNTIME_ERRORS':'PASS_REACT_WASM_CANVAS_RENDER_PATH_ONLY',
+  captureMethod:'Actual React Observer threeWorldCanvas export immediately after its existing WorldRenderer renders',
   source:'PINNED_SOURCE_DERIVATIVE',seed:'77',generationVersion:4,results,errors,
   android:'NOT_MEASURED',visualQuality:'REQUIRES_IMAGE_REVIEW',mergeAllowed:false,
   receipts:JSON.parse(readFileSync(resolve(root,'public/vendor/wildlife/receipt.json'),'utf8'))};
@@ -101,8 +121,7 @@ try{
  console.log(JSON.stringify({status:result.status,motionObserved:results[1]?.motionObserved,errors}));
  if(errors.length)process.exitCode=1;
 }catch(error){
- const diagnostic=await activePage?.evaluate(()=>window.__tigerObserver?.sample?.()).catch(()=>null);
- await activePage?.screenshot({path:resolve(out,'failure.jpg'),type:'jpeg',quality:85,timeout:10000}).catch(()=>{});
+ const diagnostic=await bounded(activePage?.evaluate(()=>window.__tigerObserver?.sample?.()),3000,'Failure diagnostics').catch(()=>null);
  writeFileSync(resolve(out,'observer-validation.json'),JSON.stringify({status:'FAIL_REACT_WASM_CAPTURE',error:String(error),diagnostic,results,errors,android:'NOT_MEASURED',mergeAllowed:false},null,2)+'\n');
  console.error(error);process.exitCode=1;
 }finally{await browser?.close();server.kill();}
