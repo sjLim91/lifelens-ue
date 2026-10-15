@@ -173,6 +173,32 @@ class CreatureGateTests(unittest.TestCase):
             self.manifest["creatures"][2]["lods"]["near"])
         self.verify_failure(self.manifest,"LOD reduction")
 
+    def test_two_lod_tiger_with_valid_existing_far_fallback(self):
+        tiger=self.manifest["creatures"][2]
+        tiger["lods"].pop("far")
+        path=self.root/"tiger/far-fallback.json"
+        path.write_text(json.dumps({
+            "creature_id":"tiger", "runtime":"web-threejs",
+            "tested":True,"core_id_preserved":True,
+            "core_transform_preserved":True,"no_double_draw":True,
+        }))
+        tiger["far_fallback"]={"mode":"existing-instanced","test_report":"tiger/far-fallback.json"}
+        result=validate_manifest(self.manifest,self.root)
+        self.assertEqual(result["creatures"][2]["lods"]["far"]["mode"],"existing-instanced")
+        self.assertFalse(result["release_approved"])
+
+    def test_unvalidated_far_fallback_is_refused(self):
+        tiger=self.manifest["creatures"][2]
+        tiger["lods"].pop("far")
+        self.verify_failure(self.manifest,"missing approved far instanced")
+        (self.root/"tiger/far-fallback.json").write_text(json.dumps({
+            "creature_id":"tiger","runtime":"web-threejs","tested":True,
+            "core_id_preserved":True,"core_transform_preserved":True,
+            "no_double_draw":False,
+        }))
+        tiger["far_fallback"]={"mode":"existing-instanced","test_report":"tiger/far-fallback.json"}
+        self.verify_failure(self.manifest,"far fallback is not proven")
+
     def test_rejects_missing_motion_and_fallback(self):
         motion=self.root/"tiger/web-motion.json"
         body=json.loads(motion.read_text())
