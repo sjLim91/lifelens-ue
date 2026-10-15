@@ -14,6 +14,7 @@ on:
       - 'web/src/render/wildlife-layer.ts'
       - 'web/tests/procedural-environment/imported-tiger.mjs'
       - 'web/tests/procedural-environment/tiger-*'
+      - 'web/tests/tiger-observer/**'
   workflow_dispatch:
 
 permissions:
@@ -81,6 +82,7 @@ jobs:
         working-directory: web
         run: node tests/procedural-environment/tiger-capture.mjs
       - name: Preserve review files on the Draft branch only
+        if: always()
         env:
           REVIEW_BRANCH: ${{ github.ref_name }}
         run: |
@@ -88,7 +90,11 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           find docs/asset-reviews/tiger-topoforge docs/asset-reviews/tiger-ferocious -maxdepth 1 -name '*.blend1' -delete
-          git add docs/asset-reviews/tiger-topoforge docs/asset-reviews/tiger-ferocious web/public/vendor/wildlife
+          git add docs/asset-reviews/tiger-topoforge docs/asset-reviews/tiger-ferocious
+          if [ -d web/public/vendor/wildlife ]; then git add -f web/public/vendor/wildlife; fi
+          if [ -d web/tests/procedural-environment/review ]; then
+            find web/tests/procedural-environment/review -maxdepth 1 -type f \( -name 'tiger-*.png' -o -name 'tiger-*.json' -o -name 'core-fixture.json' \) -print0 | xargs -0 -r git add -f --
+          fi
           if ! git diff --cached --quiet; then
             git commit -m 'Preserve source-derived tiger skin, LODs and rig evidence; Observer gate pending [skip ci]'
             git push origin "HEAD:$REVIEW_BRANCH"
@@ -105,3 +111,63 @@ jobs:
             web/tests/procedural-environment/review/
           if-no-files-found: error
           retention-days: 14
+
+  actual-observer-review:
+    needs: public-source-evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install free WASM compiler and browser dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends emscripten
+          npm install --ignore-scripts --no-audit --no-fund --prefix web
+          npm install --no-save --ignore-scripts --no-audit --no-fund --prefix web playwright
+          cd web
+          npx playwright install --with-deps chromium
+      - name: Build unchanged Core into the actual Web runtime
+        run: |
+          emcmake cmake -S Source/LifeLensCore -B /tmp/tiger-observer-wasm -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/tiger-observer-wasm --target lifelens_web_core -j2
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          for directory in ['Clients/Web/generated','web/public/runtime']:
+              target=Path(directory);target.mkdir(parents=True,exist_ok=True)
+              for name in ['lifelens_core.js','lifelens_core.wasm']:
+                  shutil.copyfile(Path('/tmp/tiger-observer-wasm/web')/name,target/name)
+          PY
+          python3 Tools/prepare_web_character_assets.py
+          npm run generate:core-contract --prefix web
+      - name: Capture real React-WASM Observer and actual Core movement
+        working-directory: web
+        run: node tests/tiger-observer/capture.mjs
+      - name: Record actual capture outcome on Draft branch (including failures)
+        if: always()
+        env:
+          REVIEW_BRANCH: ${{ github.ref_name }}
+        run: |
+          case "$REVIEW_BRANCH" in feat/tiger-source-web-integration-*) ;; *) exit 1 ;; esac
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ -d web/tests/tiger-observer/review ]; then
+            git add -f web/tests/tiger-observer/review
+            if ! git diff --cached --quiet; then
+              git commit -m 'Record actual Observer capture outcome; quality gate remains closed [skip ci]'
+              git push origin "HEAD:$REVIEW_BRANCH"
+            fi
+          fi
+      - name: Preserve full Observer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiger-actual-observer
+          path: web/tests/tiger-observer/review/
+          if-no-files-found: warn
+          retention-days: 7

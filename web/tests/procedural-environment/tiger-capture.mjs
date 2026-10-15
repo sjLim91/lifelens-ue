@@ -10,12 +10,13 @@ const inspection=process.env.LIFELENS_TIGER_INSPECTION==='1';
 const server=spawn('python3',['-m','http.server',String(port),'--bind','127.0.0.1','--directory',root],{stdio:'ignore'});
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 let browser;
+const errors=[];
 try{
  for(let i=0;i<30;i++){try{const r=await fetch(base);if(r.ok)break;}catch{}await pause(100);}
  browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH??chromium.executablePath(),headless:true,
   args:['--no-sandbox','--no-zygote','--single-process','--disable-crashpad-for-testing','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const page=await browser.newPage({viewport:{width:960,height:720},deviceScaleFactor:1});
- const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+ page.on('pageerror',error=>errors.push(String(error)));
  page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
  const metrics=[];
  for(const baseline of [true,false]){
@@ -40,7 +41,7 @@ try{
  if(errors.length)process.exitCode=1;
 }catch(error){
  writeFileSync(resolve(review,'tiger-browser-validation.json'),JSON.stringify({
-  status:'FAIL_BROWSER_STARTUP_OR_CAPTURE',error:String(error),
+  status:'FAIL_BROWSER_STARTUP_OR_CAPTURE',error:String(error),errors,
   source:inspection?'LOCAL_INSPECTION_DERIVATIVE':'STAGED_PINNED_SOURCE_DERIVATIVE',
   fullObserver:'NOT_RUN',android:'NOT_MEASURED',mergeAllowed:false},null,2)+'\n');
  console.error(error);process.exitCode=1;
