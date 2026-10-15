@@ -105,6 +105,7 @@ jobs:
           fi
           if ! git diff --cached --quiet; then
             git commit -m 'Preserve source-derived tiger skin, LODs and rig evidence; Observer gate pending [skip ci]'
+            git pull --rebase origin "$REVIEW_BRANCH"
             git push origin "HEAD:$REVIEW_BRANCH"
           fi
       - name: Preserve inspection evidence (not quality acceptance)
@@ -190,6 +191,7 @@ jobs:
             git add -f web/tests/tiger-observer/review
             if ! git diff --cached --quiet; then
               git commit -m 'Record actual Observer capture outcome; quality gate remains closed [skip ci]'
+              git pull --rebase origin "$REVIEW_BRANCH"
               git push origin "HEAD:$REVIEW_BRANCH"
             fi
           fi
