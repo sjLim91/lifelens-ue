@@ -91,6 +91,33 @@ def parse_glb(path: pathlib.Path) -> dict[str, Any]:
         require(buffers[0]["byteLength"] <= len(chunks[1][1]) <= buffers[0]["byteLength"] + 3,
                 f"{path.name}: BIN buffer size mismatch")
     accessors = document.get("accessors", [])
+    views = document.get("bufferViews", [])
+    COMPONENT_BYTES = {5120:1,5121:1,5122:2,5123:2,5125:4,5126:4}
+    TYPE_COUNT = {"SCALAR":1,"VEC2":2,"VEC3":3,"VEC4":4,"MAT2":4,"MAT3":9,"MAT4":16}
+    for view in views:
+        require(view.get("buffer") == 0 and
+                isinstance(view.get("byteLength"), int) and view["byteLength"] > 0 and
+                isinstance(view.get("byteOffset", 0), int) and view.get("byteOffset", 0) >= 0 and
+                buffers and view["byteLength"] + view.get("byteOffset", 0) <= buffers[0]["byteLength"],
+                f"{path.name}: invalid or out-of-bounds buffer view")
+    for accessor in accessors:
+        view_index = accessor.get("bufferView")
+        require(isinstance(view_index, int) and 0 <= view_index < len(views) and
+                not accessor.get("sparse"),
+                f"{path.name}: sparse or unbacked accessor requires explicit review")
+        component = COMPONENT_BYTES.get(accessor.get("componentType"))
+        ncomponents = TYPE_COUNT.get(accessor.get("type"))
+        count = accessor.get("count")
+        require(component and ncomponents and isinstance(count, int) and count > 0,
+                f"{path.name}: malformed accessor")
+        view = views[view_index]
+        element_bytes = component*ncomponents
+        stride = view.get("byteStride", element_bytes)
+        offset = accessor.get("byteOffset", 0)
+        require(isinstance(stride, int) and stride >= element_bytes and
+                isinstance(offset, int) and offset >= 0 and
+                offset + (count-1)*stride + element_bytes <= view["byteLength"],
+                f"{path.name}: accessor exceeds binary data length")
     meshes = document.get("meshes", [])
     require(meshes and accessors, f"{path.name}: no geometry")
     nodes = document.get("nodes", [])
