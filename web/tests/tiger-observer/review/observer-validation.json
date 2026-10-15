@@ -1,0 +1,25 @@
+{
+  "status": "FAIL_REACT_WASM_CAPTURE",
+  "error": "TimeoutError: page.screenshot: Timeout 30000ms exceeded.\nCall log:\n  - taking page screenshot\n  - waiting for fonts to load...\n  - fonts loaded\n",
+  "diagnostic": {
+    "minute": 505,
+    "worldSeed": "77",
+    "core": {
+      "id": "25:32:1704075738371588112",
+      "species": "Tiger",
+      "gridX": 801,
+      "gridY": 1038,
+      "behavior": "Hunt"
+    },
+    "actor": null,
+    "runtime": {
+      "status": "ready",
+      "errorMessage": null
+    },
+    "simulationSpeed": 0
+  },
+  "results": [],
+  "errors": [],
+  "android": "NOT_MEASURED",
+  "mergeAllowed": false
+}
