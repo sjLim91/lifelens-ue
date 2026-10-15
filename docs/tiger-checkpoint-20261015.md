@@ -29,16 +29,28 @@ WorldScene and WorldRenderer are exercised. Images are exports of the actual
 `threeWorldCanvas` after its real renderer draws. They are not standalone Blender
 renders or a separate model viewer. They are canvas images, not full UI screenshots.
 
-Run https://github.com/sjLim91/lifelens-ue/actions/runs/38690890134 saved actual
-production Observer front/side/quarter/back/face images, a mobile viewport image,
-and motion samples after Core time progressed. It failed honestly because two
-Korean UI tokens were missing and the separate baseline/candidate worlds paused
-one minute apart. The current follow-up translates the observed institution and
-organization tokens and compares fallback/candidate in **one paused WASM world**.
-Only the existing renderer presentation is switched; the Core observation must
-stay byte-identical throughout the comparison. Actual Core movement is tested
-after those still captures. Workflow runs and evidence remain authoritative;
-no pending run is described as passing.
+Run https://github.com/sjLim91/lifelens-ue/actions/runs/38692325802 now passes
+both source/layer contracts and the actual production React/WASM Observer test:
+`PASS_REACT_WASM_CANVAS_RENDER_PATH_ONLY`, with zero recorded runtime errors.
+The earlier run 38690890134 failed on two missing Korean tokens and a one-minute
+baseline/candidate time mismatch; those failures are fixed and retained in history.
+
+The current comparison uses one paused WASM world. Both presentations have Core
+minute 497, ID `25:32:1704075738371588112`, grid (801, 1038), behavior Hunt, and
+byte-identical terrain observations throughout camera-only captures. Re-enabling
+the candidate and progressing actual Core time records 30 motion samples with
+the `hunt` clip; the final Core sample is minute 931, grid (806, 1044). This
+verifies actual runtime binding and movement, not natural animation acceptance.
+
+At the shared face-view condition the software-rendered candidate records 102
+draw calls and 2,653,194 triangles for the whole scene; fallback records 101 calls
+and 2,710,616 triangles. These are scene counts, **not FPS or mobile benchmarks**.
+The mobile viewport canvas is 412 x 869. Manual review of this run still fails:
+source muzzle artifacts remain and trees/other fauna obscure body views.
+
+Preflight and Blender Toolchain passed on author commit
+`e3e9c4c61ffb948b99eadea0c9b2353e7a60e333`. Web Checks are still running when this
+checkpoint is written; follow the immutable run 38692330702 for its final result.
 
 Images and structured observations: `web/tests/tiger-observer/review/`.
 Subsystem grounding/skin evidence: `web/tests/procedural-environment/review/`.
