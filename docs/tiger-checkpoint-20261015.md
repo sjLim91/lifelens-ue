@@ -65,6 +65,28 @@ Core Git tree and fixture hash. Web contracts, typecheck, regressions and browse
 captures still run. The WASM build cache is keyed by Core and build-recipe bytes.
 Only build outputs are cached; no visual quality or FPS conclusion is cached.
 
+## Actual Observer render proof and manual rejection
+
+Run 38689230170 finally passed `PASS_REACT_WASM_CANVAS_RENDER_PATH_ONLY` with no
+recorded errors. The real React application and WASM Core produced the same
+tiger ID; the original Observer `threeWorldCanvas` was exported in five views,
+after an actual Core hour, and at a 412x869 mobile viewport. Thirty motion
+samples included actual locomotion clips. No Android device result is implied.
+
+Manual image inspection is **not accepted**: a tree obscures the tiger, the
+portrait framing crops its face, source whisker/muzzle artifacts remain, and
+other existing animal surfaces remain visibly primitive. Baseline/candidate
+paused minutes also differed by one minute, so they are not a fully controlled
+lighting comparison. The technical render-path PASS is not visual acceptance.
+
+The next QA revision builds production React, pauses before creating seed 77,
+checks equal paused Core observations, aligns camera pan with the observed
+animal for the existing foliage-clarity feature, and frames the face using its
+actual head bone. It does not relocate animals or vegetation or change Core.
+An instrumented production preview artifact is prepared for review; it remains
+a Draft candidate. Source-derived far LOD, remaining anatomical/animation
+defects, actual Android performance and human final retargeting are still open.
+
 Android device FPS, turning foot locks, full clip deformation and final face/fur
 quality remain unaccepted. No overall completion or main merge is authorized
 by these intermediate checks.

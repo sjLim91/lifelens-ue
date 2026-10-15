@@ -136,7 +136,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: web/public/runtime
-          key: tiger-wasm-${{ runner.os }}-${{ hashFiles('Source/LifeLensCore/**', '.github/workflows/tiger-source-review.yml') }}
+          key: tiger-wasm-v2-${{ runner.os }}-${{ hashFiles('Source/LifeLensCore/**', 'Tools/build_web_client.py') }}
       - name: Install free WASM compiler and browser dependencies
         run: |
           npm install --ignore-scripts --no-audit --no-fund --prefix web
@@ -172,6 +172,9 @@ jobs:
         run: |
           python3 Tools/prepare_web_character_assets.py
           npm run generate:core-contract --prefix web
+      - name: Build production React Observer with camera measurement bridge
+        working-directory: web
+        run: npm run build -- --config tests/tiger-observer/vite.config.mjs
       - name: Capture real React-WASM Observer and actual Core movement
         working-directory: web
         run: node tests/tiger-observer/capture.mjs
@@ -198,3 +201,11 @@ jobs:
           path: web/tests/tiger-observer/review/
           if-no-files-found: warn
           retention-days: 7
+      - name: Preserve reviewable production Observer preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiger-observer-preview
+          path: web/tests/tiger-observer/preview/
+          if-no-files-found: warn
+          retention-days: 3

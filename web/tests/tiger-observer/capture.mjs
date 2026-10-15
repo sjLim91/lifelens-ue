@@ -8,7 +8,7 @@ import {resolve} from 'node:path';
 const root=resolve(import.meta.dirname,'../..');
 const out=resolve(import.meta.dirname,'review');mkdirSync(out,{recursive:true});
 const port=8766;const base=`http://127.0.0.1:${port}`;
-const server=spawn(process.execPath,[resolve(root,'node_modules/vite/bin/vite.js'),'--host','127.0.0.1','--port',String(port)],{cwd:root,stdio:'ignore'});
+const server=spawn('python3',['-m','http.server',String(port),'--bind','127.0.0.1','--directory',resolve(root,'tests/tiger-observer/preview')],{cwd:root,stdio:'ignore'});
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function bounded(promise,ms,label){
  let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{
@@ -37,60 +37,18 @@ try{
  for(const baseline of [true,false]){
   const page=await browser.newPage({viewport:{width:960,height:720},deviceScaleFactor:1});
   activePage=page;
-  page.on('console',message=>{if(message.text().startsWith('LL_TIGER_STAGE'))console.log(message.text());});
+  page.on('console',message=>{
+   const text=message.text();if(text.startsWith('LL_TIGER_STAGE'))console.log(text);
+   if(message.type()==='error'&&!(baseline&&text.includes('ERR_BLOCKED_BY_CLIENT')))
+    errors.push({baseline,error:text,location:message.location()});
+  });
   page.on('pageerror',error=>errors.push({baseline,error:String(error)}));
   if(baseline)await page.route('**/vendor/wildlife/*.glb',route=>route.abort('blockedbyclient'));
   await page.addInitScript(()=>localStorage.setItem('lifelens.web.renderMode','three-world'));
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  await page.evaluate(async()=>{
-   const {observerStore}=await import('/src/state/observer-store.ts');
-   const {observerActions}=await import('/src/state/observer-actions.ts');
-   const {WorldScene}=await import('/src/render/world-scene.ts');
-   const {WorldRenderer}=await import('/src/render/world-renderer.ts');
-   const {ResidentGroundSurface}=await import('/src/render/resident-grounding.ts');
-   const {WORLD_GRID_CONTRACT:grid}=await import('/src/runtime/lifelens-contract.ts');
-   const qa=window.__tigerObserver={store:observerStore,actions:observerActions,world:null,view:'quarter',id:null};
-   const setCamera=WorldRenderer.prototype.setCamera;
-   WorldRenderer.prototype.setCamera=function(state){qa.renderer=this;setCamera.call(this,state);};
-   const original=WorldScene.prototype.applyCamera;
-   const ground=new ResidentGroundSurface();let terrainIdentity=null;
-   const views={front:[0,1.3,4.4],side:[4.4,1.3,0],quarter:[3,1.8,4],back:[0,1.3,-4.4],face:[.5,1.5,1.8]};
-   WorldScene.prototype.applyCamera=function(state){
-    original.call(this,state);qa.world=this;
-    const terrain=observerStore.getSnapshot().terrain;
-    if(!qa.id||!terrain)return;
-    const tiger=terrain.wildlife?.animals.find(animal=>animal.id===qa.id);if(!tiger)return;
-    if(terrain!==terrainIdentity){ground.setTerrain(terrain,terrain.centerChunkX,terrain.centerChunkY);terrainIdentity=terrain;}
-    const actor=this.scene.getObjectByName(`LifeLensTiger:${tiger.id}`);
-    const x=actor?.position.x??(tiger.gridX/grid.gridCellsPerChunk-terrain.centerChunkX-.5)*grid.worldUnitsPerChunk;
-    const z=actor?.position.z??(tiger.gridY/grid.gridCellsPerChunk-terrain.centerChunkY-.5)*grid.worldUnitsPerChunk;
-    const y=actor?.position.y??ground.height(x,z);if(y===null)return;
-    const v=views[qa.view]??views.quarter;
-    this.camera.position.set(x+v[0],y+v[1],z+v[2]);this.camera.lookAt(x,y+.65,z);this.camera.updateMatrixWorld();
-   };
-   qa.sample=()=>{
-    const snapshot=observerStore.getSnapshot();const tiger=snapshot.terrain?.wildlife?.animals.find(animal=>animal.id===qa.id);
-    const actor=qa.world?.scene.getObjectByName(`LifeLensTiger:${qa.id}`);
-    return {minute:snapshot.world.minute,worldSeed:snapshot.world.worldSeed,
-     core:tiger?{id:tiger.id,species:tiger.species,gridX:tiger.gridX,gridY:tiger.gridY,behavior:tiger.behavior}:null,
-     actor:actor?{id:actor.userData.coreId,position:actor.position.toArray(),clip:actor.userData.clip,tier:actor.userData.tier}:null,
-     runtime:snapshot.runtime,simulationSpeed:snapshot.simulationSpeed,
-     renderStats:qa.renderer?{...qa.renderer.renderer.info.render}:null,
-     renderMemory:qa.renderer?{...qa.renderer.renderer.info.memory}:null,
-     canvas:qa.renderer?{width:qa.renderer.renderer.domElement.width,height:qa.renderer.renderer.domElement.height,
-      contextLost:qa.renderer.renderer.getContext().isContextLost()}:null};
-   };
-   qa.still=async()=>{
-    qa.renderer.stop();console.log('LL_TIGER_STAGE world-update-start',qa.view);
-    qa.world.update(.016);console.log('LL_TIGER_STAGE world-update-done');
-    await qa.renderer.renderer.compileAsync(qa.world.scene,qa.world.camera);
-    console.log('LL_TIGER_STAGE shader-compile-done');
-    qa.renderer.renderer.render(qa.world.scene,qa.world.camera);
-    console.log('LL_TIGER_STAGE scene-render-done');
-   };
-  });
+  await page.waitForFunction(()=>Boolean(window.__tigerObserver),{},{timeout:60000});
   await page.waitForFunction(()=>window.__tigerObserver?.store.getSnapshot().runtime.status==='ready',{},{timeout:120000});
-  await page.evaluate(()=>{const q=window.__tigerObserver;q.actions.createWorld('77');q.actions.setSimulationSpeed(0);q.actions.moveObserver(-2,0);});
+  await page.evaluate(()=>{const q=window.__tigerObserver;q.actions.setSimulationSpeed(0);q.actions.createWorld('77');q.actions.setSimulationSpeed(0);q.actions.moveObserver(-2,0);});
   await page.waitForFunction(()=>{const s=window.__tigerObserver.store.getSnapshot();return String(s.world.worldSeed)==='77'&&s.terrain?.wildlife?.animals.some(a=>a.species==='Tiger');},{},{timeout:30000});
   await page.evaluate(()=>{const q=window.__tigerObserver;q.renderer.stop();q.id=q.store.getSnapshot().terrain.wildlife.animals.find(a=>a.species==='Tiger').id;});
   for(let i=0;i<30;i++){
@@ -124,9 +82,12 @@ try{
   }
   results.push(result);await page.close();activePage=null;
  }
+ if(results[0]?.sample.minute!==results[1]?.sample.minute
+   ||JSON.stringify(results[0]?.sample.core)!==JSON.stringify(results[1]?.sample.core))
+  errors.push({error:'Baseline and candidate must use the same paused Core minute and observation'});
  const result={status:errors.length?'FAIL_OBSERVER_RUNTIME_ERRORS':'PASS_REACT_WASM_CANVAS_RENDER_PATH_ONLY',
   captureMethod:'Actual React Observer threeWorldCanvas export immediately after its existing WorldRenderer renders',
-  source:'PINNED_SOURCE_DERIVATIVE',seed:'77',generationVersion:4,results,errors,
+  source:'PINNED_SOURCE_DERIVATIVE',applicationBuild:'PRODUCTION_REACT',seed:'77',generationVersion:4,results,errors,
   android:'NOT_MEASURED',visualQuality:'REQUIRES_IMAGE_REVIEW',mergeAllowed:false,
   receipts:JSON.parse(readFileSync(resolve(root,'public/vendor/wildlife/receipt.json'),'utf8'))};
  writeFileSync(resolve(out,'observer-validation.json'),JSON.stringify(result,null,2)+'\n');
