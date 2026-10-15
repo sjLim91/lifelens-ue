@@ -39,8 +39,16 @@ jobs:
               web/public/vendor/creatures/release-manifest.json \
               --root web/public/vendor/creatures \
               --report creature-asset-gate-report.json
+          elif [ -f web/public/vendor/creatures/candidate-manifest.json ]; then
+            # Codex may ship tiger first. Partial readiness does not certify
+            # that all three production models have been approved.
+            python3 Tools/creature_asset_gate.py \
+              web/public/vendor/creatures/candidate-manifest.json \
+              --root web/public/vendor/creatures \
+              --allow-partial \
+              --report creature-asset-gate-report.json
           else
-            echo 'No production candidate manifest: structural verifier unit tests passed;'
+            echo 'No candidate manifest: contract unit tests passed only.'
             echo 'NO model is approved or released by this job.'
             python3 -c "import json;print(json.dumps({'status':'not-submitted','release_approved':False,'review_required':True}))" > creature-asset-gate-report.json
           fi
