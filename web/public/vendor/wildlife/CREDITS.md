@@ -13,3 +13,5 @@ Experimental derivative changes: seam-position welding with corner UV preservati
 Experimental derivative changes: seam-position welding with corner UV preservation, graph cut of the display base, and limited boundary caps. The first extraction failed visual review (lost hind-limb surface and retained wood); it is not an accepted runtime asset. Original source.glb remains unmodified.
 
 Experimental derivative changes: seam-position welding with corner UV preservation, graph cut of the display base, and limited boundary caps. The first extraction failed visual review (lost hind-limb surface and retained wood); it is not an accepted runtime asset. Original source.glb remains unmodified.
+
+Experimental derivative changes: seam-position welding with corner UV preservation, graph cut of the display base, and limited boundary caps. The first extraction failed visual review (lost hind-limb surface and retained wood); it is not an accepted runtime asset. Original source.glb remains unmodified.

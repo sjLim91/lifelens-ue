@@ -33,9 +33,9 @@
   "visual_acceptance": "NOT_REVIEWED",
   "web_observer_validation": "NOT_RUN",
   "merge_allowed": false,
-  "created_at": "2026-10-15T05:27:33.305152+00:00",
+  "created_at": "2026-10-15T05:39:47.888451+00:00",
   "files_sha256": {
     "body-extraction.glb": "c80f598467db6da3cdeaa693ab30a8b8b69ce96255bc38a2a5f7059b610dbe74",
-    "body-extraction.blend": "8418b4c303d7ec157b037b86ca75edfd6bfbcdd7fb8ec06e685742509f6723b0"
+    "body-extraction.blend": "741ce51a504cb97dbd352c7b448edaa3a5f20db92c7cf9b78ccf8a0119e63613"
   }
 }

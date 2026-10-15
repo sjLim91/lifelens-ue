@@ -39,6 +39,7 @@
       "observation-immutability",
       "sloped-terrain-soles",
       "origin-rebase",
+      "lod-refresh-stability",
       "removal"
     ]
   },
