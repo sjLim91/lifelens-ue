@@ -24,10 +24,10 @@ LICENSE = {
 }
 
 
-def glb(triangles: int, with_skin: bool, *, normals=True, textured=True) -> bytes:
+def glb(triangles: int, with_skin: bool, *, normals=True, textured=True, sex_variant=0) -> bytes:
     # Binary backed by actual embedded buffers rather than JSON-only mocks.
     vertex_count = triangles * 3
-    positions = b"\x00" * vertex_count * 12
+    positions = bytes((sex_variant,)) + b"\x00" * (vertex_count * 12 - 1)
     normal_bytes = b"\x00" * vertex_count * 12
     uv_bytes = b"\x00" * vertex_count * 8
     joint_bytes = b"\x00" * vertex_count * 8
@@ -98,7 +98,7 @@ def fixture(root, models=("resident-female","resident-male","tiger")):
     for name in models:
         lods={}
         for tier,tri in [("near",181),("mid",100),("far",50)]:
-            content=glb(tri,tier!="far")
+            content=glb(tri,tier!="far", sex_variant=(1 if name=='resident-female' else 2 if name=='resident-male' else 3))
             filename=f"{name}/{tier}.glb"
             (root/name).mkdir(exist_ok=True)
             (root/filename).write_bytes(content)
@@ -143,6 +143,15 @@ class CreatureGateTests(unittest.TestCase):
         self.assertTrue(result["review_required"])
         self.assertEqual(len(result["creatures"]),3)
         self.assertEqual(result["creatures"][2]["lods"]["near"]["joints"],16)
+
+    def test_prevent_male_female_same_geometry_even_with_different_names(self):
+        male=self.manifest["creatures"][1]
+        female=self.manifest["creatures"][0]
+        female_payload=(self.root/female["lods"]["near"]["file"]).read_bytes()
+        male_path=self.root/male["lods"]["near"]["file"]
+        male_path.write_bytes(female_payload)
+        male["lods"]["near"]["sha256"]=hashlib.sha256(female_payload).hexdigest()
+        self.verify_failure(self.manifest,"identical vertex geometry")
 
     def test_no_unattributed_cc_by(self):
         self.manifest["creatures"][0]["source"]["license"]="CC-BY-4.0"
