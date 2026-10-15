@@ -86,6 +86,28 @@ if(existsSync(fixturePath)){
   assert.equal(actor.userData.coreId,tiger.id);assert.equal(actor.userData.behavior,tiger.behavior);
   assert.equal(actor.position.x,x);assert.equal(actor.position.z,z);
   assert.equal(JSON.stringify(terrain),snapshot,'Rendering must not change the Core observation');
+  layer.group.updateMatrixWorld(true);
+  let groundedSkin;actor.traverse(object=>{if(object instanceof THREE.SkinnedMesh)groundedSkin=object;});
+  groundedSkin.skeleton.update();
+  const jointIds=groundedSkin.geometry.getAttribute('skinIndex');
+  const jointWeights=groundedSkin.geometry.getAttribute('skinWeight');
+  const soleContacts=[];
+  for(const name of ['Fore.L.Paw','Fore.R.Paw','Hind.L.Paw','Hind.R.Paw']){
+    const bone=groundedSkin.skeleton.bones.findIndex(b=>b.name===THREE.PropertyBinding.sanitizeNodeName(name));
+    assert(bone>=0);const points=[];
+    for(let i=0;i<jointIds.count;i++){
+      if([0,1,2,3].some(j=>jointIds.getComponent(i,j)===bone&&jointWeights.getComponent(i,j)>.5)){
+        const point=new THREE.Vector3();groundedSkin.getVertexPosition(i,point);
+        point.applyMatrix4(groundedSkin.matrixWorld);points.push(point);
+      }
+    }
+    const minimum=Math.min(...points.map(point=>point.y));
+    const errors=points.filter(point=>point.y<=minimum+.012&&surface.height(point.x,point.z)!==null)
+      .map(point=>point.y-surface.height(point.x,point.z));
+    assert(errors.length>0);const contact=Math.min(...errors);
+    assert(Math.abs(contact)<.035,`${name} floats or penetrates actual Core terrain by ${contact}m`);
+    soleContacts.push({paw:name,contactError:contact,samples:errors.length});
+  }
   const imported=layer.group.getObjectByName('LifeLensImportedTigers');
   const ids=imported.children.map(object=>object.userData.coreId);
   assert.equal(new Set(ids).size,ids.length);
@@ -97,7 +119,7 @@ if(existsSync(fixturePath)){
   layer.setTerrain({...terrain,wildlife:{...terrain.wildlife,animals:[]}});
   assert.equal(layer.instanceCount,0);assert.equal(layer.group.getObjectByName('LifeLensImportedTigers'),undefined);
   layer.dispose();coreBinding={status:'PASS_NATIVE_CORE_FIXTURE_BINDING',coreId:tiger.id,coreBehavior:tiger.behavior,
-    checked:['skin-path','identity','position','behavior','observation-immutability','origin-rebase','removal']};
+    soleContacts,checked:['skin-path','identity','position','behavior','observation-immutability','sloped-terrain-soles','origin-rebase','removal']};
 }
 pool.dispose();assert.equal(pool.draw(pose,'near',0),false);
 

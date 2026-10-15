@@ -15,7 +15,7 @@ try{
  for(let i=0;i<50;i++){try{if((await fetch(base)).ok)break;}catch{}await delay(100);}
  browser=await chromium.launch({headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  for(const baseline of [true,false]){
-  const page=await browser.newPage({viewport:{width:1280,height:800},deviceScaleFactor:1});
+  const page=await browser.newPage({viewport:{width:960,height:720},deviceScaleFactor:1});
   activePage=page;
   page.on('pageerror',error=>errors.push({baseline,error:String(error)}));
   if(baseline)await page.route('**/vendor/wildlife/*.glb',route=>route.abort('blockedbyclient'));
@@ -25,9 +25,12 @@ try{
    const {observerStore}=await import('/src/state/observer-store.ts');
    const {observerActions}=await import('/src/state/observer-actions.ts');
    const {WorldScene}=await import('/src/render/world-scene.ts');
+   const {WorldRenderer}=await import('/src/render/world-renderer.ts');
    const {ResidentGroundSurface}=await import('/src/render/resident-grounding.ts');
    const {WORLD_GRID_CONTRACT:grid}=await import('/src/runtime/lifelens-contract.ts');
    const qa=window.__tigerObserver={store:observerStore,actions:observerActions,world:null,view:'quarter',id:null};
+   const setCamera=WorldRenderer.prototype.setCamera;
+   WorldRenderer.prototype.setCamera=function(state){qa.renderer=this;setCamera.call(this,state);};
    const original=WorldScene.prototype.applyCamera;
    const ground=new ResidentGroundSurface();let terrainIdentity=null;
    const views={front:[0,1.3,4.4],side:[4.4,1.3,0],quarter:[3,1.8,4],back:[0,1.3,-4.4],face:[.5,1.5,1.8]};
@@ -50,7 +53,12 @@ try{
     return {minute:snapshot.world.minute,worldSeed:snapshot.world.worldSeed,
      core:tiger?{id:tiger.id,species:tiger.species,gridX:tiger.gridX,gridY:tiger.gridY,behavior:tiger.behavior}:null,
      actor:actor?{id:actor.userData.coreId,position:actor.position.toArray(),clip:actor.userData.clip,tier:actor.userData.tier}:null,
-     runtime:snapshot.runtime,simulationSpeed:snapshot.simulationSpeed};
+     runtime:snapshot.runtime,simulationSpeed:snapshot.simulationSpeed,
+     renderStats:qa.renderer?{...qa.renderer.renderer.info.render}:null};
+   };
+   qa.still=()=>{
+    qa.renderer.stop();qa.world.update(.016);
+    qa.renderer.renderer.render(qa.world.scene,qa.world.camera);
    };
   });
   await page.waitForFunction(()=>window.__tigerObserver?.store.getSnapshot().runtime.status==='ready',{},{timeout:120000});
@@ -60,8 +68,8 @@ try{
   if(!baseline)await page.waitForFunction(()=>Boolean(window.__tigerObserver.sample().actor),{},{timeout:30000});
   const frozen=await page.evaluate(()=>JSON.stringify(window.__tigerObserver.store.getSnapshot().terrain));
   for(const view of ['front','side','quarter','back','face']){
-   await page.evaluate(view=>{window.__tigerObserver.view=view;},view);await delay(300);
-   await page.screenshot({path:resolve(out,`${baseline?'baseline':'candidate'}-${view}.jpg`),type:'jpeg',quality:88});
+   await page.evaluate(view=>{const q=window.__tigerObserver;q.view=view;q.still();},view);await delay(300);
+   await page.screenshot({path:resolve(out,`${baseline?'baseline':'candidate'}-${view}.jpg`),type:'jpeg',quality:88,timeout:60000,animations:'disabled'});
   }
   const after=await page.evaluate(()=>JSON.stringify(window.__tigerObserver.store.getSnapshot().terrain));
   if(after!==frozen)throw Error('Paused Core observation changed during camera-only captures');
@@ -69,16 +77,18 @@ try{
   if(!baseline&&sample.actor?.id!==sample.core?.id)throw Error('Observer skin identity differs from WASM observation');
   const result={baseline,pausedCameraObservationUnchanged:true,sample,motion:[]};
   if(!baseline){
-   await page.evaluate(()=>{const q=window.__tigerObserver;q.view='quarter';q.actions.setSimulationSpeed(4);});
+   await page.evaluate(()=>{const q=window.__tigerObserver;q.view='quarter';q.renderer.start();q.actions.setSimulationSpeed(4);});
    await page.waitForFunction(start=>window.__tigerObserver.store.getSnapshot().world.minute>=start+60,sample.minute,{timeout:60000});
    await page.evaluate(()=>window.__tigerObserver.actions.setSimulationSpeed(0));
    result.motion=await page.evaluate(()=>new Promise(resolve=>{
     const samples=[];const record=()=>{samples.push(window.__tigerObserver.sample());if(samples.length<30)requestAnimationFrame(record);else resolve(samples);};record();
    }));
    result.motionObserved=result.motion.some(frame=>frame.actor&&['walk','run','hunt'].includes(frame.actor.clip));
-   await page.screenshot({path:resolve(out,'candidate-after-core-hour.jpg'),type:'jpeg',quality:88});
+   await page.evaluate(()=>window.__tigerObserver.still());
+   await page.screenshot({path:resolve(out,'candidate-after-core-hour.jpg'),type:'jpeg',quality:88,timeout:60000,animations:'disabled'});
    await page.setViewportSize({width:412,height:915});await delay(500);
-   await page.screenshot({path:resolve(out,'candidate-mobile-viewport.jpg'),type:'jpeg',quality:88});
+   await page.evaluate(()=>window.__tigerObserver.still());
+   await page.screenshot({path:resolve(out,'candidate-mobile-viewport.jpg'),type:'jpeg',quality:88,timeout:60000,animations:'disabled'});
    result.mobileViewportOnly=true;
   }
   results.push(result);await page.close();activePage=null;
@@ -92,7 +102,7 @@ try{
  if(errors.length)process.exitCode=1;
 }catch(error){
  const diagnostic=await activePage?.evaluate(()=>window.__tigerObserver?.sample?.()).catch(()=>null);
- await activePage?.screenshot({path:resolve(out,'failure.jpg'),type:'jpeg',quality:85}).catch(()=>{});
+ await activePage?.screenshot({path:resolve(out,'failure.jpg'),type:'jpeg',quality:85,timeout:10000}).catch(()=>{});
  writeFileSync(resolve(out,'observer-validation.json'),JSON.stringify({status:'FAIL_REACT_WASM_CAPTURE',error:String(error),diagnostic,results,errors,android:'NOT_MEASURED',mergeAllowed:false},null,2)+'\n');
  console.error(error);process.exitCode=1;
 }finally{await browser?.close();server.kill();}

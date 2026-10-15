@@ -38,6 +38,7 @@ export class WildlifeLayer {
   });
   private readonly batches=new Map<string,THREE.InstancedMesh>();
   private readonly ground=new ResidentGroundSurface();
+  private readonly groundHeight=(x:number,z:number)=>this.ground.height(x,z);
   private readonly transform=new THREE.Object3D();
   private terrainSignature='';
   private centerChunkX=0;
@@ -274,7 +275,7 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
       if(pose.species==='Tiger'&&lod!=='far'&&this.tigers.draw({
         id:pose.id,x,y,z,heading:pose.heading,scale:pose.scale,speed:pose.speed,
         phase:pose.phase,behavior:pose.behavior,
-      },lod,dt)){this.instanceCount++;continue;}
+      },lod,dt,this.groundHeight)){this.instanceCount++;continue;}
       this.transform.position.set(x,y,z);
       this.transform.rotation.set(0,pose.heading,0);
       this.transform.scale.setScalar(pose.scale);

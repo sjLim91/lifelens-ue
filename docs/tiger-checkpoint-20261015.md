@@ -1,6 +1,45 @@
 # Tiger integration checkpoint — 2026-10-15
 
-Status: incomplete, unpublished, main merge prohibited.
+Status: incomplete Draft, main merge prohibited.
+
+## GitHub retry and actual-source results
+
+GitHub writes recovered on retry. Code was published in `af3a860`, followed by
+capture-path/actual-Observer QA changes in `7fbe1fb`. Draft PR #728 remains open.
+Preflight, Blender toolchain and the complete Web Checks run for `7fbe1fb` passed.
+The local-write failure notes below describe the earlier checkpoint.
+
+Run 38685825943 regenerated from the exact pinned original and passed source
+skin/animation contracts, flat-ground walk, production layer/Core binding,
+typecheck and the browser model-loading comparison. The recorded near/mid GLB
+hashes are `c797317862d664b7ad421e283e7d82ed7eb7acf2c428b85e16158571d57c49ce`
+and `f0e1230f450a8a7b841f548b6936c5490338b1e1e4b5731c7c17e8c8bfa7e0e7`.
+Those files, credits/receipts and Blender sources are now on the Draft branch.
+
+Manual inspection found that the subsystem comparison harness positioned its
+chunk geometries at the wrong origin, leaving visible animals without terrain.
+That old comparison is not valid ground-contact evidence. The harness now uses
+the production chunk offsets and asserts a terrain-ray/ground-sampler match at
+the actual observed tiger. New screenshots must be inspected again.
+
+The real React/WASM app also booted successfully with seed 77 and observed the
+same actual Core tiger. Its first full-screen capture timed out while drawing;
+`web/tests/tiger-observer/review/observer-validation.json` records failure, not
+success. The test now pauses the presentation render loop for individual stills,
+using the real renderer, scene, materials and Core. Live motion sampling resumes
+the original loop and advances only through existing Observer actions.
+
+A separate CPU skin/terrain diagnostic found about 21 cm front-paw clearance
+on the native Core slope. A presentation-only ground frame now follows sampled
+terrain with bounded pitch/roll and correct support height. On the local
+inspection derivative, minimum sole contact errors became approximately
+-1.08 / -0.04 / -0.16 / +0.38 cm for the four paws. A regression test checks the
+actual deformed skin against Core terrain, including a visible-window boundary.
+Exact-source CI and new Observer images are still required for this change.
+
+Android device FPS, turning foot locks, full clip deformation and final face/fur
+quality remain unaccepted. No overall completion or main merge is authorized
+by these intermediate checks.
 
 ## New verified progress
 
@@ -64,7 +103,7 @@ artifacts, limited fur detail, static rest/feeding anatomy, transitions, slopes,
 turns and foot locks need further visual work. Do not mark these natural or
 accepted. Human final quality/retargeting is still pending.
 
-## Publishing and recovery
+## Earlier publishing failure and local recovery record
 
 GitHub reads work, but the previous write calls did not complete. Branch head
 remains the hash above; no current CI or PR update is claimed. Local patch and

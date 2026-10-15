@@ -12,9 +12,11 @@ type Contract = {
 };
 type Asset = { gltf: GLTF; contract: Contract };
 type Actor = {
-  tier: Tier; root: THREE.Group; model: THREE.Object3D; mixer: THREE.AnimationMixer;
+  tier: Tier; root: THREE.Group; frame: THREE.Group; model: THREE.Object3D; mixer: THREE.AnimationMixer;
   actions: Map<string, THREE.AnimationAction>; current: string;
+  grounded: boolean;
 };
+type GroundHeight = (x: number, z: number) => number | null;
 export type TigerPose = {
   id: string; x: number; y: number; z: number; heading: number; scale: number;
   speed: number; phase: number; behavior: WildlifeAnimalObservation['behavior'];
@@ -75,6 +77,10 @@ export class ImportedTigerPool {
   private nearCount = 0;
   private midCount = 0;
   private disposed = false;
+  private readonly normal = new THREE.Vector3();
+  private readonly up = new THREE.Vector3(0, 1, 0);
+  private readonly headingInverse = new THREE.Quaternion();
+  private readonly groundRotation = new THREE.Quaternion();
   constructor(private readonly load: TigerAssetLoader | null = typeof document === 'undefined' ? null : tier => {
     const name = tier === 'near' ? 'tiger-rigged.glb' : 'tiger-mid.glb';
     return new GLTFLoader().loadAsync(new URL(`vendor/wildlife/${name}`, document.baseURI).href);
@@ -82,7 +88,7 @@ export class ImportedTigerPool {
 
   begin(): void { this.used.clear(); this.nearCount = 0; this.midCount = 0; }
 
-  draw(pose: TigerPose, tier: Tier, dt: number): boolean {
+  draw(pose: TigerPose, tier: Tier, dt: number, ground?: GroundHeight): boolean {
     if (this.disposed || (tier === 'near' ? this.nearCount >= 2 : this.midCount >= 4)) return false;
     const asset = this.assets.get(tier);
     if (!asset) { this.request(tier); return false; }
@@ -102,14 +108,15 @@ export class ImportedTigerPool {
           // Bounds are animated; at most six skins, so avoid static rest-box culling.
           object.frustumCulled = false; }
       });
-      root.add(model); this.group.add(root);
+      const frame = new THREE.Group(); frame.name = 'LifeLensTigerGroundFrame';
+      frame.add(model); root.add(frame); this.group.add(root);
       const mixer = new THREE.AnimationMixer(model);
       const actions = new Map<string, THREE.AnimationAction>();
       for (const key of CLIPS) {
         const clip = asset.gltf.animations.find(value => value.name === asset.contract.clips[key].name)!;
         actions.set(key, mixer.clipAction(clip));
       }
-      actor = { tier, root, model, mixer, actions, current: '' };
+      actor = { tier, root, frame, model, mixer, actions, current: '', grounded: false };
       this.actors.set(pose.id, actor);
     }
     const moving = pose.speed > .005;
@@ -128,12 +135,36 @@ export class ImportedTigerPool {
     actor.mixer.update(dt);
     actor.root.position.set(pose.x, pose.y, pose.z);
     actor.root.rotation.set(0, pose.heading, 0); actor.root.scale.setScalar(pose.scale);
+    if (ground) this.alignGround(actor, pose, dt, ground);
     actor.root.userData.behavior = pose.behavior;
     actor.root.userData.clip = key;
     actor.root.userData.tier = tier;
     this.used.add(pose.id);
     if (tier === 'near') this.nearCount++; else this.midCount++;
     return true;
+  }
+
+  private alignGround(actor: Actor, pose: TigerPose, dt: number, ground: GroundHeight): void {
+    const height = ground(pose.x, pose.z);
+    if (height === null) return;
+    const span = .4 * pose.scale;
+    const left = ground(pose.x - span, pose.z), right = ground(pose.x + span, pose.z);
+    const back = ground(pose.x, pose.z - span), front = ground(pose.x, pose.z + span);
+    // One-sided differences at a visible-window edge; missing terrain is never zero height.
+    let slopeX = left !== null && right !== null ? (right - left) / (2 * span)
+      : right !== null ? (right - height) / span : left !== null ? (height - left) / span : 0;
+    let slopeZ = back !== null && front !== null ? (front - back) / (2 * span)
+      : front !== null ? (front - height) / span : back !== null ? (height - back) / span : 0;
+    const magnitude = Math.hypot(slopeX, slopeZ);
+    const limit = Math.min(1, Math.tan(25 * Math.PI / 180) / Math.max(magnitude, 1e-6));
+    slopeX *= limit; slopeZ *= limit;
+    this.headingInverse.setFromAxisAngle(this.up, -pose.heading);
+    this.normal.set(-slopeX, 1, -slopeZ).normalize().applyQuaternion(this.headingInverse);
+    this.groundRotation.setFromUnitVectors(this.up, this.normal);
+    const blend = actor.grounded ? 1 - Math.exp(-Math.max(0, dt) * 12) : 1;
+    actor.frame.quaternion.slerp(this.groundRotation, blend);
+    actor.frame.position.y = THREE.MathUtils.lerp(actor.frame.position.y, (height - pose.y) / pose.scale, blend);
+    actor.grounded = true;
   }
 
   end(parent: THREE.Group): void {

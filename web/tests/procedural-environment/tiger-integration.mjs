@@ -18,10 +18,12 @@ scene.add(new THREE.HemisphereLight(0xf3f7ff,0x746550,2.1));
 const sun=new THREE.DirectionalLight(0xfff1de,3);sun.position.set(4,9,5);scene.add(sun);
 const fill=new THREE.DirectionalLight(0xc8dcff,1);fill.position.set(-5,3,-2);scene.add(fill);
 const geometry=createTerrainGeometryBuilder(terrain);
+const terrainMeshes=[];
 for(const chunk of terrain.chunks){
   const mesh=new THREE.Mesh(geometry(chunk),new THREE.MeshStandardMaterial({vertexColors:true,roughness:1}));
-  // Terrain geometry is already in the observer's rebased coordinates.
-  scene.add(mesh);
+  mesh.position.set((chunk.x-terrain.centerChunkX)*grid.worldUnitsPerChunk,0,
+    (chunk.y-terrain.centerChunkY)*grid.worldUnitsPerChunk);
+  scene.add(mesh);mesh.updateMatrixWorld(true);terrainMeshes.push(mesh);
 }
 const loader=new GLTFLoader();
 const layer=new WildlifeLayer(baseline?async()=>{throw Error('Requested baseline fallback');}:tier=>{
@@ -36,6 +38,10 @@ const x=(tiger.gridX/grid.gridCellsPerChunk-terrain.centerChunkX-.5)*grid.worldU
 const z=(tiger.gridY/grid.gridCellsPerChunk-terrain.centerChunkY-.5)*grid.worldUnitsPerChunk;
 const ground=new ResidentGroundSurface();ground.setTerrain(terrain,terrain.centerChunkX,terrain.centerChunkY);
 const y=ground.height(x,z);if(y===null)throw Error('Observed tiger has no visible Core terrain');
+const ray=new THREE.Raycaster(new THREE.Vector3(x,y+10,z),new THREE.Vector3(0,-1,0));
+const terrainHit=ray.intersectObjects(terrainMeshes,false)[0];
+const terrainRayError=terrainHit?Math.abs(terrainHit.point.y-y):Infinity;
+if(terrainRayError>2e-5)throw Error('Displayed terrain does not match Core grounding at the tiger');
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.03,300);
 const views={front:[0,1.1,4.4],side:[4.4,1.1,0],quarter:[3,1.6,4],back:[0,1.1,-4.4],face:[.45,1.2,2]};
 function view(name){const v=views[name]??views.quarter;camera.position.set(x+v[0],y+v[1],z+v[2]);camera.lookAt(x,y+.65,z);camera.updateMatrixWorld();}
@@ -56,6 +62,6 @@ window.tigerReview={view,layer,scene,camera,renderer,
  metrics(){const actor=layer.group.getObjectByName(`LifeLensTiger:${tiger.id}`);
   return {coreId:tiger.id,coreBehavior:tiger.behavior,coreUnchanged:JSON.stringify(terrain)===before,
    importedActor:Boolean(actor),clip:actor?.userData.clip,tier:actor?.userData.tier,
-   visibleAnimals:layer.instanceCount,source:inspection?'LOCAL_INSPECTION_DERIVATIVE':'STAGED_PINNED_SOURCE_DERIVATIVE',
+   visibleAnimals:layer.instanceCount,terrainRayError,source:inspection?'LOCAL_INSPECTION_DERIVATIVE':'STAGED_PINNED_SOURCE_DERIVATIVE',
    subsystemOnly:true,fullObserver:'NOT_RUN',android:'NOT_MEASURED',
    renderer:renderer.info.render,frames,samples:times.slice(-120),width:innerWidth,height:innerHeight};}};
