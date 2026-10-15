@@ -1,30 +1,7 @@
 {
   "status": "FAIL_REACT_WASM_CAPTURE",
-  "error": "TimeoutError: page.screenshot: Timeout 60000ms exceeded.\nCall log:\n  - taking page screenshot\n    - disabled all CSS animations\n  - waiting for fonts to load...\n  - fonts loaded\n",
-  "diagnostic": {
-    "minute": 504,
-    "worldSeed": "77",
-    "core": {
-      "id": "25:32:1704075738371588112",
-      "species": "Tiger",
-      "gridX": 801,
-      "gridY": 1038,
-      "behavior": "Hunt"
-    },
-    "actor": null,
-    "runtime": {
-      "status": "ready",
-      "errorMessage": null
-    },
-    "simulationSpeed": 0,
-    "renderStats": {
-      "frame": 120,
-      "calls": 121,
-      "triangles": 2716492,
-      "points": 0,
-      "lines": 0
-    }
-  },
+  "error": "Error: Actual Observer canvas export timed out after 30000ms",
+  "diagnostic": null,
   "results": [],
   "errors": [],
   "android": "NOT_MEASURED",
