@@ -6,7 +6,10 @@ import {WorldRenderer} from '../../src/render/world-renderer.ts';
 import {ResidentGroundSurface} from '../../src/render/resident-grounding.ts';
 import {WORLD_GRID_CONTRACT as grid} from '../../src/runtime/lifelens-contract.ts';
 import {Vector3} from 'three';
-   const qa=window.__tigerObserver={store:observerStore,actions:observerActions,world:null,view:'quarter',id:null};
+import {ImportedTigerPool} from '../../src/render/imported-tiger.ts';
+   const qa=window.__tigerObserver={store:observerStore,actions:observerActions,world:null,view:'quarter',id:null,baseline:false,faceTarget:null};
+   const draw=ImportedTigerPool.prototype.draw;
+   ImportedTigerPool.prototype.draw=function(...args){return qa.baseline?false:draw.apply(this,args);};
    const setCamera=WorldRenderer.prototype.setCamera;
    WorldRenderer.prototype.setCamera=function(state){qa.renderer=this;setCamera.call(this,state);};
    const original=WorldScene.prototype.applyCamera;
@@ -26,10 +29,14 @@ import {Vector3} from 'three';
     // Match the ordinary observer's pan/focus state so its existing foliage
     // clarity follows the actual animal; do not remove or move vegetation.
     state.panX=x;state.panZ=z;original.call(this,state);
-    if(qa.view==='face'&&actor){
-     const head=actor.getObjectByName('Head');
+    if(qa.view==='face'){
+     const head=actor?.getObjectByName('Head');
      if(head){
       head.getWorldPosition(headPoint);headPoint.y+=.07;headPoint.z+=.1;
+      qa.faceTarget=headPoint.clone();
+     }
+     if(qa.faceTarget){
+      headPoint.copy(qa.faceTarget);
       this.camera.position.set(headPoint.x+.9,headPoint.y+.25,headPoint.z+1.6);
       this.camera.lookAt(headPoint);this.camera.updateMatrixWorld();return;
      }

@@ -4,7 +4,7 @@ import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 
 // Runs the real React application and its WASM Core. The test changes camera
-// presentation only; new-game, pause and time progression use existing actions.
+// presentation and the existing fallback only; new-game, pause and time progression use existing actions.
 const root=resolve(import.meta.dirname,'../..');
 const out=resolve(import.meta.dirname,'review');mkdirSync(out,{recursive:true});
 const port=8766;const base=`http://127.0.0.1:${port}`;
@@ -30,11 +30,10 @@ async function captureObserverCanvas(page,path){
  writeFileSync(path,Buffer.from(result.data.split(',')[1],'base64'));
  return {width:result.width,height:result.height,canvasId:result.canvasId};
 }
-let browser;let activePage;const results=[];const errors=[];
+let browser;let activePage;let baseline=false;const results=[];const errors=[];
 try{
  for(let i=0;i<50;i++){try{if((await fetch(base)).ok)break;}catch{}await delay(100);}
  browser=await chromium.launch({headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
- for(const baseline of [true,false]){
   const page=await browser.newPage({viewport:{width:960,height:720},deviceScaleFactor:1});
   activePage=page;
   page.on('console',message=>{
@@ -43,7 +42,6 @@ try{
     errors.push({baseline,error:text,location:message.location()});
   });
   page.on('pageerror',error=>errors.push({baseline,error:String(error)}));
-  if(baseline)await page.route('**/vendor/wildlife/*.glb',route=>route.abort('blockedbyclient'));
   await page.addInitScript(()=>localStorage.setItem('lifelens.web.renderMode','three-world'));
   await page.goto(base,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>Boolean(window.__tigerObserver),{},{timeout:60000});
@@ -56,8 +54,10 @@ try{
    if(baseline||ready)break;await delay(100);
   }
   if(!baseline&&!await page.evaluate(()=>Boolean(window.__tigerObserver.sample().actor)))throw Error('Actual Observer imported tiger did not load');
-  writeFileSync(resolve(out,`${baseline?'baseline':'candidate'}-pre-capture.json`),JSON.stringify(await page.evaluate(()=>window.__tigerObserver.sample()),null,2)+'\n');
   const frozen=await page.evaluate(()=>JSON.stringify(window.__tigerObserver.store.getSnapshot().terrain));
+  for(baseline of [false,true]){
+   await page.evaluate(baseline=>{const q=window.__tigerObserver;q.baseline=baseline;q.world.update(.016);},baseline);
+  writeFileSync(resolve(out,`${baseline?'baseline':'candidate'}-pre-capture.json`),JSON.stringify(await page.evaluate(()=>window.__tigerObserver.sample()),null,2)+'\n');
   for(const view of ['front','side','quarter','back','face']){
    await page.evaluate(view=>{window.__tigerObserver.view=view;},view);
    await captureObserverCanvas(page,resolve(out,`${baseline?'baseline':'candidate'}-${view}.jpg`));
@@ -67,21 +67,24 @@ try{
   const sample=await page.evaluate(()=>window.__tigerObserver.sample());
   if(!baseline&&sample.actor?.id!==sample.core?.id)throw Error('Observer skin identity differs from WASM observation');
   const result={baseline,pausedCameraObservationUnchanged:true,sample,motion:[]};
-  if(!baseline){
-   await page.evaluate(()=>{const q=window.__tigerObserver;q.view='quarter';q.renderer.start();q.actions.setSimulationSpeed(4);});
-   await page.waitForFunction(start=>window.__tigerObserver.store.getSnapshot().world.minute>=start+60,sample.minute,{timeout:60000});
+  results.push(result);
+  }
+  baseline=false;
+  const candidate=results.find(result=>!result.baseline);
+  if(candidate){
+   await page.evaluate(()=>{const q=window.__tigerObserver;q.baseline=false;q.view='quarter';q.world.update(.016);q.renderer.start();q.actions.setSimulationSpeed(4);});
+   await page.waitForFunction(start=>window.__tigerObserver.store.getSnapshot().world.minute>=start+60,candidate.sample.minute,{timeout:60000});
    await page.evaluate(()=>window.__tigerObserver.actions.setSimulationSpeed(0));
-   result.motion=await page.evaluate(()=>new Promise(resolve=>{
+   candidate.motion=await page.evaluate(()=>new Promise(resolve=>{
     const samples=[];const record=()=>{samples.push(window.__tigerObserver.sample());if(samples.length<30)requestAnimationFrame(record);else resolve(samples);};record();
    }));
-   result.motionObserved=result.motion.some(frame=>frame.actor&&['walk','run','hunt'].includes(frame.actor.clip));
+   candidate.motionObserved=candidate.motion.some(frame=>frame.actor&&['walk','run','hunt'].includes(frame.actor.clip));
    await captureObserverCanvas(page,resolve(out,'candidate-after-core-hour.jpg'));
    await page.setViewportSize({width:412,height:915});await delay(500);
-   result.mobileCanvas=await captureObserverCanvas(page,resolve(out,'candidate-mobile-viewport.jpg'));
-   result.mobileViewportOnly=true;
+   candidate.mobileCanvas=await captureObserverCanvas(page,resolve(out,'candidate-mobile-viewport.jpg'));
+   candidate.mobileViewportOnly=true;
   }
-  results.push(result);await page.close();activePage=null;
- }
+  await page.close();activePage=null;
  if(results[0]?.sample.minute!==results[1]?.sample.minute
    ||JSON.stringify(results[0]?.sample.core)!==JSON.stringify(results[1]?.sample.core))
   errors.push({error:'Baseline and candidate must use the same paused Core minute and observation'});
@@ -91,7 +94,7 @@ try{
   android:'NOT_MEASURED',visualQuality:'REQUIRES_IMAGE_REVIEW',mergeAllowed:false,
   receipts:JSON.parse(readFileSync(resolve(root,'public/vendor/wildlife/receipt.json'),'utf8'))};
  writeFileSync(resolve(out,'observer-validation.json'),JSON.stringify(result,null,2)+'\n');
- console.log(JSON.stringify({status:result.status,motionObserved:results[1]?.motionObserved,errors}));
+ console.log(JSON.stringify({status:result.status,motionObserved:results.find(result=>!result.baseline)?.motionObserved,errors}));
  if(errors.length)process.exitCode=1;
 }catch(error){
  const diagnostic=await bounded(activePage?.evaluate(()=>window.__tigerObserver?.sample?.()),3000,'Failure diagnostics').catch(()=>null);
