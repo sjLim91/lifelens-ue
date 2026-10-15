@@ -1,0 +1,33 @@
+{
+  "minute": 504,
+  "worldSeed": "77",
+  "core": {
+    "id": "25:32:1704075738371588112",
+    "species": "Tiger",
+    "gridX": 801,
+    "gridY": 1038,
+    "behavior": "Hunt"
+  },
+  "actor": null,
+  "runtime": {
+    "status": "ready",
+    "errorMessage": null
+  },
+  "simulationSpeed": 0,
+  "renderStats": {
+    "frame": 74,
+    "calls": 313,
+    "triangles": 2367712,
+    "points": 0,
+    "lines": 0
+  },
+  "renderMemory": {
+    "geometries": 500,
+    "textures": 15
+  },
+  "canvas": {
+    "width": 620,
+    "height": 662,
+    "contextLost": false
+  }
+}
