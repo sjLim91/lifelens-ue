@@ -9,12 +9,35 @@
     "status": "PASS_NATIVE_CORE_FIXTURE_BINDING",
     "coreId": "25:32:1704075738371588112",
     "coreBehavior": "Hunt",
+    "soleContacts": [
+      {
+        "paw": "Fore.L.Paw",
+        "contactError": -0.010811536129978094,
+        "samples": 10
+      },
+      {
+        "paw": "Fore.R.Paw",
+        "contactError": -0.0004048133186209668,
+        "samples": 20
+      },
+      {
+        "paw": "Hind.L.Paw",
+        "contactError": -0.001577592777035619,
+        "samples": 19
+      },
+      {
+        "paw": "Hind.R.Paw",
+        "contactError": 0.003832638954023082,
+        "samples": 12
+      }
+    ],
     "checked": [
       "skin-path",
       "identity",
       "position",
       "behavior",
       "observation-immutability",
+      "sloped-terrain-soles",
       "origin-rebase",
       "removal"
     ]
