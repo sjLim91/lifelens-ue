@@ -1,0 +1,174 @@
+[
+  {
+    "file": "tiger-rigged.glb",
+    "bytes": 9638896,
+    "sha256": "c797317862d664b7ad421e283e7d82ed7eb7acf2c428b85e16158571d57c49ce",
+    "version": 1,
+    "units": "metres",
+    "forward": "+Z",
+    "up": "+Y",
+    "tier": "near",
+    "license": "CC-BY-4.0",
+    "creator": "TopoForge",
+    "source": "https://www.sloyd.ai/free-3d-models/model/tiger-7m4ap2k1",
+    "source_sha256": "f7e3b63e83efd92ba379f750f02e9971f52679173c6a268a29f352ad0c2092be",
+    "status": "DRAFT_REQUIRES_OBSERVER_AND_DEVICE_VALIDATION",
+    "clips": {
+      "idle": {
+        "name": "tiger_idle",
+        "duration": 2,
+        "cycle_distance": 0
+      },
+      "walk": {
+        "name": "tiger_walk",
+        "duration": 1.2,
+        "cycle_distance": 0.7096774193548387
+      },
+      "run": {
+        "name": "tiger_run",
+        "duration": 0.7,
+        "cycle_distance": 1.7105263157894737
+      },
+      "hunt": {
+        "name": "tiger_hunt",
+        "duration": 1.6,
+        "cycle_distance": 0.4571428571428572
+      },
+      "forage": {
+        "name": "tiger_forage",
+        "duration": 2,
+        "cycle_distance": 0
+      },
+      "drink": {
+        "name": "tiger_drink",
+        "duration": 2,
+        "cycle_distance": 0
+      },
+      "rest": {
+        "name": "tiger_rest",
+        "duration": 2,
+        "cycle_distance": 0
+      }
+    },
+    "paws": [
+      {
+        "name": "Fore.L.Paw",
+        "upper": "Fore.L.Upper",
+        "lower": "Fore.L.Lower",
+        "tip": "Fore.L.Paw",
+        "phase": 0.25,
+        "ankle_height": 0.16509665548801422
+      },
+      {
+        "name": "Fore.R.Paw",
+        "upper": "Fore.R.Upper",
+        "lower": "Fore.R.Lower",
+        "tip": "Fore.R.Paw",
+        "phase": 0.75,
+        "ankle_height": 0.1786096370778978
+      },
+      {
+        "name": "Hind.R.Paw",
+        "upper": "Hind.R.Upper",
+        "lower": "Hind.R.Lower",
+        "tip": "Hind.R.Metatarsal",
+        "phase": 0.5,
+        "ankle_height": 0.22125561349093914
+      },
+      {
+        "name": "Hind.L.Paw",
+        "upper": "Hind.L.Upper",
+        "lower": "Hind.L.Lower",
+        "tip": "Hind.L.Metatarsal",
+        "phase": 0,
+        "ankle_height": 0.2376103699207306
+      }
+    ]
+  },
+  {
+    "file": "tiger-mid.glb",
+    "bytes": 2837632,
+    "sha256": "f0e1230f450a8a7b841f548b6936c5490338b1e1e4b5731c7c17e8c8bfa7e0e7",
+    "version": 1,
+    "units": "metres",
+    "forward": "+Z",
+    "up": "+Y",
+    "tier": "mid",
+    "license": "CC-BY-4.0",
+    "creator": "TopoForge",
+    "source": "https://www.sloyd.ai/free-3d-models/model/tiger-7m4ap2k1",
+    "source_sha256": "f7e3b63e83efd92ba379f750f02e9971f52679173c6a268a29f352ad0c2092be",
+    "status": "DRAFT_REQUIRES_OBSERVER_AND_DEVICE_VALIDATION",
+    "clips": {
+      "idle": {
+        "name": "tiger_idle",
+        "duration": 2,
+        "cycle_distance": 0
+      },
+      "walk": {
+        "name": "tiger_walk",
+        "duration": 1.2,
+        "cycle_distance": 0.7096774193548387
+      },
+      "run": {
+        "name": "tiger_run",
+        "duration": 0.7,
+        "cycle_distance": 1.7105263157894737
+      },
+      "hunt": {
+        "name": "tiger_hunt",
+        "duration": 1.6,
+        "cycle_distance": 0.4571428571428572
+      },
+      "forage": {
+        "name": "tiger_forage",
+        "duration": 2,
+        "cycle_distance": 0
+      },
+      "drink": {
+        "name": "tiger_drink",
+        "duration": 2,
+        "cycle_distance": 0
+      },
+      "rest": {
+        "name": "tiger_rest",
+        "duration": 2,
+        "cycle_distance": 0
+      }
+    },
+    "paws": [
+      {
+        "name": "Fore.L.Paw",
+        "upper": "Fore.L.Upper",
+        "lower": "Fore.L.Lower",
+        "tip": "Fore.L.Paw",
+        "phase": 0.25,
+        "ankle_height": 0.16509665548801422
+      },
+      {
+        "name": "Fore.R.Paw",
+        "upper": "Fore.R.Upper",
+        "lower": "Fore.R.Lower",
+        "tip": "Fore.R.Paw",
+        "phase": 0.75,
+        "ankle_height": 0.1786096370778978
+      },
+      {
+        "name": "Hind.R.Paw",
+        "upper": "Hind.R.Upper",
+        "lower": "Hind.R.Lower",
+        "tip": "Hind.R.Metatarsal",
+        "phase": 0.5,
+        "ankle_height": 0.22125561349093914
+      },
+      {
+        "name": "Hind.L.Paw",
+        "upper": "Hind.L.Upper",
+        "lower": "Hind.L.Lower",
+        "tip": "Hind.L.Metatarsal",
+        "phase": 0,
+        "ankle_height": 0.2376103699207306
+      }
+    ]
+  }
+]

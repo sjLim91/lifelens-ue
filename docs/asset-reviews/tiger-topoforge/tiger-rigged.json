@@ -1,0 +1,55 @@
+{
+  "status": "RIG_REVIEW_REQUIRED_NOT_RUNTIME",
+  "merge_allowed": false,
+  "bones": 24,
+  "vertices": 8457,
+  "unbound_vertices": 0,
+  "source_scale": 0.7189378086380713,
+  "clips": {
+    "idle": {
+      "name": "tiger_idle",
+      "duration": 2,
+      "cycle_distance": 0
+    },
+    "walk": {
+      "name": "tiger_walk",
+      "duration": 1.2,
+      "cycle_distance": 0.7096774193548387
+    },
+    "run": {
+      "name": "tiger_run",
+      "duration": 0.7,
+      "cycle_distance": 1.7105263157894737
+    },
+    "hunt": {
+      "name": "tiger_hunt",
+      "duration": 1.6,
+      "cycle_distance": 0.4571428571428572
+    },
+    "forage": {
+      "name": "tiger_forage",
+      "duration": 2,
+      "cycle_distance": 0
+    },
+    "drink": {
+      "name": "tiger_drink",
+      "duration": 2,
+      "cycle_distance": 0
+    },
+    "rest": {
+      "name": "tiger_rest",
+      "duration": 2,
+      "cycle_distance": 0
+    }
+  },
+  "removed_disconnected_muzzle_vertices": 33,
+  "near_triangles": 16913,
+  "mid_triangles": 5919,
+  "paw_joints": [
+    "Fore.L.Paw",
+    "Fore.R.Paw",
+    "Hind.R.Paw",
+    "Hind.L.Paw"
+  ],
+  "sha256": "c797317862d664b7ad421e283e7d82ed7eb7acf2c428b85e16158571d57c49ce"
+}

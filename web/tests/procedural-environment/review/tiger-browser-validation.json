@@ -1,0 +1,96 @@
+{
+  "status": "PASS_PRODUCTION_LAYER_SUBSYSTEM_ONLY",
+  "source": "STAGED_PINNED_SOURCE_DERIVATIVE",
+  "coreFixture": "UNMODIFIED_CORE_NATIVE_HARNESS",
+  "fullObserver": "NOT_RUN",
+  "android": "NOT_MEASURED",
+  "mergeAllowed": false,
+  "metrics": [
+    {
+      "coreId": "25:32:1704075738371588112",
+      "coreBehavior": "Hunt",
+      "coreUnchanged": true,
+      "importedActor": false,
+      "visibleAnimals": 18,
+      "source": "STAGED_PINNED_SOURCE_DERIVATIVE",
+      "subsystemOnly": true,
+      "fullObserver": "NOT_RUN",
+      "android": "NOT_MEASURED",
+      "renderer": {
+        "frame": 29,
+        "calls": 8,
+        "triangles": 547808,
+        "points": 0,
+        "lines": 0
+      },
+      "frames": 29,
+      "samples": [],
+      "width": 960,
+      "height": 720,
+      "baseline": true
+    },
+    {
+      "coreId": "25:32:1704075738371588112",
+      "coreBehavior": "Hunt",
+      "coreUnchanged": true,
+      "importedActor": true,
+      "clip": "idle",
+      "tier": "near",
+      "visibleAnimals": 18,
+      "source": "STAGED_PINNED_SOURCE_DERIVATIVE",
+      "subsystemOnly": true,
+      "fullObserver": "NOT_RUN",
+      "android": "NOT_MEASURED",
+      "renderer": {
+        "frame": 32,
+        "calls": 9,
+        "triangles": 490386,
+        "points": 0,
+        "lines": 0
+      },
+      "frames": 32,
+      "samples": [
+        100
+      ],
+      "width": 960,
+      "height": 720,
+      "baseline": false
+    },
+    {
+      "coreId": "25:32:1704075738371588112",
+      "coreBehavior": "Hunt",
+      "coreUnchanged": true,
+      "importedActor": true,
+      "clip": "idle",
+      "tier": "near",
+      "visibleAnimals": 18,
+      "source": "STAGED_PINNED_SOURCE_DERIVATIVE",
+      "subsystemOnly": true,
+      "fullObserver": "NOT_RUN",
+      "android": "NOT_MEASURED",
+      "renderer": {
+        "frame": 40,
+        "calls": 9,
+        "triangles": 490386,
+        "points": 0,
+        "lines": 0
+      },
+      "frames": 40,
+      "samples": [
+        100,
+        100,
+        16.700000000000728,
+        16.700000000000728,
+        100,
+        16.799999999999272,
+        100,
+        100,
+        16.600000000000364
+      ],
+      "width": 412,
+      "height": 915,
+      "mobileViewportOnly": true
+    }
+  ],
+  "errors": []
+}

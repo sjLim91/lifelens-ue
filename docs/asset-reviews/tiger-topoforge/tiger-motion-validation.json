@@ -1,0 +1,30 @@
+{
+  "status": "PASS_FLAT_GROUND_ONLY",
+  "vertex_deformation_max": 0.29438170301905914,
+  "root_horizontal_motion_max": 0.0,
+  "paw_metrics": {
+    "Fore.L.Paw": {
+      "max_stance_ground_error": 0.01334613561630249,
+      "max_stance_slide": 0.01945045836099662,
+      "samples": 20
+    },
+    "Fore.R.Paw": {
+      "max_stance_ground_error": 0.00031115952879190445,
+      "max_stance_slide": 0.0024137761537985102,
+      "samples": 19
+    },
+    "Hind.R.Paw": {
+      "max_stance_ground_error": 1.3615936040878296e-06,
+      "max_stance_slide": 4.2539291662651455e-05,
+      "samples": 20
+    },
+    "Hind.L.Paw": {
+      "max_stance_ground_error": 0.0006792728672735393,
+      "max_stance_slide": 0.003405327872914416,
+      "samples": 19
+    }
+  },
+  "observer_validation": "NOT_RUN",
+  "android_performance": "NOT_MEASURED",
+  "merge_allowed": false
+}

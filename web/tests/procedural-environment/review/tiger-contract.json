@@ -1,0 +1,26 @@
+{
+  "status": "PASS_SKIN_ANIMATION_AND_POOL_CONTRACT",
+  "input": "STAGED_PINNED_SOURCE_DERIVATIVE",
+  "threeRevision": "180",
+  "maximumDeformation": 0.2572827064371139,
+  "nearBudget": 2,
+  "midBudget": 4,
+  "coreBinding": {
+    "status": "PASS_NATIVE_CORE_FIXTURE_BINDING",
+    "coreId": "25:32:1704075738371588112",
+    "coreBehavior": "Hunt",
+    "checked": [
+      "skin-path",
+      "identity",
+      "position",
+      "behavior",
+      "observation-immutability",
+      "origin-rebase",
+      "removal"
+    ]
+  },
+  "textures": "NOT_TESTED_IN_NODE",
+  "observer": "NOT_RUN",
+  "android": "NOT_MEASURED",
+  "mergeAllowed": false
+}
