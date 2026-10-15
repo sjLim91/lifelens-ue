@@ -53,6 +53,18 @@ checks that an unchanged authoritative refresh retains the same mid-LOD skeleton
 including after observation-origin rebasing. Local tests passed; latest CI must
 verify the committed revision.
 
+The subsequent actual-app canvas export also timed out before producing an
+image. It is recorded as failure. QA now reports individual update, shader
+preparation, draw and pixel-export stages, stops the loop before close-view
+priming, and awaits the real renderer's asynchronous shader compilation.
+
+Repeated immutable builds are guarded by `Tools/assets/tiger-candidate-cache.json`:
+the original GLB, generated GLBs and generator scripts must match recorded
+SHA-256 values to reuse models; native fixture reuse also requires the exact
+Core Git tree and fixture hash. Web contracts, typecheck, regressions and browser
+captures still run. The WASM build cache is keyed by Core and build-recipe bytes.
+Only build outputs are cached; no visual quality or FPS conclusion is cached.
+
 Android device FPS, turning foot locks, full clip deformation and final face/fur
 quality remain unaccepted. No overall completion or main merge is authorized
 by these intermediate checks.

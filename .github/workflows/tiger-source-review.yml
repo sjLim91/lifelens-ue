@@ -30,6 +30,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Check immutable candidate and native fixture inputs
+        id: reuse
+        run: python3 Tools/assets/check_tiger_candidate_cache.py
       - name: Inspect public license and anonymous download responses
         run: python3 Tools/assets/probe_tiger_sources.py --output review/tiger-source-evidence.json
       - name: Acquire openly published CC BY TopoForge candidate for review only
@@ -39,6 +42,7 @@ jobs:
         if: hashFiles('docs/asset-reviews/tiger-ferocious/source.glb') == ''
         run: python3 Tools/assets/review_public_tiger.py docs/asset-reviews/tiger-ferocious ferocious
       - name: Install free Blender on ephemeral runner
+        if: steps.reuse.outputs.rebuild_models == 'true'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends blender python3-numpy python3-scipy
@@ -48,15 +52,18 @@ jobs:
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-ferocious
       - name: Inspect bounded source-preserving body extraction (not runtime acceptance)
+        if: steps.reuse.outputs.rebuild_models == 'true'
         run: |
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/extract_tiger_body.py -- docs/asset-reviews/tiger-topoforge
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge body-extraction.glb
       - name: Author source-preserving skin, seven clips and two bounded LODs
+        if: steps.reuse.outputs.rebuild_models == 'true'
         run: |
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/rig_imported_tiger.py -- docs/asset-reviews/tiger-topoforge
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/verify_imported_tiger_motion.py -- docs/asset-reviews/tiger-topoforge
           blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge tiger-rigged.glb
-          python3 Tools/assets/stage_tiger_candidate.py
+      - name: Revalidate pinned source and stage candidate with credits
+        run: python3 Tools/assets/stage_tiger_candidate.py
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -64,6 +71,7 @@ jobs:
         working-directory: web
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Produce authoritative Core observations without changing Core
+        if: steps.reuse.outputs.rebuild_fixture == 'true'
         run: |
           cmake -S Source/LifeLensCore -B /tmp/tiger-core -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/tiger-core --target ll_ecology_fixture -j2
@@ -123,15 +131,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Restore unchanged Core WASM build
+        id: wasm
+        uses: actions/cache/restore@v4
+        with:
+          path: web/public/runtime
+          key: tiger-wasm-${{ runner.os }}-${{ hashFiles('Source/LifeLensCore/**', '.github/workflows/tiger-source-review.yml') }}
       - name: Install free WASM compiler and browser dependencies
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends emscripten
           npm install --ignore-scripts --no-audit --no-fund --prefix web
           npm install --no-save --ignore-scripts --no-audit --no-fund --prefix web playwright
           cd web
           npx playwright install --with-deps chromium
+      - name: Install WASM compiler when source build is not cached
+        if: steps.wasm.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends emscripten
       - name: Build unchanged Core into the actual Web runtime
+        id: compile
+        if: steps.wasm.outputs.cache-hit != 'true'
         run: |
           emcmake cmake -S Source/LifeLensCore -B /tmp/tiger-observer-wasm -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/tiger-observer-wasm --target lifelens_web_core -j2
@@ -143,6 +162,14 @@ jobs:
               for name in ['lifelens_core.js','lifelens_core.wasm']:
                   shutil.copyfile(Path('/tmp/tiger-observer-wasm/web')/name,target/name)
           PY
+      - name: Cache successfully compiled unchanged Core
+        if: steps.compile.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: web/public/runtime
+          key: ${{ steps.wasm.outputs.cache-primary-key }}
+      - name: Prepare approved characters and generated Core contract
+        run: |
           python3 Tools/prepare_web_character_assets.py
           npm run generate:core-contract --prefix web
       - name: Capture real React-WASM Observer and actual Core movement

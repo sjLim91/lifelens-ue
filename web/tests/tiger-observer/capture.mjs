@@ -16,14 +16,16 @@ async function bounded(promise,ms,label){
  })]);}finally{clearTimeout(timer);}
 }
 async function captureObserverCanvas(page,path){
- const result=await bounded(page.evaluate(()=>{
-  const q=window.__tigerObserver;q.still();
+ const result=await bounded(page.evaluate(async()=>{
+  const q=window.__tigerObserver;await q.still();
   const canvas=q.renderer.renderer.domElement;
   if(canvas.id!=='threeWorldCanvas'||!document.querySelector('#app .brand'))throw Error('Capture is not the actual Observer canvas');
   if(q.renderer.renderer.getContext().isContextLost())throw Error('Actual Observer WebGL context was lost');
   if(canvas.width*canvas.height>4_000_000)throw Error('Actual Observer canvas exceeds the capture pixel budget');
-  return {data:canvas.toDataURL('image/jpeg',.88),width:canvas.width,height:canvas.height,canvasId:canvas.id};
- }),30000,'Actual Observer canvas export');
+  console.log('LL_TIGER_STAGE canvas-export-start',canvas.width,canvas.height);
+  const data=canvas.toDataURL('image/jpeg',.88);console.log('LL_TIGER_STAGE canvas-export-done',data.length);
+  return {data,width:canvas.width,height:canvas.height,canvasId:canvas.id};
+ }),90000,'Actual Observer canvas export');
  if(!result.data.startsWith('data:image/jpeg;base64,'))throw Error('Observer canvas could not be exported');
  writeFileSync(path,Buffer.from(result.data.split(',')[1],'base64'));
  return {width:result.width,height:result.height,canvasId:result.canvasId};
@@ -35,6 +37,7 @@ try{
  for(const baseline of [true,false]){
   const page=await browser.newPage({viewport:{width:960,height:720},deviceScaleFactor:1});
   activePage=page;
+  page.on('console',message=>{if(message.text().startsWith('LL_TIGER_STAGE'))console.log(message.text());});
   page.on('pageerror',error=>errors.push({baseline,error:String(error)}));
   if(baseline)await page.route('**/vendor/wildlife/*.glb',route=>route.abort('blockedbyclient'));
   await page.addInitScript(()=>localStorage.setItem('lifelens.web.renderMode','three-world'));
@@ -77,16 +80,25 @@ try{
      canvas:qa.renderer?{width:qa.renderer.renderer.domElement.width,height:qa.renderer.renderer.domElement.height,
       contextLost:qa.renderer.renderer.getContext().isContextLost()}:null};
    };
-   qa.still=()=>{
-    qa.renderer.stop();qa.world.update(.016);
+   qa.still=async()=>{
+    qa.renderer.stop();console.log('LL_TIGER_STAGE world-update-start',qa.view);
+    qa.world.update(.016);console.log('LL_TIGER_STAGE world-update-done');
+    await qa.renderer.renderer.compileAsync(qa.world.scene,qa.world.camera);
+    console.log('LL_TIGER_STAGE shader-compile-done');
     qa.renderer.renderer.render(qa.world.scene,qa.world.camera);
+    console.log('LL_TIGER_STAGE scene-render-done');
    };
   });
   await page.waitForFunction(()=>window.__tigerObserver?.store.getSnapshot().runtime.status==='ready',{},{timeout:120000});
   await page.evaluate(()=>{const q=window.__tigerObserver;q.actions.createWorld('77');q.actions.setSimulationSpeed(0);q.actions.moveObserver(-2,0);});
   await page.waitForFunction(()=>{const s=window.__tigerObserver.store.getSnapshot();return String(s.world.worldSeed)==='77'&&s.terrain?.wildlife?.animals.some(a=>a.species==='Tiger');},{},{timeout:30000});
-  await page.evaluate(()=>{const q=window.__tigerObserver;q.id=q.store.getSnapshot().terrain.wildlife.animals.find(a=>a.species==='Tiger').id;});
-  if(!baseline)await page.waitForFunction(()=>Boolean(window.__tigerObserver.sample().actor),{},{timeout:30000});
+  await page.evaluate(()=>{const q=window.__tigerObserver;q.renderer.stop();q.id=q.store.getSnapshot().terrain.wildlife.animals.find(a=>a.species==='Tiger').id;});
+  for(let i=0;i<30;i++){
+   const ready=await bounded(page.evaluate(()=>{const q=window.__tigerObserver;q.world.update(.016);return Boolean(q.sample().actor);}),30000,'Observer model priming');
+   if(baseline||ready)break;await delay(100);
+  }
+  if(!baseline&&!await page.evaluate(()=>Boolean(window.__tigerObserver.sample().actor)))throw Error('Actual Observer imported tiger did not load');
+  writeFileSync(resolve(out,`${baseline?'baseline':'candidate'}-pre-capture.json`),JSON.stringify(await page.evaluate(()=>window.__tigerObserver.sample()),null,2)+'\n');
   const frozen=await page.evaluate(()=>JSON.stringify(window.__tigerObserver.store.getSnapshot().terrain));
   for(const view of ['front','side','quarter','back','face']){
    await page.evaluate(view=>{window.__tigerObserver.view=view;},view);
