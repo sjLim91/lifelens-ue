@@ -67,11 +67,12 @@ int main()
     const CharacterId first=sim.world().characters[0].id;
     for(auto& c:sim.world().characters)
         if(c.id==first){
-            rememberCivilizationAttemptOutcome(c,food,501,true);
+            rememberCivilizationAttemptOutcome(c,food,480,true);
             break;
         }
     AcceptedCognitiveDecision snapshotThought=thought;
     snapshotThought.actor=first;
+    snapshotThought.minute=479;
     std::vector<std::uint8_t> bytes;
     std::string error;
     assert(encodeSimulationSnapshot(sim.captureSnapshot(),bytes,&error));
@@ -83,7 +84,7 @@ int main()
     for(const auto& c:restored.world().characters){
         if(c.id==first){
             verified=residentAIPlanAlreadyAttempted(
-                c,snapshotThought,food,510);
+                c,snapshotThought,food,480);
             break;
         }
     }
