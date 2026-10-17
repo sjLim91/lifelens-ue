@@ -185,6 +185,7 @@ export class ResidentAIController {
 
     let status: ResidentAIDecisionStatus = result.status === 'validated'
       ? 'rejected'
+      : result.status === 'rejected' ? 'rejected'
       : result.status === 'stale' || result.status === 'cancelled'
         ? 'stale'
         : result.status === 'error' || result.status === 'timeout'
