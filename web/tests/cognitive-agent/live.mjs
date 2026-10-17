@@ -29,7 +29,8 @@ function fixture(provider) {
           who: actor, what: actor === '1' ? '직접 목격' : '전해 들음',
           where: '출생지', minute: 472, recallScore: .7,
           confidence: .8, importance: .6, emotionValence: .3,
-          emotionIntensity: .4, tags: [],
+          emotionIntensity: .4,
+          tags: ['action_experience','Civilization:Gather:PlantFood','failure'],
           source: actor === '1' ? 'DirectWitness' : 'ToldByOther',
           witnessed: actor === '1',
         }],
@@ -80,6 +81,9 @@ const provider = {
   assert.equal(f.submitted[0].request.actor, '1');
   assert.equal(f.submitted[0].seed, '781');
   assert.equal(f.controller.getSnapshot().accepted, 1);
+  assert.deepEqual(f.controller.getSnapshot().byResident['1'].latestPersonalExperience, {
+    minute: 472, what: '직접 목격', kind: 'action',
+  });
 
   f.advance();
   f.controller.observe(f.world, f.residents);
@@ -92,6 +96,8 @@ const provider = {
     f.contexts[1].memories[0].what);
   assert.equal(f.controller.getSnapshot().accepted, 2);
   assert.equal(f.controller.getSnapshot().byResident['2'].status, 'recorded');
+  assert.equal(f.controller.getSnapshot().byResident['2'].latestPersonalExperience,
+    null, 'hearsay must never appear as a firsthand action experience');
 
   f.controller.suspend(true);
   f.advance();
