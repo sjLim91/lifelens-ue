@@ -1,4 +1,6 @@
-import type { CognitiveProposalDto, CognitiveRequestDto } from './cognitive-contract';
+import type {
+  CognitiveIntent, CognitiveProposalDto, CognitiveRequestDto,
+} from './cognitive-contract';
 import { CognitionScheduler } from './cognition-scheduler';
 import type { CognitiveProvider } from './cognitive-provider';
 import { LocalCognitionProvider, isLoopbackCognitionUrl } from './local-cognition-provider';
@@ -23,6 +25,31 @@ export interface ResidentAISource {
     proposal: CognitiveProposalDto,
     observedWorldSeed: string,
   ): boolean;
+}
+
+// Advertise only strategies that have a real, bounded Core execution lane.
+// Other intents can still exist in the read-only Shadow system, but the live
+// model must not waste scarce local inference on journal-only promises.
+const EXECUTABLE_RESIDENT_AI_INTENTS: ReadonlySet<CognitiveIntent> = new Set([
+  'ImproveFoodSecurity',
+  'ImproveWaterSecurity',
+  'AcquireMaterials',
+  'CraftUsefulTools',
+  'ExpandCultivation',
+  'ExploreOpportunity',
+  'CooperateWithResident',
+  'ResolveConflict',
+]);
+
+export function liveActionableCognitiveRequest(
+  request: CognitiveRequestDto,
+): CognitiveRequestDto {
+  return {
+    ...request,
+    allowedIntents: request.allowedIntents.filter(
+      (intent) => EXECUTABLE_RESIDENT_AI_INTENTS.has(intent),
+    ),
+  };
 }
 
 export type ResidentAIDecisionStatus =
@@ -223,7 +250,8 @@ export class ResidentAIController {
     let request: CognitiveRequestDto | null;
     try {
       world = source.worldOverview();
-      request = source.cognitiveRequest(actor, 'Reflection');
+      const observed = source.cognitiveRequest(actor, 'Reflection');
+      request = observed === null ? null : liveActionableCognitiveRequest(observed);
     } catch {
       // The Core may be resetting while the observer refreshes. A failed
       // source read must NOT become an unhandled rejected Promise on the
@@ -242,7 +270,8 @@ export class ResidentAIController {
     const initialIdentity = worldIdentity(world);
     this.lastCall = this.now();
     if (!request || request.actor !== actor
-      || request.minute !== world.minute) return;
+      || request.minute !== world.minute
+      || request.allowedIntents.length === 0) return;
 
     const epoch = this.epoch;
     this.update({ pendingActor: actor });
