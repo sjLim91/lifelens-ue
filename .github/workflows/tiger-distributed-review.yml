@@ -1,0 +1,45 @@
+name: Tiger Public Licensed Candidate Review
+on:
+  push:
+    branches: ['feat/tiger-source-web-integration-*']
+    paths:
+      - 'Tools/research/review_distributed_tigers.py'
+      - 'Tools/research/render_distributed_tigers.py'
+      - '.github/workflows/tiger-distributed-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: distributed-tiger-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  licensed-source-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect public redistribution metadata and per-object licenses
+        run: python3 Tools/research/review_distributed_tigers.py
+      - name: Install free Blender for source inspection
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
+      - name: Render unmodified candidate geometry and authored skin motion
+        run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/research/render_distributed_tigers.py
+      - name: Preserve licensed candidate review without runtime admission
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/asset-reviews/distributed-tigers
+          if ! git diff --cached --quiet; then
+            git commit -m 'Review licensed public tiger originals and authored motion; not admitted [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: licensed-tiger-candidates
+          path: docs/asset-reviews/distributed-tigers/
+          retention-days: 14
