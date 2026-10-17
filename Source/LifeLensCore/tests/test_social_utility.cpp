@@ -425,5 +425,54 @@ int main()
     assert(strangerPhysicalSocial.social.intent==strangerDecision.social.intent);
     assert(strangerPhysicalSocial.utility==strangerDecision.utility);
 
+    // Dead targets must never win over a valid living acquaintance. The
+    // old global chooser selected the higher-bond deceased resident and the
+    // Simulation would reject that winner only after social scheduling.
+    World deceasedTargetWorld(2422);
+    Character livingActor=outgoing;
+    livingActor.id=801;
+    livingActor.alive=true;
+    Character deceasedTarget=unfamiliar;
+    deceasedTarget.id=802;
+    deceasedTarget.alive=false;
+    Character reachableLivingTarget=unfamiliar;
+    reachableLivingTarget.id=803;
+    reachableLivingTarget.alive=true;
+    deceasedTargetWorld.characters={
+        livingActor,deceasedTarget,reachableLivingTarget
+    };
+    RelationshipBook deceasedTargetRelationships;
+    Relationship& unavailableBond=
+        deceasedTargetRelationships.getOrCreate(801,802);
+    unavailableBond.affection=0.99;
+    unavailableBond.trust=0.99;
+    unavailableBond.comfort=0.99;
+    unavailableBond.familiarity=0.99;
+    Relationship& validBond=
+        deceasedTargetRelationships.getOrCreate(801,803);
+    validBond.affection=0.65;
+    validBond.trust=0.65;
+    validBond.comfort=0.65;
+    validBond.familiarity=0.65;
+
+    const auto livingChoice=chooseSocialUtilityDecision(
+        deceasedTargetWorld,deceasedTargetWorld.characters[0],
+        deceasedTargetRelationships);
+    assert(livingChoice.intent==SocialIntent::Approach);
+    assert(livingChoice.target==803);
+    assert(livingChoice.utility>0.18);
+
+    deceasedTargetWorld.characters[2].alive=false;
+    const auto allTargetsDead=chooseSocialUtilityDecision(
+        deceasedTargetWorld,deceasedTargetWorld.characters[0],
+        deceasedTargetRelationships);
+    assert(allTargetsDead.intent==SocialIntent::None);
+    assert(allTargetsDead.target==0);
+    deceasedTargetWorld.characters[2].alive=true;
+    deceasedTargetWorld.characters[0].alive=false;
+    assert(chooseSocialUtilityDecision(
+        deceasedTargetWorld,deceasedTargetWorld.characters[0],
+        deceasedTargetRelationships).intent==SocialIntent::None);
+
     return 0;
 }
