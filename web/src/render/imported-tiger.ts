@@ -126,13 +126,26 @@ export class ImportedTigerPool {
     const action = actor.actions.get(key)!;
     if (actor.current !== key) {
       // No invented attack/feeding result; these clips only illustrate the Core state.
-      actor.mixer.stopAllAction(); action.reset().play();
+      const previous = actor.actions.get(actor.current);
+      const locomotion = ['walk', 'run', 'hunt'];
+      if (previous && locomotion.includes(actor.current) && locomotion.includes(key)) {
+        phase = previous.time / previous.getClip().duration;
+      }
+      action.reset().setEffectiveWeight(1).play();
       action.time = (phase % 1) * action.getClip().duration;
+      if (previous) {
+        previous.stopFading();
+        action.crossFadeFrom(previous, actor.current === 'rest' || key === 'rest' ? .5 : .2, false);
+      }
       actor.current = key;
     }
     const clip = asset.contract.clips[key];
     action.timeScale = moving ? pose.speed / pose.scale * clip.duration / clip.cycle_distance : 1;
     actor.mixer.update(dt);
+    // Retire faded clips so frequent Core behavior changes cannot accumulate work.
+    for (const other of actor.actions.values()) {
+      if (other !== action && other.isRunning() && other.getEffectiveWeight() <= 1e-6) other.stop();
+    }
     actor.root.position.set(pose.x, pose.y, pose.z);
     actor.root.rotation.set(0, pose.heading, 0); actor.root.scale.setScalar(pose.scale);
     if (ground) this.alignGround(actor, pose, dt, ground);

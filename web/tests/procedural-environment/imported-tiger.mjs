@@ -26,6 +26,31 @@ for(const [tier,name] of [['near','tiger-rigged.glb'],['mid','tiger-mid.glb']]){
   }});
   assert.equal(skins,1);
 }
+// A behavior change must blend real skin poses, rather than teleport the joints.
+const blendPool=new ImportedTigerPool(async tier=>assets.get(tier));
+const blendPose={id:'core-blend',x:0,y:0,z:0,heading:0,scale:1,speed:0,phase:.7,behavior:'Rest'};
+const blendParent=new THREE.Group();
+function blendFrame(pose,dt){blendPool.begin();const ready=blendPool.draw(pose,'near',dt);blendPool.end(blendParent);return ready;}
+blendFrame(blendPose,0);await new Promise(resolve=>setImmediate(resolve));blendFrame(blendPose,0);
+let blendSkin;blendPool.group.traverse(obj=>{if(obj instanceof THREE.SkinnedMesh)blendSkin=obj;});
+function blendVertex(){blendParent.updateMatrixWorld(true);blendSkin.skeleton.update();const p=new THREE.Vector3();blendSkin.getVertexPosition(0,p);return p;}
+const restVertex=blendVertex();
+const walkPose={...blendPose,behavior:'Roam',speed:.6};
+blendFrame(walkPose,0);
+assert(restVertex.distanceTo(blendVertex())<1e-5,'Starting a blend must preserve the current real skin pose');
+for(let i=0;i<36;i++)blendFrame(walkPose,1/60);
+assert(restVertex.distanceTo(blendVertex())>.01,'The stand transition must eventually reach moving skin poses');
+const walkVertex=blendVertex();
+const huntPose={...walkPose,behavior:'Hunt'};
+blendFrame(huntPose,0);
+assert(walkVertex.distanceTo(blendVertex())<1e-5,'Changing locomotion must not snap the deformed mesh');
+for(let i=0;i<24;i++)blendFrame(huntPose,1/60);
+const blendActor=blendPool.actors.get(blendPose.id);
+assert.equal([...blendActor.actions.values()].filter(a=>a.isRunning()).length,1,'Finished blends must release outgoing animation work');
+assert.equal(blendActor.current,'hunt');
+blendPool.dispose();
+console.log('PASS actual source skin continuity for rest/walk/hunt transitions');
+
 const pool=new ImportedTigerPool(async tier=>assets.get(tier));
 const pose={id:'core-tiger-17',x:0,y:0,z:0,heading:0,scale:1,speed:0,phase:0,behavior:'Rest'};
 const parent=new THREE.Group();

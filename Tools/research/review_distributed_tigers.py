@@ -43,11 +43,20 @@ annotations = {}
 with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
     for batch in pool.map(metadata, parts):
         annotations.update({uid: batch[uid] for uid in uids if uid in batch})
+(ROOT / 'review-metadata.json').write_text(json.dumps({'datasetRevision': revision, 'dataset': 'AI2 Objaverse, ODC-By-1.0', 'annotations': annotations}, ensure_ascii=False, indent=2) + '\n')
+def object_license(item):
+    value = item.get('license', {})
+    if isinstance(value, dict):
+        return value
+    urls = {'by': 'https://creativecommons.org/licenses/by/4.0/',
+            'cc0': 'https://creativecommons.org/publicdomain/zero/1.0/'}
+    return {'slug': value, 'url': urls.get(value, '')}
+
 allowed = []
 report = []
 for uid in uids:
     item = annotations.get(uid, {})
-    lic = item.get('license', {})
+    lic = object_license(item)
     license_url = lic.get('url', '')
     permitted = license_url.rstrip('/') in ('https://creativecommons.org/licenses/by/4.0', 'http://creativecommons.org/licenses/by/4.0', 'https://creativecommons.org/publicdomain/zero/1.0', 'http://creativecommons.org/publicdomain/zero/1.0')
     title = item.get('name', '')
@@ -84,8 +93,9 @@ for uid, item in allowed[:3]:
                'skins': [{'name': s.get('name'), 'joints': len(s.get('joints', []))} for s in gltf.get('skins', [])],
                'animations': [{'name': a.get('name'), 'channels': len(a.get('channels', [])), 'extras': a.get('extras')} for a in gltf.get('animations', [])]}
     (out / 'receipt.json').write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\n')
-    creator = item.get('user', {}).get('displayName') or item.get('user', {}).get('username')
-    credit = f'"{item.get("name")}" by {creator}. Original: {item.get("viewerUrl")}. License: {item["license"]["url"]}.\n'
+    user = item.get('user', {})
+    creator = (user.get('displayName') or user.get('username')) if isinstance(user, dict) else str(user)
+    credit = f'"{item.get("name")}" by {creator}. Original: {item.get("viewerUrl")}. License: {object_license(item)["url"]}.\n'
     credit += 'Obtained from the openly redistributed AI2 Objaverse dataset (ODC-By 1.0), not a protected viewer or authenticated download.\n'
     credit += 'AI2 dataset: Deitke et al., Objaverse: A Universe of Annotated 3D Objects, 2022, https://objaverse.allenai.org/.\n'
     credit += 'No runtime admission. Unmodified original GLB retained. Review renders only.\n'
