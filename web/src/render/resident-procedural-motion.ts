@@ -54,17 +54,35 @@ export class ResidentProceduralMotion {
       for (let v = 0; v < p.count; v++) {
         let influence = 0;
         for (let k = 0; k < 4; k++) if (['foot' + suffix, 'ball' + suffix, 'ball_leaf' + suffix].includes(mesh.skeleton.bones[j.getComponent(v, k)]?.name)) influence += w.getComponent(v, k);
-        if (influence >= .65) candidates.push(v);
+        if (influence >= .25) candidates.push(v);
       }
       candidates.sort((a, b) => p.getY(a) - p.getY(b));
       const low = candidates.length ? p.getY(candidates[0]) : 0;
-      const sole = candidates.filter(v => p.getY(v) <= low + .04);
+      const unique = new Map<string, number>();
+      for (const v of candidates) if (p.getY(v) <= low + .12) unique.set(`${p.getX(v).toFixed(6)}/${p.getY(v).toFixed(6)}/${p.getZ(v).toFixed(6)}`, v);
+      const sole = [...unique.values()];
+      sole.sort((a, b) => p.getY(a) - p.getY(b));
       const selected = new Set(sole.slice(0, 16));
-      for (const component of [0, 2]) {
-        sole.sort((a, b) => p.getComponent(a, component) - p.getComponent(b, component));
-        for (const v of [...sole.slice(0, 8), ...sole.slice(-8)]) selected.add(v);
+      const groups = new Map<number, number[]>();
+      for (const v of sole) {
+        let dominant = 0;
+        for (let k = 1; k < 4; k++) if (w.getComponent(v, k) > w.getComponent(v, dominant)) dominant = k;
+        const bone = j.getComponent(v, dominant), group = groups.get(bone) ?? [];
+        group.push(v); groups.set(bone, group);
       }
-      this.nativeSoleVertices[side] = [...selected].slice(0, 48);
+      // UV duplicates must not consume the contact budget. Keep directional
+      // extrema separately for heel/foot/toe skin groups, including vertices
+      // blended with the calf that can become the lowest point when bending.
+      for (const group of groups.values()) for (const x of [-1, 0, 1]) for (const y of [-1, 0, 1]) for (const z of [-1, 0, 1]) {
+        if (!(x || y || z)) continue;
+        let best = group[0], score = Infinity;
+        for (const v of group) {
+          const value = x * p.getX(v) + y * p.getY(v) + z * p.getZ(v);
+          if (value < score) { score = value; best = v; }
+        }
+        selected.add(best);
+      }
+      this.nativeSoleVertices[side] = [...selected].slice(0, 128);
     }
     const soles = object instanceof THREE.SkinnedMesh
       ? object.geometry.userData.residentFootSole as { left?: number; right?: number } | undefined
@@ -117,13 +135,13 @@ export class ResidentProceduralMotion {
       // Source-derived feet have real toes/heels, not the old donor's shoe.
       // Correct only actual penetration using a bounded set of real skinned
       // sole vertices. Swing clearance and the Core actor root are preserved.
-      if (this.nativeBody) for (let pass = 0; pass < 2; pass++) {
+      if (this.nativeBody) for (let pass = 0; pass < 3; pass++) {
         this.root.updateWorldMatrix(true, true); this.nativeBody.updateMatrixWorld(true); this.nativeBody.skeleton.update();
         let lift = 0;
         for (const vertex of this.nativeSoleVertices[side]) {
           this.nativeBody.getVertexPosition(vertex, this.solePoint).applyMatrix4(this.nativeBody.matrixWorld);
           const support = frame.ground.height(this.solePoint.x, this.solePoint.z);
-          if (support !== null) lift = Math.max(lift, support + .002 - this.solePoint.y);
+          if (support !== null) lift = Math.max(lift, support + .004 - this.solePoint.y);
         }
         if (lift < .0005) break;
         foot.getWorldPosition(this.target); this.target.y += Math.min(lift, height * .12);
