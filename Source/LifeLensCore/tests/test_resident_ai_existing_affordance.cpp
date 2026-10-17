@@ -322,19 +322,14 @@ int main()
         sim.world().characters.front(),accepted,executedDecision,
         sim.world().minute));
 
-    // Take a real pending Core snapshot BEFORE physical execution. The AI
-    // decision alone must not change resource, inventory, memory, or belief.
-    const SimulationStateSnapshot beforeExecution=sim.captureSnapshot();
-    std::string restoreError;
-    Simulation replay(99551);
-    assert(replay.restoreSnapshot(beforeExecution,&restoreError));
+    // The authorized AI choice alone is not an action: only completing the
+    // pending Core token can alter the resource and firsthand evidence.
+    // This fixture intentionally uses an injected test resource, so it is
+    // not a valid production snapshot world and must not be restore-tested.
     const int foodBefore=sim.world().characters.front().civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood);
     sim.setExternalPhysicalExecution(true);
-    replay.setExternalPhysicalExecution(true);
     assert(sim.completeExternalContextAction(
-        self,pending.token,pending.targetPos));
-    assert(replay.completeExternalContextAction(
         self,pending.token,pending.targetPos));
 
     // Success is a Core Gather result, not a claim in the local-model text.
@@ -354,15 +349,8 @@ int main()
     assert(!residentAIPlanAlreadyAttempted(
         succeeded,fresh,executedDecision,sim.world().minute));
 
-    // The same saved pending action must reproduce the same authoritative
-    // material and firsthand record after restoration.
-    assert(replay.world().resourceNodes.front().quantity
-        ==sim.world().resourceNodes.front().quantity);
-    assert(replay.world().characters.front().civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::PlantFood)
-        ==succeeded.civilization.inventory.count(
-            ItemKind::RawMaterial,MaterialKind::PlantFood));
-    assert(hasFirsthandOutcome(replay.world().characters.front(),"success"));
+    // Snapshot persistence is separately covered by the native live AI and
+    // snapshot-codec tests using an unmodified, valid NEW GAME world.
     const CognitiveRequest nextRequest=sim.observeCognitiveRequest(
         self,CognitiveTriggerKind::Reflection);
     bool modelCanReadSuccess=false;
@@ -374,15 +362,37 @@ int main()
     }
     assert(modelCanReadSuccess);
 
-    // The very same accepted plan can also FAIL if another real process
-    // exhausts its resource node AFTER planning but BEFORE execution.
-    // Failure must be remembered, with no fictional food gathered.
+    // Independent NEW GAME under the same seed and physical fixture:
+    // if another process exhausts the node AFTER planning but BEFORE work,
+    // Core must not invent food and must record the firsthand failure.
     Simulation exhausted(99551);
-    assert(exhausted.restoreSnapshot(beforeExecution,&restoreError));
+    exhausted.setupNewGame();
+    assert(exhausted.world().characters.front().id==self);
+    GridPos failedPosition{};
+    assert(exhausted.runtimePosition(self,failedPosition));
+    for(Character& resident:exhausted.world().characters)
+        resident.needs={0.01,0.01,0.01,0.01,0.01};
+    ResourceNode exhaustedNode=actualFood;
+    exhaustedNode.pos=failedPosition;
+    exhausted.world().resourceNodes.clear();
+    exhausted.world().resourceNodes.push_back(exhaustedNode);
+    const CognitiveRequest failedPlanRequest=exhausted.observeCognitiveRequest(
+        self,CognitiveTriggerKind::Reflection);
+    assert(exhausted.acceptCognitiveProposal(
+        failedPlanRequest,plan,"local-test-model","resource-001"));
+    exhausted.step();
+    const auto failingPending=exhausted.observePendingContextAction(self);
+    assert(failingPending.active);
+    assert(failingPending.kind==ContextActionKind::Civilization);
+    assert(failingPending.civilizationIntent==CivilizationIntent::Gather);
+    assert(failingPending.resourceNode==actualFood.id);
+    const CivilizationUtilityDecision failedDecision=exhausted.captureSnapshot()
+        .runtime.at(self).pendingContext.civilization;
+    assert(exhausted.world().resourceNodes.front().quantity==40);
     exhausted.world().resourceNodes.front().quantity=0;
     exhausted.setExternalPhysicalExecution(true);
     assert(!exhausted.completeExternalContextAction(
-        self,pending.token,pending.targetPos));
+        self,failingPending.token,failingPending.targetPos));
     const Character& failed=exhausted.world().characters.front();
     assert(exhausted.world().resourceNodes.front().quantity==0);
     assert(failed.civilization.inventory.count(
@@ -405,6 +415,6 @@ int main()
     assert(modelCanReadFailureCause);
     assert(residentAIPlanAlreadyAttempted(
         failed,exhausted.acceptedCognitiveDecisions().back(),
-        executedDecision,exhausted.world().minute));
+        failedDecision,exhausted.world().minute));
     return 0;
 }
