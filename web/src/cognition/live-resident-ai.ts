@@ -191,6 +191,7 @@ export class ResidentAIController {
       });
       return;
     }
+    const initialIdentity = worldIdentity(world);
     this.lastCall = this.now();
     if (!request || request.actor !== actor
       || request.minute !== world.minute) return;
