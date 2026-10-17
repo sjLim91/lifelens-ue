@@ -1341,7 +1341,8 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
-    const SettlementPopulation* population=nullptr)
+    const SettlementPopulation* population=nullptr,
+    TechniqueId requestedTechnique=TechniqueId::None)
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=authoritativePosition;
@@ -1371,7 +1372,9 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
 
     for(const ExperimentKind kind:experiments){
         const TechniqueId technique=experimentTechnique(kind);
-        if(technique==TechniqueId::None) continue;
+        if(technique==TechniqueId::None
+           || (requestedTechnique!=TechniqueId::None
+               &&technique!=requestedTechnique)) continue;
         const TechnologyId technology=technologyIdForTechnique(technique);
         if(technology==TechnologyId::None) continue;
         if(self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
