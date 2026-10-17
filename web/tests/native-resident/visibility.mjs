@@ -23,7 +23,7 @@ try{
   assert(whileLoading.actors.every(a=>!a.native&&a.visible&&a.bodyVisible),'Held assets must remain pending');
   releaseAssets();
   await page.waitForFunction(()=>window.__nativeResidentObserver.sample().actors.every(a=>a.native),{},{timeout:180000});
-  const result=await Promise.race([page.evaluate(()=>window.__nativeResidentObserver.defaultView()),new Promise((_,reject)=>setTimeout(()=>reject(Error('Default frame capture timed out')),120000))]);
+  const result=await Promise.race([page.evaluate(()=>window.__nativeResidentObserver.defaultView()),new Promise((_,reject)=>{const timeout=setTimeout(()=>reject(Error('Default frame capture timed out')),120000);timeout.unref();})]);
   writeFileSync(resolve(out,name+'.jpg'),Buffer.from(result.data.split(',')[1],'base64'));delete result.data;results.push({name,whileLoading,...result,errors});
   writeFileSync(resolve(out,'validation.json'),JSON.stringify(results,null,2));
   assert.equal(result.sample.actors.length,4);
