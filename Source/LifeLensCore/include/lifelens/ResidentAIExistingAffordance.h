@@ -85,6 +85,54 @@ chooseResidentAIMissingRecipeMaterial(
     return none;
 }
 
+// A resident without reproducible technique knowledge may only attempt
+// an existing Core experiment. If its real experiment recipe lacks raw
+// ingredients, gathering an actual resource can be the next bounded step.
+// This helper neither learns the technique nor performs the experiment.
+inline CivilizationUtilityDecision
+chooseResidentAIMissingExperimentMaterial(
+    const World& world,
+    const Character& resident,
+    GridPos position,
+    ExperimentKind experiment,
+    const SettlementPopulation* population=nullptr)
+{
+    CivilizationUtilityDecision none;
+    const TechniqueId technique=experimentTechnique(experiment);
+    if(technique==TechniqueId::None
+       ||resident.civilization.knowledge.knowsAtLeast(
+           technique,KnowledgeLevel::Reproducible)
+       ||!technologyKnowledgePrerequisitesSatisfied(
+           resident.civilization.knowledge,technologyIdForTechnique(technique)))
+        return none;
+
+    ExperimentContext context;
+    context.worldSeed=world.seed;
+    context.actor=resident.id;
+    context.attemptIndex=static_cast<std::uint64_t>(std::max(0,world.minute));
+    context.kind=experiment;
+    context.material=experimentMaterial(experiment);
+    if(!experimentPrerequisitesMet(context,resident.civilization.knowledge))
+        return none;
+
+    const TechniqueRecipe recipe=experimentRecipe(context);
+    for(const Ingredient& ingredient:recipe.inputs){
+        if(ingredient.quantity<=0
+           ||ingredient.kind!=ItemKind::RawMaterial
+           ||ingredient.material==MaterialKind::Unknown
+           ||resident.civilization.inventory.count(
+               ingredient.kind,ingredient.material,ingredient.anyMaterial)
+                  >=ingredient.quantity)
+            continue;
+        const auto gather=bestGatherDecisionAtPosition(
+            world,resident,position,population,ingredient.material);
+        if(gather.intent==CivilizationIntent::Gather
+           &&gather.material==ingredient.material)
+            return gather;
+    }
+    return none;
+}
+
 // Translate an accepted resident's *strategic preference* into ONE existing
 // Core-authorized affordance candidate. This is never an action execution:
 // normal Civilization routing, inventory, terrain, path and outcome checks
@@ -129,9 +177,23 @@ chooseResidentAIExistingCivilizationAffordance(
                     world,actor,actorPosition,settlementPopulation,
                     TechniqueId::SimpleContainer);
                 if(candidate.intent==CivilizationIntent::None){
-                    candidate=chooseResidentAIMissingRecipeMaterial(
-                        world,actor,actorPosition,
-                        TechniqueId::SimpleContainer,settlementPopulation);
+                    if(actor.civilization.knowledge.knowsAtLeast(
+                        TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible)){
+                        candidate=chooseResidentAIMissingRecipeMaterial(
+                            world,actor,actorPosition,
+                            TechniqueId::SimpleContainer,settlementPopulation);
+                    }else{
+                        // An unknown vessel technique cannot be crafted.
+                        // ShapeClay is a real, probabilistic Core experiment;
+                        // lack of real clay may first require a real gather.
+                        candidate=bestExperimentDecisionAtPosition(
+                            world,actor,actorPosition,settlementPopulation,
+                            TechniqueId::SimpleContainer);
+                        if(candidate.intent==CivilizationIntent::None)
+                            candidate=chooseResidentAIMissingExperimentMaterial(
+                                world,actor,actorPosition,
+                                ExperimentKind::ShapeClay,settlementPopulation);
+                    }
                 }
             }
             break;
