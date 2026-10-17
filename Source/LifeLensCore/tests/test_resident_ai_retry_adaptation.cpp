@@ -133,7 +133,15 @@ int main()
     assert(simulation.world().minute==483);
     const auto id=simulation.world().characters.front().id;
     for(auto& c:simulation.world().characters)
-        if(c.id==id){c.beliefs=resident.beliefs;c.memory=resident.memory;}
+        if(c.id==id){
+            c.beliefs=resident.beliefs;
+            c.memory=resident.memory;
+            // The fixture's direct witness (id=9) becomes the actual
+            // founder in this authoritative persistence scenario.
+            for(auto& memory:c.memory.entries)
+                if(memory.sourceCharacter==resident.id)
+                    memory.sourceCharacter=id;
+        }
     std::vector<std::uint8_t> bytes;
     std::string error;
     assert(encodeSimulationSnapshot(simulation.captureSnapshot(),bytes,&error));
