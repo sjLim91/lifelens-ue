@@ -1,0 +1,252 @@
+[
+  {
+    "name": "mobile",
+    "pixels": 2,
+    "projected": [
+      {
+        "id": "1",
+        "visible": true,
+        "xy": [
+          0.046613580886472834,
+          0.012524697959862715
+        ],
+        "heightPixels": 19.843853728695393
+      },
+      {
+        "id": "2",
+        "visible": true,
+        "xy": [
+          0.046613580886472834,
+          0.012524697959862715
+        ],
+        "heightPixels": 19.850093060915956
+      },
+      {
+        "id": "3",
+        "visible": true,
+        "xy": [
+          0.019310548582998105,
+          0.013723576182651688
+        ],
+        "heightPixels": 19.202136377303216
+      },
+      {
+        "id": "4",
+        "visible": true,
+        "xy": [
+          0.030208646101996018,
+          0.0182918152571478
+        ],
+        "heightPixels": 18.99637867860211
+      }
+    ],
+    "camera": [
+      47.698305163423306,
+      73.01146333329598,
+      -38.571777045423616
+    ],
+    "sample": {
+      "runtime": {
+        "status": "ready",
+        "errorMessage": null
+      },
+      "minute": 497,
+      "actors": [
+        {
+          "id": "1",
+          "sex": "Male",
+          "age": 33,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.556608,
+            -0.25
+          ],
+          "coreGrid": [
+            877,
+            1039
+          ]
+        },
+        {
+          "id": "2",
+          "sex": "Male",
+          "age": 32,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.556608,
+            -0.25
+          ],
+          "coreGrid": [
+            877,
+            1039
+          ]
+        },
+        {
+          "id": "3",
+          "sex": "Female",
+          "age": 26,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.356112000000003,
+            0.25
+          ],
+          "coreGrid": [
+            877,
+            1041
+          ]
+        },
+        {
+          "id": "4",
+          "sex": "Female",
+          "age": 26,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "carry",
+          "position": [
+            -1,
+            24.3798,
+            0.25
+          ],
+          "coreGrid": [
+            876,
+            1041
+          ]
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "desktop",
+    "pixels": 1,
+    "projected": [
+      {
+        "id": "1",
+        "visible": true,
+        "xy": [
+          0.01279331330048733,
+          0.006816590639532067
+        ],
+        "heightPixels": 8.65489010905055
+      },
+      {
+        "id": "2",
+        "visible": true,
+        "xy": [
+          0.01279331330048733,
+          0.006816590639532067
+        ],
+        "heightPixels": 8.657594333569765
+      },
+      {
+        "id": "3",
+        "visible": true,
+        "xy": [
+          0.005311253019991435,
+          0.007485125059131525
+        ],
+        "heightPixels": 8.393498570505667
+      },
+      {
+        "id": "4",
+        "visible": true,
+        "xy": [
+          0.008315296287275575,
+          0.009984645666950911
+        ],
+        "heightPixels": 8.305607361268201
+      }
+    ],
+    "camera": [
+      87.76488150069888,
+      113.8345421332646,
+      -70.97206976357946
+    ],
+    "sample": {
+      "runtime": {
+        "status": "ready",
+        "errorMessage": null
+      },
+      "minute": 498,
+      "actors": [
+        {
+          "id": "1",
+          "sex": "Male",
+          "age": 33,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.556608,
+            -0.25
+          ],
+          "coreGrid": [
+            877,
+            1039
+          ]
+        },
+        {
+          "id": "2",
+          "sex": "Male",
+          "age": 32,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.556608,
+            -0.25
+          ],
+          "coreGrid": [
+            877,
+            1039
+          ]
+        },
+        {
+          "id": "3",
+          "sex": "Female",
+          "age": 26,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.356112000000003,
+            0.25
+          ],
+          "coreGrid": [
+            877,
+            1041
+          ]
+        },
+        {
+          "id": "4",
+          "sex": "Female",
+          "age": 26,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "carry",
+          "position": [
+            -1,
+            24.3798,
+            0.25
+          ],
+          "coreGrid": [
+            876,
+            1041
+          ]
+        }
+      ]
+    },
+    "errors": []
+  }
+]
