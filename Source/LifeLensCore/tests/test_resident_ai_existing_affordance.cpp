@@ -300,6 +300,8 @@ int main()
     assert(pending.material==MaterialKind::PlantFood);
     // Issuing a thought/plan is NOT a successful action commit.
     assert(sim.world().resourceNodes.front().quantity==40);
+    const CivilizationUtilityDecision executedDecision=sim.captureSnapshot()
+        .runtime.at(self).pendingContext.civilization;
     const std::string gatherKey="Civilization:Gather:PlantFood";
     const auto hasFirsthandOutcome=[&](const Character& resident,
                                        const char* outcome){
@@ -316,7 +318,7 @@ int main()
     assert(!hasFirsthandOutcome(sim.world().characters.front(),"failure"));
     const auto& accepted=sim.acceptedCognitiveDecisions().back();
     assert(!residentAIPlanAlreadyAttempted(
-        sim.world().characters.front(),accepted,pending.civilization,
+        sim.world().characters.front(),accepted,executedDecision,
         sim.world().minute));
 
     // Take a real pending Core snapshot BEFORE physical execution. The AI
@@ -344,12 +346,12 @@ int main()
         0,actionExperienceProposition(gatherKey.c_str()));
     assert(successBelief!=nullptr &&successBelief->supportCount>0);
     assert(residentAIPlanAlreadyAttempted(
-        succeeded,accepted,pending.civilization,sim.world().minute));
+        succeeded,accepted,executedDecision,sim.world().minute));
     // A subsequent independent inference may legitimately choose Gather again.
     AcceptedCognitiveDecision fresh=accepted;
     fresh.minute=sim.world().minute;
     assert(!residentAIPlanAlreadyAttempted(
-        succeeded,fresh,pending.civilization,sim.world().minute));
+        succeeded,fresh,executedDecision,sim.world().minute));
 
     // The same saved pending action must reproduce the same authoritative
     // material and firsthand record after restoration.
@@ -402,6 +404,6 @@ int main()
     assert(modelCanReadFailureCause);
     assert(residentAIPlanAlreadyAttempted(
         failed,exhausted.acceptedCognitiveDecisions().back(),
-        pending.civilization,exhausted.world().minute));
+        executedDecision,exhausted.world().minute));
     return 0;
 }
