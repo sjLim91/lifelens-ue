@@ -40,6 +40,56 @@ inline std::string civilizationActionExperienceKey(
     return label;
 }
 
+// Diagnosed strictly from the authoritative world AFTER a real gather
+// attempt failed. Never classify a pending proposal, an unseen resource,
+// the model's rationale, or an unrelated resident's private experience.
+enum class ResidentGatherFailureCause {
+    Unknown,
+    SourceRemoved,
+    SourceExhausted,
+    ContainerMissing,
+    ResourceAccessUnavailable
+};
+
+inline const char* residentGatherFailureCauseName(
+    ResidentGatherFailureCause cause)
+{
+    switch(cause){
+        case ResidentGatherFailureCause::SourceRemoved: return "source-removed";
+        case ResidentGatherFailureCause::SourceExhausted: return "source-exhausted";
+        case ResidentGatherFailureCause::ContainerMissing: return "container-missing";
+        case ResidentGatherFailureCause::ResourceAccessUnavailable:
+            return "access-unavailable";
+        default: return "unspecified";
+    }
+}
+
+inline ResidentGatherFailureCause diagnoseResidentGatherFailure(
+    const World& world,
+    const Character& actor,
+    const CivilizationUtilityDecision& decision,
+    GridPos position)
+{
+    if(!actor.alive ||actor.id==0
+       ||decision.intent!=CivilizationIntent::Gather
+       ||decision.resourceNode==0) return ResidentGatherFailureCause::Unknown;
+    const ResourceNode* node=findCivilizationResource(
+        world,decision.resourceNode);
+    if(node==nullptr) return ResidentGatherFailureCause::SourceRemoved;
+    if(node->material!=decision.material)
+        return ResidentGatherFailureCause::Unknown;
+    if(node->quantity<=0) return ResidentGatherFailureCause::SourceExhausted;
+    if(node->material==MaterialKind::Water
+       &&emptySimpleContainerCount(actor.civilization.inventory)<=0)
+        return ResidentGatherFailureCause::ContainerMissing;
+    GridPos target{};
+    if(!resolveCivilizationResourceAccessGridPosition(
+            world,decision.resourceNode,target)
+       ||!civilizationExecutionNearTarget(position,target))
+        return ResidentGatherFailureCause::ResourceAccessUnavailable;
+    return ResidentGatherFailureCause::Unknown;
+}
+
 // Called only at the authoritative execution attempt site, AFTER Core has
 // actually tried the selected action and observed whether it succeeded.
 // A submitted/accepted AI thought, a planned pending token, or browser text
@@ -48,7 +98,8 @@ inline void rememberCivilizationAttemptOutcome(
     Character& actor,
     const CivilizationUtilityDecision& decision,
     int minute,
-    bool succeeded)
+    bool succeeded,
+    ResidentGatherFailureCause cause=ResidentGatherFailureCause::Unknown)
 {
     if(actor.id==0 || !actor.alive ||minute<0) return;
     const std::string key=civilizationActionExperienceKey(decision);
@@ -67,6 +118,10 @@ inline void rememberCivilizationAttemptOutcome(
            ||memory.minute!=minute) continue;
         memory.what="실제 문명 행동 "+key
             +(succeeded ? " 수행에 성공했다" : " 수행을 시도했지만 실패했다");
+        if(!succeeded &&cause!=ResidentGatherFailureCause::Unknown
+           &&decision.intent==CivilizationIntent::Gather)
+            memory.what+=" (직접 확인한 원인: "+
+                std::string(residentGatherFailureCauseName(cause))+")";
         memory.where="내가 직접 시도한 행동";
         memory.sourceCharacter=actor.id;
         return;
