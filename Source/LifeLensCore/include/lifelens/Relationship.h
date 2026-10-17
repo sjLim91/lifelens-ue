@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <deque>
+#include <map>
+#include <utility>
 #include "Ids.h"
 
 namespace lifelens {
@@ -127,25 +129,34 @@ public:
     // them; callers must not retain iterators while inserting new relationships.
     Relationship& getOrCreate(CharacterId from, CharacterId to)
     {
-        for(auto& r:items_) if(r.from==from && r.to==to) return r;
+        const auto key=std::make_pair(from,to);
+        const auto existing=index_.find(key);
+        if(existing!=index_.end()) return items_[existing->second];
         items_.push_back(Relationship{});
         Relationship& r=items_.back();
         r.from=from; r.to=to;
+        // Store stable positional indices, NOT pointers: default copy/move
+        // of RelationshipBook must keep index and deque independently valid
+        // for snapshots, test fixtures and restored simulations.
+        index_.emplace(key,items_.size()-1);
         return r;
     }
 
     const Relationship* find(CharacterId from, CharacterId to) const
     {
-        for(const auto& r:items_) if(r.from==from && r.to==to) return &r;
-        return nullptr;
+        const auto existing=index_.find(std::make_pair(from,to));
+        return existing==index_.end() ? nullptr : &items_[existing->second];
     }
 
     std::size_t size() const { return items_.size(); }
     const std::deque<Relationship>& all() const { return items_; }
 
 private:
-    // Preserve deterministic insertion order without moving existing records.
+    // The authoritative iteration order remains the deque's insertion order.
+    // An ordered lookup index avoids linear scans over O(population^2) pairs;
+    // it never changes RNG consumption, relationship value, or iteration.
     std::deque<Relationship> items_;
+    std::map<std::pair<CharacterId,CharacterId>,std::size_t> index_;
 };
 
 }
