@@ -2378,7 +2378,8 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
-    const SettlementPopulation* population=nullptr)
+    const SettlementPopulation* population=nullptr,
+    TechniqueId requestedTechnique=TechniqueId::None)
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=authoritativePosition;
@@ -2386,6 +2387,11 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         autonomousSettlementInfrastructurePlanAllowed(
             world,authoritativePosition,population);
     const auto considerCraft=[&](CivilizationUtilityDecision candidate){
+        if(requestedTechnique!=TechniqueId::None
+           &&(candidate.intent!=CivilizationIntent::Craft
+              ||candidate.technique!=requestedTechnique
+              ||candidate.facilityAction!=FacilityBuildAction::None))
+            return;
         if(!infrastructurePlanAllowed
            && civilizationDecisionOpensSettlementInfrastructure(candidate)){
             return;
@@ -2428,7 +2434,8 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
             0.12*self.personality.conscientiousness+
             0.08*self.personality.orderliness+
             0.06*preference);
-        considerCivilizationDecision(best,sanitation);
+        if(requestedTechnique==TechniqueId::None)
+            considerCivilizationDecision(best,sanitation);
     }
 
     if(canWorkOnDugSanitationPit(
@@ -2453,7 +2460,8 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
                 0.11*self.personality.conscientiousness+
                 0.10*self.personality.patience+
                 0.06*preference+0.10*progress);
-            considerCivilizationDecision(best,pit);
+            if(requestedTechnique==TechniqueId::None)
+                considerCivilizationDecision(best,pit);
         }
     }
 
@@ -2467,6 +2475,8 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         TechniqueId::PrimitiveWrap};
 
     for(const TechniqueId technique:techniques){
+        if(requestedTechnique!=TechniqueId::None
+           &&technique!=requestedTechnique) continue;
         if(!self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
         const TechniqueRecipe recipe=techniqueRecipe(technique);
         if(recipe.technique==TechniqueId::None || !hasIngredients(self.civilization.inventory,recipe.inputs)) continue;

@@ -100,6 +100,69 @@ int main()
     assert(!chooseResidentAIExistingCivilizationAffordance(
         world,actor,{0,0},thought));
 
+    // A water request cannot harvest water without a free vessel; if the
+    // resident already knows the SimpleContainer craft and holds real clay,
+    // the SAME accepted AI intent can become a valid Core crafting plan.
+    World waterWorld(606002);
+    waterWorld.minute=480;
+    waterWorld.resourceNodes.clear();
+    ResourceNode waterSupply;
+    waterSupply.id=409;
+    waterSupply.material=MaterialKind::Water;
+    waterSupply.quantity=20;
+    waterSupply.maxQuantity=20;
+    waterSupply.pos=waterWorld.initialStartRegionCenterGrid();
+    waterWorld.resourceNodes.push_back(waterSupply);
+    Character potter;
+    potter.id=77;
+    potter.alive=true;
+    potter.lifeStage=LifeStage::Adult;
+    potter.civilization.character=potter.id;
+    potter.needs.thirst=0.75;
+    potter.civilization.knowledge.learn(
+        TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible,1.0);
+    potter.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Clay,3,0.5,1.0
+    });
+    AcceptedCognitiveDecision waterThought;
+    waterThought.actor=potter.id;
+    waterThought.intent=CognitiveIntentKind::ImproveWaterSecurity;
+    waterThought.minute=480;
+    waterThought.priority=0.90;
+    const GridPos waterPosition=waterSupply.pos;
+
+    assert(emptySimpleContainerCount(potter.civilization.inventory)==0);
+    const auto unavailableWater=bestGatherDecisionAtPosition(
+        waterWorld,potter,waterPosition,nullptr,MaterialKind::Water);
+    assert(unavailableWater.intent==CivilizationIntent::None);
+    const auto realVessel=chooseResidentAIExistingCivilizationAffordance(
+        waterWorld,potter,waterPosition,waterThought);
+    assert(realVessel);
+    assert(realVessel->intent==CivilizationIntent::Craft);
+    assert(realVessel->technique==TechniqueId::SimpleContainer);
+    assert(realVessel->facilityAction==FacilityBuildAction::None);
+    assert(waterWorld.resourceNodes.front().quantity==20);
+    assert(potter.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Clay)==3);
+
+    // A filter left unset must leave the original craft chooser unchanged.
+    const auto craftDefault=bestCraftDecisionAtPosition(
+        waterWorld,potter,waterPosition);
+    const auto craftUnfiltered=bestCraftDecisionAtPosition(
+        waterWorld,potter,waterPosition,nullptr,TechniqueId::None);
+    assert(craftDefault.intent==craftUnfiltered.intent);
+    assert(craftDefault.technique==craftUnfiltered.technique);
+    assert(craftDefault.utility==craftUnfiltered.utility);
+
+    Character noClay=potter;
+    noClay.civilization.inventory=Inventory{};
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        waterWorld,noClay,waterPosition,waterThought));
+    Character untrained=potter;
+    untrained.civilization.knowledge=KnowledgeState{};
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        waterWorld,untrained,waterPosition,waterThought));
+
     // True NEW GAME Core execution: a resident thought cannot mutate the
     // resource or invent a harvest, but it can select a legal gathering
     // context in the ordinary 15-minute planning slot.
