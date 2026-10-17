@@ -20,7 +20,7 @@ jobs:
   blender-headless:
     name: Blender headless and GLB export
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - name: Install free Blender
@@ -49,6 +49,36 @@ jobs:
           print('PASS Blender native project:', blend.stat().st_size, 'bytes')
           print('PASS glTF 2.0 binary:', glb.stat().st_size, 'bytes')
           PY
+      - name: Author original rigged residents and tiger
+        run: |
+          mkdir -p "$RUNNER_TEMP/lifelens-creatures"
+          blender --background --factory-startup --threads 2 --python Tools/blender/author_creatures.py -- "$RUNNER_TEMP/lifelens-creatures"
+      - name: Validate GLB skinning, pigment and walk motion
+        run: python3 Tools/blender/validate_creatures.py "$RUNNER_TEMP/lifelens-creatures"
+      - name: Render three actual models for visual review
+        run: |
+          for creature in resident-female resident-male tiger; do
+            blender --background "$RUNNER_TEMP/lifelens-creatures/$creature.blend" --threads 2 --python Tools/blender/render_creature_review.py -- "$RUNNER_TEMP/lifelens-creatures/$creature-review.png"
+          done
+      - name: Verify model review renders
+        run: |
+          python3 - <<'PY'
+          import os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'lifelens-creatures'
+          for kind in ('resident-female', 'resident-male', 'tiger'):
+              path = root / f'{kind}-review.png'
+              assert path.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n', kind
+              assert path.stat().st_size > 10000, kind
+              print('PASS visual-review image', kind, path.stat().st_size)
+          PY
+
+      - name: Upload editable creature models and rigged GLBs
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifelens-authored-creature-prototypes
+          path: ${{ runner.temp }}/lifelens-creatures/
+          retention-days: 7
+
       - name: Upload editable project and exported GLB
         uses: actions/upload-artifact@v4
         with:
