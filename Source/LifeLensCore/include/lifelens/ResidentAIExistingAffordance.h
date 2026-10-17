@@ -4,8 +4,51 @@
 
 #include "CognitiveDecisionJournal.h"
 #include "CivilizationDecision.h"
+#include "ResidentCivilizationOutcomeLearning.h"
 
 namespace lifelens {
+
+// A model's proposed strategy is not evidence. Require at least three
+// firsthand failed Core attempts, a worse-than-neutral accumulated belief,
+// and the actor's most recent firsthand outcome for the SAME material being
+// a failure. Never learn a false inability from hearsay or other residents.
+inline bool residentAIHasRecentRepeatedGatherFailure(
+    const Character& actor,MaterialKind material,int minute)
+{
+    if(!actor.alive ||actor.id==0 ||minute<0
+       ||material==MaterialKind::Unknown) return false;
+    CivilizationUtilityDecision attempted;
+    attempted.intent=CivilizationIntent::Gather;
+    attempted.material=material;
+    const std::string key=civilizationActionExperienceKey(attempted);
+    const BeliefRecord* belief=actor.beliefs.find(
+        0,actionExperienceProposition(key.c_str()));
+    if(belief==nullptr
+       ||belief->contradictionCount<3
+       ||belief->contradictionWeight<belief->supportWeight+2.0
+       ||belief->lastUpdatedMinute>minute) return false;
+
+    int latest=-1;
+    bool latestFailed=false;
+    for(const MemoryRecord& memory:actor.memory.entries){
+        if(memory.source!=MemorySource::DirectWitness
+           ||!memory.witnessed
+           ||memory.minute<0 ||memory.minute>minute
+           ||memory.tags.size()!=3
+           ||memory.tags[0]!="action_experience"
+           ||memory.tags[1]!=key) continue;
+        if(memory.tags[2]!="failure" &&memory.tags[2]!="success")
+            continue;
+        if(memory.minute>latest){
+            latest=memory.minute;
+            latestFailed=memory.tags[2]=="failure";
+        }else if(memory.minute==latest
+                 &&memory.tags[2]=="success"){
+            latestFailed=false;
+        }
+    }
+    return latestFailed &&minute-latest<=1440;
+}
 
 // Translate an accepted resident's *strategic preference* into ONE existing
 // Core-authorized affordance candidate. This is never an action execution:
@@ -65,6 +108,30 @@ chooseResidentAIExistingCivilizationAffordance(
         default:
             return std::nullopt;
     }
+    // After repeated REAL failure to gather this material, consider
+    // exploring for another genuine source instead of prescribing the same
+    // failing gather forever. Exploration must be a valid, same-material
+    // Core affordance; if none exists, retain the normal decision/fallback.
+    MaterialKind retriedMaterial=MaterialKind::Unknown;
+    if(candidate.intent==CivilizationIntent::Gather){
+        retriedMaterial=candidate.material;
+    }else if(thought.intent==CognitiveIntentKind::ImproveFoodSecurity){
+        retriedMaterial=MaterialKind::PlantFood;
+    }else if(thought.intent==CognitiveIntentKind::ImproveWaterSecurity){
+        retriedMaterial=MaterialKind::Water;
+    }
+    if(retriedMaterial!=MaterialKind::Unknown
+       &&residentAIHasRecentRepeatedGatherFailure(
+           actor,retriedMaterial,world.minute)){
+        const auto alternate=bestResourceExplorationDecisionAtPosition(
+            world,actor,actorPosition,settlementPopulation,retriedMaterial);
+        if(alternate.intent==CivilizationIntent::Explore
+           &&alternate.material==retriedMaterial
+           &&std::isfinite(alternate.utility)
+           &&alternate.utility>=0.14 &&alternate.utility<=1.0)
+            candidate=alternate;
+    }
+
     // Never grant a new virtual action. The Core must have produced
     // a positive, currently applicable candidate from actual world truth.
     if(candidate.intent==CivilizationIntent::None
