@@ -678,6 +678,23 @@ bool Simulation::completeContextAction(
                 return false;
             }
 
+            // Fail before touching the child, relationships, inventories or
+            // actor position. A sanitation site can be deactivated while a
+            // caregiver is escorting a dependent to the originally chosen pit.
+            // The former post-apply check could return false after reducing
+            // the child's bladder need without recording waste or success.
+            if(pending.parentingAction==ParentingAction::ToiletAssist
+               &&pending.sanitationSiteId!=0){
+                const PrimitiveSanitationSite* site=findPrimitiveSanitationSite(
+                    world_.primitiveSanitationSites,pending.sanitationSiteId);
+                if(site==nullptr || !site->active
+                   || !validPrimitiveSanitationSiteKind(site->kind)
+                   || !sameGridPosition(site->pos,resolvedPosition)){
+                    pending.clear();
+                    return false;
+                }
+            }
+
             ParentingContext context=pending.parentingContext;
             const bool nursing=
                 pending.parentingAction==ParentingAction::Feed
