@@ -1,6 +1,5 @@
 {
-  "status": "FAIL_NATIVE_RESIDENT_BROWSER",
-  "error": "AssertionError [ERR_ASSERTION]: Native soles must not penetrate the actual ground",
+  "status": "PASS_NATIVE_RESIDENT_BROWSER_CONTRACT",
   "reports": {
     "adults": [
       {
@@ -41,14 +40,14 @@
         ],
         "bounds": {
           "min": [
-            -0.969314987239774,
-            -0.014326500493343833,
-            -0.2741197712355186
+            -0.9691265051955839,
+            -0.00023259424245893577,
+            -0.28222255339809127
           ],
           "max": [
             -0.35238332951655105,
             1.5569257264478766,
-            0.3723680035870925
+            0.36515527281426746
           ]
         }
       },
@@ -90,14 +89,14 @@
         ],
         "bounds": {
           "min": [
-            0.28920987001264065,
-            -0.01872867022124456,
-            -0.280880776705736
+            0.2790778726216427,
+            -0.006058469111441039,
+            -0.2735679681763122
           ],
           "max": [
             0.9988989100695155,
             1.620583000244858,
-            0.39881426937621656
+            0.39582714883589754
           ]
         }
       }
@@ -105,7 +104,932 @@
     "phenotypeRefresh": {
       "maximumRestDifference": 2.1760371282653068e-14,
       "coreFactsUnchanged": true
-    }
+    },
+    "lods": [
+      [
+        {
+          "id": "male",
+          "native": true,
+          "source": "MakeHuman CC0",
+          "version": "MakeHuman-native-v1",
+          "meshCount": [
+            3,
+            3,
+            3
+          ],
+          "tiers": [
+            {
+              "name": "NativeResidentLOD:near",
+              "visible": true,
+              "triangles": 32140
+            },
+            {
+              "name": "NativeResidentLOD:mid",
+              "visible": false,
+              "triangles": 13495
+            },
+            {
+              "name": "NativeResidentLOD:far",
+              "visible": false,
+              "triangles": 4498
+            }
+          ],
+          "sameSkeleton": true,
+          "uv": true,
+          "texture": true,
+          "active": "idle",
+          "position": [
+            0.6500000000000004,
+            0,
+            0
+          ],
+          "bounds": {
+            "min": [
+              0.27841371191916003,
+              -0.006054593739928525,
+              -0.27412572638830063
+            ],
+            "max": [
+              0.9975049148069455,
+              1.6192328442441348,
+              0.396537090412962
+            ]
+          }
+        },
+        {
+          "id": "female",
+          "native": true,
+          "source": "MakeHuman CC0",
+          "version": "MakeHuman-native-v1",
+          "meshCount": [
+            3,
+            3,
+            3
+          ],
+          "tiers": [
+            {
+              "name": "NativeResidentLOD:near",
+              "visible": true,
+              "triangles": 34148
+            },
+            {
+              "name": "NativeResidentLOD:mid",
+              "visible": false,
+              "triangles": 14339
+            },
+            {
+              "name": "NativeResidentLOD:far",
+              "visible": false,
+              "triangles": 4778
+            }
+          ],
+          "sameSkeleton": true,
+          "uv": true,
+          "texture": true,
+          "active": "idle",
+          "position": [
+            -0.6499999999999999,
+            0,
+            0
+          ],
+          "bounds": {
+            "min": [
+              -0.9689646109581151,
+              -0.00015430248800719394,
+              -0.2830687095307403
+            ],
+            "max": [
+              -0.35354838162858626,
+              1.5553854143375152,
+              0.3657589112079721
+            ]
+          }
+        }
+      ],
+      [
+        {
+          "id": "male",
+          "native": true,
+          "source": "MakeHuman CC0",
+          "version": "MakeHuman-native-v1",
+          "meshCount": [
+            3,
+            3,
+            3
+          ],
+          "tiers": [
+            {
+              "name": "NativeResidentLOD:near",
+              "visible": false,
+              "triangles": 32140
+            },
+            {
+              "name": "NativeResidentLOD:mid",
+              "visible": true,
+              "triangles": 13495
+            },
+            {
+              "name": "NativeResidentLOD:far",
+              "visible": false,
+              "triangles": 4498
+            }
+          ],
+          "sameSkeleton": true,
+          "uv": true,
+          "texture": true,
+          "active": "idle",
+          "position": [
+            0.6500000000000004,
+            0,
+            0
+          ],
+          "bounds": {
+            "min": [
+              0.27790702085285174,
+              -0.006035257323606042,
+              -0.27477986427747386
+            ],
+            "max": [
+              0.9960710908495225,
+              1.6175057384860505,
+              0.3967663278720521
+            ]
+          }
+        },
+        {
+          "id": "female",
+          "native": true,
+          "source": "MakeHuman CC0",
+          "version": "MakeHuman-native-v1",
+          "meshCount": [
+            3,
+            3,
+            3
+          ],
+          "tiers": [
+            {
+              "name": "NativeResidentLOD:near",
+              "visible": false,
+              "triangles": 34148
+            },
+            {
+              "name": "NativeResidentLOD:mid",
+              "visible": true,
+              "triangles": 14339
+            },
+            {
+              "name": "NativeResidentLOD:far",
+              "visible": false,
+              "triangles": 4778
+            }
+          ],
+          "sameSkeleton": true,
+          "uv": true,
+          "texture": true,
+          "active": "idle",
+          "position": [
+            -0.6499999999999999,
+            0,
+            0
+          ],
+          "bounds": {
+            "min": [
+              -0.9690349336213963,
+              -0.00006917509587140748,
+              -0.283686202051772
+            ],
+            "max": [
+              -0.35490013290767375,
+              1.5535606758394382,
+              0.3663292346355826
+            ]
+          }
+        }
+      ],
+      [
+        {
+          "id": "male",
+          "native": true,
+          "source": "MakeHuman CC0",
+          "version": "MakeHuman-native-v1",
+          "meshCount": [
+            3,
+            3,
+            3
+          ],
+          "tiers": [
+            {
+              "name": "NativeResidentLOD:near",
+              "visible": false,
+              "triangles": 32140
+            },
+            {
+              "name": "NativeResidentLOD:mid",
+              "visible": false,
+              "triangles": 13495
+            },
+            {
+              "name": "NativeResidentLOD:far",
+              "visible": true,
+              "triangles": 4498
+            }
+          ],
+          "sameSkeleton": true,
+          "uv": true,
+          "texture": true,
+          "active": "idle",
+          "position": [
+            0.6500000000000004,
+            0,
+            0
+          ],
+          "bounds": {
+            "min": [
+              0.2774402856907752,
+              -0.006001078600691882,
+              -0.2750686362581694
+            ],
+            "max": [
+              0.9945649717862572,
+              1.6155225039770322,
+              0.3974517847689287
+            ]
+          }
+        },
+        {
+          "id": "female",
+          "native": true,
+          "source": "MakeHuman CC0",
+          "version": "MakeHuman-native-v1",
+          "meshCount": [
+            3,
+            3,
+            3
+          ],
+          "tiers": [
+            {
+              "name": "NativeResidentLOD:near",
+              "visible": false,
+              "triangles": 34148
+            },
+            {
+              "name": "NativeResidentLOD:mid",
+              "visible": false,
+              "triangles": 14339
+            },
+            {
+              "name": "NativeResidentLOD:far",
+              "visible": true,
+              "triangles": 4778
+            }
+          ],
+          "sameSkeleton": true,
+          "uv": true,
+          "texture": true,
+          "active": "idle",
+          "position": [
+            -0.6499999999999999,
+            0,
+            0
+          ],
+          "bounds": {
+            "min": [
+              -0.9693095027708611,
+              0.000005375681961747661,
+              -0.28398860391643843
+            ],
+            "max": [
+              -0.3559566264328085,
+              1.5516290183449248,
+              0.3671759806030448
+            ]
+          }
+        }
+      ]
+    ],
+    "life": [
+      {
+        "sex": "Female",
+        "age": 0.3,
+        "stage": "Baby",
+        "sample": [
+          {
+            "id": "male",
+            "native": true,
+            "source": "MakeHuman CC0",
+            "version": "MakeHuman-native-v1",
+            "meshCount": [
+              3,
+              3,
+              3
+            ],
+            "tiers": [
+              {
+                "name": "NativeResidentLOD:near",
+                "visible": true,
+                "triangles": 32140
+              },
+              {
+                "name": "NativeResidentLOD:mid",
+                "visible": false,
+                "triangles": 13495
+              },
+              {
+                "name": "NativeResidentLOD:far",
+                "visible": false,
+                "triangles": 4498
+              }
+            ],
+            "sameSkeleton": true,
+            "uv": true,
+            "texture": true,
+            "active": "idle",
+            "position": [
+              0.6500000000000004,
+              0,
+              0
+            ],
+            "bounds": {
+              "min": [
+                0.27723455832377647,
+                -0.005964918142622986,
+                -0.27528948213216525
+              ],
+              "max": [
+                0.9934990571862237,
+                1.6135812945884054,
+                0.3978908579116816
+              ]
+            }
+          },
+          {
+            "id": "female",
+            "native": true,
+            "source": "MakeHuman CC0",
+            "version": "MakeHuman-native-v1",
+            "meshCount": [
+              3,
+              3,
+              3
+            ],
+            "tiers": [
+              {
+                "name": "NativeResidentLOD:near",
+                "visible": true,
+                "triangles": 34148
+              },
+              {
+                "name": "NativeResidentLOD:mid",
+                "visible": false,
+                "triangles": 14339
+              },
+              {
+                "name": "NativeResidentLOD:far",
+                "visible": false,
+                "triangles": 4778
+              }
+            ],
+            "sameSkeleton": true,
+            "uv": true,
+            "texture": true,
+            "active": "idle",
+            "position": [
+              -0.6499999999999999,
+              0,
+              0
+            ],
+            "bounds": {
+              "min": [
+                -0.8139778055816982,
+                0.0024558210959552094,
+                -0.14813680571371626
+              ],
+              "max": [
+                -0.5051414105971537,
+                0.7920696756773301,
+                0.17984434887125497
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "sex": "Male",
+        "age": 5,
+        "stage": "Child",
+        "sample": [
+          {
+            "id": "male",
+            "native": true,
+            "source": "MakeHuman CC0",
+            "version": "MakeHuman-native-v1",
+            "meshCount": [
+              3,
+              3,
+              3
+            ],
+            "tiers": [
+              {
+                "name": "NativeResidentLOD:near",
+                "visible": true,
+                "triangles": 32140
+              },
+              {
+                "name": "NativeResidentLOD:mid",
+                "visible": false,
+                "triangles": 13495
+              },
+              {
+                "name": "NativeResidentLOD:far",
+                "visible": false,
+                "triangles": 4498
+              }
+            ],
+            "sameSkeleton": true,
+            "uv": true,
+            "texture": true,
+            "active": "idle",
+            "position": [
+              0.6500000000000004,
+              0,
+              0
+            ],
+            "bounds": {
+              "min": [
+                0.27723455832377647,
+                -0.005964918142622986,
+                -0.27528948213216525
+              ],
+              "max": [
+                0.9934990571862237,
+                1.6135812945884054,
+                0.3978908579116816
+              ]
+            }
+          },
+          {
+            "id": "female",
+            "native": true,
+            "source": "MakeHuman CC0",
+            "version": "MakeHuman-native-v1",
+            "meshCount": [
+              3,
+              3,
+              3
+            ],
+            "tiers": [
+              {
+                "name": "NativeResidentLOD:near",
+                "visible": true,
+                "triangles": 32140
+              },
+              {
+                "name": "NativeResidentLOD:mid",
+                "visible": false,
+                "triangles": 13495
+              },
+              {
+                "name": "NativeResidentLOD:far",
+                "visible": false,
+                "triangles": 4498
+              }
+            ],
+            "sameSkeleton": true,
+            "uv": true,
+            "texture": true,
+            "active": "idle",
+            "position": [
+              -0.6499999999999999,
+              0,
+              0
+            ],
+            "bounds": {
+              "min": [
+                -0.9039902764033929,
+                0.0015621844576062926,
+                -0.2347720117363858
+              ],
+              "max": [
+                -0.42842528766993926,
+                1.2021237139920309,
+                0.28558674425830394
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "sex": "Female",
+        "age": 16,
+        "stage": "Teen",
+        "sample": [
+          {
+            "id": "male",
+            "native": true,
+            "source": "MakeHuman CC0",
+            "version": "MakeHuman-native-v1",
+            "meshCount": [
+              3,
+              3,
+              3
+            ],
+            "tiers": [
+              {
+                "name": "NativeResidentLOD:near",
+                "visible": true,
+                "triangles": 32140
+              },
+              {
+                "name": "NativeResidentLOD:mid",
+                "visible": false,
+                "triangles": 13495
+              },
+              {
+                "name": "NativeResidentLOD:far",
+                "visible": false,
+                "triangles": 4498
+              }
+            ],
+            "sameSkeleton": true,
+            "uv": true,
+            "texture": true,
+            "active": "idle",
+            "position": [
+              0.6500000000000004,
+              0,
+              0
+            ],
+            "bounds": {
+              "min": [
+                0.27723455832377647,
+                -0.005964918142622986,
+                -0.27528948213216525
+              ],
+              "max": [
+                0.9934990571862237,
+                1.6135812945884054,
+                0.3978908579116816
+              ]
+            }
+          },
+          {
+            "id": "female",
+            "native": true,
+            "source": "MakeHuman CC0",
+            "version": "MakeHuman-native-v1",
+            "meshCount": [
+              3,
+              3,
+              3
+            ],
+            "tiers": [
+              {
+                "name": "NativeResidentLOD:near",
+                "visible": true,
+                "triangles": 34148
+              },
+              {
+                "name": "NativeResidentLOD:mid",
+                "visible": false,
+                "triangles": 14339
+              },
+              {
+                "name": "NativeResidentLOD:far",
+                "visible": false,
+                "triangles": 4778
+              }
+            ],
+            "sameSkeleton": true,
+            "uv": true,
+            "texture": true,
+            "active": "idle",
+            "position": [
+              -0.6499999999999999,
+              0,
+              0
+            ],
+            "bounds": {
+              "min": [
+                -0.9571124250821071,
+                0.00033874418289401263,
+                -0.27639200367996364
+              ],
+              "max": [
+                -0.3772397400976814,
+                1.4868950316281508,
+                0.3421384187865216
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "sex": "Male",
+        "age": 80,
+        "stage": "Elderly",
+        "sample": [
+          {
+            "id": "male",
+            "native": true,
+            "source": "MakeHuman CC0",
+            "version": "MakeHuman-native-v1",
+            "meshCount": [
+              3,
+              3,
+              3
+            ],
+            "tiers": [
+              {
+                "name": "NativeResidentLOD:near",
+                "visible": true,
+                "triangles": 32140
+              },
+              {
+                "name": "NativeResidentLOD:mid",
+                "visible": false,
+                "triangles": 13495
+              },
+              {
+                "name": "NativeResidentLOD:far",
+                "visible": false,
+                "triangles": 4498
+              }
+            ],
+            "sameSkeleton": true,
+            "uv": true,
+            "texture": true,
+            "active": "idle",
+            "position": [
+              0.6500000000000004,
+              0,
+              0
+            ],
+            "bounds": {
+              "min": [
+                0.27723455832377647,
+                -0.005964918142622986,
+                -0.27528948213216525
+              ],
+              "max": [
+                0.9934990571862237,
+                1.6135812945884054,
+                0.3978908579116816
+              ]
+            }
+          },
+          {
+            "id": "female",
+            "native": true,
+            "source": "MakeHuman CC0",
+            "version": "MakeHuman-native-v1",
+            "meshCount": [
+              3,
+              3,
+              3
+            ],
+            "tiers": [
+              {
+                "name": "NativeResidentLOD:near",
+                "visible": true,
+                "triangles": 32140
+              },
+              {
+                "name": "NativeResidentLOD:mid",
+                "visible": false,
+                "triangles": 13495
+              },
+              {
+                "name": "NativeResidentLOD:far",
+                "visible": false,
+                "triangles": 4498
+              }
+            ],
+            "sameSkeleton": true,
+            "uv": true,
+            "texture": true,
+            "active": "idle",
+            "position": [
+              -0.6499999999999999,
+              0,
+              0
+            ],
+            "bounds": {
+              "min": [
+                -0.988104041803215,
+                -0.0023819766350040277,
+                -0.28372146423064964
+              ],
+              "max": [
+                -0.32350076593520904,
+                1.5673983463427337,
+                0.38305755052201
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "pregnancy": [
+      {
+        "id": "male",
+        "native": true,
+        "source": "MakeHuman CC0",
+        "version": "MakeHuman-native-v1",
+        "meshCount": [
+          3,
+          3,
+          3
+        ],
+        "tiers": [
+          {
+            "name": "NativeResidentLOD:near",
+            "visible": true,
+            "triangles": 32140
+          },
+          {
+            "name": "NativeResidentLOD:mid",
+            "visible": false,
+            "triangles": 13495
+          },
+          {
+            "name": "NativeResidentLOD:far",
+            "visible": false,
+            "triangles": 4498
+          }
+        ],
+        "sameSkeleton": true,
+        "uv": true,
+        "texture": true,
+        "active": "idle",
+        "position": [
+          0.6500000000000004,
+          0,
+          0
+        ],
+        "bounds": {
+          "min": [
+            0.27723455832377647,
+            -0.005964918142622986,
+            -0.27528948213216525
+          ],
+          "max": [
+            0.9934990571862237,
+            1.6135812945884054,
+            0.3978908579116816
+          ]
+        }
+      },
+      {
+        "id": "female",
+        "native": true,
+        "source": "MakeHuman CC0",
+        "version": "MakeHuman-native-v1",
+        "meshCount": [
+          3,
+          3,
+          3
+        ],
+        "tiers": [
+          {
+            "name": "NativeResidentLOD:near",
+            "visible": true,
+            "triangles": 34148
+          },
+          {
+            "name": "NativeResidentLOD:mid",
+            "visible": false,
+            "triangles": 14339
+          },
+          {
+            "name": "NativeResidentLOD:far",
+            "visible": false,
+            "triangles": 4778
+          }
+        ],
+        "sameSkeleton": true,
+        "uv": true,
+        "texture": true,
+        "active": "idle",
+        "position": [
+          -0.6499999999999999,
+          0,
+          0
+        ],
+        "bounds": {
+          "min": [
+            -0.9704817227760048,
+            -0.00023656473329789623,
+            -0.281013302855728
+          ],
+          "max": [
+            -0.34612797994600164,
+            1.559777568526383,
+            0.3669876175697289
+          ]
+        }
+      }
+    ],
+    "sleep": [
+      {
+        "id": "female",
+        "native": true,
+        "source": "MakeHuman CC0",
+        "version": "MakeHuman-native-v1",
+        "meshCount": [
+          3,
+          3,
+          3
+        ],
+        "tiers": [
+          {
+            "name": "NativeResidentLOD:near",
+            "visible": true,
+            "triangles": 34148
+          },
+          {
+            "name": "NativeResidentLOD:mid",
+            "visible": false,
+            "triangles": 14339
+          },
+          {
+            "name": "NativeResidentLOD:far",
+            "visible": false,
+            "triangles": 4778
+          }
+        ],
+        "sameSkeleton": true,
+        "uv": true,
+        "texture": true,
+        "active": "sleep",
+        "position": [
+          -0.6499999999999999,
+          0,
+          0
+        ],
+        "bounds": {
+          "min": [
+            -0.9812943930515367,
+            0.08433727945625803,
+            -0.8080822126299723
+          ],
+          "max": [
+            -0.315634745383833,
+            0.3598935404661068,
+            0.9358445570359034
+          ]
+        }
+      },
+      {
+        "id": "male",
+        "native": true,
+        "source": "MakeHuman CC0",
+        "version": "MakeHuman-native-v1",
+        "meshCount": [
+          3,
+          3,
+          3
+        ],
+        "tiers": [
+          {
+            "name": "NativeResidentLOD:near",
+            "visible": true,
+            "triangles": 32140
+          },
+          {
+            "name": "NativeResidentLOD:mid",
+            "visible": false,
+            "triangles": 13495
+          },
+          {
+            "name": "NativeResidentLOD:far",
+            "visible": false,
+            "triangles": 4498
+          }
+        ],
+        "sameSkeleton": true,
+        "uv": true,
+        "texture": true,
+        "active": "sleep",
+        "position": [
+          0.6500000000000004,
+          0,
+          0
+        ],
+        "bounds": {
+          "min": [
+            0.2654826757376743,
+            0.07837130302564306,
+            -0.8367644495666129
+          ],
+          "max": [
+            1.0394128601133006,
+            0.37518736150777676,
+            0.9632433569115122
+          ]
+        }
+      }
+    ]
   },
-  "errors": []
+  "errors": [],
+  "physicalAndroid": "NOT_MEASURED"
 }
