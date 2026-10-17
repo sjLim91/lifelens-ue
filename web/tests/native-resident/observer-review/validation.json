@@ -6,7 +6,7 @@
         "status": "ready",
         "errorMessage": null
       },
-      "minute": 497,
+      "minute": 499,
       "actors": [
         {
           "id": "1",
@@ -67,12 +67,12 @@
           "version": "MakeHuman-native-v1",
           "action": "carry",
           "position": [
-            -1,
-            24.3798,
+            -1.25,
+            24.401255999999997,
             0.25
           ],
           "coreGrid": [
-            876,
+            875,
             1041
           ]
         }
@@ -83,7 +83,7 @@
         "status": "ready",
         "errorMessage": null
       },
-      "minute": 521,
+      "minute": 519,
       "actors": [
         {
           "id": "1",
@@ -144,12 +144,12 @@
           "version": "MakeHuman-native-v1",
           "action": "walk",
           "position": [
-            -1.3001470680397373,
-            24.42966571353115,
-            0.18997058639205258
+            -1.3020921333768118,
+            24.411796530635996,
+            0.23697696665579707
           ],
           "coreGrid": [
-            876,
+            875,
             1041
           ]
         }
