@@ -73,6 +73,25 @@ int main()
     }else{
         assert(!attemptedAgain.has_value());
     }
+    // A remote known food stock with no LOCAL food produces genuine
+    // frontier exploration pressure. This exercises the positive alternative
+    // path, not only the safe "no alternative" fallback above.
+    World remoteWorld=world;
+    for(auto& node:remoteWorld.resourceNodes)
+        if(node.material==MaterialKind::PlantFood)
+            node.pos={WorldChunkSpanGridCells*5,WorldChunkSpanGridCells*5};
+    assert(localNaturalResourceUnits(
+        remoteWorld,MaterialKind::PlantFood,{0,0})==0);
+    const auto remoteFrontier=bestResourceExplorationDecisionAtPosition(
+        remoteWorld,actor,{0,0},nullptr,MaterialKind::PlantFood);
+    assert(remoteFrontier.intent==CivilizationIntent::Explore);
+    assert(remoteFrontier.material==MaterialKind::PlantFood);
+    const auto switched=chooseResidentAIExistingCivilizationAffordance(
+        remoteWorld,actor,{0,0},thought);
+    assert(switched.has_value());
+    assert(switched->intent==CivilizationIntent::Explore);
+    assert(switched->material==MaterialKind::PlantFood);
+
     // Another resident cannot inherit someone else's failed history.
     Character fresh=actor;
     fresh.id=10;
