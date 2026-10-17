@@ -65,9 +65,10 @@ int main()
 
     // Snapshot/restart with an accepted-but-not-executed plan must not
     // synthesize a memory of success.
+    const SimulationStateSnapshot pendingTruth=simulation.captureSnapshot();
     Simulation replay(99551);
     std::string error;
-    assert(replay.restoreSnapshot(simulation.captureSnapshot(),&error));
+    assert(replay.restoreSnapshot(pendingTruth,&error));
     assert(replay.observePendingContextAction(actorId).token==pending.token);
     assert(lookup(replay,actorId)->beliefs.find(0,proposition)==nullptr);
 
@@ -108,16 +109,25 @@ int main()
     for(const auto& memory:thirdPerson.memories)
         assert(memory.what.find(key)==std::string::npos);
 
-    // A real attempt with an exhausted resource reports failure without
-    // creating food. The belief tracks bounded contradictory evidence.
-    Simulation failed(99551);
-    assert(failed.restoreSnapshot(simulation.captureSnapshot(),&error));
-    // Use a separate Core fixture at the earlier, still-pending moment.
-    Simulation blocked(99551);
-    assert(blocked.restoreSnapshot(replay.captureSnapshot(),&error));
-    // Directly exercise the exact, deterministic observed execution gate:
-    // a rejected completed action can be a personal failed attempt, never
-    // a fabricated resource or knowledge change.
+    // Directly verify the actual failed completion path. This clone keeps
+    // the still-pending pre-execution snapshot, then the real resource runs
+    // out while the resident is on their way. No virtual food is created.
+    Simulation exhausted(99551);
+    assert(exhausted.restoreSnapshot(pendingTruth,&error));
+    exhausted.world().resourceNodes.front().quantity=0;
+    assert(!exhausted.completeExternalContextAction(
+        actorId,pending.token,pending.targetPos));
+    assert(exhausted.world().resourceNodes.front().quantity==0);
+    const Character* failedActor=lookup(exhausted,actorId);
+    assert(failedActor!=nullptr);
+    const BeliefRecord* attemptedFailure=
+        failedActor->beliefs.find(0,proposition);
+    assert(attemptedFailure!=nullptr);
+    assert(attemptedFailure->contradictionCount==1);
+    assert(attemptedFailure->supportCount==0);
+    assert(lookup(exhausted,bystanderId)->beliefs.find(0,proposition)==nullptr);
+    // Duplicate evidence for a single authoritative tick cannot forge
+    // repeated learning, while later real attempts can update the belief.
     Character student;
     student.id=111;
     student.alive=true;
