@@ -63,6 +63,19 @@ int main()
         }
     }
     assert(witnessed);
+    // A second callback for the same actor/strategy/minute cannot replace
+    // the already observed exhausted source with a contradictory invented
+    // failure cause. Core counts only one real attempt per authoritative tick.
+    rememberCivilizationAttemptOutcome(actor,request,480,false,
+        ResidentGatherFailureCause::ContainerMissing);
+    assert(actor.beliefs.find(
+        0,actionExperienceProposition(key.c_str()))->contradictionCount==1);
+    for(const auto& memory:actor.memory.entries)
+        if(memory.tags.size()==3
+           &&memory.tags[0]=="action_experience"
+           &&memory.tags[1]==key)
+            assert(memory.what.find("container-missing")==std::string::npos);
+
     RelationshipBook relationships;
     const auto cognitive=buildCognitiveRequest(
         actor,relationships,480,CognitiveTriggerKind::Reflection,
