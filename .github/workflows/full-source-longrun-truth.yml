@@ -1,0 +1,40 @@
+name: LifeLens Full-Source 1000-Day Truth Audit
+
+on:
+  push:
+    branches: [audit/full-source-causal-20261017]
+    paths:
+      - .github/workflows/full-source-longrun-truth.yml
+      - Tools/audit_system_balance.py
+      - Source/LifeLensCore/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-source-1000day:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact audited revision
+        run: |
+          mkdir -p full-longrun-evidence
+          git rev-parse HEAD > full-longrun-evidence/head-sha.txt
+      - name: Build unchanged authoritative Core audit harness
+        run: |
+          cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target ll_balance_audit --parallel 2
+      - name: Run both baseline seeds through 1000 real simulation days
+        run: |
+          python3 -m unittest discover -s Tools/tests -p 'test_system_balance_audit.py' -v
+          python3 Tools/audit_system_balance.py run --executable ./build/ll_balance_audit --output full-longrun-evidence/results --seeds 874213954,4242001 --days 1000 --checkpoints 1,7,30,100,365,1000 --workers 2
+      - name: Retain complete raw causal, snapshot and checkpoint evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-source-main-truth-1000day
+          path: full-longrun-evidence/
+          if-no-files-found: warn
+          retention-days: 30
