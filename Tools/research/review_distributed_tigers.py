@@ -28,7 +28,7 @@ def read(url, limit=32 * 1024 * 1024):
             raise ValueError('Review size budget exceeded')
         return data
 
-revision = json.loads(read('https://huggingface.co/api/datasets/allenai/objaverse', 512000))['sha']
+revision = json.loads(read('https://huggingface.co/api/datasets/allenai/objaverse?expand=sha', 512000))['sha']
 base = BASE + revision + '/'
 def zipped(name):
     return json.loads(gzip.decompress(read(base + name)))
