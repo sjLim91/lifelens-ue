@@ -28,12 +28,45 @@ export interface ResidentAISource {
 export type ResidentAIDecisionStatus =
   'recorded' | 'stale' | 'rejected' | 'unavailable' | 'error';
 
+export interface ResidentAIPersonalExperience {
+  minute: number;
+  what: string;
+  kind: 'action' | 'social';
+}
+
+// This is the Core-provided evidence the local model *saw*, not a model
+// claim about executing or completing any goal.
+export function latestFirsthandAIExperience(
+  request: CognitiveRequestDto,
+): ResidentAIPersonalExperience | null {
+  let latest: ResidentAIPersonalExperience | null = null;
+  for(const memory of request.memories){
+    if(memory.source !== 'DirectWitness' || memory.witnessed !== true
+      ||memory.minute < 0 ||memory.minute > request.minute
+      ||request.minute-memory.minute > 1440
+      ||!Array.isArray(memory.tags)) continue;
+    const kind = memory.tags[0];
+    if(kind !== 'action_experience'
+      &&kind !== 'goal_action_feedback'
+      &&kind !== 'social_self_outcome') continue;
+    if(latest === null || memory.minute > latest.minute){
+      latest = {
+        minute: memory.minute,
+        what: memory.what.slice(0, 160),
+        kind: kind === 'action_experience' ? 'action' : 'social',
+      };
+    }
+  }
+  return latest;
+}
+
 export interface ResidentAIDecision {
   actor: string;
   minute: number;
   status: ResidentAIDecisionStatus;
   intent: string | null;
   target: string | null;
+  latestPersonalExperience?: ResidentAIPersonalExperience | null;
 }
 
 export interface ResidentAIState {
@@ -247,6 +280,7 @@ export class ResidentAIController {
       actor, minute: request.minute, status,
       intent: result.proposal?.intent ?? null,
       target: result.proposal?.targetResident ?? null,
+      latestPersonalExperience: latestFirsthandAIExperience(request),
     };
     this.update({
       pendingActor: null,
