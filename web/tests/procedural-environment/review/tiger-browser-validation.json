@@ -18,13 +18,13 @@
       "fullObserver": "NOT_RUN",
       "android": "NOT_MEASURED",
       "renderer": {
-        "frame": 30,
+        "frame": 26,
         "calls": 11,
         "triangles": 549344,
         "points": 0,
         "lines": 0
       },
-      "frames": 30,
+      "frames": 26,
       "samples": [],
       "width": 960,
       "height": 720,
@@ -44,16 +44,17 @@
       "fullObserver": "NOT_RUN",
       "android": "NOT_MEASURED",
       "renderer": {
-        "frame": 34,
+        "frame": 35,
         "calls": 12,
         "triangles": 467396,
         "points": 0,
         "lines": 0
       },
-      "frames": 34,
+      "frames": 35,
       "samples": [
-        16.69999999999891,
         100,
+        16.69999999999891,
+        16.700000000000728,
         100
       ],
       "width": 960,
@@ -82,15 +83,15 @@
       },
       "frames": 41,
       "samples": [
+        100,
+        16.69999999999891,
+        16.700000000000728,
+        100,
+        100,
+        100,
         16.69999999999891,
         100,
         100,
-        100,
-        16.600000000000364,
-        100,
-        100,
-        100,
-        16.69999999999891,
         100
       ],
       "width": 412,
