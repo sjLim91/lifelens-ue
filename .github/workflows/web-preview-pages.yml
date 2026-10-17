@@ -100,6 +100,10 @@ jobs:
           test -s dist/runtime/lifelens_core.js
           test -s dist/runtime/lifelens_core.wasm
 
+      - name: Include verified CC0 assets in the published Pages commit
+        run: |
+          printf '# Generated verified CC0 assets are intentionally published here.\n' > dist/vendor/characters/.gitignore
+
       - name: Publish preview branch
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -108,3 +112,4 @@ jobs:
           publish_branch: gh-pages
           force_orphan: true
           commit_message: "preview: ${{ github.sha }}"
+

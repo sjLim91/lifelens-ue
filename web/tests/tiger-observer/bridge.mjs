@@ -31,7 +31,7 @@ import {chooseTigerCamera} from './camera-visibility.mjs';
     // clarity follows the actual animal; do not remove or move vegetation.
     state.panX=x;state.panZ=z;original.call(this,state);
     if(actor&&['front','side','quarter','back'].includes(qa.view)&&!qa.cameraChoices[qa.view]){
-     qa.cameraChoices[qa.view]=chooseTigerCamera(this.scene,actor,qa.view);
+     qa.cameraChoices[qa.view]=chooseTigerCamera(this.scene,actor,qa.view,this.camera);
     }
     const chosen=qa.cameraChoices[qa.view];
     if(chosen){

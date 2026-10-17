@@ -150,6 +150,9 @@ jobs:
           VITE_REVIEW_COMMIT: ${{ github.sha }}
         working-directory: web
         run: npm run build -- --config tests/tiger-observer/vite.config.mjs
+      - name: Publish verified CC0 character files instead of the source ignore rule
+        run: |
+          printf '# Generated verified CC0 assets are intentionally published here.\n' > web/tests/tiger-observer/preview/vendor/characters/.gitignore
       - name: Capture real React-WASM Observer and actual Core movement
         working-directory: web
         run: node tests/tiger-observer/capture.mjs
