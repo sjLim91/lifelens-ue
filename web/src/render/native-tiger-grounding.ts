@@ -41,7 +41,7 @@ export class NativeTigerGrounding {
       for (let parent = paw.parent; parent instanceof THREE.Bone; parent = parent.parent) {
         chain.push(parent); if (parent.name === definition.upper) break;
       }
-      if (chain.at(-1)?.name !== definition.upper || chain.length < 2 || chain.length > 3)
+      if (chain[chain.length - 1]?.name !== definition.upper || chain.length < 2 || chain.length > 3)
         throw new Error('Native limb chain changed');
       const candidates = definition.sole_vertices.map(index => {
         const point = new THREE.Vector3(); this.skin.getVertexPosition(index, point);
@@ -136,7 +136,7 @@ export class NativeTigerGrounding {
       foot.paw.getWorldPosition(this.position);
       if (foot.planted && this.position.distanceTo(this.goal) > .012 * pose.scale) {
         for (const joint of [...foot.chain, foot.paw]) joint.quaternion.copy(this.authored.get(joint)!);
-        foot.chain.at(-1)!.updateWorldMatrix(false, true);
+        foot.chain[foot.chain.length - 1]!.updateWorldMatrix(false, true);
         foot.planted = false;
         this.goal.copy(this.nativePosition);
         let nativeError = Infinity;
