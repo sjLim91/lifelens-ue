@@ -2,6 +2,7 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/WaterSourceExperience.h"
 #include "lifelens/AutonomousSocialGoalRouting.h"
+#include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/CoreNavigation.h"
 #include "lifelens/CultivationProgression.h"
 #include "lifelens/FamilyProgression.h"
@@ -2197,6 +2198,31 @@ void Simulation::beginPlan(Character& c,Runtime& r){
             world_,c,relationships_,r.pos,0.18,0.14,&population,
             &socialKnowledge_,&households_);
         sharedCadenceDecision=&cadenceDecision;
+    }
+
+    // A resident's accepted long-term provision/technology/exploration
+    // preference may select only an EXISTING legal Core civilization
+    // affordance. Ordinary survival, pending context, spatial execution,
+    // inventory and resource exhaustion stay under the original Core path.
+    if(sharedCadenceDecision!=nullptr && !hasUrgentPhysicalNeed
+       &&lifeStageProfile(c.lifeStage).canWork){
+        for(auto it=acceptedCognitiveDecisions_.rbegin();
+            it!=acceptedCognitiveDecisions_.rend();++it){
+            if(it->actor!=c.id) continue;
+            const SettlementPopulation residentAIPopulation=settlementPopulation();
+            const auto candidate=chooseResidentAIExistingCivilizationAffordance(
+                world_,c,r.pos,*it,&residentAIPopulation);
+            if(candidate
+               &&!(cadenceDecision.kind==UnifiedDecisionKind::Civilization
+                    &&cadenceDecision.civilization.intent==CivilizationIntent::Craft
+                    &&cadenceDecision.civilization.facilityAction
+                        !=FacilityBuildAction::None)){
+                cadenceDecision.kind=UnifiedDecisionKind::Civilization;
+                cadenceDecision.civilization=*candidate;
+                cadenceDecision.utility=candidate->utility;
+            }
+            break;
+        }
     }
 
     // First live resident-AI action lane: an accepted, snapshot-backed
