@@ -5,6 +5,7 @@ import {
 import {
   parseCognitiveRequest,
   type CognitiveRequestDto,
+  type CognitiveProposalDto,
   type CognitiveTrigger,
 } from '../cognition/cognitive-contract';
 import type {
