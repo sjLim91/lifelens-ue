@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "lifelens/CognitiveAgent.h"
+#include "lifelens/ActionExperienceLearning.h"
 
 using namespace lifelens;
 
@@ -161,6 +162,70 @@ int main()
     validation=validateCognitiveProposal(world,noTrigger,food);
     assert(!validation.accepted);
     assert(validation.issue==CognitiveValidationIssue::MissingTrigger);
+
+    // A large batch of unrelated salient recollections cannot starve one
+    // RECENT firsthand action outcome from the resident's next LLM context.
+    // The maximum context size and ordinary recall ranking are preserved.
+    Character recalled=liveActor;
+    recalled.memory.entries.clear();
+    for(int i=0;i<12;++i){
+        MemoryRecord episode;
+        episode.what="unrelated powerful memory "+std::to_string(i);
+        episode.minute=1000;
+        episode.importance=0.98;
+        episode.confidence=1.0;
+        episode.source=MemorySource::DirectWitness;
+        episode.witnessed=true;
+        recalled.memory.add(episode);
+    }
+    rememberActionOutcome(recalled,"Civilization:Gather:PlantFood",999,false);
+    const MemoryRecord* personalAction=nullptr;
+    for(const auto& record:recalled.memory.entries)
+        if(record.tags.size()==3
+           &&record.tags[0]=="action_experience")
+            personalAction=&record;
+    assert(personalAction!=nullptr);
+    int higherRankedEpisodes=0;
+    for(const auto& record:recalled.memory.entries)
+        if(record.what.find("unrelated powerful memory")==0
+           &&record.recallScore(1000)>personalAction->recallScore(1000))
+            ++higherRankedEpisodes;
+    assert(higherRankedEpisodes>=4); // normally omitted without one reserved slot
+    const auto learned=buildCognitiveRequest(
+        recalled,relationships,1000,CognitiveTriggerKind::Reflection,
+        allowed,4,1,1);
+    assert(learned.memories.size()==4);
+    bool foundPersonalExperience=false;
+    for(const auto& evidence:learned.memories){
+        if(evidence.source==MemorySource::DirectWitness
+           &&evidence.witnessed
+           &&evidence.tags.size()==3
+           &&evidence.tags[0]=="action_experience"
+           &&evidence.tags[1]=="Civilization:Gather:PlantFood"
+           &&evidence.tags[2]=="failure")
+            foundPersonalExperience=true;
+    }
+    assert(foundPersonalExperience);
+
+    // Reported/hypothetical outcomes never qualify for the reserved slot.
+    Character hearsay=recalled;
+    for(auto& entry:hearsay.memory.entries)
+        if(entry.tags.size()==3
+           &&entry.tags[0]=="action_experience"){
+            entry.source=MemorySource::ToldByOther;
+            entry.witnessed=false;
+        }
+    const auto untrusted=buildCognitiveRequest(
+        hearsay,relationships,1000,CognitiveTriggerKind::Reflection,
+        allowed,4,1,1);
+    for(const auto& evidence:untrusted.memories)
+        assert(evidence.tags.empty() ||evidence.tags[0]!="action_experience");
+
+    // Zero-sized requests remain empty; no slot allocation side effect.
+    const auto zero=buildCognitiveRequest(
+        recalled,relationships,1000,CognitiveTriggerKind::Reflection,
+        allowed,0,1,1);
+    assert(zero.memories.empty());
 
     std::cout<<"cognitive agent read-only context + fail-closed proposal contract passed\n";
     return 0;
