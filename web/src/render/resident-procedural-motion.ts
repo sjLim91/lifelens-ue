@@ -118,7 +118,7 @@ export class ResidentProceduralMotion {
       // Correct only actual penetration using a bounded set of real skinned
       // sole vertices. Swing clearance and the Core actor root are preserved.
       if (this.nativeBody) for (let pass = 0; pass < 2; pass++) {
-        this.root.updateWorldMatrix(true, true); this.nativeBody.skeleton.update();
+        this.root.updateWorldMatrix(true, true); this.nativeBody.updateMatrixWorld(true); this.nativeBody.skeleton.update();
         let lift = 0;
         for (const vertex of this.nativeSoleVertices[side]) {
           this.nativeBody.getVertexPosition(vertex, this.solePoint).applyMatrix4(this.nativeBody.matrixWorld);
