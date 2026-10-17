@@ -158,6 +158,38 @@ int main()
     noClay.civilization.inventory=Inventory{};
     assert(!chooseResidentAIExistingCivilizationAffordance(
         waterWorld,noClay,waterPosition,waterThought));
+
+    // Real multi-step goal: water needs a vessel; a known vessel recipe
+    // needs real clay, so gather only an actual reachable clay node.
+    World withClay=waterWorld;
+    ResourceNode clayNode;
+    clayNode.id=410;
+    clayNode.material=MaterialKind::Clay;
+    clayNode.pos=waterPosition;
+    clayNode.quantity=12;
+    clayNode.maxQuantity=12;
+    withClay.resourceNodes.push_back(clayNode);
+    const auto obtainClay=chooseResidentAIExistingCivilizationAffordance(
+        withClay,noClay,waterPosition,waterThought);
+    assert(obtainClay);
+    assert(obtainClay->intent==CivilizationIntent::Gather);
+    assert(obtainClay->material==MaterialKind::Clay);
+    assert(obtainClay->resourceNode==clayNode.id);
+    assert(obtainClay->quantity>0);
+    assert(noClay.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Clay)==0);
+    assert(withClay.resourceNodes.back().quantity==12);
+
+    Character noTechNoClay=potter;
+    noTechNoClay.civilization.knowledge=KnowledgeState{};
+    noTechNoClay.civilization.inventory=Inventory{};
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        withClay,noTechNoClay,waterPosition,waterThought));
+    World noWater=withClay;
+    noWater.resourceNodes.front().quantity=0;
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        noWater,noClay,waterPosition,waterThought));
+
     Character untrained=potter;
     untrained.civilization.knowledge=KnowledgeState{};
     assert(!chooseResidentAIExistingCivilizationAffordance(
