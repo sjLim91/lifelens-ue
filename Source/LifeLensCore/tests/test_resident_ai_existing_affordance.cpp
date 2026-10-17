@@ -1,4 +1,5 @@
 #include <cassert>
+#include <limits>
 #include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/Simulation.h"
 
@@ -78,6 +79,12 @@ int main()
 
     thought.intent=CognitiveIntentKind::ImproveFoodSecurity;
     thought.priority=0.1;
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        world,actor,{0,0},thought));
+    thought.priority=std::numeric_limits<double>::quiet_NaN();
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        world,actor,{0,0},thought));
+    thought.priority=std::numeric_limits<double>::infinity();
     assert(!chooseResidentAIExistingCivilizationAffordance(
         world,actor,{0,0},thought));
     thought.priority=0.9;
