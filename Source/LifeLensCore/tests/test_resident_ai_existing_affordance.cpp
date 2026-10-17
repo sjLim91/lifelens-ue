@@ -49,6 +49,58 @@ int main()
     assert(baseline.resourceNode==defaultFilter.resourceNode);
     assert(baseline.utility==defaultFilter.utility);
 
+    // An accepted AI food request after three actual failed attempts must
+    // not blindly force the same gather candidate over ordinary Core plans.
+    // When a genuine exploration affordance exists for the SAME resource,
+    // the resident seeks alternatives. Otherwise ordinary Core decides.
+    const auto originalFood=chooseResidentAIExistingCivilizationAffordance(
+        world,actor,{0,0},thought);
+    assert(originalFood.has_value());
+    assert(originalFood->intent==CivilizationIntent::Gather);
+    for(int tick=477;tick<=479;++tick)
+        rememberCivilizationAttemptOutcome(actor,*originalFood,tick,false);
+    assert(residentAIHasRecentRepeatedFailure(
+        actor,*originalFood,world.minute));
+    const auto attemptedAgain=chooseResidentAIExistingCivilizationAffordance(
+        world,actor,{0,0},thought);
+    const auto trueExploration=bestResourceExplorationDecisionAtPosition(
+        world,actor,{0,0},nullptr,MaterialKind::PlantFood);
+    if(trueExploration.intent==CivilizationIntent::Explore
+       &&trueExploration.utility>=0.14){
+        assert(attemptedAgain.has_value());
+        assert(attemptedAgain->intent==CivilizationIntent::Explore);
+        assert(attemptedAgain->material==MaterialKind::PlantFood);
+    }else{
+        assert(!attemptedAgain.has_value());
+    }
+    // Another resident cannot inherit someone else's failed history.
+    Character fresh=actor;
+    fresh.id=10;
+    fresh.civilization.character=fresh.id;
+    fresh.memory=MemoryState{};
+    fresh.beliefs=BeliefState{};
+    AcceptedCognitiveDecision freshThought=thought;
+    freshThought.actor=fresh.id;
+    const auto independent=chooseResidentAIExistingCivilizationAffordance(
+        world,fresh,{0,0},freshThought);
+    assert(independent.has_value()
+           &&independent->intent==CivilizationIntent::Gather);
+
+    // A truly successful retry supersedes stale failures immediately.
+    rememberCivilizationAttemptOutcome(actor,*originalFood,480,true);
+    assert(!residentAIHasRecentRepeatedFailure(
+        actor,*originalFood,world.minute));
+    const auto recovered=chooseResidentAIExistingCivilizationAffordance(
+        world,actor,{0,0},thought);
+    assert(recovered.has_value()
+           &&recovered->intent==CivilizationIntent::Gather);
+    // The changed choice is learned from existing snapshots, never a new
+    // ephemeral actor state or hidden RNG decision.
+    World tomorrow=world;
+    tomorrow.minute=2000;
+    assert(!residentAIHasRecentRepeatedFailure(
+        actor,*originalFood,tomorrow.minute));
+
     thought.intent=CognitiveIntentKind::ImproveWaterSecurity;
     assert(!chooseResidentAIExistingCivilizationAffordance(
         world,actor,{0,0},thought));
