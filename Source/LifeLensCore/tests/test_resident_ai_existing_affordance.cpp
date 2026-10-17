@@ -300,5 +300,108 @@ int main()
     assert(pending.material==MaterialKind::PlantFood);
     // Issuing a thought/plan is NOT a successful action commit.
     assert(sim.world().resourceNodes.front().quantity==40);
+    const std::string gatherKey="Civilization:Gather:PlantFood";
+    const auto hasFirsthandOutcome=[&](const Character& resident,
+                                       const char* outcome){
+        for(const MemoryRecord& memory:resident.memory.entries){
+            if(memory.tags.size()==3 &&memory.tags[0]=="action_experience"
+               &&memory.tags[1]==gatherKey &&memory.tags[2]==outcome
+               &&memory.source==MemorySource::DirectWitness
+               &&memory.witnessed &&memory.sourceCharacter==resident.id)
+                return true;
+        }
+        return false;
+    };
+    assert(!hasFirsthandOutcome(sim.world().characters.front(),"success"));
+    assert(!hasFirsthandOutcome(sim.world().characters.front(),"failure"));
+    const auto& accepted=sim.acceptedCognitiveDecisions().back();
+    assert(!residentAIPlanAlreadyAttempted(
+        sim.world().characters.front(),accepted,pending.civilization,
+        sim.world().minute));
+
+    // Take a real pending Core snapshot BEFORE physical execution. The AI
+    // decision alone must not change resource, inventory, memory, or belief.
+    const SimulationStateSnapshot beforeExecution=sim.captureSnapshot();
+    std::string restoreError;
+    Simulation replay(99551);
+    assert(replay.restoreSnapshot(beforeExecution,&restoreError));
+    const int foodBefore=sim.world().characters.front().civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood);
+    sim.setExternalPhysicalExecution(true);
+    replay.setExternalPhysicalExecution(true);
+    assert(sim.completeExternalContextAction(
+        self,pending.token,pending.targetPos));
+    assert(replay.completeExternalContextAction(
+        self,pending.token,pending.targetPos));
+
+    // Success is a Core Gather result, not a claim in the local-model text.
+    const Character& succeeded=sim.world().characters.front();
+    assert(sim.world().resourceNodes.front().quantity<40);
+    assert(succeeded.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)>foodBefore);
+    assert(hasFirsthandOutcome(succeeded,"success"));
+    const BeliefRecord* successBelief=succeeded.beliefs.find(
+        0,actionExperienceProposition(gatherKey.c_str()));
+    assert(successBelief!=nullptr &&successBelief->supportCount>0);
+    assert(residentAIPlanAlreadyAttempted(
+        succeeded,accepted,pending.civilization,sim.world().minute));
+    // A subsequent independent inference may legitimately choose Gather again.
+    AcceptedCognitiveDecision fresh=accepted;
+    fresh.minute=sim.world().minute;
+    assert(!residentAIPlanAlreadyAttempted(
+        succeeded,fresh,pending.civilization,sim.world().minute));
+
+    // The same saved pending action must reproduce the same authoritative
+    // material and firsthand record after restoration.
+    assert(replay.world().resourceNodes.front().quantity
+        ==sim.world().resourceNodes.front().quantity);
+    assert(replay.world().characters.front().civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)
+        ==succeeded.civilization.inventory.count(
+            ItemKind::RawMaterial,MaterialKind::PlantFood));
+    assert(hasFirsthandOutcome(replay.world().characters.front(),"success"));
+    const CognitiveRequest nextRequest=sim.observeCognitiveRequest(
+        self,CognitiveTriggerKind::Reflection);
+    bool modelCanReadSuccess=false;
+    for(const auto& memory:nextRequest.memories){
+        if(memory.tags.size()==3 &&memory.tags[0]=="action_experience"
+           &&memory.tags[1]==gatherKey &&memory.tags[2]=="success"
+           &&memory.source==MemorySource::DirectWitness &&memory.witnessed)
+            modelCanReadSuccess=true;
+    }
+    assert(modelCanReadSuccess);
+
+    // The very same accepted plan can also FAIL if another real process
+    // exhausts its resource node AFTER planning but BEFORE execution.
+    // Failure must be remembered, with no fictional food gathered.
+    Simulation exhausted(99551);
+    assert(exhausted.restoreSnapshot(beforeExecution,&restoreError));
+    exhausted.world().resourceNodes.front().quantity=0;
+    exhausted.setExternalPhysicalExecution(true);
+    assert(!exhausted.completeExternalContextAction(
+        self,pending.token,pending.targetPos));
+    const Character& failed=exhausted.world().characters.front();
+    assert(exhausted.world().resourceNodes.front().quantity==0);
+    assert(failed.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)==foodBefore);
+    assert(!hasFirsthandOutcome(failed,"success"));
+    assert(hasFirsthandOutcome(failed,"failure"));
+    const BeliefRecord* failureBelief=failed.beliefs.find(
+        0,actionExperienceProposition(gatherKey.c_str()));
+    assert(failureBelief!=nullptr &&failureBelief->contradictionCount>0);
+    bool modelCanReadFailureCause=false;
+    const CognitiveRequest failedRequest=exhausted.observeCognitiveRequest(
+        self,CognitiveTriggerKind::Reflection);
+    for(const auto& memory:failedRequest.memories){
+        if(memory.tags.size()==3 &&memory.tags[0]=="action_experience"
+           &&memory.tags[1]==gatherKey &&memory.tags[2]=="failure"
+           &&memory.source==MemorySource::DirectWitness &&memory.witnessed
+           &&memory.what.find("source-exhausted")!=std::string::npos)
+            modelCanReadFailureCause=true;
+    }
+    assert(modelCanReadFailureCause);
+    assert(residentAIPlanAlreadyAttempted(
+        failed,exhausted.acceptedCognitiveDecisions().back(),
+        pending.civilization,exhausted.world().minute));
     return 0;
 }
