@@ -262,9 +262,12 @@ inline SocialUtilityDecision chooseSocialUtilityDecision(
     const RelationshipBook& relationships) {
 
     SocialUtilityDecision best;
+    // Do not let a deceased actor initiate social contact, nor let a deceased
+    // candidate win the global ranking and suppress a reachable living target.
+    if (!self.alive) return best;
 
     for (const auto& candidate : world.characters) {
-        if (candidate.id == self.id) continue;
+        if (candidate.id == self.id || !candidate.alive) continue;
 
         const std::array<std::pair<SocialIntent, double>, 4> scores = {{
             {SocialIntent::Approach, scoreApproachIntent(world, self, candidate.id, relationships)},
