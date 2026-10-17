@@ -10,7 +10,9 @@ on:
       - 'Tools/blender/rig_imported_tiger.py'
       - 'Tools/blender/verify_imported_tiger_motion.py'
       - '.github/workflows/tiger-source-review.yml'
-      - 'web/src/render/imported-tiger.ts'
+      - 'web/src/render/imported-tiger*.ts'
+      - 'web/src/render/native-tiger-grounding.ts'
+      - 'web/tests/procedural-environment/native-tiger-*.mjs'
       - 'web/src/render/wildlife-layer.ts'
       - 'web/tests/procedural-environment/imported-tiger.mjs'
       - 'web/tests/procedural-environment/tiger-*'
@@ -30,40 +32,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Check immutable candidate and native fixture inputs
-        id: reuse
-        run: python3 Tools/assets/check_tiger_candidate_cache.py
-      - name: Inspect public license and anonymous download responses
-        run: python3 Tools/assets/probe_tiger_sources.py --output review/tiger-source-evidence.json
-      - name: Acquire openly published CC BY TopoForge candidate for review only
-        if: hashFiles('docs/asset-reviews/tiger-topoforge/source.glb') == ''
-        run: python3 Tools/assets/review_public_tiger.py docs/asset-reviews/tiger-topoforge
-      - name: Acquire second CC BY candidate for comparison
-        if: hashFiles('docs/asset-reviews/tiger-ferocious/source.glb') == ''
-        run: python3 Tools/assets/review_public_tiger.py docs/asset-reviews/tiger-ferocious ferocious
-      - name: Install free Blender on ephemeral runner
-        if: steps.reuse.outputs.rebuild_models == 'true'
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends blender python3-numpy python3-scipy
-      - name: Inspect original geometry and render four views
-        if: hashFiles('docs/asset-reviews/tiger-topoforge/inspection-positions.json') == ''
-        run: |
-          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge
-          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-ferocious
-      - name: Inspect bounded source-preserving body extraction (not runtime acceptance)
-        if: steps.reuse.outputs.rebuild_models == 'true'
-        run: |
-          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/extract_tiger_body.py -- docs/asset-reviews/tiger-topoforge
-          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge body-extraction.glb
-      - name: Author source-preserving skin, seven clips and two bounded LODs
-        if: steps.reuse.outputs.rebuild_models == 'true'
-        run: |
-          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/rig_imported_tiger.py -- docs/asset-reviews/tiger-topoforge
-          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/verify_imported_tiger_motion.py -- docs/asset-reviews/tiger-topoforge
-          blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_imported_tiger.py -- docs/asset-reviews/tiger-topoforge tiger-rigged.glb
-      - name: Revalidate pinned source and stage candidate with credits
-        run: python3 Tools/assets/stage_tiger_candidate.py
+      - name: Verify original CC BY hashes and stage the native source candidate
+        run: python3 Tools/assets/stage_native_tiger_candidate.py
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -71,7 +41,7 @@ jobs:
         working-directory: web
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Produce authoritative Core observations without changing Core
-        if: steps.reuse.outputs.rebuild_fixture == 'true'
+        if: hashFiles('web/tests/procedural-environment/review/core-fixture.json') == ''
         run: |
           cmake -S Source/LifeLensCore -B /tmp/tiger-core -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/tiger-core --target ll_ecology_fixture -j2
@@ -80,6 +50,8 @@ jobs:
       - name: Verify source skins, production layer binding and existing wildlife regressions
         working-directory: web
         run: |
+          node tests/procedural-environment/native-tiger-contact.mjs ../../docs/asset-reviews/amil-tiger
+          node tests/procedural-environment/native-tiger-grounding.mjs ../../docs/asset-reviews/amil-tiger
           node tests/procedural-environment/imported-tiger.mjs
           node tests/procedural-environment/grounding-wildlife.mjs
           npm run typecheck
@@ -97,8 +69,6 @@ jobs:
           case "$REVIEW_BRANCH" in feat/tiger-source-web-integration-*) ;; *) exit 1 ;; esac
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          find docs/asset-reviews/tiger-topoforge docs/asset-reviews/tiger-ferocious -maxdepth 1 -name '*.blend1' -delete
-          git add docs/asset-reviews/tiger-topoforge docs/asset-reviews/tiger-ferocious
           if [ -d web/public/vendor/wildlife ]; then git add -f web/public/vendor/wildlife; fi
           if [ -d web/tests/procedural-environment/review ]; then
             find web/tests/procedural-environment/review -maxdepth 1 -type f \( -name 'tiger-*.png' -o -name 'tiger-*.json' -o -name 'core-fixture.json' \) -print0 | xargs -0 -r git add -f --
@@ -114,9 +84,7 @@ jobs:
         with:
           name: tiger-source-evidence
           path: |
-            review/tiger-source-evidence.json
-            docs/asset-reviews/tiger-topoforge/
-            docs/asset-reviews/tiger-ferocious/
+            docs/asset-reviews/amil-tiger/
             web/tests/procedural-environment/review/
           if-no-files-found: error
           retention-days: 14

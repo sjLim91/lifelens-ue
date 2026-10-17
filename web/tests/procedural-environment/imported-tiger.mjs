@@ -11,16 +11,17 @@ const directory=process.env.LIFELENS_TIGER_TEST_DIR
   ??resolve(import.meta.dirname,'../../public/vendor/wildlife');
 const inspection=Boolean(process.env.LIFELENS_TIGER_TEST_DIR);
 const assets=new Map();
-for(const [tier,name] of [['near','tiger-rigged.glb'],['mid','tiger-mid.glb']]){
+for(const [tier,name] of [['near','tiger-rigged.glb'],['mid','tiger-mid.glb'],['far','tiger-far.glb']]){
   const buffer=readFileSync(resolve(directory,name));
   const loader=new GLTFLoader().register(()=>({name:'LIFELENS_NODE_TEXTURE_TEST',
     loadTexture:()=>Promise.resolve(new THREE.Texture())}));
   const gltf=await loader.parseAsync(buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength),'');
   assets.set(tier,gltf);
+  if(tier==='far'){assert.equal(gltf.animations.length,0);assert.equal(gltf.scenes.length,3);continue;}
   assert.equal(gltf.animations.length,7);
   let skins=0;
   gltf.scene.traverse(object=>{if(object instanceof THREE.SkinnedMesh){
-    skins++;assert.equal(object.skeleton.bones.length,24);
+    skins++;assert.equal(object.skeleton.bones.length,47);
     const weights=object.geometry.getAttribute('skinWeight');
     for(let i=0;i<weights.count;i++)assert(Math.abs(weights.getX(i)+weights.getY(i)+weights.getZ(i)+weights.getW(i)-1)<1e-5);
   }});
@@ -114,24 +115,16 @@ if(existsSync(fixturePath)){
   layer.group.updateMatrixWorld(true);
   let groundedSkin;actor.traverse(object=>{if(object instanceof THREE.SkinnedMesh)groundedSkin=object;});
   groundedSkin.skeleton.update();
-  const jointIds=groundedSkin.geometry.getAttribute('skinIndex');
-  const jointWeights=groundedSkin.geometry.getAttribute('skinWeight');
   const soleContacts=[];
-  for(const name of ['Fore.L.Paw','Fore.R.Paw','Hind.L.Paw','Hind.R.Paw']){
-    const bone=groundedSkin.skeleton.bones.findIndex(b=>b.name===THREE.PropertyBinding.sanitizeNodeName(name));
-    assert(bone>=0);const points=[];
-    for(let i=0;i<jointIds.count;i++){
-      if([0,1,2,3].some(j=>jointIds.getComponent(i,j)===bone&&jointWeights.getComponent(i,j)>.5)){
-        const point=new THREE.Vector3();groundedSkin.getVertexPosition(i,point);
-        point.applyMatrix4(groundedSkin.matrixWorld);points.push(point);
-      }
-    }
-    const minimum=Math.min(...points.map(point=>point.y));
-    const errors=points.filter(point=>point.y<=minimum+.012&&surface.height(point.x,point.z)!==null)
-      .map(point=>point.y-surface.height(point.x,point.z));
+  for(const paw of assets.get('near').parser.json.asset.extras.lifelensTiger.paws){
+    const errors=paw.sole_vertices.map(index=>{
+      const point=new THREE.Vector3();groundedSkin.getVertexPosition(index,point);
+      point.applyMatrix4(groundedSkin.matrixWorld);const height=surface.height(point.x,point.z);
+      return height===null?null:point.y-height;
+    }).filter(error=>error!==null);
     assert(errors.length>0);const contact=Math.min(...errors);
-    assert(Math.abs(contact)<.035,`${name} floats or penetrates actual Core terrain by ${contact}m`);
-    soleContacts.push({paw:name,contactError:contact,samples:errors.length});
+    assert(Math.abs(contact)<.035,`${paw.name} floats or penetrates actual Core terrain by ${contact}m`);
+    soleContacts.push({paw:paw.name,contactError:contact,samples:errors.length});
   }
   const imported=layer.group.getObjectByName('LifeLensImportedTigers');
   const ids=imported.children.map(object=>object.userData.coreId);
@@ -153,6 +146,36 @@ if(existsSync(fixturePath)){
   layer.dispose();coreBinding={status:'PASS_NATIVE_CORE_FIXTURE_BINDING',coreId:tiger.id,coreBehavior:tiger.behavior,
     soleContacts,checked:['skin-path','identity','position','behavior','observation-immutability','sloped-terrain-soles','origin-rebase','lod-refresh-stability','removal']};
 }
+// Far actors retain exact IDs and root transforms with three shared source poses.
+pool.begin();assert.equal(pool.draw(pose,'far',0),false);pool.end(parent);
+await new Promise(resolve=>setImmediate(resolve));
+pool.begin();
+for(let i=0;i<129;i++)assert.equal(pool.draw({...pose,id:'far-'+i,x:i,behavior:i%3===0?'Rest':i%3===1?'Forage':'Roam'},'far',.016),i<128);
+pool.end(parent);
+const farGroup=pool.group.getObjectByName('LifeLensTigerFarInstances');
+assert.equal(farGroup.userData.coreIds.length,128);
+assert.equal(new Set(farGroup.userData.coreIds).size,128);
+assert.equal(pool.actors.size,0,'Far actors must not retain detailed skeletons');
+let total=0;
+for(const mesh of farGroup.children){
+  assert(mesh instanceof THREE.InstancedMesh);total+=mesh.count;
+  assert(mesh.geometry.index.count/3<=1100);
+  for(let i=0;i<mesh.count;i++){
+    const m=new THREE.Matrix4();mesh.getMatrixAt(i,m);
+    assert.equal(m.elements[12],Number(mesh.userData.coreIds[i].slice(4)));
+  }
+}
+assert.equal(total,128);
+assert(farGroup.getObjectByName('LifeLensTigerFarRest').count>0);
+assert(farGroup.getObjectByName('LifeLensTigerFarForage').count>0);
+pool.begin();pool.end(parent);assert.equal(parent.children.length,0);
+// Inspection derivatives are deliberately barred from the production loader.
+const rejected={...assets.get('near'),parser:{json:structuredClone(assets.get('near').parser.json)}};
+rejected.parser.json.asset.extras.lifelensInspectionOnly={runtimeAdmission:false};
+const rejectPool=new ImportedTigerPool(async()=>rejected);
+rejectPool.begin();assert.equal(rejectPool.draw(pose,'near',0),false);
+await new Promise(resolve=>setImmediate(resolve));
+assert.equal(rejectPool.draw(pose,'near',0),false);rejectPool.dispose();
 pool.dispose();assert.equal(pool.draw(pose,'near',0),false);
 
 // Late network completion after disposal must release the source resources.
@@ -165,7 +188,7 @@ await new Promise(resolve=>setImmediate(resolve));assert(disposed>0);assert.equa
 
 const result={status:'PASS_SKIN_ANIMATION_AND_POOL_CONTRACT',
   input:inspection?'LOCAL_INSPECTION_DERIVATIVE':'STAGED_PINNED_SOURCE_DERIVATIVE',
-  threeRevision:THREE.REVISION,maximumDeformation,nearBudget:2,midBudget:4,
+  threeRevision:THREE.REVISION,maximumDeformation,nearBudget:2,midBudget:4,farBudget:128,farTrianglesPerActor:998,
   coreBinding,textures:'NOT_TESTED_IN_NODE',observer:'NOT_RUN',android:'NOT_MEASURED',mergeAllowed:false};
 mkdirSync(resolve(import.meta.dirname,'review'),{recursive:true});
 writeFileSync(resolve(import.meta.dirname,'review/tiger-contract.json'),JSON.stringify(result,null,2)+'\n');

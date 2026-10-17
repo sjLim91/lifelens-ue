@@ -15,7 +15,7 @@ import {ImportedTigerPool} from '../../src/render/imported-tiger.ts';
    const original=WorldScene.prototype.applyCamera;
    const ground=new ResidentGroundSurface();let terrainIdentity=null;
    const headPoint=new Vector3();
-   const views={front:[0,1.3,4.4],side:[4.4,1.3,0],quarter:[3,1.8,4],back:[0,1.3,-4.4],face:[.5,1.5,1.8]};
+   const views={front:[0,1.3,4.4],side:[-4.4,1.3,0],quarter:[-3,1.8,4],back:[0,2.3,-4.4],far:[26,14,26],face:[.5,1.5,1.8]};
    WorldScene.prototype.applyCamera=function(state){
     original.call(this,state);qa.world=this;
     const terrain=observerStore.getSnapshot().terrain;
@@ -30,14 +30,14 @@ import {ImportedTigerPool} from '../../src/render/imported-tiger.ts';
     // clarity follows the actual animal; do not remove or move vegetation.
     state.panX=x;state.panZ=z;original.call(this,state);
     if(qa.view==='face'){
-     const head=actor?.getObjectByName('Head');
+     const head=actor?.getObjectByName(actor.userData.headJoint??'Head');
      if(head){
       head.getWorldPosition(headPoint);headPoint.y+=.07;headPoint.z+=.1;
       qa.faceTarget=headPoint.clone();
      }
      if(qa.faceTarget){
       headPoint.copy(qa.faceTarget);
-      this.camera.position.set(headPoint.x+.9,headPoint.y+.25,headPoint.z+1.6);
+      this.camera.position.set(headPoint.x-.9,headPoint.y+.25,headPoint.z+1.6);
       this.camera.lookAt(headPoint);this.camera.updateMatrixWorld();return;
      }
     }
@@ -50,6 +50,7 @@ import {ImportedTigerPool} from '../../src/render/imported-tiger.ts';
     return {minute:snapshot.world.minute,worldSeed:snapshot.world.worldSeed,
      core:tiger?{id:tiger.id,species:tiger.species,gridX:tiger.gridX,gridY:tiger.gridY,behavior:tiger.behavior}:null,
      actor:actor?{id:actor.userData.coreId,position:actor.position.toArray(),clip:actor.userData.clip,tier:actor.userData.tier}:null,
+     farIds:qa.world?.scene.getObjectByName('LifeLensTigerFarInstances')?.userData.coreIds??[],
      runtime:snapshot.runtime,simulationSpeed:snapshot.simulationSpeed,
      renderStats:qa.renderer?{...qa.renderer.renderer.info.render}:null,
      renderMemory:qa.renderer?{...qa.renderer.renderer.info.memory}:null,

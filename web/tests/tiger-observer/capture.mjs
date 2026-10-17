@@ -72,6 +72,15 @@ try{
   baseline=false;
   const candidate=results.find(result=>!result.baseline);
   if(candidate){
+   await page.evaluate(()=>{const q=window.__tigerObserver;q.baseline=false;q.view='far';});
+   let farReady=false;
+   for(let i=0;i<40;i++){
+    farReady=await page.evaluate(()=>{const q=window.__tigerObserver;q.world.update(.016);return q.sample().farIds.includes(q.id);});
+    if(farReady)break;await delay(100);
+   }
+   if(!farReady)throw Error('Actual Observer source-derived far instances did not load');
+   candidate.farSample=await page.evaluate(()=>window.__tigerObserver.sample());
+   await captureObserverCanvas(page,resolve(out,'candidate-far.jpg'));
    await page.evaluate(()=>{const q=window.__tigerObserver;q.baseline=false;q.view='quarter';q.world.update(.016);q.renderer.start();q.actions.setSimulationSpeed(4);});
    await page.waitForFunction(start=>window.__tigerObserver.store.getSnapshot().world.minute>=start+60,candidate.sample.minute,{timeout:60000});
    await page.evaluate(()=>window.__tigerObserver.actions.setSimulationSpeed(0));

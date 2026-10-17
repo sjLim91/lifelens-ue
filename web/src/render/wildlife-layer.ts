@@ -279,7 +279,7 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
         for(const dx of [-width,width])for(const dz of [-length,length])
           y=Math.max(y,this.ground.height(x+dx,z+dz)??y);
       }
-      if(pose.species==='Tiger'&&lod!=='far'&&this.tigers.draw({
+      if(pose.species==='Tiger'&&this.tigers.draw({
         id:pose.id,x,y,z,heading:pose.heading,scale:pose.scale,speed:pose.speed,
         phase:pose.phase,behavior:pose.behavior,
       },lod,dt,this.groundHeight)){this.instanceCount++;continue;}

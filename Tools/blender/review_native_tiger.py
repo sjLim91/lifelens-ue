@@ -36,13 +36,13 @@ def activate(name,phase):
   if not obj.animation_data:continue
   obj.animation_data.action=None
   for track in obj.animation_data.nla_tracks:track.mute=track.name!='tiger_'+name
- duration={'walk':.7368406057,'run':.5329999924,'hunt':1.4,'rest':3}.get(name,2)
+ duration={'walk':1.2,'run':.5329999924,'hunt':1.4,'rest':3}.get(name,2)
  scene.frame_set(round(phase*duration*scene.render.fps));bpy.context.view_layer.update()
 def render(name,angle,phase=.15,close=False):
  activate(name.split('-')[0],phase)
  target=Vector((0,0,.65))
  if close:
-  rig=next(obj for obj in objects if obj.type=='ARMATURE');bone=next(b for b in rig.pose.bones if ('L_Hand_' if close=='feet' else 'Head_') in b.name)
+  rig=next(obj for obj in objects if obj.type=='ARMATURE');bone=next(b for b in rig.pose.bones if ('L_Hand_' if close=='feet' else 'Head_') in b.name.replace(' ','_'))
   target=rig.matrix_world@bone.matrix.translation;camera.data.ortho_scale=.6 if close=='feet' else .85
  else:camera.data.ortho_scale=3.7
  camera.location=target+Vector((math.sin(angle)*4,-math.cos(angle)*4,1.1 if not close else .3));camera.rotation_euler=(target-camera.location).to_track_quat('-Z','Y').to_euler()
