@@ -1015,6 +1015,11 @@ export interface RuntimeClient {
   residentRuntimeJson?: () => string;
   residentsJson(): string;
   cognitiveRequestJson?: (residentId: string, trigger: string) => string;
+  submitLocalCognitiveProposal?: (
+    actor: string, observedMinute: number, worldSeed: string,
+    intent: string, priority: number, targetResident: string,
+    rationaleDigest: string,
+  ) => boolean;
   autonomousGoalCandidatesJson?: (residentId: string, trigger: string) => string;
   dynamicEnvironmentJson?: (x: number, y: number) => string;
   recentSocialEventsJson?: (maxEvents: number) => string;
