@@ -1,0 +1,162 @@
+{
+  "status": "PASS_NATIVE_RESIDENT_ACTUAL_REACT_WASM_OBSERVER",
+  "samples": [
+    {
+      "runtime": {
+        "status": "ready",
+        "errorMessage": null
+      },
+      "minute": 497,
+      "actors": [
+        {
+          "id": "1",
+          "sex": "Male",
+          "age": 33,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.556608,
+            -0.25
+          ],
+          "coreGrid": [
+            877,
+            1039
+          ]
+        },
+        {
+          "id": "2",
+          "sex": "Male",
+          "age": 32,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.556608,
+            -0.25
+          ],
+          "coreGrid": [
+            877,
+            1039
+          ]
+        },
+        {
+          "id": "3",
+          "sex": "Female",
+          "age": 26,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.356112000000003,
+            0.25
+          ],
+          "coreGrid": [
+            877,
+            1041
+          ]
+        },
+        {
+          "id": "4",
+          "sex": "Female",
+          "age": 26,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "carry",
+          "position": [
+            -1,
+            24.3798,
+            0.25
+          ],
+          "coreGrid": [
+            876,
+            1041
+          ]
+        }
+      ]
+    },
+    {
+      "runtime": {
+        "status": "ready",
+        "errorMessage": null
+      },
+      "minute": 521,
+      "actors": [
+        {
+          "id": "1",
+          "sex": "Male",
+          "age": 33,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.556608,
+            -0.25
+          ],
+          "coreGrid": [
+            877,
+            1039
+          ]
+        },
+        {
+          "id": "2",
+          "sex": "Male",
+          "age": 32,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.556608,
+            -0.25
+          ],
+          "coreGrid": [
+            877,
+            1039
+          ]
+        },
+        {
+          "id": "3",
+          "sex": "Female",
+          "age": 26,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "idle",
+          "position": [
+            -0.75,
+            24.356112000000003,
+            0.25
+          ],
+          "coreGrid": [
+            877,
+            1041
+          ]
+        },
+        {
+          "id": "4",
+          "sex": "Female",
+          "age": 26,
+          "native": true,
+          "version": "MakeHuman-native-v1",
+          "action": "walk",
+          "position": [
+            -1.3001470680397373,
+            24.42966571353115,
+            0.18997058639205258
+          ],
+          "coreGrid": [
+            876,
+            1041
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "httpErrors": [],
+  "physicalAndroid": "NOT_MEASURED"
+}
