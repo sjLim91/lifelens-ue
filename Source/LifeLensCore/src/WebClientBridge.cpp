@@ -1887,6 +1887,56 @@ std::string WebClientBridge::cognitiveRequestJson(
     return out.str();
 }
 
+bool WebClientBridge::submitLocalCognitiveProposal(
+    const std::string& residentIdText,
+    int observedMinute,
+    const std::string& observedWorldSeed,
+    const std::string& intentText,
+    double priority,
+    const std::string& targetResidentText,
+    const std::string& rationaleDigest)
+{
+    if(!simulation_ || observedMinute<0
+       || observedWorldSeed!=std::to_string(simulation_->world().seed)
+       || observedMinute>simulation_->world().minute
+       || simulation_->world().minute-observedMinute>96
+       || rationaleDigest.empty()
+       || rationaleDigest.size()>MaxCognitionIdentityBytes)
+        return false;
+
+    const CharacterId actor=
+        static_cast<CharacterId>(parseUnsigned64(residentIdText,0));
+    const CharacterId target=targetResidentText.empty()
+        ? 0
+        : static_cast<CharacterId>(parseUnsigned64(targetResidentText,0));
+    if(actor==0 || (!targetResidentText.empty() && target==0))
+        return false;
+
+    CognitiveIntentKind intent=CognitiveIntentKind::None;
+    for(const auto candidate:cognitiveStrategicIntentCatalog()){
+        if(intentText==cognitiveIntentName(candidate)){
+            intent=candidate;
+            break;
+        }
+    }
+    if(intent==CognitiveIntentKind::None) return false;
+
+    // A local model cannot submit an old browser-side picture as world truth.
+    // Reconstruct the actor's bounded request from current authoritative Core
+    // state. An aged inference is discarded when it exceeds the local window.
+    const CognitiveRequest current=simulation_->observeCognitiveRequest(
+        actor,CognitiveTriggerKind::Reflection);
+    if(current.actor!=actor) return false;
+
+    CognitiveProposal proposal;
+    proposal.actor=actor;
+    proposal.intent=intent;
+    proposal.priority=priority;
+    proposal.targetResident=target;
+    return simulation_->acceptCognitiveProposal(
+        current,proposal,"local-shared-model",rationaleDigest);
+}
+
 std::string WebClientBridge::autonomousGoalCandidatesJson(
     const std::string& residentIdText,
     const std::string& triggerText) const
