@@ -85,6 +85,7 @@ lifelens_add_test(test_action_experience_learning)
 lifelens_add_test(test_water_source_experience)
 lifelens_add_test(test_autonomy_audit)
 lifelens_add_test(test_cognitive_web_bridge)
+lifelens_add_test(test_live_resident_ai)
 
 lifelens_add_test(test_social_utility)
 

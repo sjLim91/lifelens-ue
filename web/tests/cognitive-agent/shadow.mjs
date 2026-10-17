@@ -194,3 +194,5 @@ await test('Core mutation/save APIs and Korean literals are absent from new obse
   assert(!/requestAnimationFrame|setInterval/.test(code));
 });
 console.log(`Cognitive Shadow Mode: ${passed} tests passed`);
+// Include the new live resident-to-Core path in the existing cognition CI gate.
+await import('./live.mjs');

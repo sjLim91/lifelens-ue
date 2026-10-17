@@ -1981,6 +1981,21 @@ bool Simulation::trySocialDecision(
     // are never displaced by cognition; normal Core pending actions still own
     // spatial routing, timeout and observed relationship consequences.
     std::optional<AutonomousPreferredSocialGoal> selectedPersonalGoal;
+    bool modelPreferredSocialTarget=false;
+    for(auto it=acceptedCognitiveDecisions_.rbegin();
+        it!=acceptedCognitiveDecisions_.rend();++it){
+        if(it->actor!=c.id) continue;
+        modelPreferredSocialTarget=it->minute<=world_.minute
+            &&world_.minute-it->minute<=96
+            &&it->priority>=0.50
+            &&it->target==decision.social.target
+            &&((it->intent==CognitiveIntentKind::CooperateWithResident
+                 &&decision.social.intent==SocialIntent::Approach)
+               ||(it->intent==CognitiveIntentKind::ResolveConflict
+                   &&decision.social.intent==SocialIntent::Repair));
+        break;
+    }
+    if(!modelPreferredSocialTarget){
     if(const auto preferred=preferAutonomousSocialGoalTargetWithGoal(
            world_,relationships_,c,decision.social)){
         const auto candidateRuntime=runtime_.find(preferred->decision.target);
@@ -1992,6 +2007,7 @@ bool Simulation::trySocialDecision(
             decision.social=preferred->decision;
             selectedPersonalGoal=*preferred;
         }
+    }
     }
 
     const Character* target=findCharacter(world_,decision.social.target);
@@ -2181,6 +2197,49 @@ void Simulation::beginPlan(Character& c,Runtime& r){
             world_,c,relationships_,r.pos,0.18,0.14,&population,
             &socialKnowledge_,&households_);
         sharedCadenceDecision=&cadenceDecision;
+    }
+
+    // First live resident-AI action lane: an accepted, snapshot-backed
+    // resident preference can win ONE normal social planning slot over
+    // optional civilization. The model never executes actions, shortcuts
+    // travel, changes Need thresholds, or creates a relationship. Core
+    // re-scores the chosen target and checks life, locality and safety.
+    if(sharedCadenceDecision!=nullptr && !hasUrgentPhysicalNeed){
+        for(auto it=acceptedCognitiveDecisions_.rbegin();
+            it!=acceptedCognitiveDecisions_.rend();++it){
+            if(it->actor!=c.id) continue;
+            if(it->minute>world_.minute
+               ||world_.minute-it->minute>96) break;
+            if(it->priority<0.50) break;
+            const bool cooperate=
+                it->intent==CognitiveIntentKind::CooperateWithResident;
+            const bool repair=
+                it->intent==CognitiveIntentKind::ResolveConflict;
+            if(!cooperate && !repair) break;
+            // A Core-selected avoidance or urgent comfort event is more
+            // important than an optional model-generated social preference.
+            if(cadenceDecision.kind==UnifiedDecisionKind::Social
+               && (cadenceDecision.social.intent==SocialIntent::Avoid
+                   ||cadenceDecision.social.intent==SocialIntent::Comfort))
+                break;
+            const Character* target=findCharacter(world_,it->target);
+            const auto targetRuntime=runtime_.find(it->target);
+            if(target==nullptr ||!target->alive
+               ||targetRuntime==runtime_.end()
+               ||manhattan(r.pos,targetRuntime->second.pos)
+                   >SettlementServiceRadiusGrid)
+                break;
+            const SocialIntent selectedIntent=
+                repair?SocialIntent::Repair:SocialIntent::Approach;
+            const double score=repair
+                ?scoreRepairIntent(c,it->target,relationships_)
+                :scoreApproachIntent(world_,c,it->target,relationships_);
+            if(score<0.18) break;
+            cadenceDecision.kind=UnifiedDecisionKind::Social;
+            cadenceDecision.social={selectedIntent,it->target,score};
+            cadenceDecision.utility=score;
+            break;
+        }
     }
 
     // Survival needs that can be satisfied immediately pre-empt settlement

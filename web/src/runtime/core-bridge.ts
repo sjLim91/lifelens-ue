@@ -5,6 +5,7 @@ import {
 import {
   parseCognitiveRequest,
   type CognitiveRequestDto,
+  type CognitiveProposalDto,
   type CognitiveTrigger,
 } from '../cognition/cognitive-contract';
 import type {
@@ -219,6 +220,29 @@ export class LifeLensCoreBridge {
       );
     } catch {
       return null;
+    }
+  }
+
+  // The Core reconstructs a fresh authoritative request. The local model
+  // cannot mutate any world object; it only submits one validated preference.
+  submitLocalCognitiveProposal(
+    request: CognitiveRequestDto,
+    proposal: CognitiveProposalDto,
+    observedWorldSeed: string,
+  ): boolean {
+    if (typeof this.client.submitLocalCognitiveProposal !== 'function') return false;
+    let digest = 2166136261;
+    for (const point of proposal.rationale) {
+      digest = Math.imul(digest ^ (point.codePointAt(0) ?? 0), 16777619) >>> 0;
+    }
+    try {
+      return this.client.submitLocalCognitiveProposal(
+        request.actor, request.minute, observedWorldSeed,
+        proposal.intent, proposal.priority, proposal.targetResident ?? '',
+        `local-${digest.toString(16).padStart(8, '0')}`,
+      );
+    } catch {
+      return false;
     }
   }
 
