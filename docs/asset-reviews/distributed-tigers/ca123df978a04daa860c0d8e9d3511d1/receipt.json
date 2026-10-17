@@ -1,0 +1,233 @@
+{
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-17T03:14:45.878435+00:00",
+  "uid": "ca123df978a04daa860c0d8e9d3511d1",
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/ca123df978a04daa860c0d8e9d3511d1",
+    "uid": "ca123df978a04daa860c0d8e9d3511d1",
+    "name": "tiger howl v04",
+    "staffpickedAt": null,
+    "viewCount": 6729,
+    "likeCount": 83,
+    "animationCount": 1,
+    "viewerUrl": "https://sketchfab.com/3d-models/ca123df978a04daa860c0d8e9d3511d1",
+    "embedUrl": "https://sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/embed",
+    "commentCount": 2,
+    "isDownloadable": true,
+    "publishedAt": "2020-11-08T07:47:11.633006",
+    "tags": [
+      {
+        "name": "forest",
+        "slug": "forest",
+        "uri": "https://api.sketchfab.com/v3/tags/forest"
+      },
+      {
+        "name": "tiger",
+        "slug": "tiger",
+        "uri": "https://api.sketchfab.com/v3/tags/tiger"
+      },
+      {
+        "name": "speed",
+        "slug": "speed",
+        "uri": "https://api.sketchfab.com/v3/tags/speed"
+      },
+      {
+        "name": "ready",
+        "slug": "ready",
+        "uri": "https://api.sketchfab.com/v3/tags/ready"
+      },
+      {
+        "name": "king",
+        "slug": "king",
+        "uri": "https://api.sketchfab.com/v3/tags/king"
+      },
+      {
+        "name": "howl",
+        "slug": "howl",
+        "uri": "https://api.sketchfab.com/v3/tags/howl"
+      },
+      {
+        "name": "loin",
+        "slug": "loin",
+        "uri": "https://api.sketchfab.com/v3/tags/loin"
+      },
+      {
+        "name": "unity",
+        "slug": "unity",
+        "uri": "https://api.sketchfab.com/v3/tags/unity"
+      },
+      {
+        "name": "unity3d",
+        "slug": "unity3d",
+        "uri": "https://api.sketchfab.com/v3/tags/unity3d"
+      },
+      {
+        "name": "game",
+        "slug": "game",
+        "uri": "https://api.sketchfab.com/v3/tags/game"
+      },
+      {
+        "name": "3dsmax",
+        "slug": "3dsmax",
+        "uri": "https://api.sketchfab.com/v3/tags/3dsmax"
+      },
+      {
+        "name": "animal",
+        "slug": "animal",
+        "uri": "https://api.sketchfab.com/v3/tags/animal"
+      },
+      {
+        "name": "rigged",
+        "slug": "rigged",
+        "uri": "https://api.sketchfab.com/v3/tags/rigged"
+      }
+    ],
+    "categories": [],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "673a7553260245168b90f563d34bcaf0",
+          "size": 253284,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/thumbnails/5f1f37c7252c4617a22f943459986c99/f9d25c863a9f4329b45f0882b744e676.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "c5639062365546ffab647f84c625d85a",
+          "size": 81885,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/thumbnails/5f1f37c7252c4617a22f943459986c99/ddb4523f3f0f4796ac96b5a50fb69d51.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "09c203a4d8494d939ad02ce6bf38b6bb",
+          "size": 45487,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/thumbnails/5f1f37c7252c4617a22f943459986c99/4944273c523e403384b171178e5d6bb2.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "baaf616bfbc044e7b55a294d4505e7c9",
+          "size": 7822,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/thumbnails/5f1f37c7252c4617a22f943459986c99/10e1c47a56474b3fa5bd40869392c75f.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "b99ead1402d446c0bb62fd8e5c96156e",
+          "size": 1043,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/thumbnails/5f1f37c7252c4617a22f943459986c99/80fb3031a5044062814db8230dc47672.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "325fb4d49fa742959d3d4eb21dfcc3bd",
+      "username": "shahabahmed",
+      "displayName": "Unity  (shehab house)",
+      "profileUrl": "https://sketchfab.com/shahabahmed",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/4c62c6f0382246c190e839b4969d2c60",
+        "images": [
+          {
+            "size": 1062,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/7d06465767d047718047ac3abfc31a62.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1395,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/164fe48a1cf54a20a6e971c9640ca996.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2746,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/d163a65fb0fb44dab8039ec43ee57f5a.jpeg",
+            "height": 90
+          },
+          {
+            "size": 3203,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/bf482275875f4ad390fd91afcb3fd8ab.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/325fb4d49fa742959d3d4eb21dfcc3bd"
+    },
+    "description": "this free model I retatch texture feel free to used as you like",
+    "faceCount": 4650,
+    "createdAt": "2020-11-08T07:36:11.689314",
+    "vertexCount": 2514,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 2,
+        "size": 3797368,
+        "type": "glb",
+        "textureMaxResolution": 1024,
+        "faceCount": 4650,
+        "vertexCount": 3338
+      },
+      "gltf": {
+        "textureCount": 2,
+        "size": 3542148,
+        "type": "gltf",
+        "textureMaxResolution": 1024,
+        "faceCount": 4650,
+        "vertexCount": 3338
+      },
+      "source": {
+        "textureCount": null,
+        "size": 4883722,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 3059742,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-051/ca123df978a04daa860c0d8e9d3511d1.glb",
+  "sha256": "7cbac39e5783dd7bc53b4ed224225f0333cf243945b45fc392f0baf1271a45dd",
+  "bytes": 3797368,
+  "datasetLicense": "ODC-By-1.0",
+  "dataset": "https://huggingface.co/datasets/allenai/objaverse",
+  "asset": {
+    "extras": {
+      "author": "Unity  (shehab house) (https://sketchfab.com/shahabahmed)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/tiger-howl-v04-ca123df978a04daa860c0d8e9d3511d1",
+      "title": "tiger howl v04"
+    },
+    "generator": "Sketchfab-12.65.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 39
+    }
+  ],
+  "animations": [
+    {
+      "name": "Take 001",
+      "channels": 70,
+      "extras": null
+    }
+  ]
+}

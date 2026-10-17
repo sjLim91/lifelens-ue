@@ -1,0 +1,217 @@
+name: LifeLens Tiger Source Evidence
+
+on:
+  push:
+    branches: ['feat/tiger-source-web-integration-*']
+    paths:
+      - 'Tools/assets/**'
+      - 'Tools/blender/review_imported_tiger.py'
+      - 'Tools/blender/extract_tiger_body.py'
+      - 'Tools/blender/rig_imported_tiger.py'
+      - 'Tools/blender/verify_imported_tiger_motion.py'
+      - '.github/workflows/tiger-source-review.yml'
+      - 'web/src/render/imported-tiger*.ts'
+      - 'web/src/render/native-tiger-grounding.ts'
+      - 'web/tests/procedural-environment/native-tiger-*.mjs'
+      - 'web/src/render/wildlife-layer.ts'
+      - 'web/tests/procedural-environment/imported-tiger.mjs'
+      - 'web/tests/procedural-environment/tiger-*'
+      - 'web/tests/tiger-observer/**'
+      - '!web/tests/tiger-observer/published.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tiger-source-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-source-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original CC BY hashes and stage the native source candidate
+        run: python3 Tools/assets/stage_native_tiger_candidate.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install free Web test dependencies
+        working-directory: web
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Produce authoritative Core observations without changing Core
+        if: hashFiles('web/tests/procedural-environment/review/core-fixture.json') == ''
+        run: |
+          cmake -S Source/LifeLensCore -B /tmp/tiger-core -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/tiger-core --target ll_ecology_fixture -j2
+          mkdir -p web/tests/procedural-environment/review
+          /tmp/tiger-core/ll_ecology_fixture web/tests/procedural-environment/review/core-fixture.json
+      - name: Verify source skins, production layer binding and existing wildlife regressions
+        working-directory: web
+        run: |
+          node tests/procedural-environment/native-tiger-contact.mjs ../docs/asset-reviews/amil-tiger
+          node tests/procedural-environment/native-tiger-grounding.mjs ../docs/asset-reviews/amil-tiger
+          node tests/procedural-environment/imported-tiger.mjs
+          node tests/procedural-environment/grounding-wildlife.mjs
+          npm run typecheck
+      - name: Install free browser for subsystem captures
+        working-directory: web
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright && npx playwright install --with-deps chromium
+      - name: Capture production layer comparison (not full Observer acceptance)
+        working-directory: web
+        run: node tests/procedural-environment/tiger-capture.mjs
+      - name: Preserve review files on the Draft branch only
+        if: always()
+        env:
+          REVIEW_BRANCH: ${{ github.ref_name }}
+        run: |
+          case "$REVIEW_BRANCH" in feat/tiger-source-web-integration-*) ;; *) exit 1 ;; esac
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ -d web/public/vendor/wildlife ]; then git add -f web/public/vendor/wildlife; fi
+          if [ -d web/tests/procedural-environment/review ]; then
+            find web/tests/procedural-environment/review -maxdepth 1 -type f \( -name 'tiger-*.png' -o -name 'tiger-*.json' -o -name 'core-fixture.json' \) -print0 | xargs -0 -r git add -f --
+          fi
+          if ! git diff --cached --quiet; then
+            git commit -m 'Preserve source-derived tiger skin, LODs and rig evidence; Observer gate pending [skip ci]'
+            for attempt in 1 2 3; do
+              git pull --rebase origin "$REVIEW_BRANCH"
+              if git push origin "HEAD:$REVIEW_BRANCH"; then break; fi
+              test "$attempt" -lt 3
+            done
+          fi
+      - name: Preserve inspection evidence (not quality acceptance)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiger-source-evidence
+          path: |
+            docs/asset-reviews/amil-tiger/
+            web/tests/procedural-environment/review/
+          if-no-files-found: error
+          retention-days: 14
+
+  actual-observer-review:
+    needs: public-source-evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Restore unchanged Core WASM build
+        id: wasm
+        uses: actions/cache/restore@v4
+        with:
+          path: web/public/runtime
+          key: tiger-wasm-v2-${{ runner.os }}-${{ hashFiles('Source/LifeLensCore/**', 'Tools/build_web_client.py') }}
+      - name: Install free WASM compiler and browser dependencies
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund --prefix web
+          npm install --no-save --ignore-scripts --no-audit --no-fund --prefix web playwright
+          cd web
+          npx playwright install --with-deps chromium
+      - name: Install WASM compiler when source build is not cached
+        if: steps.wasm.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends emscripten
+      - name: Build unchanged Core into the actual Web runtime
+        id: compile
+        if: steps.wasm.outputs.cache-hit != 'true'
+        run: |
+          emcmake cmake -S Source/LifeLensCore -B /tmp/tiger-observer-wasm -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/tiger-observer-wasm --target lifelens_web_core -j2
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          for directory in ['Clients/Web/generated','web/public/runtime']:
+              target=Path(directory);target.mkdir(parents=True,exist_ok=True)
+              for name in ['lifelens_core.js','lifelens_core.wasm']:
+                  shutil.copyfile(Path('/tmp/tiger-observer-wasm/web')/name,target/name)
+          PY
+      - name: Cache successfully compiled unchanged Core
+        if: steps.compile.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: web/public/runtime
+          key: ${{ steps.wasm.outputs.cache-primary-key }}
+      - name: Prepare approved characters and generated Core contract
+        run: |
+          python3 Tools/prepare_web_character_assets.py
+          npm run generate:core-contract --prefix web
+      - name: Build production React Observer with camera measurement bridge
+        env:
+          VITE_REVIEW_COMMIT: ${{ github.sha }}
+        working-directory: web
+        run: npm run build -- --config tests/tiger-observer/vite.config.mjs
+      - name: Publish verified CC0 character files instead of the source ignore rule
+        run: |
+          printf '# Generated verified CC0 assets are intentionally published here.\n' > web/tests/tiger-observer/preview/vendor/characters/.gitignore
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          assets=Path('web/tests/tiger-observer/preview/vendor/characters')
+          receipt=json.loads((assets/'receipt.json').read_text())
+          assert {entry['file'] for entry in receipt} == {'character.glb','ual1.glb','ual2.glb'}
+          for entry in receipt:
+              data=(assets/entry['file']).read_bytes()
+              assert len(data) == entry['bytes'], entry['file']
+              assert hashlib.sha256(data).hexdigest() == entry['sha256'], entry['file']
+          PY
+      - name: Capture real React-WASM Observer and actual Core movement
+        working-directory: web
+        run: node tests/tiger-observer/capture.mjs
+      - name: Publish passing Draft review in an isolated existing Pages subdirectory
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web/tests/tiger-observer/preview
+          publish_branch: gh-pages
+          destination_dir: review/tiger-728
+          keep_files: true
+          commit_message: "Draft tiger review: ${{ github.sha }}"
+      - name: Verify public Pages boot WASM controls and pinned native GLB
+        working-directory: web
+        run: node tests/tiger-observer/published.mjs
+      - name: Record actual capture outcome on Draft branch (including failures)
+        if: always()
+        env:
+          REVIEW_BRANCH: ${{ github.ref_name }}
+        run: |
+          case "$REVIEW_BRANCH" in feat/tiger-source-web-integration-*) ;; *) exit 1 ;; esac
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ -d web/tests/tiger-observer/review ]; then
+            git add -f web/tests/tiger-observer/review
+            if ! git diff --cached --quiet; then
+              git commit -m 'Record actual Observer capture outcome; quality gate remains closed [skip ci]'
+              for attempt in 1 2 3; do
+                git pull --rebase origin "$REVIEW_BRANCH"
+                if git push origin "HEAD:$REVIEW_BRANCH"; then break; fi
+                test "$attempt" -lt 3
+              done
+            fi
+          fi
+      - name: Preserve full Observer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiger-actual-observer
+          path: web/tests/tiger-observer/review/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Preserve reviewable production Observer preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiger-observer-preview
+          path: web/tests/tiger-observer/preview/
+          if-no-files-found: warn
+          retention-days: 3
+

@@ -55,6 +55,8 @@ function Topbar({ onOpenGlobe, globeOpen }: {
         <span>실시간 관찰</span>
       </div>
       <div className="earth-topbar-actions">
+        <a className="earth-globe-open" href="./vendor/wildlife/CREDITS.html"
+          target="_blank" rel="noopener noreferrer">3D 자산 출처</a>
         <button className="earth-globe-open" type="button" onClick={onOpenGlobe}>
           {globeOpen ? '주민 관찰' : '지구 관찰'}
         </button>

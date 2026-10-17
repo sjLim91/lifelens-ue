@@ -798,6 +798,7 @@ export function formatLocationText(value: string | undefined): string {
     outdoors: '야외',
     world: '월드',
     'civilization-worksite': '문명 작업 현장',
+    'society-organization': '사회 조직',
   };
   return translated('장소', text, known, '장소 정보 확인 중');
 }
@@ -811,6 +812,14 @@ export function formatMemoryText(value: string | undefined): string {
   const text = value?.trim();
   if (!text) return '기억 내용 미확인';
   if (/[가-힣]/.test(text)) return text;
+
+  // Core SocietyInstitutionKind ordinal, as used by membership propositions.
+  const institution = text.match(/^institution:([0-5])$/i);
+  if (institution) {
+    const kinds = ['LearningCircle', 'ProductionNetwork', 'StorageCommons',
+      'CareNetwork', 'ExchangeNetwork', 'InquiryCircle'];
+    return `${KOREAN_SOCIETY_INSTITUTION_LABELS[kinds[Number(institution[1])]]} 구성원`;
+  }
 
   const technique = civilizationTechniqueFromStatement(text);
   if (technique) return `${formatTechnique(technique)} 시연을 목격함`;
@@ -842,6 +851,14 @@ export function formatBelief(value: string | undefined): string {
   const text = value?.trim();
   if (!text) return '믿음 내용 미확인';
   if (/[가-힣]/.test(text)) return text;
+
+  // Core SocietyInstitutionKind ordinal, as used by membership propositions.
+  const institution = text.match(/^institution:([0-5])$/i);
+  if (institution) {
+    const kinds = ['LearningCircle', 'ProductionNetwork', 'StorageCommons',
+      'CareNetwork', 'ExchangeNetwork', 'InquiryCircle'];
+    return `${KOREAN_SOCIETY_INSTITUTION_LABELS[kinds[Number(institution[1])]]} 구성원`;
+  }
 
   const technique = civilizationTechniqueFromStatement(text);
   if (technique) return `‘${formatTechnique(technique)}’ 기술을 시연했다`;

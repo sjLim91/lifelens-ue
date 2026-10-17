@@ -132,6 +132,7 @@ export function syncResidentAuthoredHair(
   model: THREE.Group,
   appearance: ResidentAppearanceProfile,
 ): boolean {
+  if (model.userData.nativeResidentBody) { removeResidentAuthoredHair(model); return true; }
   const previous = model.getObjectByName(HAIR_GROUP_NAME);
   if (previous instanceof THREE.Group) disposeHair(previous);
   const cached = model.userData.residentHeadFit as HeadFit | undefined;
@@ -243,6 +244,7 @@ export function syncResidentAuthoredFace(
   model: THREE.Group,
   appearance: ResidentAppearanceProfile,
 ): boolean {
+  if (model.userData.nativeResidentBody) { removeResidentAuthoredFace(model); return true; }
   const previous = model.getObjectByName(FACE_GROUP_NAME);
   if (previous instanceof THREE.Group) disposeHair(previous);
   const cached = model.userData.residentHeadFit as HeadFit | undefined;
@@ -329,3 +331,4 @@ export function removeResidentAuthoredFace(model: THREE.Group): void {
   const previous = model.getObjectByName(FACE_GROUP_NAME);
   if (previous instanceof THREE.Group) disposeHair(previous);
 }
+

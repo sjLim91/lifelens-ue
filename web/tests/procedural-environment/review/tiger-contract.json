@@ -1,0 +1,52 @@
+{
+  "status": "PASS_SKIN_ANIMATION_AND_POOL_CONTRACT",
+  "input": "STAGED_PINNED_SOURCE_DERIVATIVE",
+  "threeRevision": "180",
+  "maximumDeformation": 56.80077861092878,
+  "nearBudget": 2,
+  "midBudget": 4,
+  "farBudget": 128,
+  "farTrianglesPerActor": 998,
+  "coreBinding": {
+    "status": "PASS_NATIVE_CORE_FIXTURE_BINDING",
+    "coreId": "25:32:1704075738371588112",
+    "coreBehavior": "Hunt",
+    "soleContacts": [
+      {
+        "paw": "Bip01_L_Hand_020",
+        "contactError": -0.0008149016879137605,
+        "samples": 110
+      },
+      {
+        "paw": "Bip01_R_Hand_026",
+        "contactError": -0.0009838350790509764,
+        "samples": 110
+      },
+      {
+        "paw": "Bip01_L_Foot_032",
+        "contactError": -0.0012325785320470573,
+        "samples": 113
+      },
+      {
+        "paw": "Bip01_R_Foot_038",
+        "contactError": -0.013037909806406844,
+        "samples": 70
+      }
+    ],
+    "checked": [
+      "skin-path",
+      "identity",
+      "position",
+      "behavior",
+      "observation-immutability",
+      "sloped-terrain-soles",
+      "origin-rebase",
+      "lod-refresh-stability",
+      "removal"
+    ]
+  },
+  "textures": "NOT_TESTED_IN_NODE",
+  "observer": "NOT_RUN",
+  "android": "NOT_MEASURED",
+  "mergeAllowed": false
+}

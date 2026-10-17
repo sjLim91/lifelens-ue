@@ -1,0 +1,235 @@
+{
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-17T03:14:46.993171+00:00",
+  "uid": "733afd855f5d4c378f041cc89e231770",
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/733afd855f5d4c378f041cc89e231770",
+    "uid": "733afd855f5d4c378f041cc89e231770",
+    "name": "tiger walk v02",
+    "staffpickedAt": null,
+    "viewCount": 12935,
+    "likeCount": 124,
+    "animationCount": 1,
+    "viewerUrl": "https://sketchfab.com/3d-models/733afd855f5d4c378f041cc89e231770",
+    "embedUrl": "https://sketchfab.com/models/733afd855f5d4c378f041cc89e231770/embed",
+    "commentCount": 7,
+    "isDownloadable": true,
+    "publishedAt": "2020-11-08T06:18:26.688316",
+    "tags": [
+      {
+        "name": "forest",
+        "slug": "forest",
+        "uri": "https://api.sketchfab.com/v3/tags/forest"
+      },
+      {
+        "name": "tiger",
+        "slug": "tiger",
+        "uri": "https://api.sketchfab.com/v3/tags/tiger"
+      },
+      {
+        "name": "hunter",
+        "slug": "hunter",
+        "uri": "https://api.sketchfab.com/v3/tags/hunter"
+      },
+      {
+        "name": "speed",
+        "slug": "speed",
+        "uri": "https://api.sketchfab.com/v3/tags/speed"
+      },
+      {
+        "name": "king",
+        "slug": "king",
+        "uri": "https://api.sketchfab.com/v3/tags/king"
+      },
+      {
+        "name": "lion",
+        "slug": "lion",
+        "uri": "https://api.sketchfab.com/v3/tags/lion"
+      },
+      {
+        "name": "strong",
+        "slug": "strong",
+        "uri": "https://api.sketchfab.com/v3/tags/strong"
+      },
+      {
+        "name": "unity",
+        "slug": "unity",
+        "uri": "https://api.sketchfab.com/v3/tags/unity"
+      },
+      {
+        "name": "unity3d",
+        "slug": "unity3d",
+        "uri": "https://api.sketchfab.com/v3/tags/unity3d"
+      },
+      {
+        "name": "3dsmax",
+        "slug": "3dsmax",
+        "uri": "https://api.sketchfab.com/v3/tags/3dsmax"
+      },
+      {
+        "name": "animal",
+        "slug": "animal",
+        "uri": "https://api.sketchfab.com/v3/tags/animal"
+      },
+      {
+        "name": "animation",
+        "slug": "animation",
+        "uri": "https://api.sketchfab.com/v3/tags/animation"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      },
+      {
+        "name": "nature-plants"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "82eb468a14424e718c59493d163b363c",
+          "size": 243230,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/733afd855f5d4c378f041cc89e231770/thumbnails/742bff914a4340178a0bb98a607b680b/6227aab946d14ad289891851fffc564b.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "a7df4ce866414357bb27d13ad00cd1e7",
+          "size": 82264,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/733afd855f5d4c378f041cc89e231770/thumbnails/742bff914a4340178a0bb98a607b680b/177ef98ab62142dcb45853b7f808793c.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "fe16a4446fe54a8a845c0678213bc592",
+          "size": 46567,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/733afd855f5d4c378f041cc89e231770/thumbnails/742bff914a4340178a0bb98a607b680b/d18fde1542e245809e35076109e7447f.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "26ed218efd12498c933bb0c4fc26c496",
+          "size": 8474,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/733afd855f5d4c378f041cc89e231770/thumbnails/742bff914a4340178a0bb98a607b680b/53e743010ba947adaaf689ef9d3178b0.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "3f743d8e619944e29b0096e28d6b2239",
+          "size": 1050,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/733afd855f5d4c378f041cc89e231770/thumbnails/742bff914a4340178a0bb98a607b680b/0955d806ff074965aded8792e647e9c4.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "325fb4d49fa742959d3d4eb21dfcc3bd",
+      "username": "shahabahmed",
+      "displayName": "Unity  (shehab house)",
+      "profileUrl": "https://sketchfab.com/shahabahmed",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/4c62c6f0382246c190e839b4969d2c60",
+        "images": [
+          {
+            "size": 1062,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/7d06465767d047718047ac3abfc31a62.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1395,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/164fe48a1cf54a20a6e971c9640ca996.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2746,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/d163a65fb0fb44dab8039ec43ee57f5a.jpeg",
+            "height": 90
+          },
+          {
+            "size": 3203,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/bf482275875f4ad390fd91afcb3fd8ab.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/325fb4d49fa742959d3d4eb21dfcc3bd"
+    },
+    "description": "this free model I retatch texture feel free to used as unity asset",
+    "faceCount": 4650,
+    "createdAt": "2020-11-08T06:02:13.322534",
+    "vertexCount": 2514,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 1,
+        "size": 1950444,
+        "type": "glb",
+        "textureMaxResolution": 1024,
+        "faceCount": 4650,
+        "vertexCount": 3329
+      },
+      "gltf": {
+        "textureCount": 1,
+        "size": 1753234,
+        "type": "gltf",
+        "textureMaxResolution": 1024,
+        "faceCount": 4650,
+        "vertexCount": 3329
+      },
+      "source": {
+        "textureCount": null,
+        "size": 2235104,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 1832486,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-105/733afd855f5d4c378f041cc89e231770.glb",
+  "sha256": "4a6e97f3130d5f525e52e958cfcd687ee0ba1224eca18cff1a070b4765caec28",
+  "bytes": 1950444,
+  "datasetLicense": "ODC-By-1.0",
+  "dataset": "https://huggingface.co/datasets/allenai/objaverse",
+  "asset": {
+    "extras": {
+      "author": "Unity  (shehab house) (https://sketchfab.com/shahabahmed)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/tiger-walk-v02-733afd855f5d4c378f041cc89e231770",
+      "title": "tiger walk v02"
+    },
+    "generator": "Sketchfab-12.65.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 39
+    }
+  ],
+  "animations": [
+    {
+      "name": "Take 001",
+      "channels": 45,
+      "extras": null
+    }
+  ]
+}

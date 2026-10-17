@@ -1,0 +1,373 @@
+{
+  "status": "REQUIRES_VISUAL_REVIEW",
+  "runtimeAdmission": false,
+  "bounds": [
+    [
+      -0.9510578513145447,
+      -1.1568679809570312,
+      -1.0
+    ],
+    [
+      0.9510578513145447,
+      1.1226938962936401,
+      1.0075788497924805
+    ]
+  ],
+  "triangles": 13992,
+  "rigs": [
+    {
+      "name": "Object_5",
+      "bones": [
+        "_rootJoint",
+        "Hip_01",
+        "Spine_1_02",
+        "Spine_2_03",
+        "Neck_00",
+        "Head_04",
+        "Jaw_05",
+        "Jaw_end_035",
+        "Ear_1.L_06",
+        "Ear_2.L_07",
+        "Ear_2.L_end_036",
+        "Ear_1.R_08",
+        "Ear_2.R_09",
+        "Ear_2.R_end_037",
+        "Eye.L_010",
+        "Eye.L_end_038",
+        "Nose_011",
+        "Nose_end_039",
+        "Eye.R_012",
+        "Eye.R_end_040",
+        "Leg_1.F.L_013",
+        "Leg_2.F.L_014",
+        "Foot.F.L_015",
+        "Toe.F.L_016",
+        "Toe.F.L_end_041",
+        "Leg_1.F.R_017",
+        "Leg_2.F.R_018",
+        "Foot.F.R_019",
+        "Toe.F.R_020",
+        "Toe.F.R_end_042",
+        "Tail_1_021",
+        "Tail_2_022",
+        "Tail_3_023",
+        "Tail_4_024",
+        "Tail_4_end_043",
+        "Leg_1.B.L_025",
+        "Leg_2.B.L_026",
+        "Leg_3.B.L_027",
+        "Foot.B.L_028",
+        "Toe.B.L_029",
+        "Toe.B.L_end_044",
+        "Leg_1.B.R_030",
+        "Leg_2.B.R_031",
+        "Leg_3.B.R_032",
+        "Foot.B.R_033",
+        "Toe.B.R_034",
+        "Toe.B.R_end_045"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "Armature|Tiger Death_0",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Death_1",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Death_2",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Death_3",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Death_4",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Death_Object_5",
+      "frames": [
+        0.0,
+        80.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Idle_0",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Idle_1",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Idle_2",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Idle_3",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Idle_4",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Idle_Object_5",
+      "frames": [
+        0.0,
+        80.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch L_0",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch L_1",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch L_2",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch L_3",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch L_4",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch L_Object_5",
+      "frames": [
+        0.0,
+        80.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch R_0",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch R_1",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch R_2",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch R_3",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch R_4",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Scratch R_Object_5",
+      "frames": [
+        0.0,
+        80.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Walk_0",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Walk_1",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Walk_2",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Walk_3",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Walk_4",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Tiger Walk_Object_5",
+      "frames": [
+        0.0,
+        80.0
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    },
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    },
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    },
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    },
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    },
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    },
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    },
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    },
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    },
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    },
+    {
+      "name": "Tiger",
+      "textures": [
+        "Image_0.001",
+        "Image_1.001",
+        "Image_2.001"
+      ]
+    }
+  ]
+}

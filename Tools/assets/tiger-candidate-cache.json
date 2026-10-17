@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "quality_accepted": false,
+  "verified_source_job": "https://github.com/sjLim91/lifelens-ue/actions/runs/38687906742",
+  "files": {
+    "Tools/blender/extract_tiger_body.py": "3dd0abac9978ef46a806d370469d972d4ffd00c6591fc00dc708fbae8772bd67",
+    "Tools/blender/rig_imported_tiger.py": "821fb6af501bcee702a00c49e801c0cca27ab2679a6a5faca54ec2e0dd3cc1d8",
+    "Tools/blender/review_imported_tiger.py": "becb2d847657ce826f3d1cc9f84ea9f0ec6207a8bf32070582bc427e7dd05749",
+    "Tools/blender/verify_imported_tiger_motion.py": "401806d75eaa9cedd0975683a077da61e48def596feacd507fdd99d2ff2873f1",
+    "docs/asset-reviews/tiger-topoforge/source.glb": "f7e3b63e83efd92ba379f750f02e9971f52679173c6a268a29f352ad0c2092be",
+    "docs/asset-reviews/tiger-topoforge/tiger-rigged.glb": "c797317862d664b7ad421e283e7d82ed7eb7acf2c428b85e16158571d57c49ce",
+    "docs/asset-reviews/tiger-topoforge/tiger-mid.glb": "f0e1230f450a8a7b841f548b6936c5490338b1e1e4b5731c7c17e8c8bfa7e0e7"
+  },
+  "core_tree": "c840e811211171213a498c254e48203bf24a10e3",
+  "fixture": "web/tests/procedural-environment/review/core-fixture.json",
+  "fixture_sha256": "d4a653d3721500e2eb195904c40d3066c6d839e1f6bcf9366bd4fb58b0bc35cd"
+}

@@ -1,0 +1,65 @@
+name: Native Tiger Source and Motion Review
+on:
+  push:
+    branches: ['feat/tiger-source-web-integration-*']
+    paths:
+      - 'web/tools/build-native-tiger.mjs'
+      - 'web/tools/static-native-tiger.mjs'
+      - 'web/tests/procedural-environment/native-tiger-contact.mjs'
+      - 'web/src/render/native-tiger-grounding.ts'
+      - 'web/tests/procedural-environment/native-tiger-grounding.mjs'
+      - 'Tools/blender/review_native_tiger.py'
+      - 'Tools/blender/resize_native_tiger_textures.py'
+      - '.github/workflows/native-tiger-source-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: native-tiger-source-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  original-source-and-motion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install free existing Web and pinned mesh optimization dependencies
+        run: |
+          npm install --prefix web --ignore-scripts --no-audit --no-fund
+          npm install --prefix web --no-save --package-lock=false --ignore-scripts --no-audit --no-fund meshoptimizer@0.23.0
+      - name: Build exclusively from hash-verified CC BY original geometry and rigs
+        run: node web/tools/build-native-tiger.mjs
+      - name: Install free Blender for packed source and image verification
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
+      - name: Apply bounded 2048 1024 512 texture LODs
+        run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/resize_native_tiger_textures.py -- docs/asset-reviews/amil-tiger
+      - name: Validate real source skin contacts loop seams and behavioral poses
+        run: node web/tests/procedural-environment/native-tiger-contact.mjs docs/asset-reviews/amil-tiger
+      - name: Validate turning and stance contact on sloped uneven terrain
+        run: node web/tests/procedural-environment/native-tiger-grounding.mjs docs/asset-reviews/amil-tiger
+      - name: Render all native states and preserve editable packed Blender source
+        run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_native_tiger.py -- docs/asset-reviews/amil-tiger
+      - name: Preserve original-source candidate evidence without acceptance
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ -d docs/asset-reviews/amil-tiger ]; then
+            git add docs/asset-reviews/amil-tiger
+            if ! git diff --cached --quiet; then
+              git commit -m 'Preserve native CC BY tiger rig LODs motion contacts and visual evidence; gate pending [skip ci]'
+              git pull --rebase origin "$GITHUB_REF_NAME"
+              git push origin "HEAD:$GITHUB_REF_NAME"
+            fi
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-tiger-source-review
+          path: docs/asset-reviews/amil-tiger/
+          retention-days: 14

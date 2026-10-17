@@ -1,0 +1,215 @@
+{
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-17T03:09:21.940286+00:00",
+  "uid": "70eef95489c046c5bc3fcc07a19b20fa",
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/70eef95489c046c5bc3fcc07a19b20fa",
+    "uid": "70eef95489c046c5bc3fcc07a19b20fa",
+    "name": "Tiger- Dog Hybrid",
+    "staffpickedAt": null,
+    "viewCount": 61,
+    "likeCount": 1,
+    "animationCount": 5,
+    "viewerUrl": "https://sketchfab.com/3d-models/70eef95489c046c5bc3fcc07a19b20fa",
+    "embedUrl": "https://sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2021-11-18T02:15:15.570457",
+    "tags": [
+      {
+        "name": "dog",
+        "slug": "dog",
+        "uri": "https://api.sketchfab.com/v3/tags/dog"
+      },
+      {
+        "name": "tiger",
+        "slug": "tiger",
+        "uri": "https://api.sketchfab.com/v3/tags/tiger"
+      },
+      {
+        "name": "hybrid",
+        "slug": "hybrid",
+        "uri": "https://api.sketchfab.com/v3/tags/hybrid"
+      },
+      {
+        "name": "animation",
+        "slug": "animation",
+        "uri": "https://api.sketchfab.com/v3/tags/animation"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      },
+      {
+        "name": "characters-creatures"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "6e11dc0901864c329d2b6f1f24808a1e",
+          "size": 267456,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/thumbnails/90b38197770f4eaab9f2d203b4c881f2/9097a0bd18114056a0ab6558e1cf91d1.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "4ae2d1043f414b6bbd000460cf7998e8",
+          "size": 44547,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/thumbnails/90b38197770f4eaab9f2d203b4c881f2/471ce04d768a460e8864df87d29a1507.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "5fa3a36ddf0c46f085a8fc7e2f44b0ec",
+          "size": 23073,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/thumbnails/90b38197770f4eaab9f2d203b4c881f2/ef470771152b4b3fbbd4a04525fd3e5a.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "fe5fcb6ddb02444c8aaafb87e48e6ca2",
+          "size": 4707,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/thumbnails/90b38197770f4eaab9f2d203b4c881f2/58113aa053244a9686fe1bc489e3b119.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "d8095a28917f4eecbb1c3cc7383e7b63",
+          "size": 1136,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/thumbnails/90b38197770f4eaab9f2d203b4c881f2/f260d84b3d52454d82d7e9872801b03a.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "cba263ffec8247b48a46d5a3de7b5fc0",
+      "username": "Memorie",
+      "displayName": "Memorie",
+      "profileUrl": "https://sketchfab.com/Memorie",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/1ed34c0bfaae4fc1ab7f60d8d1ef0a8b",
+        "images": [
+          {
+            "size": 720,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/1ed34c0bfaae4fc1ab7f60d8d1ef0a8b/31c71a50e5014c2fa231663f8b415fa8.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1203,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/1ed34c0bfaae4fc1ab7f60d8d1ef0a8b/c80ccedc9f1043419e5939be103657d9.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2793,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/1ed34c0bfaae4fc1ab7f60d8d1ef0a8b/b6a6bcf1880a4780b81509266e8afcf8.jpeg",
+            "height": 90
+          },
+          {
+            "size": 3176,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/1ed34c0bfaae4fc1ab7f60d8d1ef0a8b/1f9ae5b46dce46dab2ea9598a41e8d65.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/cba263ffec8247b48a46d5a3de7b5fc0"
+    },
+    "description": "A 3D model of a tiger/dog hybrid.\n\n[Made With Blender 2.8]",
+    "faceCount": 13832,
+    "createdAt": "2021-11-18T02:05:30.519683",
+    "vertexCount": 7062,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 3,
+        "size": 10849876,
+        "type": "glb",
+        "textureMaxResolution": 2048,
+        "faceCount": 13832,
+        "vertexCount": 12803
+      },
+      "gltf": {
+        "textureCount": 3,
+        "size": 8838990,
+        "type": "gltf",
+        "textureMaxResolution": 2048,
+        "faceCount": 13832,
+        "vertexCount": 12803
+      },
+      "source": {
+        "textureCount": null,
+        "size": 17521297,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 4812242,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-157/70eef95489c046c5bc3fcc07a19b20fa.glb",
+  "sha256": "bc2e4a8986bcfeece415fd6793ecb189b9359de712c97c02012b30574102a518",
+  "bytes": 6272556,
+  "datasetLicense": "ODC-By-1.0",
+  "dataset": "https://huggingface.co/datasets/allenai/objaverse",
+  "asset": {
+    "extras": {
+      "author": "Memorie (https://sketchfab.com/Memorie)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/tiger-dog-hybrid-70eef95489c046c5bc3fcc07a19b20fa",
+      "title": "Tiger- Dog Hybrid"
+    },
+    "generator": "Sketchfab-12.68.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 47
+    }
+  ],
+  "animations": [
+    {
+      "name": "Armature|Tiger Idle",
+      "channels": 49,
+      "extras": null
+    },
+    {
+      "name": "Armature|Tiger Walk",
+      "channels": 54,
+      "extras": null
+    },
+    {
+      "name": "Armature|Tiger Scratch R",
+      "channels": 107,
+      "extras": null
+    },
+    {
+      "name": "Armature|Tiger Scratch L",
+      "channels": 107,
+      "extras": null
+    },
+    {
+      "name": "Armature|Tiger Death",
+      "channels": 109,
+      "extras": null
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "status": "PASS_PRODUCTION_LAYER_SUBSYSTEM_ONLY",
+  "source": "STAGED_PINNED_SOURCE_DERIVATIVE",
+  "coreFixture": "UNMODIFIED_CORE_NATIVE_HARNESS",
+  "fullObserver": "NOT_RUN",
+  "android": "NOT_MEASURED",
+  "mergeAllowed": false,
+  "metrics": [
+    {
+      "coreId": "25:32:1704075738371588112",
+      "coreBehavior": "Hunt",
+      "coreUnchanged": true,
+      "importedActor": false,
+      "visibleAnimals": 18,
+      "terrainRayError": 3.7066650548922553e-7,
+      "source": "STAGED_PINNED_SOURCE_DERIVATIVE",
+      "subsystemOnly": true,
+      "fullObserver": "NOT_RUN",
+      "android": "NOT_MEASURED",
+      "renderer": {
+        "frame": 26,
+        "calls": 11,
+        "triangles": 549344,
+        "points": 0,
+        "lines": 0
+      },
+      "frames": 26,
+      "samples": [],
+      "width": 960,
+      "height": 720,
+      "baseline": true
+    },
+    {
+      "coreId": "25:32:1704075738371588112",
+      "coreBehavior": "Hunt",
+      "coreUnchanged": true,
+      "importedActor": true,
+      "clip": "idle",
+      "tier": "near",
+      "visibleAnimals": 18,
+      "terrainRayError": 3.7066650548922553e-7,
+      "source": "STAGED_PINNED_SOURCE_DERIVATIVE",
+      "subsystemOnly": true,
+      "fullObserver": "NOT_RUN",
+      "android": "NOT_MEASURED",
+      "renderer": {
+        "frame": 35,
+        "calls": 12,
+        "triangles": 467396,
+        "points": 0,
+        "lines": 0
+      },
+      "frames": 35,
+      "samples": [
+        100,
+        16.69999999999891,
+        16.700000000000728,
+        100
+      ],
+      "width": 960,
+      "height": 720,
+      "baseline": false
+    },
+    {
+      "coreId": "25:32:1704075738371588112",
+      "coreBehavior": "Hunt",
+      "coreUnchanged": true,
+      "importedActor": true,
+      "clip": "idle",
+      "tier": "near",
+      "visibleAnimals": 18,
+      "terrainRayError": 3.7066650548922553e-7,
+      "source": "STAGED_PINNED_SOURCE_DERIVATIVE",
+      "subsystemOnly": true,
+      "fullObserver": "NOT_RUN",
+      "android": "NOT_MEASURED",
+      "renderer": {
+        "frame": 41,
+        "calls": 12,
+        "triangles": 467396,
+        "points": 0,
+        "lines": 0
+      },
+      "frames": 41,
+      "samples": [
+        100,
+        16.69999999999891,
+        16.700000000000728,
+        100,
+        100,
+        100,
+        16.69999999999891,
+        100,
+        100,
+        100
+      ],
+      "width": 412,
+      "height": 915,
+      "mobileViewportOnly": true
+    }
+  ],
+  "errors": []
+}

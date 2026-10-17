@@ -1,0 +1,187 @@
+{
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-17T03:09:20.836927+00:00",
+  "uid": "6437622824da4767b7f967af26a5ae54",
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/6437622824da4767b7f967af26a5ae54",
+    "uid": "6437622824da4767b7f967af26a5ae54",
+    "name": "tiger animation",
+    "staffpickedAt": null,
+    "viewCount": 536,
+    "likeCount": 36,
+    "animationCount": 1,
+    "viewerUrl": "https://sketchfab.com/3d-models/6437622824da4767b7f967af26a5ae54",
+    "embedUrl": "https://sketchfab.com/models/6437622824da4767b7f967af26a5ae54/embed",
+    "commentCount": 1,
+    "isDownloadable": true,
+    "publishedAt": "2022-09-09T03:42:28.985274",
+    "tags": [
+      {
+        "name": "tiger",
+        "slug": "tiger",
+        "uri": "https://api.sketchfab.com/v3/tags/tiger"
+      },
+      {
+        "name": "animals",
+        "slug": "animals",
+        "uri": "https://api.sketchfab.com/v3/tags/animals"
+      },
+      {
+        "name": "animal",
+        "slug": "animal",
+        "uri": "https://api.sketchfab.com/v3/tags/animal"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "dfe8e8bab408417f83a1a293aba3292d",
+          "size": 116907,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/6437622824da4767b7f967af26a5ae54/thumbnails/30ca92afffda442ea3b9fb7312f37a6b/00db57e3a89047f3ba03410735396f1a.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "2f26ab95478f4b54ae21c46bfb829b46",
+          "size": 38828,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/6437622824da4767b7f967af26a5ae54/thumbnails/30ca92afffda442ea3b9fb7312f37a6b/6e4ffd953c434522863831367d3376ac.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "5402e04454324e50b1975445afb9f762",
+          "size": 22282,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/6437622824da4767b7f967af26a5ae54/thumbnails/30ca92afffda442ea3b9fb7312f37a6b/d94aec97977b4566bdd429f3d4a2b0b7.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "985117357d0a4bac87d0f5883c805fa5",
+          "size": 4390,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/6437622824da4767b7f967af26a5ae54/thumbnails/30ca92afffda442ea3b9fb7312f37a6b/a4899cc9b9f44739b6c98e045497727c.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "4dfc99b95b254101a62736d330094c69",
+          "size": 1039,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/6437622824da4767b7f967af26a5ae54/thumbnails/30ca92afffda442ea3b9fb7312f37a6b/4fd3475e0410423cb847adc48c4c4990.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "d7afb4b31d254bfbb98284938d8b65e1",
+      "username": "dinomaster",
+      "displayName": "dinomaster",
+      "profileUrl": "https://sketchfab.com/dinomaster",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/305b8e02160a4784a5db4a594d8ccbce",
+        "images": [
+          {
+            "size": 676,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/305b8e02160a4784a5db4a594d8ccbce/a3714b53bd964aceb5c824fcc5df5e5c.jpeg",
+            "height": 32
+          },
+          {
+            "size": 981,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/305b8e02160a4784a5db4a594d8ccbce/ceac35e9e9204f7c961fead8576dbac4.jpeg",
+            "height": 48
+          },
+          {
+            "size": 1951,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/305b8e02160a4784a5db4a594d8ccbce/5c6a368ddd4b44b092e92c5ed10039c2.jpeg",
+            "height": 90
+          },
+          {
+            "size": 2221,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/305b8e02160a4784a5db4a594d8ccbce/40805b7602d74f259564af1c3a8f10d9.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/d7afb4b31d254bfbb98284938d8b65e1"
+    },
+    "description": "the tiger's mouth is quite scary though",
+    "faceCount": 33144,
+    "createdAt": "2022-09-09T03:41:26.204118",
+    "vertexCount": 22041,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 3,
+        "size": 9201964,
+        "type": "glb",
+        "textureMaxResolution": 1024,
+        "faceCount": 33144,
+        "vertexCount": 23461
+      },
+      "gltf": {
+        "textureCount": 3,
+        "size": 4695207,
+        "type": "gltf",
+        "textureMaxResolution": 1024,
+        "faceCount": 33144,
+        "vertexCount": 23461
+      },
+      "source": {
+        "textureCount": null,
+        "size": 12309208,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 6702686,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-032/6437622824da4767b7f967af26a5ae54.glb",
+  "sha256": "53c8f4ee5dda279fc5dd1f746a02e029c4fea0f9c20db2748cce59b52f84b21d",
+  "bytes": 9201964,
+  "datasetLicense": "ODC-By-1.0",
+  "dataset": "https://huggingface.co/datasets/allenai/objaverse",
+  "asset": {
+    "extras": {
+      "author": "dinomaster (https://sketchfab.com/dinomaster)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/tiger-animation-6437622824da4767b7f967af26a5ae54",
+      "title": "tiger animation"
+    },
+    "generator": "Sketchfab-13.96.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 122
+    }
+  ],
+  "animations": [
+    {
+      "name": "Animation",
+      "channels": 299,
+      "extras": null
+    }
+  ]
+}

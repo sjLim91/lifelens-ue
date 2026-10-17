@@ -1,0 +1,3872 @@
+{
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "dataset": "AI2 Objaverse, ODC-By-1.0",
+  "annotations": {
+    "0224e1fb5bbb41a38d0b3d18aa58c607": {
+      "uri": "https://api.sketchfab.com/v3/models/0224e1fb5bbb41a38d0b3d18aa58c607",
+      "uid": "0224e1fb5bbb41a38d0b3d18aa58c607",
+      "name": "Haroldo - Versão Final",
+      "staffpickedAt": null,
+      "viewCount": 51,
+      "likeCount": 0,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/0224e1fb5bbb41a38d0b3d18aa58c607",
+      "embedUrl": "https://sketchfab.com/models/0224e1fb5bbb41a38d0b3d18aa58c607/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2019-12-06T00:00:41.099518",
+      "tags": [
+        {
+          "name": "study",
+          "slug": "study",
+          "uri": "https://api.sketchfab.com/v3/tags/study"
+        },
+        {
+          "name": "calvinandhobbes",
+          "slug": "calvinandhobbes",
+          "uri": "https://api.sketchfab.com/v3/tags/calvinandhobbes"
+        },
+        {
+          "name": "haroldo",
+          "slug": "haroldo",
+          "uri": "https://api.sketchfab.com/v3/tags/haroldo"
+        },
+        {
+          "name": "calvineharoldo",
+          "slug": "calvineharoldo",
+          "uri": "https://api.sketchfab.com/v3/tags/calvineharoldo"
+        },
+        {
+          "name": "hobbe",
+          "slug": "hobbe",
+          "uri": "https://api.sketchfab.com/v3/tags/hobbe"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        },
+        {
+          "name": "characters-creatures"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "fc0c4928ce9e473dab11679d0f3160c2",
+            "size": 58932,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/0224e1fb5bbb41a38d0b3d18aa58c607/thumbnails/f20041a57aaf44fc9b4eba04161dcbb8/d1564f7b0c994a2cba84c4614fa7267f.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "ce9449b6be314e958da0bb67522967b3",
+            "size": 23344,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/0224e1fb5bbb41a38d0b3d18aa58c607/thumbnails/f20041a57aaf44fc9b4eba04161dcbb8/e91c9e9ed6bf4c8daa8d3a3add0826a9.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "27faff10439f4dbd89fe13f7ae85ceff",
+            "size": 14651,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/0224e1fb5bbb41a38d0b3d18aa58c607/thumbnails/f20041a57aaf44fc9b4eba04161dcbb8/9cc4f199519546f69778e3c0c1f4ea74.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "09efc9464cf540c5a4a60ce1bc4e8eca",
+            "size": 3779,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/0224e1fb5bbb41a38d0b3d18aa58c607/thumbnails/f20041a57aaf44fc9b4eba04161dcbb8/7aaf41e81e514f0884653602078c3ebf.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "983dd324f66d43ad9c90cdf60e157baa",
+            "size": 828,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/0224e1fb5bbb41a38d0b3d18aa58c607/thumbnails/f20041a57aaf44fc9b4eba04161dcbb8/d868243a5246494c8c799c8877454c39.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "3e7085c255c047aca18b6c42a8c9fc20",
+        "username": "raqueldesouza",
+        "displayName": "Raquel de Souza",
+        "profileUrl": "https://sketchfab.com/raqueldesouza",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/4b6f043220894e8298f1d82784eafec1",
+          "images": [
+            {
+              "size": 1432,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/4b6f043220894e8298f1d82784eafec1/d244e066395443efa61cda9795811a33.png",
+              "height": 32
+            },
+            {
+              "size": 2337,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/4b6f043220894e8298f1d82784eafec1/bd610a1570b3429cac3e11f1c08b1570.png",
+              "height": 48
+            },
+            {
+              "size": 3923,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/4b6f043220894e8298f1d82784eafec1/1453ed927596452f9056ace11f546819.png",
+              "height": 90
+            },
+            {
+              "size": 4317,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/4b6f043220894e8298f1d82784eafec1/49f23b7c98924079adcbe13e2462715a.png",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/3e7085c255c047aca18b6c42a8c9fc20"
+      },
+      "description": "Made in Maya and ZBrush",
+      "faceCount": 4122,
+      "createdAt": "2019-12-05T22:54:47.474018",
+      "vertexCount": 2048,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 3,
+          "size": 2568760,
+          "type": "glb",
+          "textureMaxResolution": 4096,
+          "faceCount": 4122,
+          "vertexCount": 2610
+        },
+        "gltf": {
+          "textureCount": 3,
+          "size": 2418104,
+          "type": "gltf",
+          "textureMaxResolution": 4096,
+          "faceCount": 4122,
+          "vertexCount": 2610
+        },
+        "source": {
+          "textureCount": null,
+          "size": 3937106,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 904715,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "c86ced20a2884b448a28cd32d6139419": {
+      "uri": "https://api.sketchfab.com/v3/models/c86ced20a2884b448a28cd32d6139419",
+      "uid": "c86ced20a2884b448a28cd32d6139419",
+      "name": "Scan 2022-05-03T13:34:10.204Z",
+      "staffpickedAt": null,
+      "viewCount": 3,
+      "likeCount": 0,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/c86ced20a2884b448a28cd32d6139419",
+      "embedUrl": "https://sketchfab.com/models/c86ced20a2884b448a28cd32d6139419/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2022-05-12T08:39:27.301969",
+      "tags": [
+        {
+          "name": "realityscan",
+          "slug": "realityscan",
+          "uri": "https://api.sketchfab.com/v3/tags/realityscan"
+        }
+      ],
+      "categories": [],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "261324e9ecc54864841ac2852ea14cef",
+            "size": 86628,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/c86ced20a2884b448a28cd32d6139419/thumbnails/eb96af7ecbe747cfacbf9eb111e9657f/85bcd7ab7d4e4ad197ce495fdb530239.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "4710eceaea9142c9bb99d480dd00f42d",
+            "size": 27196,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/c86ced20a2884b448a28cd32d6139419/thumbnails/eb96af7ecbe747cfacbf9eb111e9657f/ed53a0516ee6476daa34ddaa7860d3fa.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "3784023eb1a84e73a9aa2373eb5487ad",
+            "size": 15213,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/c86ced20a2884b448a28cd32d6139419/thumbnails/eb96af7ecbe747cfacbf9eb111e9657f/a7054be255c7480c8c976877f4b4b292.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "d896502677054a19b3dccd2b1a4986e2",
+            "size": 3211,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/c86ced20a2884b448a28cd32d6139419/thumbnails/eb96af7ecbe747cfacbf9eb111e9657f/f18df56e838d4c85a9d3bb4d0c7a3a05.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "20eed2cc35c64f5f8848769b89f9d1d9",
+            "size": 924,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/c86ced20a2884b448a28cd32d6139419/thumbnails/eb96af7ecbe747cfacbf9eb111e9657f/e7deb7dcad6b440c9a43a26aecd00813.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "a6ed4a47037747cd932dc62d6a671cb3",
+        "username": "Estoybien",
+        "displayName": "Estoybien",
+        "profileUrl": "https://sketchfab.com/Estoybien",
+        "account": "pro",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/78fa317e46024a5283765aa34df5e508",
+          "images": [
+            {
+              "size": 6421,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/aec92fe9a74e499c98d759362cd7f02f.jpeg",
+              "height": 100
+            },
+            {
+              "size": 2518,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/17fa177ffaa344a2b2fc8e78efd40fbb.jpeg",
+              "height": 48
+            },
+            {
+              "size": 5653,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/02162695bdc840faa3bcb2d418309c5e.jpeg",
+              "height": 90
+            },
+            {
+              "size": 1350,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/6fde876cbded4cd48d36a76029e3aa02.jpeg",
+              "height": 32
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/a6ed4a47037747cd932dc62d6a671cb3"
+      },
+      "description": "",
+      "faceCount": 430402,
+      "createdAt": "2022-05-03T13:34:11.069134",
+      "vertexCount": 215203,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 19411536,
+          "type": "glb",
+          "textureMaxResolution": 4096,
+          "faceCount": 430402,
+          "vertexCount": 323523
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 13409787,
+          "type": "gltf",
+          "textureMaxResolution": 4096,
+          "faceCount": 430402,
+          "vertexCount": 323523
+        },
+        "source": {
+          "textureCount": null,
+          "size": 14768651,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 15572094,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "dd7cc49db6d24c4ea8f82c3dd93310f7": {
+      "uri": "https://api.sketchfab.com/v3/models/dd7cc49db6d24c4ea8f82c3dd93310f7",
+      "uid": "dd7cc49db6d24c4ea8f82c3dd93310f7",
+      "name": "Chinese Lunar Tiger Year",
+      "staffpickedAt": null,
+      "viewCount": 73,
+      "likeCount": 1,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/dd7cc49db6d24c4ea8f82c3dd93310f7",
+      "embedUrl": "https://sketchfab.com/models/dd7cc49db6d24c4ea8f82c3dd93310f7/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2022-01-31T01:51:59.130145",
+      "tags": [
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "chinese",
+          "slug": "chinese",
+          "uri": "https://api.sketchfab.com/v3/tags/chinese"
+        },
+        {
+          "name": "lunarnewyear",
+          "slug": "lunarnewyear",
+          "uri": "https://api.sketchfab.com/v3/tags/lunarnewyear"
+        }
+      ],
+      "categories": [
+        {
+          "name": "art-abstract"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "992816bc390b4877851a3bb56b1563d9",
+            "size": 72362,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/dd7cc49db6d24c4ea8f82c3dd93310f7/thumbnails/dca72e123f9c40a3b7e62ca30f7f34cd/d8a130640fc14d1d89b388f277866231.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "214f3da3c8694ca6810bb4487cd0ace4",
+            "size": 26754,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/dd7cc49db6d24c4ea8f82c3dd93310f7/thumbnails/dca72e123f9c40a3b7e62ca30f7f34cd/a6cfb3fadacd4f21849ee49720db99a7.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "a3f7febaf3914529b3908e2de47d8c20",
+            "size": 16298,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/dd7cc49db6d24c4ea8f82c3dd93310f7/thumbnails/dca72e123f9c40a3b7e62ca30f7f34cd/7b0d6a9c2424403797314511cead6031.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "58c9d81e92c64234898051d3d5cc491a",
+            "size": 4147,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/dd7cc49db6d24c4ea8f82c3dd93310f7/thumbnails/dca72e123f9c40a3b7e62ca30f7f34cd/788e3c67bd7743deb278dfb34a465a98.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "276e19b496304901b15f302d9524bd91",
+            "size": 1114,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/dd7cc49db6d24c4ea8f82c3dd93310f7/thumbnails/dca72e123f9c40a3b7e62ca30f7f34cd/e84a13b169dc4a90a0f67b12bad7823c.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "84b6c8b6095f448c83c8ef743899c9f4",
+        "username": "jiaqiliu.design",
+        "displayName": "jiaqiliu.design",
+        "profileUrl": "https://sketchfab.com/jiaqiliu.design",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/9206b0c4776f4e99bce278d3b9aab569",
+          "images": [
+            {
+              "size": 484,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/9206b0c4776f4e99bce278d3b9aab569/8dccb4eaa45b4f9faf75044aa2954c3a.jpeg",
+              "height": 32
+            },
+            {
+              "size": 705,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/9206b0c4776f4e99bce278d3b9aab569/b57881cece8b46e9896d79ef10b8b257.jpeg",
+              "height": 48
+            },
+            {
+              "size": 1562,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/9206b0c4776f4e99bce278d3b9aab569/8c3b51cd8982464497d36a73014f4a36.jpeg",
+              "height": 90
+            },
+            {
+              "size": 1831,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/9206b0c4776f4e99bce278d3b9aab569/403ca7b687124f96b6856d69cc532eab.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/84b6c8b6095f448c83c8ef743899c9f4"
+      },
+      "description": "Feb. 1st, 2022 is Chinese Lunar New Year. This year is Tiger Year. Happy Tiger Year!",
+      "faceCount": 196608,
+      "createdAt": "2022-01-31T01:47:54.602356",
+      "vertexCount": 98306,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 0,
+          "size": 6335408,
+          "type": "glb",
+          "textureMaxResolution": 0,
+          "faceCount": 196608,
+          "vertexCount": 99331
+        },
+        "gltf": {
+          "textureCount": 0,
+          "size": 2563252,
+          "type": "gltf",
+          "textureMaxResolution": 0,
+          "faceCount": 196608,
+          "vertexCount": 99331
+        },
+        "source": {
+          "textureCount": null,
+          "size": 4337804,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 2417738,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "6a8df6c3f3aa4631b6934e42c3090f52": {
+      "uri": "https://api.sketchfab.com/v3/models/6a8df6c3f3aa4631b6934e42c3090f52",
+      "uid": "6a8df6c3f3aa4631b6934e42c3090f52",
+      "name": "Catra",
+      "staffpickedAt": null,
+      "viewCount": 11,
+      "likeCount": 1,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/6a8df6c3f3aa4631b6934e42c3090f52",
+      "embedUrl": "https://sketchfab.com/models/6a8df6c3f3aa4631b6934e42c3090f52/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2021-10-05T16:38:08.637254",
+      "tags": [
+        {
+          "name": "polycam",
+          "slug": "polycam",
+          "uri": "https://api.sketchfab.com/v3/tags/polycam"
+        }
+      ],
+      "categories": [],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "599d64388f654ce8be3cb5e74a23a4ca",
+            "size": 76032,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/6a8df6c3f3aa4631b6934e42c3090f52/thumbnails/01d31c50367c4df2a056322b4270cecc/b3446b1ac16040d5a1f3de376c659694.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "0289f03fc4454a228557ccefb494f01e",
+            "size": 26044,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/6a8df6c3f3aa4631b6934e42c3090f52/thumbnails/01d31c50367c4df2a056322b4270cecc/afefeac50a2c4cafbfb1143c9de406ef.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "0d254a32221e49e68197073c9c2d677d",
+            "size": 15289,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/6a8df6c3f3aa4631b6934e42c3090f52/thumbnails/01d31c50367c4df2a056322b4270cecc/19caa63d395c40deab7b9abf097dbf64.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "0140aafc99f64597823a9d84e4aee39b",
+            "size": 3445,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/6a8df6c3f3aa4631b6934e42c3090f52/thumbnails/01d31c50367c4df2a056322b4270cecc/92e992700682403086886df223525fe1.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "ee8bd8a03af44a91ba16358767afa0a3",
+            "size": 963,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/6a8df6c3f3aa4631b6934e42c3090f52/thumbnails/01d31c50367c4df2a056322b4270cecc/f7be79159a5a49409f4898bc43bcf74d.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "6033ff115fa940458f827adf66fbc664",
+        "username": "infaderps",
+        "displayName": "infaderps",
+        "profileUrl": "https://sketchfab.com/infaderps",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/7ba8a90603ba426e9310b1d015363ceb",
+          "images": [
+            {
+              "size": 1101,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/7ba8a90603ba426e9310b1d015363ceb/297db359a03a4fa7b4feb6ecf3b17621.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1597,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/7ba8a90603ba426e9310b1d015363ceb/0f0867986b4d47e78ea4fabb0c52b763.jpeg",
+              "height": 48
+            },
+            {
+              "size": 3617,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/7ba8a90603ba426e9310b1d015363ceb/31d1b4645d3d4305975cae8644752ca0.jpeg",
+              "height": 90
+            },
+            {
+              "size": 4216,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/7ba8a90603ba426e9310b1d015363ceb/172ecdc6304140808349398d5fceb0a2.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/6033ff115fa940458f827adf66fbc664"
+      },
+      "description": "Created with Polycam",
+      "faceCount": 27228,
+      "createdAt": "2021-10-05T16:37:40.319969",
+      "vertexCount": 13673,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 2592832,
+          "type": "glb",
+          "textureMaxResolution": 2048,
+          "faceCount": 27228,
+          "vertexCount": 16372
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 2315981,
+          "type": "gltf",
+          "textureMaxResolution": 2048,
+          "faceCount": 27228,
+          "vertexCount": 16372
+        },
+        "source": {
+          "textureCount": null,
+          "size": 6291618,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 2159080,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by-nc-sa"
+    },
+    "5bd2cda8deb04409bd0b4272966be972": {
+      "uri": "https://api.sketchfab.com/v3/models/5bd2cda8deb04409bd0b4272966be972",
+      "uid": "5bd2cda8deb04409bd0b4272966be972",
+      "name": "Kung-Fu Panda - Tigress",
+      "staffpickedAt": null,
+      "viewCount": 1200,
+      "likeCount": 25,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/5bd2cda8deb04409bd0b4272966be972",
+      "embedUrl": "https://sketchfab.com/models/5bd2cda8deb04409bd0b4272966be972/embed",
+      "commentCount": 1,
+      "isDownloadable": true,
+      "publishedAt": "2022-04-01T14:43:01.518844",
+      "tags": [
+        {
+          "name": "kungfupanda",
+          "slug": "kungfupanda",
+          "uri": "https://api.sketchfab.com/v3/tags/kungfupanda"
+        },
+        {
+          "name": "tigress",
+          "slug": "tigress",
+          "uri": "https://api.sketchfab.com/v3/tags/tigress"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        },
+        {
+          "name": "characters-creatures"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "b168df34f37142c192d00fdcd07a403c",
+            "size": 66307,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/5bd2cda8deb04409bd0b4272966be972/thumbnails/1338a67e33e84b98b20fcc55b21db974/e641f1e4e1a84b0a82e8d4b589f68181.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "9b72c376a4774dcfb7ea935520c97ad7",
+            "size": 21804,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/5bd2cda8deb04409bd0b4272966be972/thumbnails/1338a67e33e84b98b20fcc55b21db974/2af5ac7a6b13433bb487dbfc49e2abab.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "b4ba65aef79f4fb4a52c5318f3eea087",
+            "size": 12595,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/5bd2cda8deb04409bd0b4272966be972/thumbnails/1338a67e33e84b98b20fcc55b21db974/45fe17fd175d451bae15112210eb8d34.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "5e194b94281c47ed8cb1d3d0216de483",
+            "size": 2901,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/5bd2cda8deb04409bd0b4272966be972/thumbnails/1338a67e33e84b98b20fcc55b21db974/0d4d2604401d432eaa38da66de942b88.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "cdfd2e4567b04f8eab5e7cba90dea923",
+            "size": 929,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/5bd2cda8deb04409bd0b4272966be972/thumbnails/1338a67e33e84b98b20fcc55b21db974/1c9476497e884b46bd37c82d6a300e67.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "a0ae925eecdd4f25b6f9cd6a525e2913",
+        "username": "donmcdonough",
+        "displayName": "donmcdonough",
+        "profileUrl": "https://sketchfab.com/donmcdonough",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/51af6a870cce449eb75b0345feebaebb",
+          "images": [
+            {
+              "size": 5719,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/2ef0f894055b4bb69123b2a27fa2d379.jpeg",
+              "height": 90
+            },
+            {
+              "size": 6496,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/ab11eedf96374486acb544f71a23b165.jpeg",
+              "height": 100
+            },
+            {
+              "size": 1359,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/35f6f9b6c9a14a548ce472582d8a9bb5.jpeg",
+              "height": 32
+            },
+            {
+              "size": 2584,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/a8072a51447c4d41ab177b357111b420.jpeg",
+              "height": 48
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/a0ae925eecdd4f25b6f9cd6a525e2913"
+      },
+      "description": "",
+      "faceCount": 5782,
+      "createdAt": "2022-04-01T14:39:51.698667",
+      "vertexCount": 2987,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 2,
+          "size": 1428204,
+          "type": "glb",
+          "textureMaxResolution": 1024,
+          "faceCount": 5782,
+          "vertexCount": 4571
+        },
+        "gltf": {
+          "textureCount": 2,
+          "size": 1332297,
+          "type": "gltf",
+          "textureMaxResolution": 1024,
+          "faceCount": 5782,
+          "vertexCount": 4571
+        },
+        "source": {
+          "textureCount": null,
+          "size": 1956738,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 460180,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "0c7d19df3d3d4cbca54af48d76734e83": {
+      "uri": "https://api.sketchfab.com/v3/models/0c7d19df3d3d4cbca54af48d76734e83",
+      "uid": "0c7d19df3d3d4cbca54af48d76734e83",
+      "name": "Tiger toy",
+      "staffpickedAt": null,
+      "viewCount": 529,
+      "likeCount": 18,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/0c7d19df3d3d4cbca54af48d76734e83",
+      "embedUrl": "https://sketchfab.com/models/0c7d19df3d3d4cbca54af48d76734e83/embed",
+      "commentCount": 1,
+      "isDownloadable": true,
+      "publishedAt": "2022-01-07T19:46:24.092888",
+      "tags": [
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "toy",
+          "slug": "toy",
+          "uri": "https://api.sketchfab.com/v3/tags/toy"
+        },
+        {
+          "name": "scaniverse",
+          "slug": "scaniverse",
+          "uri": "https://api.sketchfab.com/v3/tags/scaniverse"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        },
+        {
+          "name": "fashion-style"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "bf34ecfaf72848a9b5b14bd1a5ab0def",
+            "size": 72379,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/0c7d19df3d3d4cbca54af48d76734e83/thumbnails/53087d0b40714ec4b6964fd0361c0a9e/644b0eda2edd44b79c16a05d7430bce1.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "e38c74d808414ecf859a26a9838c3202",
+            "size": 24664,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/0c7d19df3d3d4cbca54af48d76734e83/thumbnails/53087d0b40714ec4b6964fd0361c0a9e/00e1397afdfa412fa59adb0b4ad7fb71.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "24cbd5ceaf014d499da1064c98adae52",
+            "size": 14780,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/0c7d19df3d3d4cbca54af48d76734e83/thumbnails/53087d0b40714ec4b6964fd0361c0a9e/e9411ae22dc04086a3a695982193f8a1.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "a61e2e471961468cbe7eac3f42fae432",
+            "size": 3476,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/0c7d19df3d3d4cbca54af48d76734e83/thumbnails/53087d0b40714ec4b6964fd0361c0a9e/67f63797712a4d988a77b7cd041cba47.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "6b08ae983fe547d9a4500c083807d6bf",
+            "size": 959,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/0c7d19df3d3d4cbca54af48d76734e83/thumbnails/53087d0b40714ec4b6964fd0361c0a9e/a5f78be486384b06bc2331893b6f5861.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "c8d09b945ae14554b0027696974dc4d2",
+        "username": "varlamov5264",
+        "displayName": "varlamov5264",
+        "profileUrl": "https://sketchfab.com/varlamov5264",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+          "images": [
+            {
+              "size": 680,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1253,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+              "height": 48
+            },
+            {
+              "size": 2797,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+              "height": 90
+            },
+            {
+              "size": 3215,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/c8d09b945ae14554b0027696974dc4d2"
+      },
+      "description": "",
+      "faceCount": 13143,
+      "createdAt": "2022-01-07T19:46:07.340236",
+      "vertexCount": 6826,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 5743064,
+          "type": "glb",
+          "textureMaxResolution": 8192,
+          "faceCount": 13127,
+          "vertexCount": 9662
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 5427714,
+          "type": "gltf",
+          "textureMaxResolution": 8192,
+          "faceCount": 13127,
+          "vertexCount": 9662
+        },
+        "source": {
+          "textureCount": null,
+          "size": 7230258,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 5627034,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by-nc-sa"
+    },
+    "6437622824da4767b7f967af26a5ae54": {
+      "uri": "https://api.sketchfab.com/v3/models/6437622824da4767b7f967af26a5ae54",
+      "uid": "6437622824da4767b7f967af26a5ae54",
+      "name": "tiger animation",
+      "staffpickedAt": null,
+      "viewCount": 536,
+      "likeCount": 36,
+      "animationCount": 1,
+      "viewerUrl": "https://sketchfab.com/3d-models/6437622824da4767b7f967af26a5ae54",
+      "embedUrl": "https://sketchfab.com/models/6437622824da4767b7f967af26a5ae54/embed",
+      "commentCount": 1,
+      "isDownloadable": true,
+      "publishedAt": "2022-09-09T03:42:28.985274",
+      "tags": [
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "animals",
+          "slug": "animals",
+          "uri": "https://api.sketchfab.com/v3/tags/animals"
+        },
+        {
+          "name": "animal",
+          "slug": "animal",
+          "uri": "https://api.sketchfab.com/v3/tags/animal"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "dfe8e8bab408417f83a1a293aba3292d",
+            "size": 116907,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/6437622824da4767b7f967af26a5ae54/thumbnails/30ca92afffda442ea3b9fb7312f37a6b/00db57e3a89047f3ba03410735396f1a.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "2f26ab95478f4b54ae21c46bfb829b46",
+            "size": 38828,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/6437622824da4767b7f967af26a5ae54/thumbnails/30ca92afffda442ea3b9fb7312f37a6b/6e4ffd953c434522863831367d3376ac.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "5402e04454324e50b1975445afb9f762",
+            "size": 22282,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/6437622824da4767b7f967af26a5ae54/thumbnails/30ca92afffda442ea3b9fb7312f37a6b/d94aec97977b4566bdd429f3d4a2b0b7.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "985117357d0a4bac87d0f5883c805fa5",
+            "size": 4390,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/6437622824da4767b7f967af26a5ae54/thumbnails/30ca92afffda442ea3b9fb7312f37a6b/a4899cc9b9f44739b6c98e045497727c.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "4dfc99b95b254101a62736d330094c69",
+            "size": 1039,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/6437622824da4767b7f967af26a5ae54/thumbnails/30ca92afffda442ea3b9fb7312f37a6b/4fd3475e0410423cb847adc48c4c4990.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "d7afb4b31d254bfbb98284938d8b65e1",
+        "username": "dinomaster",
+        "displayName": "dinomaster",
+        "profileUrl": "https://sketchfab.com/dinomaster",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/305b8e02160a4784a5db4a594d8ccbce",
+          "images": [
+            {
+              "size": 676,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/305b8e02160a4784a5db4a594d8ccbce/a3714b53bd964aceb5c824fcc5df5e5c.jpeg",
+              "height": 32
+            },
+            {
+              "size": 981,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/305b8e02160a4784a5db4a594d8ccbce/ceac35e9e9204f7c961fead8576dbac4.jpeg",
+              "height": 48
+            },
+            {
+              "size": 1951,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/305b8e02160a4784a5db4a594d8ccbce/5c6a368ddd4b44b092e92c5ed10039c2.jpeg",
+              "height": 90
+            },
+            {
+              "size": 2221,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/305b8e02160a4784a5db4a594d8ccbce/40805b7602d74f259564af1c3a8f10d9.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/d7afb4b31d254bfbb98284938d8b65e1"
+      },
+      "description": "the tiger's mouth is quite scary though",
+      "faceCount": 33144,
+      "createdAt": "2022-09-09T03:41:26.204118",
+      "vertexCount": 22041,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 3,
+          "size": 9201964,
+          "type": "glb",
+          "textureMaxResolution": 1024,
+          "faceCount": 33144,
+          "vertexCount": 23461
+        },
+        "gltf": {
+          "textureCount": 3,
+          "size": 4695207,
+          "type": "gltf",
+          "textureMaxResolution": 1024,
+          "faceCount": 33144,
+          "vertexCount": 23461
+        },
+        "source": {
+          "textureCount": null,
+          "size": 12309208,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 6702686,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "a7a26ee577ae4253b5f2f258df4b7504": {
+      "uri": "https://api.sketchfab.com/v3/models/a7a26ee577ae4253b5f2f258df4b7504",
+      "uid": "a7a26ee577ae4253b5f2f258df4b7504",
+      "name": "Golden Tiger",
+      "staffpickedAt": null,
+      "viewCount": 435,
+      "likeCount": 15,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/a7a26ee577ae4253b5f2f258df4b7504",
+      "embedUrl": "https://sketchfab.com/models/a7a26ee577ae4253b5f2f258df4b7504/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2022-03-14T08:34:14.141124",
+      "tags": [
+        {
+          "name": "3dscanner",
+          "slug": "3dscanner",
+          "uri": "https://api.sketchfab.com/v3/tags/3dscanner"
+        },
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "jewelry-3d-stl",
+          "slug": "jewelry-3d-stl",
+          "uri": "https://api.sketchfab.com/v3/tags/jewelry-3d-stl"
+        },
+        {
+          "name": "thunk3d",
+          "slug": "thunk3d",
+          "uri": "https://api.sketchfab.com/v3/tags/thunk3d"
+        }
+      ],
+      "categories": [
+        {
+          "name": "art-abstract"
+        },
+        {
+          "name": "fashion-style"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "d2a07d8de8254761b3dd01dd764696cf",
+            "size": 184502,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/a7a26ee577ae4253b5f2f258df4b7504/thumbnails/eb9dee53c76841618febb59455378b20/12c59c901a124234a58044bbe7478bae.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "a6fccecd9ff1439da0374e6093b30c07",
+            "size": 54797,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/a7a26ee577ae4253b5f2f258df4b7504/thumbnails/eb9dee53c76841618febb59455378b20/f13f7c5f78634cb0b5cf9daf36232f04.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "7183866606f54ec0862d4e94cfffe7ce",
+            "size": 29367,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/a7a26ee577ae4253b5f2f258df4b7504/thumbnails/eb9dee53c76841618febb59455378b20/f679dc71c1df44459d48e5494612d488.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "c3ec3600db9944788c069d856e4e54de",
+            "size": 5059,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/a7a26ee577ae4253b5f2f258df4b7504/thumbnails/eb9dee53c76841618febb59455378b20/2f426eb75c674211adce751968feee44.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "1055b6250fe8413f8d80eb96caa05e53",
+            "size": 1152,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/a7a26ee577ae4253b5f2f258df4b7504/thumbnails/eb9dee53c76841618febb59455378b20/be219973659d45e689d279fde462487a.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "72aa915808a5461bb89cc8bdbd783575",
+        "username": "Diana123456",
+        "displayName": "Thunk3D scanner",
+        "profileUrl": "https://sketchfab.com/Diana123456",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/c76069a6b93f4736b84871426ab777c0",
+          "images": [
+            {
+              "size": 1412,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/c76069a6b93f4736b84871426ab777c0/c08f47b0cfa44ca2810f7208c8adee4b.png",
+              "height": 32
+            },
+            {
+              "size": 2649,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/c76069a6b93f4736b84871426ab777c0/e8cb56852acc4e438f26e3fc38c6fa1d.png",
+              "height": 48
+            },
+            {
+              "size": 7414,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/c76069a6b93f4736b84871426ab777c0/3ad8093b082741a29f1791fac4b9fd5d.png",
+              "height": 90
+            },
+            {
+              "size": 8854,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/c76069a6b93f4736b84871426ab777c0/4e691f2618594a308e73673133268289.png",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/72aa915808a5461bb89cc8bdbd783575"
+      },
+      "description": "Golden Tiger scan-with-thunk3d-Archers whatsapp:+8618604237268 email:diana@thunk3d.com Youtube: https://www.youtube.com/c/Thunk3DScanner/videos",
+      "faceCount": 1960354,
+      "createdAt": "2022-03-14T08:27:19.655051",
+      "vertexCount": 976257,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 0,
+          "size": 59040600,
+          "type": "glb",
+          "textureMaxResolution": 0,
+          "faceCount": 1960354,
+          "vertexCount": 1479154
+        },
+        "gltf": {
+          "textureCount": 0,
+          "size": 36234442,
+          "type": "gltf",
+          "textureMaxResolution": 0,
+          "faceCount": 1960354,
+          "vertexCount": 1479154
+        },
+        "source": {
+          "textureCount": null,
+          "size": 20903219,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 40611514,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "4b7a4d43ef5a4e8ea5d5daf709ed655a": {
+      "uri": "https://api.sketchfab.com/v3/models/4b7a4d43ef5a4e8ea5d5daf709ed655a",
+      "uid": "4b7a4d43ef5a4e8ea5d5daf709ed655a",
+      "name": "Winnie the Pooh and Tigger too",
+      "staffpickedAt": null,
+      "viewCount": 1015,
+      "likeCount": 23,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/4b7a4d43ef5a4e8ea5d5daf709ed655a",
+      "embedUrl": "https://sketchfab.com/models/4b7a4d43ef5a4e8ea5d5daf709ed655a/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2020-09-04T21:28:17.562284",
+      "tags": [
+        {
+          "name": "disney",
+          "slug": "disney",
+          "uri": "https://api.sketchfab.com/v3/tags/disney"
+        },
+        {
+          "name": "tigger",
+          "slug": "tigger",
+          "uri": "https://api.sketchfab.com/v3/tags/tigger"
+        },
+        {
+          "name": "winniethepooh",
+          "slug": "winniethepooh",
+          "uri": "https://api.sketchfab.com/v3/tags/winniethepooh"
+        },
+        {
+          "name": "maya",
+          "slug": "maya",
+          "uri": "https://api.sketchfab.com/v3/tags/maya"
+        }
+      ],
+      "categories": [
+        {
+          "name": "characters-creatures"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "6d678b2bc7b642e4b75a61b22ec801e6",
+            "size": 128375,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/4b7a4d43ef5a4e8ea5d5daf709ed655a/thumbnails/051b4d4a75c04cab97b9d3ee38b9f146/da081c6319574b18992b7091c3cc10eb.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "5646a321f2b549d1a258b5ffe012eec8",
+            "size": 49538,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/4b7a4d43ef5a4e8ea5d5daf709ed655a/thumbnails/051b4d4a75c04cab97b9d3ee38b9f146/72abd86f643745189b2afcdc49602b80.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "028e4cc0351d46c192d3d9edb7ad9e01",
+            "size": 30759,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/4b7a4d43ef5a4e8ea5d5daf709ed655a/thumbnails/051b4d4a75c04cab97b9d3ee38b9f146/fa2d40f376a34dde9b738e154e450ee0.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "36ef4e2d588a43c7802e49f9588eb81b",
+            "size": 7371,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/4b7a4d43ef5a4e8ea5d5daf709ed655a/thumbnails/051b4d4a75c04cab97b9d3ee38b9f146/9f7d00a4db1a4de5a5e52eed3384d1b3.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "e4376507f20740b491ce7c738a770cc4",
+            "size": 1474,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/4b7a4d43ef5a4e8ea5d5daf709ed655a/thumbnails/051b4d4a75c04cab97b9d3ee38b9f146/5252e9f974d543d7a8737aa72612bab0.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "702a6c40e9ce4939b893542a1b7477b3",
+        "username": "SleepyPineapple",
+        "displayName": "SleepyPineapple",
+        "profileUrl": "https://sketchfab.com/SleepyPineapple",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/7bcb750832004b35b16f35344e0d9ed1",
+          "images": [
+            {
+              "size": 2666,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/7bcb750832004b35b16f35344e0d9ed1/0d4bba4dd7ba47039c163ad313ff9107.png",
+              "height": 32
+            },
+            {
+              "size": 4745,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/7bcb750832004b35b16f35344e0d9ed1/f9c004f3276e46768e6c4db31ec1b864.png",
+              "height": 48
+            },
+            {
+              "size": 12391,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/7bcb750832004b35b16f35344e0d9ed1/39f99fc1002742338bf33c665877c2ed.png",
+              "height": 90
+            },
+            {
+              "size": 14633,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/7bcb750832004b35b16f35344e0d9ed1/b1596447e4494b5baaa6bb3be90bb7f2.png",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/702a6c40e9ce4939b893542a1b7477b3"
+      },
+      "description": "School assignment\n\nBased of this picture\n\n![](http://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1561740531l/2617684._SX318_.jpg)\n\nMade in Maya",
+      "faceCount": 25954,
+      "createdAt": "2020-09-04T21:12:07.880312",
+      "vertexCount": 14608,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 0,
+          "size": 950516,
+          "type": "glb",
+          "textureMaxResolution": 0,
+          "faceCount": 25930,
+          "vertexCount": 19576
+        },
+        "gltf": {
+          "textureCount": 0,
+          "size": 432733,
+          "type": "gltf",
+          "textureMaxResolution": 0,
+          "faceCount": 25930,
+          "vertexCount": 19576
+        },
+        "source": {
+          "textureCount": null,
+          "size": 914916,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 502577,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "ca123df978a04daa860c0d8e9d3511d1": {
+      "uri": "https://api.sketchfab.com/v3/models/ca123df978a04daa860c0d8e9d3511d1",
+      "uid": "ca123df978a04daa860c0d8e9d3511d1",
+      "name": "tiger howl v04",
+      "staffpickedAt": null,
+      "viewCount": 6729,
+      "likeCount": 83,
+      "animationCount": 1,
+      "viewerUrl": "https://sketchfab.com/3d-models/ca123df978a04daa860c0d8e9d3511d1",
+      "embedUrl": "https://sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/embed",
+      "commentCount": 2,
+      "isDownloadable": true,
+      "publishedAt": "2020-11-08T07:47:11.633006",
+      "tags": [
+        {
+          "name": "forest",
+          "slug": "forest",
+          "uri": "https://api.sketchfab.com/v3/tags/forest"
+        },
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "speed",
+          "slug": "speed",
+          "uri": "https://api.sketchfab.com/v3/tags/speed"
+        },
+        {
+          "name": "ready",
+          "slug": "ready",
+          "uri": "https://api.sketchfab.com/v3/tags/ready"
+        },
+        {
+          "name": "king",
+          "slug": "king",
+          "uri": "https://api.sketchfab.com/v3/tags/king"
+        },
+        {
+          "name": "howl",
+          "slug": "howl",
+          "uri": "https://api.sketchfab.com/v3/tags/howl"
+        },
+        {
+          "name": "loin",
+          "slug": "loin",
+          "uri": "https://api.sketchfab.com/v3/tags/loin"
+        },
+        {
+          "name": "unity",
+          "slug": "unity",
+          "uri": "https://api.sketchfab.com/v3/tags/unity"
+        },
+        {
+          "name": "unity3d",
+          "slug": "unity3d",
+          "uri": "https://api.sketchfab.com/v3/tags/unity3d"
+        },
+        {
+          "name": "game",
+          "slug": "game",
+          "uri": "https://api.sketchfab.com/v3/tags/game"
+        },
+        {
+          "name": "3dsmax",
+          "slug": "3dsmax",
+          "uri": "https://api.sketchfab.com/v3/tags/3dsmax"
+        },
+        {
+          "name": "animal",
+          "slug": "animal",
+          "uri": "https://api.sketchfab.com/v3/tags/animal"
+        },
+        {
+          "name": "rigged",
+          "slug": "rigged",
+          "uri": "https://api.sketchfab.com/v3/tags/rigged"
+        }
+      ],
+      "categories": [],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "673a7553260245168b90f563d34bcaf0",
+            "size": 253284,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/thumbnails/5f1f37c7252c4617a22f943459986c99/f9d25c863a9f4329b45f0882b744e676.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "c5639062365546ffab647f84c625d85a",
+            "size": 81885,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/thumbnails/5f1f37c7252c4617a22f943459986c99/ddb4523f3f0f4796ac96b5a50fb69d51.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "09c203a4d8494d939ad02ce6bf38b6bb",
+            "size": 45487,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/thumbnails/5f1f37c7252c4617a22f943459986c99/4944273c523e403384b171178e5d6bb2.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "baaf616bfbc044e7b55a294d4505e7c9",
+            "size": 7822,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/thumbnails/5f1f37c7252c4617a22f943459986c99/10e1c47a56474b3fa5bd40869392c75f.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "b99ead1402d446c0bb62fd8e5c96156e",
+            "size": 1043,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/ca123df978a04daa860c0d8e9d3511d1/thumbnails/5f1f37c7252c4617a22f943459986c99/80fb3031a5044062814db8230dc47672.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "325fb4d49fa742959d3d4eb21dfcc3bd",
+        "username": "shahabahmed",
+        "displayName": "Unity  (shehab house)",
+        "profileUrl": "https://sketchfab.com/shahabahmed",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/4c62c6f0382246c190e839b4969d2c60",
+          "images": [
+            {
+              "size": 1062,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/7d06465767d047718047ac3abfc31a62.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1395,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/164fe48a1cf54a20a6e971c9640ca996.jpeg",
+              "height": 48
+            },
+            {
+              "size": 2746,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/d163a65fb0fb44dab8039ec43ee57f5a.jpeg",
+              "height": 90
+            },
+            {
+              "size": 3203,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/bf482275875f4ad390fd91afcb3fd8ab.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/325fb4d49fa742959d3d4eb21dfcc3bd"
+      },
+      "description": "this free model I retatch texture feel free to used as you like",
+      "faceCount": 4650,
+      "createdAt": "2020-11-08T07:36:11.689314",
+      "vertexCount": 2514,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 2,
+          "size": 3797368,
+          "type": "glb",
+          "textureMaxResolution": 1024,
+          "faceCount": 4650,
+          "vertexCount": 3338
+        },
+        "gltf": {
+          "textureCount": 2,
+          "size": 3542148,
+          "type": "gltf",
+          "textureMaxResolution": 1024,
+          "faceCount": 4650,
+          "vertexCount": 3338
+        },
+        "source": {
+          "textureCount": null,
+          "size": 4883722,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 3059742,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "751c51a2901148589d373a973c348f0c": {
+      "uri": "https://api.sketchfab.com/v3/models/751c51a2901148589d373a973c348f0c",
+      "uid": "751c51a2901148589d373a973c348f0c",
+      "name": "Tiger Toy",
+      "staffpickedAt": null,
+      "viewCount": 45,
+      "likeCount": 1,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/751c51a2901148589d373a973c348f0c",
+      "embedUrl": "https://sketchfab.com/models/751c51a2901148589d373a973c348f0c/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2022-03-03T04:35:15.254718",
+      "tags": [
+        {
+          "name": "polycam",
+          "slug": "polycam",
+          "uri": "https://api.sketchfab.com/v3/tags/polycam"
+        }
+      ],
+      "categories": [],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "41cda0ff0052478bab741735b24c0fae",
+            "size": 70296,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/751c51a2901148589d373a973c348f0c/thumbnails/a1b67d559628443b8cbe9a6b81a1ecf3/15a4a885a6964c4883283f4b22d90210.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "0919ff056d5b4c1dbcba1975363adf40",
+            "size": 22080,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/751c51a2901148589d373a973c348f0c/thumbnails/a1b67d559628443b8cbe9a6b81a1ecf3/f76fa770ab204b8cbf1d5f115f5936d6.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "9d66bf048f584c828b9270964a386dde",
+            "size": 12278,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/751c51a2901148589d373a973c348f0c/thumbnails/a1b67d559628443b8cbe9a6b81a1ecf3/def463b7b02742f6b2c8aecbed2ccd5c.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "5695fb96a55f41e5be3847ef312a0572",
+            "size": 2530,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/751c51a2901148589d373a973c348f0c/thumbnails/a1b67d559628443b8cbe9a6b81a1ecf3/6342884b1b514610b0ffccb6bd6ee383.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "38a03c8e801947ff86495ba912d999b2",
+            "size": 883,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/751c51a2901148589d373a973c348f0c/thumbnails/a1b67d559628443b8cbe9a6b81a1ecf3/5165776002254a9eafe628fb4e127f70.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "280dd921bf644d3093fc5a52c26e0ba2",
+        "username": "KHSinteractive",
+        "displayName": "KHS Innovative Media",
+        "profileUrl": "https://sketchfab.com/KHSinteractive",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/e1c53889caab457ea379f32886e3f31a",
+          "images": [
+            {
+              "size": 887,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/e1c53889caab457ea379f32886e3f31a/1422a37bbe454057a5d243e1986cf824.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1082,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/e1c53889caab457ea379f32886e3f31a/b90e46c5a8bc4ea9bc1371ff94eacd67.jpeg",
+              "height": 48
+            },
+            {
+              "size": 2015,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/e1c53889caab457ea379f32886e3f31a/976965a1d4a243ada599d8672442a564.jpeg",
+              "height": 90
+            },
+            {
+              "size": 2449,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/e1c53889caab457ea379f32886e3f31a/98fb0a396e28451a8cef68f3b871be4f.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/280dd921bf644d3093fc5a52c26e0ba2"
+      },
+      "description": "A toy tiger \n\nCreated with Polycam",
+      "faceCount": 99478,
+      "createdAt": "2022-03-03T04:34:20.621144",
+      "vertexCount": 49806,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 10153904,
+          "type": "glb",
+          "textureMaxResolution": 4096,
+          "faceCount": 99478,
+          "vertexCount": 55422
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 9033476,
+          "type": "gltf",
+          "textureMaxResolution": 4096,
+          "faceCount": 99478,
+          "vertexCount": 55422
+        },
+        "source": {
+          "textureCount": null,
+          "size": 26752481,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 7625161,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by-nc-sa"
+    },
+    "b380864d0f9a4f83bb2c7f2a7ab06f4a": {
+      "uri": "https://api.sketchfab.com/v3/models/b380864d0f9a4f83bb2c7f2a7ab06f4a",
+      "uid": "b380864d0f9a4f83bb2c7f2a7ab06f4a",
+      "name": "Laohuu",
+      "staffpickedAt": null,
+      "viewCount": 50,
+      "likeCount": 2,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/b380864d0f9a4f83bb2c7f2a7ab06f4a",
+      "embedUrl": "https://sketchfab.com/models/b380864d0f9a4f83bb2c7f2a7ab06f4a/embed",
+      "commentCount": 1,
+      "isDownloadable": true,
+      "publishedAt": "2018-01-07T09:23:50.052450",
+      "tags": [],
+      "categories": [],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "f422df8fc8864988b3dee8dac5b2434b",
+            "size": 61600,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/b380864d0f9a4f83bb2c7f2a7ab06f4a/thumbnails/b527d27f5068414d8ac80f775ef71b83/918b704c23574d12841750130604570f.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "f73d804f786d42d297f2a868a331e920",
+            "size": 15135,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/b380864d0f9a4f83bb2c7f2a7ab06f4a/thumbnails/b527d27f5068414d8ac80f775ef71b83/16a6b66fd9194dc5ab9110c9ef338791.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "d4a1aae7c3544916a36347dbf88c98a2",
+            "size": 9036,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/b380864d0f9a4f83bb2c7f2a7ab06f4a/thumbnails/b527d27f5068414d8ac80f775ef71b83/a2b411c9b9d44097b3a1f832f302b43b.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "e1adfaa618a84628bfebfd760a960200",
+            "size": 2213,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/b380864d0f9a4f83bb2c7f2a7ab06f4a/thumbnails/b527d27f5068414d8ac80f775ef71b83/9320f1fe09b2475382c02fe489ef1db0.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "a456f0757ddd46a69ddd31deb32861d3",
+            "size": 592,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/b380864d0f9a4f83bb2c7f2a7ab06f4a/thumbnails/b527d27f5068414d8ac80f775ef71b83/95bf40c4ea5c4986b900fef95b0e9a87.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "34a88e2d8ef9451cbf4b295df87178fd",
+        "username": "featnervous",
+        "displayName": "featnervous",
+        "profileUrl": "https://sketchfab.com/featnervous",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+          "images": [
+            {
+              "size": 680,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1253,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+              "height": 48
+            },
+            {
+              "size": 2797,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+              "height": 90
+            },
+            {
+              "size": 3215,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/34a88e2d8ef9451cbf4b295df87178fd"
+      },
+      "description": "",
+      "faceCount": 1548,
+      "createdAt": "2018-01-06T06:18:07.542862",
+      "vertexCount": 831,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 219320,
+          "type": "glb",
+          "textureMaxResolution": 512,
+          "faceCount": 1548,
+          "vertexCount": 1164
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 190835,
+          "type": "gltf",
+          "textureMaxResolution": 512,
+          "faceCount": 1548,
+          "vertexCount": 1164
+        },
+        "source": {
+          "textureCount": null,
+          "size": 487135,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 204647,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "171f156e393b4bcca2837d077a46cb3a": {
+      "uri": "https://api.sketchfab.com/v3/models/171f156e393b4bcca2837d077a46cb3a",
+      "uid": "171f156e393b4bcca2837d077a46cb3a",
+      "name": "Walking Tiger",
+      "staffpickedAt": null,
+      "viewCount": 3265,
+      "likeCount": 20,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/171f156e393b4bcca2837d077a46cb3a",
+      "embedUrl": "https://sketchfab.com/models/171f156e393b4bcca2837d077a46cb3a/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2020-12-05T02:18:33.044692",
+      "tags": [
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "walking",
+          "slug": "walking",
+          "uri": "https://api.sketchfab.com/v3/tags/walking"
+        },
+        {
+          "name": "figurine",
+          "slug": "figurine",
+          "uri": "https://api.sketchfab.com/v3/tags/figurine"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "89f948b8828d499a838e2d110a1e1d60",
+            "size": 78601,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/171f156e393b4bcca2837d077a46cb3a/thumbnails/5a0b35db6b014d12845a74bb6910a40c/27870cebebba463ea763da9805846282.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "29eced00de6440d09e2ea0c9cd373d7c",
+            "size": 28019,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/171f156e393b4bcca2837d077a46cb3a/thumbnails/5a0b35db6b014d12845a74bb6910a40c/3f29c209c0b54d0d9289ab5847ae94be.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "4ce39568a5984b9ba212c3fc31e190b3",
+            "size": 17445,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/171f156e393b4bcca2837d077a46cb3a/thumbnails/5a0b35db6b014d12845a74bb6910a40c/f218655744a5498c98d4704d23b9b53f.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "e4de008728be4ecfb32f3cce4402d0f8",
+            "size": 4129,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/171f156e393b4bcca2837d077a46cb3a/thumbnails/5a0b35db6b014d12845a74bb6910a40c/1167f339c31b40f9b1ed28f93665d547.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "24022ea4592c4d42acfed642947acdca",
+            "size": 806,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/171f156e393b4bcca2837d077a46cb3a/thumbnails/5a0b35db6b014d12845a74bb6910a40c/aaa6c7ed308b41288aa619128a47bf37.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "3a6396af058342c88efda4d460e3bc1d",
+        "username": "Nudelkulle",
+        "displayName": "Nudelkulle",
+        "profileUrl": "https://sketchfab.com/Nudelkulle",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+          "images": [
+            {
+              "size": 680,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1253,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+              "height": 48
+            },
+            {
+              "size": 2797,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+              "height": 90
+            },
+            {
+              "size": 3215,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/3a6396af058342c88efda4d460e3bc1d"
+      },
+      "description": "Tiger Figurine",
+      "faceCount": 2277502,
+      "createdAt": "2020-12-05T01:58:05.297391",
+      "vertexCount": 1138753,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 80436716,
+          "type": "glb",
+          "textureMaxResolution": 2048,
+          "faceCount": 2277502,
+          "vertexCount": 1570159
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 54504971,
+          "type": "gltf",
+          "textureMaxResolution": 2048,
+          "faceCount": 2277502,
+          "vertexCount": 1570159
+        },
+        "source": {
+          "textureCount": null,
+          "size": 53528023,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 59566413,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "65cd91f9319140408d38ce2c66da8a9d": {
+      "uri": "https://api.sketchfab.com/v3/models/65cd91f9319140408d38ce2c66da8a9d",
+      "uid": "65cd91f9319140408d38ce2c66da8a9d",
+      "name": "Амурский  тигр",
+      "staffpickedAt": null,
+      "viewCount": 190,
+      "likeCount": 6,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/65cd91f9319140408d38ce2c66da8a9d",
+      "embedUrl": "https://sketchfab.com/models/65cd91f9319140408d38ce2c66da8a9d/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2020-12-06T04:37:20.505994",
+      "tags": [
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "substancepainter",
+          "slug": "substancepainter",
+          "uri": "https://api.sketchfab.com/v3/tags/substancepainter"
+        },
+        {
+          "name": "3d",
+          "slug": "3d",
+          "uri": "https://api.sketchfab.com/v3/tags/3d"
+        },
+        {
+          "name": "blender",
+          "slug": "blender",
+          "uri": "https://api.sketchfab.com/v3/tags/blender"
+        },
+        {
+          "name": "zbrush",
+          "slug": "zbrush",
+          "uri": "https://api.sketchfab.com/v3/tags/zbrush"
+        }
+      ],
+      "categories": [
+        {
+          "name": "art-abstract"
+        },
+        {
+          "name": "nature-plants"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "eab8fb39e6224d02afb0715d77215a72",
+            "size": 269499,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/65cd91f9319140408d38ce2c66da8a9d/thumbnails/987332cad279446eb4c51271df7c9609/e9bb4a6cda564027ab3b95852fd4cc6e.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "3c90d48bf2c44c12a655be57cefd2ec7",
+            "size": 54820,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/65cd91f9319140408d38ce2c66da8a9d/thumbnails/987332cad279446eb4c51271df7c9609/9ae60dc72b5a441094936444e4cb4a59.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "91887bb8700f4b3dae89238e2a609ff7",
+            "size": 30216,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/65cd91f9319140408d38ce2c66da8a9d/thumbnails/987332cad279446eb4c51271df7c9609/53144f637be84ee68417f2c79e437a40.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "f30bcfb32dcf4795bd83404286138487",
+            "size": 5600,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/65cd91f9319140408d38ce2c66da8a9d/thumbnails/987332cad279446eb4c51271df7c9609/43383b6db77345f3aaa1e24334c27baa.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "2764982bb7714227894e5329343b62ef",
+            "size": 869,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/65cd91f9319140408d38ce2c66da8a9d/thumbnails/987332cad279446eb4c51271df7c9609/4501e02ac5b346a395693ad79a4289fe.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "822e65eb43714884b10e1b3e074ef2d6",
+        "username": "stveega228",
+        "displayName": "stveega228",
+        "profileUrl": "https://sketchfab.com/stveega228",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/67d8e884c9b642849401fe26f8b25802",
+          "images": [
+            {
+              "size": 780,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/67d8e884c9b642849401fe26f8b25802/0a5f0eda0007427587859e60ba2dd239.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1221,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/67d8e884c9b642849401fe26f8b25802/a5fe22d26a244579802baf804aa316e4.jpeg",
+              "height": 48
+            },
+            {
+              "size": 2772,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/67d8e884c9b642849401fe26f8b25802/e83226fe5fdc4a8eabf964064f6dde84.jpeg",
+              "height": 90
+            },
+            {
+              "size": 3251,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/67d8e884c9b642849401fe26f8b25802/3a578ed576444034ac44f7db3a2cde5d.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/822e65eb43714884b10e1b3e074ef2d6"
+      },
+      "description": "",
+      "faceCount": 25328,
+      "createdAt": "2020-12-06T04:21:10.714172",
+      "vertexCount": 13266,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 8,
+          "size": 13610308,
+          "type": "glb",
+          "textureMaxResolution": 2048,
+          "faceCount": 25328,
+          "vertexCount": 72322
+        },
+        "gltf": {
+          "textureCount": 8,
+          "size": 11436520,
+          "type": "gltf",
+          "textureMaxResolution": 2048,
+          "faceCount": 25328,
+          "vertexCount": 72322
+        },
+        "source": {
+          "textureCount": null,
+          "size": 46250352,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 10486845,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "1fac1d8985ea406f840617ec9aece8d2": {
+      "uri": "https://api.sketchfab.com/v3/models/1fac1d8985ea406f840617ec9aece8d2",
+      "uid": "1fac1d8985ea406f840617ec9aece8d2",
+      "name": "Bad Hunter",
+      "staffpickedAt": null,
+      "viewCount": 386,
+      "likeCount": 12,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/1fac1d8985ea406f840617ec9aece8d2",
+      "embedUrl": "https://sketchfab.com/models/1fac1d8985ea406f840617ec9aece8d2/embed",
+      "commentCount": 1,
+      "isDownloadable": true,
+      "publishedAt": "2021-09-01T14:31:39.646346",
+      "tags": [
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "hunter",
+          "slug": "hunter",
+          "uri": "https://api.sketchfab.com/v3/tags/hunter"
+        },
+        {
+          "name": "cloak",
+          "slug": "cloak",
+          "uri": "https://api.sketchfab.com/v3/tags/cloak"
+        },
+        {
+          "name": "binoculars",
+          "slug": "binoculars",
+          "uri": "https://api.sketchfab.com/v3/tags/binoculars"
+        },
+        {
+          "name": "huntsman",
+          "slug": "huntsman",
+          "uri": "https://api.sketchfab.com/v3/tags/huntsman"
+        },
+        {
+          "name": "tomjohnsonart",
+          "slug": "tomjohnsonart",
+          "uri": "https://api.sketchfab.com/v3/tags/tomjohnsonart"
+        },
+        {
+          "name": "badhunter",
+          "slug": "badhunter",
+          "uri": "https://api.sketchfab.com/v3/tags/badhunter"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        },
+        {
+          "name": "characters-creatures"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "1dda58c99a77463197e31e8a0c4741f3",
+            "size": 294752,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/1fac1d8985ea406f840617ec9aece8d2/thumbnails/331201dff93849be9c354f2b98761100/1ae83025513b4ee2972ebdb0495e97df.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "5efa67f7415e46a68e07344b97f23c71",
+            "size": 51311,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/1fac1d8985ea406f840617ec9aece8d2/thumbnails/331201dff93849be9c354f2b98761100/c1d365249903413e913e780c0476ffe3.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "cae095d81f9d4269baad5ba8c928b86b",
+            "size": 28266,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/1fac1d8985ea406f840617ec9aece8d2/thumbnails/331201dff93849be9c354f2b98761100/a340346295224012ab9cb87f93777b18.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "b150ff8678774738b094bb813a50b28b",
+            "size": 6018,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/1fac1d8985ea406f840617ec9aece8d2/thumbnails/331201dff93849be9c354f2b98761100/c522d8c9d2344e87ae358caffac6de38.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "d73adf87425849d88677cd195d0483eb",
+            "size": 1312,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/1fac1d8985ea406f840617ec9aece8d2/thumbnails/331201dff93849be9c354f2b98761100/8eba3e701d05472d8e11b3b82f191401.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "c3abc7f744064c17b31c38e862a7b09e",
+        "username": "Brigyon",
+        "displayName": "Tom Johnson",
+        "profileUrl": "https://sketchfab.com/Brigyon",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/2d87635ad57e4321ac571b60f7ac5dbc",
+          "images": [
+            {
+              "size": 2874,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/2d87635ad57e4321ac571b60f7ac5dbc/2810e0ab37f2474b8ca85aec2db8b916.png",
+              "height": 32
+            },
+            {
+              "size": 5302,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/2d87635ad57e4321ac571b60f7ac5dbc/65569ee2b6fc4b0c88f048f9e6904647.png",
+              "height": 48
+            },
+            {
+              "size": 14030,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/2d87635ad57e4321ac571b60f7ac5dbc/4914a8f0be254623b592eadfc1f291f0.png",
+              "height": 90
+            },
+            {
+              "size": 16507,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/2d87635ad57e4321ac571b60f7ac5dbc/f54e229e64a6437ead520908033cfb81.png",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/c3abc7f744064c17b31c38e862a7b09e"
+      },
+      "description": "Sculpted for https://cgboost.com/sculptjanuary2021/\n\nsee more of my work on my website and instagram:\n\nhttps://www.tomjohnsonart.co.uk/\n\nhttps://www.instagram.com/tomjohnsonart/",
+      "faceCount": 999904,
+      "createdAt": "2021-09-01T14:23:23.631728",
+      "vertexCount": 500000,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 0,
+          "size": 84021216,
+          "type": "glb",
+          "textureMaxResolution": 0,
+          "faceCount": 999904,
+          "vertexCount": 2999471
+        },
+        "gltf": {
+          "textureCount": 0,
+          "size": 41996647,
+          "type": "gltf",
+          "textureMaxResolution": 0,
+          "faceCount": 999904,
+          "vertexCount": 2999471
+        },
+        "source": {
+          "textureCount": null,
+          "size": 33966480,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 71997304,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "bbb9a990516144c6876e3997f39584e2": {
+      "uri": "https://api.sketchfab.com/v3/models/bbb9a990516144c6876e3997f39584e2",
+      "uid": "bbb9a990516144c6876e3997f39584e2",
+      "name": "Haw Par Villa Tiger Balm Garden",
+      "staffpickedAt": null,
+      "viewCount": 236,
+      "likeCount": 4,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/bbb9a990516144c6876e3997f39584e2",
+      "embedUrl": "https://sketchfab.com/models/bbb9a990516144c6876e3997f39584e2/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2021-10-06T13:20:38.909297",
+      "tags": [
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "singapore",
+          "slug": "singapore",
+          "uri": "https://api.sketchfab.com/v3/tags/singapore"
+        },
+        {
+          "name": "hawparvilla",
+          "slug": "hawparvilla",
+          "uri": "https://api.sketchfab.com/v3/tags/hawparvilla"
+        },
+        {
+          "name": "polycam",
+          "slug": "polycam",
+          "uri": "https://api.sketchfab.com/v3/tags/polycam"
+        },
+        {
+          "name": "haw-par-villa",
+          "slug": "haw-par-villa",
+          "uri": "https://api.sketchfab.com/v3/tags/haw-par-villa"
+        },
+        {
+          "name": "tiger-balm",
+          "slug": "tiger-balm",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger-balm"
+        }
+      ],
+      "categories": [
+        {
+          "name": "characters-creatures"
+        },
+        {
+          "name": "cultural-heritage-history"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "e71f8eeb4e1045b5a9217913701a17c9",
+            "size": 120962,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/bbb9a990516144c6876e3997f39584e2/thumbnails/779e6705e8d64c4eaf5bf0b38f45853a/b3ee13e7cd2f4eec832dd937f0b9351e.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "eee77375debd47ef855402d472a9c900",
+            "size": 44149,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/bbb9a990516144c6876e3997f39584e2/thumbnails/779e6705e8d64c4eaf5bf0b38f45853a/1ec15d4d06914c289a897b0c453cdbc2.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "8d9153120bfe4dfb9a66fbb3ce70239b",
+            "size": 25674,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/bbb9a990516144c6876e3997f39584e2/thumbnails/779e6705e8d64c4eaf5bf0b38f45853a/e5728215939145569a3d4c9753f6446a.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "513941b0520e4a6fa29e605fe6986a45",
+            "size": 5204,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/bbb9a990516144c6876e3997f39584e2/thumbnails/779e6705e8d64c4eaf5bf0b38f45853a/db866a85a0aa415cb8294079ccd458aa.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "4ec7aa8bc13346b6b81672c5ef4fc851",
+            "size": 1105,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/bbb9a990516144c6876e3997f39584e2/thumbnails/779e6705e8d64c4eaf5bf0b38f45853a/7347eb4a156748cbbb733299d4bd29b6.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "28f5eb685d024fcdbfd223424cf5d863",
+        "username": "mr.mushi",
+        "displayName": "Mr. Mushi",
+        "profileUrl": "https://sketchfab.com/mr.mushi",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/e7113f10fc2c45f0a3b1a16a065def54",
+          "images": [
+            {
+              "size": 1039,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/e7113f10fc2c45f0a3b1a16a065def54/d5e5cf6ba697420688bbdc8f71c7d2f9.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1346,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/e7113f10fc2c45f0a3b1a16a065def54/2ff5f5b0ee00440799a75cdc3784af1e.jpeg",
+              "height": 48
+            },
+            {
+              "size": 2375,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/e7113f10fc2c45f0a3b1a16a065def54/fc81a1bfc3dd4a079884155dae6c12b0.jpeg",
+              "height": 90
+            },
+            {
+              "size": 2717,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/e7113f10fc2c45f0a3b1a16a065def54/ae091822a9c948f0b191cec7c3fc206c.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/28f5eb685d024fcdbfd223424cf5d863"
+      },
+      "description": "Haw Par Villa Google Maps:\n<br>\nhttps://goo.gl/maps/YdpyJQvjk5SwsNBU8",
+      "faceCount": 100000,
+      "createdAt": "2021-10-06T13:20:01.515475",
+      "vertexCount": 50075,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 9939888,
+          "type": "glb",
+          "textureMaxResolution": 4096,
+          "faceCount": 100000,
+          "vertexCount": 56248
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 9005209,
+          "type": "gltf",
+          "textureMaxResolution": 4096,
+          "faceCount": 100000,
+          "vertexCount": 56248
+        },
+        "source": {
+          "textureCount": null,
+          "size": 24780083,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 8472189,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by-nc-sa"
+    },
+    "ba8e50398b4a439981e8c0adca993008": {
+      "uri": "https://api.sketchfab.com/v3/models/ba8e50398b4a439981e8c0adca993008",
+      "uid": "ba8e50398b4a439981e8c0adca993008",
+      "name": "Tiger",
+      "staffpickedAt": null,
+      "viewCount": 82,
+      "likeCount": 0,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/ba8e50398b4a439981e8c0adca993008",
+      "embedUrl": "https://sketchfab.com/models/ba8e50398b4a439981e8c0adca993008/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2016-10-08T19:13:02.530705",
+      "tags": [
+        {
+          "name": "art2907",
+          "slug": "art2907",
+          "uri": "https://api.sketchfab.com/v3/tags/art2907"
+        },
+        {
+          "name": "fa16",
+          "slug": "fa16",
+          "uri": "https://api.sketchfab.com/v3/tags/fa16"
+        },
+        {
+          "name": "jp2296",
+          "slug": "jp2296",
+          "uri": "https://api.sketchfab.com/v3/tags/jp2296"
+        }
+      ],
+      "categories": [
+        {
+          "name": "architecture"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "438f7edb8e8b40a4ab4e34acc3141b12",
+            "size": 31257,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/ba8e50398b4a439981e8c0adca993008/thumbnails/eac7dce9649141fe865f17365acd3b95/1024x576.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "4d25b62561ab43179289fc76946566db",
+            "size": 16223,
+            "width": 640,
+            "url": "https://media.sketchfab.com/models/ba8e50398b4a439981e8c0adca993008/thumbnails/eac7dce9649141fe865f17365acd3b95/640x360.jpeg",
+            "height": 360
+          },
+          {
+            "uid": "9d7bfc3e264e4029ae63fd261952acbb",
+            "size": 9877,
+            "width": 448,
+            "url": "https://media.sketchfab.com/models/ba8e50398b4a439981e8c0adca993008/thumbnails/eac7dce9649141fe865f17365acd3b95/448x252.jpeg",
+            "height": 252
+          },
+          {
+            "uid": "09d42c151d29415fa38f102886ec0494",
+            "size": 1062,
+            "width": 50,
+            "url": "https://media.sketchfab.com/models/ba8e50398b4a439981e8c0adca993008/thumbnails/eac7dce9649141fe865f17365acd3b95/50x50.jpeg",
+            "height": 50
+          },
+          {
+            "uid": "8aa467189d224023812aefd42311d979",
+            "size": 2382,
+            "width": 100,
+            "url": "https://media.sketchfab.com/models/ba8e50398b4a439981e8c0adca993008/thumbnails/eac7dce9649141fe865f17365acd3b95/100x100.jpeg",
+            "height": 100
+          },
+          {
+            "uid": "d1221f8951cd479285101af89984b836",
+            "size": 5719,
+            "width": 200,
+            "url": "https://media.sketchfab.com/models/ba8e50398b4a439981e8c0adca993008/thumbnails/eac7dce9649141fe865f17365acd3b95/200x200.jpeg",
+            "height": 200
+          },
+          {
+            "uid": "f195cfc4412046a7a1a3fd646f4e6535",
+            "size": 24617,
+            "width": 864,
+            "url": "https://media.sketchfab.com/models/ba8e50398b4a439981e8c0adca993008/thumbnails/eac7dce9649141fe865f17365acd3b95/864x486.jpeg",
+            "height": 486
+          }
+        ]
+      },
+      "user": {
+        "uid": "3e5cd9d49fb44f478eca6b8f80ad3f7f",
+        "username": "jaehopp",
+        "displayName": "jaehopp",
+        "profileUrl": "https://sketchfab.com/jaehopp",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/78fa317e46024a5283765aa34df5e508",
+          "images": [
+            {
+              "size": 6421,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/aec92fe9a74e499c98d759362cd7f02f.jpeg",
+              "height": 100
+            },
+            {
+              "size": 2518,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/17fa177ffaa344a2b2fc8e78efd40fbb.jpeg",
+              "height": 48
+            },
+            {
+              "size": 5653,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/02162695bdc840faa3bcb2d418309c5e.jpeg",
+              "height": 90
+            },
+            {
+              "size": 1350,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/6fde876cbded4cd48d36a76029e3aa02.jpeg",
+              "height": 32
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/3e5cd9d49fb44f478eca6b8f80ad3f7f"
+      },
+      "description": "art2907 assignment 3",
+      "faceCount": 149999,
+      "createdAt": "2016-10-08T19:05:12.797899",
+      "vertexCount": 75190,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 9380572,
+          "type": "glb",
+          "textureMaxResolution": 4096,
+          "faceCount": 149999,
+          "vertexCount": 83807
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 7546087,
+          "type": "gltf",
+          "textureMaxResolution": 4096,
+          "faceCount": 149999,
+          "vertexCount": 83807
+        },
+        "source": {
+          "textureCount": null,
+          "size": 18742403,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 7398070,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "701c112d7ce54788b2d95b2f406f6df7": {
+      "uri": "https://api.sketchfab.com/v3/models/701c112d7ce54788b2d95b2f406f6df7",
+      "uid": "701c112d7ce54788b2d95b2f406f6df7",
+      "name": "Tiger",
+      "staffpickedAt": null,
+      "viewCount": 94,
+      "likeCount": 2,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/701c112d7ce54788b2d95b2f406f6df7",
+      "embedUrl": "https://sketchfab.com/models/701c112d7ce54788b2d95b2f406f6df7/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2021-07-25T07:09:42.045219",
+      "tags": [
+        {
+          "name": "dae",
+          "slug": "dae",
+          "uri": "https://api.sketchfab.com/v3/tags/dae"
+        },
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "mammal",
+          "slug": "mammal",
+          "uri": "https://api.sketchfab.com/v3/tags/mammal"
+        },
+        {
+          "name": "fbx",
+          "slug": "fbx",
+          "uri": "https://api.sketchfab.com/v3/tags/fbx"
+        },
+        {
+          "name": "eevee",
+          "slug": "eevee",
+          "uri": "https://api.sketchfab.com/v3/tags/eevee"
+        },
+        {
+          "name": "low-poly",
+          "slug": "low-poly",
+          "uri": "https://api.sketchfab.com/v3/tags/low-poly"
+        },
+        {
+          "name": "blender",
+          "slug": "blender",
+          "uri": "https://api.sketchfab.com/v3/tags/blender"
+        },
+        {
+          "name": "animal",
+          "slug": "animal",
+          "uri": "https://api.sketchfab.com/v3/tags/animal"
+        },
+        {
+          "name": "free",
+          "slug": "free",
+          "uri": "https://api.sketchfab.com/v3/tags/free"
+        },
+        {
+          "name": "gameready",
+          "slug": "gameready",
+          "uri": "https://api.sketchfab.com/v3/tags/gameready"
+        },
+        {
+          "name": "wild-animal",
+          "slug": "wild-animal",
+          "uri": "https://api.sketchfab.com/v3/tags/wild-animal"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "65ddfb10be7542c185a1fb4c22a6587d",
+            "size": 73164,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/701c112d7ce54788b2d95b2f406f6df7/thumbnails/812c2c7c74c54b36a52b7c0656a47015/b2e53d8a505a446e8b7f501d2c879ced.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "3400f2bba93e4e359435302f2c114b77",
+            "size": 27539,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/701c112d7ce54788b2d95b2f406f6df7/thumbnails/812c2c7c74c54b36a52b7c0656a47015/51fe7169537f489a98d073a0e328c392.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "682ab5ff202b452a8ac2de92fb48aee7",
+            "size": 16897,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/701c112d7ce54788b2d95b2f406f6df7/thumbnails/812c2c7c74c54b36a52b7c0656a47015/0b037c6148fe4f398042602e18e4443a.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "6dffb4f1661a435e955e4b6d09a66fd5",
+            "size": 4070,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/701c112d7ce54788b2d95b2f406f6df7/thumbnails/812c2c7c74c54b36a52b7c0656a47015/618693d6ed15423186604bb0d5884529.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "4b459518120242b99e7381f154a40d66",
+            "size": 1100,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/701c112d7ce54788b2d95b2f406f6df7/thumbnails/812c2c7c74c54b36a52b7c0656a47015/972cdfc436bd47b28255c667321cc17e.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "d0b7da7545af4223bcc3cb0294257bc2",
+        "username": "Ajinkya999",
+        "displayName": "Ajinkya",
+        "profileUrl": "https://sketchfab.com/Ajinkya999",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/51af6a870cce449eb75b0345feebaebb",
+          "images": [
+            {
+              "size": 5719,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/2ef0f894055b4bb69123b2a27fa2d379.jpeg",
+              "height": 90
+            },
+            {
+              "size": 6496,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/ab11eedf96374486acb544f71a23b165.jpeg",
+              "height": 100
+            },
+            {
+              "size": 1359,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/35f6f9b6c9a14a548ce472582d8a9bb5.jpeg",
+              "height": 32
+            },
+            {
+              "size": 2584,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/51af6a870cce449eb75b0345feebaebb/a8072a51447c4d41ab177b357111b420.jpeg",
+              "height": 48
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/d0b7da7545af4223bcc3cb0294257bc2"
+      },
+      "description": "Complete Low-Poly, Gameready model. Thank you for **viewing and downloading  :D**.",
+      "faceCount": 1165,
+      "createdAt": "2021-07-25T07:01:21.696715",
+      "vertexCount": 552,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 410496,
+          "type": "glb",
+          "textureMaxResolution": 1024,
+          "faceCount": 1155,
+          "vertexCount": 2164
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 337021,
+          "type": "gltf",
+          "textureMaxResolution": 1024,
+          "faceCount": 1155,
+          "vertexCount": 2164
+        },
+        "source": {
+          "textureCount": null,
+          "size": 1544309,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 398495,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "fc2c7fd74dd04e39935803b884c77258": {
+      "uri": "https://api.sketchfab.com/v3/models/fc2c7fd74dd04e39935803b884c77258",
+      "uid": "fc2c7fd74dd04e39935803b884c77258",
+      "name": "Running Tiger",
+      "staffpickedAt": null,
+      "viewCount": 13013,
+      "likeCount": 122,
+      "animationCount": 1,
+      "viewerUrl": "https://sketchfab.com/3d-models/fc2c7fd74dd04e39935803b884c77258",
+      "embedUrl": "https://sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/embed",
+      "commentCount": 4,
+      "isDownloadable": true,
+      "publishedAt": "2019-09-18T08:28:46.147481",
+      "tags": [
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "animal",
+          "slug": "animal",
+          "uri": "https://api.sketchfab.com/v3/tags/animal"
+        },
+        {
+          "name": "animation",
+          "slug": "animation",
+          "uri": "https://api.sketchfab.com/v3/tags/animation"
+        },
+        {
+          "name": "rigged",
+          "slug": "rigged",
+          "uri": "https://api.sketchfab.com/v3/tags/rigged"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "9b95910b3a794c8097ce460a089b9164",
+            "size": 103231,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/thumbnails/ac74854dfd644ae2bbc50b4f2ed6011b/4065069883e04a2faf048fab5dcecebf.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "4b029719f4e241019b3474cf1d1c4072",
+            "size": 34598,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/thumbnails/ac74854dfd644ae2bbc50b4f2ed6011b/cee414dfadd449e081b5420eaa9178a7.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "159080c4fb214175aa59bc0ace553f35",
+            "size": 19984,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/thumbnails/ac74854dfd644ae2bbc50b4f2ed6011b/1ded23fc7428450b994be0f58106bad4.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "e745c944876b45edae3f3a085966d2a9",
+            "size": 4073,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/thumbnails/ac74854dfd644ae2bbc50b4f2ed6011b/2ea3aba7d35242f18548c8c2d8ed929a.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "0c0bb4dde5ed420eab0ac7f8ce3a606c",
+            "size": 797,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/thumbnails/ac74854dfd644ae2bbc50b4f2ed6011b/9be2238084594c689950038afadb2d95.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "6651498f70a44a24b56df59d46f18049",
+        "username": "francescolima74",
+        "displayName": "Amil (francescolima74)",
+        "profileUrl": "https://sketchfab.com/francescolima74",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/59bc19b1d96d420db29b55858d2e8220",
+          "images": [
+            {
+              "size": 1503,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/59bc19b1d96d420db29b55858d2e8220/5d8f0d0c8fe04574913215f2226c5ae7.png",
+              "height": 32
+            },
+            {
+              "size": 2502,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/59bc19b1d96d420db29b55858d2e8220/a8182614056a4faaaa79e14c1c632063.png",
+              "height": 48
+            },
+            {
+              "size": 5648,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/59bc19b1d96d420db29b55858d2e8220/c10821098f3344f9b96a2c52e141352e.png",
+              "height": 90
+            },
+            {
+              "size": 6491,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/59bc19b1d96d420db29b55858d2e8220/e132a73b019645289c750fa1929b6315.png",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/6651498f70a44a24b56df59d46f18049"
+      },
+      "description": "3d rigged and animated tiger",
+      "faceCount": 4650,
+      "createdAt": "2019-09-18T08:19:43.023818",
+      "vertexCount": 2514,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 1996448,
+          "type": "glb",
+          "textureMaxResolution": 1024,
+          "faceCount": 4650,
+          "vertexCount": 3204
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 1770970,
+          "type": "gltf",
+          "textureMaxResolution": 1024,
+          "faceCount": 4650,
+          "vertexCount": 3204
+        },
+        "source": {
+          "textureCount": null,
+          "size": 5257780,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 1945055,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "733afd855f5d4c378f041cc89e231770": {
+      "uri": "https://api.sketchfab.com/v3/models/733afd855f5d4c378f041cc89e231770",
+      "uid": "733afd855f5d4c378f041cc89e231770",
+      "name": "tiger walk v02",
+      "staffpickedAt": null,
+      "viewCount": 12935,
+      "likeCount": 124,
+      "animationCount": 1,
+      "viewerUrl": "https://sketchfab.com/3d-models/733afd855f5d4c378f041cc89e231770",
+      "embedUrl": "https://sketchfab.com/models/733afd855f5d4c378f041cc89e231770/embed",
+      "commentCount": 7,
+      "isDownloadable": true,
+      "publishedAt": "2020-11-08T06:18:26.688316",
+      "tags": [
+        {
+          "name": "forest",
+          "slug": "forest",
+          "uri": "https://api.sketchfab.com/v3/tags/forest"
+        },
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "hunter",
+          "slug": "hunter",
+          "uri": "https://api.sketchfab.com/v3/tags/hunter"
+        },
+        {
+          "name": "speed",
+          "slug": "speed",
+          "uri": "https://api.sketchfab.com/v3/tags/speed"
+        },
+        {
+          "name": "king",
+          "slug": "king",
+          "uri": "https://api.sketchfab.com/v3/tags/king"
+        },
+        {
+          "name": "lion",
+          "slug": "lion",
+          "uri": "https://api.sketchfab.com/v3/tags/lion"
+        },
+        {
+          "name": "strong",
+          "slug": "strong",
+          "uri": "https://api.sketchfab.com/v3/tags/strong"
+        },
+        {
+          "name": "unity",
+          "slug": "unity",
+          "uri": "https://api.sketchfab.com/v3/tags/unity"
+        },
+        {
+          "name": "unity3d",
+          "slug": "unity3d",
+          "uri": "https://api.sketchfab.com/v3/tags/unity3d"
+        },
+        {
+          "name": "3dsmax",
+          "slug": "3dsmax",
+          "uri": "https://api.sketchfab.com/v3/tags/3dsmax"
+        },
+        {
+          "name": "animal",
+          "slug": "animal",
+          "uri": "https://api.sketchfab.com/v3/tags/animal"
+        },
+        {
+          "name": "animation",
+          "slug": "animation",
+          "uri": "https://api.sketchfab.com/v3/tags/animation"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        },
+        {
+          "name": "nature-plants"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "82eb468a14424e718c59493d163b363c",
+            "size": 243230,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/733afd855f5d4c378f041cc89e231770/thumbnails/742bff914a4340178a0bb98a607b680b/6227aab946d14ad289891851fffc564b.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "a7df4ce866414357bb27d13ad00cd1e7",
+            "size": 82264,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/733afd855f5d4c378f041cc89e231770/thumbnails/742bff914a4340178a0bb98a607b680b/177ef98ab62142dcb45853b7f808793c.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "fe16a4446fe54a8a845c0678213bc592",
+            "size": 46567,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/733afd855f5d4c378f041cc89e231770/thumbnails/742bff914a4340178a0bb98a607b680b/d18fde1542e245809e35076109e7447f.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "26ed218efd12498c933bb0c4fc26c496",
+            "size": 8474,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/733afd855f5d4c378f041cc89e231770/thumbnails/742bff914a4340178a0bb98a607b680b/53e743010ba947adaaf689ef9d3178b0.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "3f743d8e619944e29b0096e28d6b2239",
+            "size": 1050,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/733afd855f5d4c378f041cc89e231770/thumbnails/742bff914a4340178a0bb98a607b680b/0955d806ff074965aded8792e647e9c4.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "325fb4d49fa742959d3d4eb21dfcc3bd",
+        "username": "shahabahmed",
+        "displayName": "Unity  (shehab house)",
+        "profileUrl": "https://sketchfab.com/shahabahmed",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/4c62c6f0382246c190e839b4969d2c60",
+          "images": [
+            {
+              "size": 1062,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/7d06465767d047718047ac3abfc31a62.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1395,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/164fe48a1cf54a20a6e971c9640ca996.jpeg",
+              "height": 48
+            },
+            {
+              "size": 2746,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/d163a65fb0fb44dab8039ec43ee57f5a.jpeg",
+              "height": 90
+            },
+            {
+              "size": 3203,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/4c62c6f0382246c190e839b4969d2c60/bf482275875f4ad390fd91afcb3fd8ab.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/325fb4d49fa742959d3d4eb21dfcc3bd"
+      },
+      "description": "this free model I retatch texture feel free to used as unity asset",
+      "faceCount": 4650,
+      "createdAt": "2020-11-08T06:02:13.322534",
+      "vertexCount": 2514,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 1950444,
+          "type": "glb",
+          "textureMaxResolution": 1024,
+          "faceCount": 4650,
+          "vertexCount": 3329
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 1753234,
+          "type": "gltf",
+          "textureMaxResolution": 1024,
+          "faceCount": 4650,
+          "vertexCount": 3329
+        },
+        "source": {
+          "textureCount": null,
+          "size": 2235104,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 1832486,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "c898f64e3bea49e8910342d0406aaecf": {
+      "uri": "https://api.sketchfab.com/v3/models/c898f64e3bea49e8910342d0406aaecf",
+      "uid": "c898f64e3bea49e8910342d0406aaecf",
+      "name": "Frame tiger",
+      "staffpickedAt": null,
+      "viewCount": 6,
+      "likeCount": 0,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/c898f64e3bea49e8910342d0406aaecf",
+      "embedUrl": "https://sketchfab.com/models/c898f64e3bea49e8910342d0406aaecf/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2022-03-17T19:19:45.018068",
+      "tags": [
+        {
+          "name": "frame",
+          "slug": "frame",
+          "uri": "https://api.sketchfab.com/v3/tags/frame"
+        },
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "obj",
+          "slug": "obj",
+          "uri": "https://api.sketchfab.com/v3/tags/obj"
+        },
+        {
+          "name": "sweethome3d",
+          "slug": "sweethome3d",
+          "uri": "https://api.sketchfab.com/v3/tags/sweethome3d"
+        },
+        {
+          "name": "low",
+          "slug": "low",
+          "uri": "https://api.sketchfab.com/v3/tags/low"
+        },
+        {
+          "name": "poly",
+          "slug": "poly",
+          "uri": "https://api.sketchfab.com/v3/tags/poly"
+        },
+        {
+          "name": "design",
+          "slug": "design",
+          "uri": "https://api.sketchfab.com/v3/tags/design"
+        }
+      ],
+      "categories": [
+        {
+          "name": "furniture-home"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "2422ce008a18403780402c32987b3c91",
+            "size": 97369,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/c898f64e3bea49e8910342d0406aaecf/thumbnails/d9db764bbfcd40b9afe8d73d3ab26976/1ca0e4bff5f74d30afb25fe302f6eb69.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "d3d4228366b2405abb7ec7f7c58f6b09",
+            "size": 36323,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/c898f64e3bea49e8910342d0406aaecf/thumbnails/d9db764bbfcd40b9afe8d73d3ab26976/a81c8f418234435f8dd7715562df0e42.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "f19c571191144859a03546622560722f",
+            "size": 21634,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/c898f64e3bea49e8910342d0406aaecf/thumbnails/d9db764bbfcd40b9afe8d73d3ab26976/35f527d068474bd7a4fdae5e26b518e8.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "2878f1dffc244581bcf4b38a26592fe6",
+            "size": 4780,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/c898f64e3bea49e8910342d0406aaecf/thumbnails/d9db764bbfcd40b9afe8d73d3ab26976/9cd37371b65b479badfb8e6526465f26.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "168e476cfdbb4479bc670e0e85809032",
+            "size": 1059,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/c898f64e3bea49e8910342d0406aaecf/thumbnails/d9db764bbfcd40b9afe8d73d3ab26976/422d9de7354644cd9c4f6b5c5aa06888.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "82a239fe59324b0baae02b831ee95f30",
+        "username": "1-3D.com",
+        "displayName": "1-3D.com",
+        "profileUrl": "https://sketchfab.com/1-3D.com",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/dbd518a58f1044b4aad59c1a4034dab8",
+          "images": [
+            {
+              "size": 423,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/dbd518a58f1044b4aad59c1a4034dab8/aa4de728fb9048ed9c0aeb1246b40662.png",
+              "height": 32
+            },
+            {
+              "size": 563,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/dbd518a58f1044b4aad59c1a4034dab8/cd70a5fbc0ae46f4bd67491ca6f2a22a.png",
+              "height": 48
+            },
+            {
+              "size": 961,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/dbd518a58f1044b4aad59c1a4034dab8/cfdb9adf13a74e6eb3ec1ccda6fda605.png",
+              "height": 90
+            },
+            {
+              "size": 1082,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/dbd518a58f1044b4aad59c1a4034dab8/4ef22b84ef6e4bdda70b14314a063101.png",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/82a239fe59324b0baae02b831ee95f30"
+      },
+      "description": "Very nice frame tiger model to integrate in your virtual and real environment! BY-SA. By Emmanuel Puybaret at https://www.sweethome3d.com/. More models (download, AR, VR) here : https://1-3D.com ...",
+      "faceCount": 208,
+      "createdAt": "2022-03-17T19:17:29.366350",
+      "vertexCount": 62,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 1,
+          "size": 42636,
+          "type": "glb",
+          "textureMaxResolution": 256,
+          "faceCount": 112,
+          "vertexCount": 226
+        },
+        "gltf": {
+          "textureCount": 1,
+          "size": 35361,
+          "type": "gltf",
+          "textureMaxResolution": 256,
+          "faceCount": 112,
+          "vertexCount": 226
+        },
+        "gltf-ar": {
+          "textureCount": null,
+          "size": 6647,
+          "type": "gltf-ar",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "source": {
+          "textureCount": null,
+          "size": 41008,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 40310,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by-sa"
+    },
+    "deb84998fae54c9394720f282bfc582f": {
+      "uri": "https://api.sketchfab.com/v3/models/deb84998fae54c9394720f282bfc582f",
+      "uid": "deb84998fae54c9394720f282bfc582f",
+      "name": "Tiger",
+      "staffpickedAt": null,
+      "viewCount": 98,
+      "likeCount": 5,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/deb84998fae54c9394720f282bfc582f",
+      "embedUrl": "https://sketchfab.com/models/deb84998fae54c9394720f282bfc582f/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2020-11-08T18:41:32.409432",
+      "tags": [
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "lowpoly",
+          "slug": "lowpoly",
+          "uri": "https://api.sketchfab.com/v3/tags/lowpoly"
+        }
+      ],
+      "categories": [],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "97d48bdb117d498d93b2bfc9dfd48f85",
+            "size": 99317,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/deb84998fae54c9394720f282bfc582f/thumbnails/6fb6cf0c3e284c2cb834ad7d2b15cdd1/31343948edf443a3b517bc85e1c4265b.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "22559b00654447c0bc7269a30adddb1b",
+            "size": 33626,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/deb84998fae54c9394720f282bfc582f/thumbnails/6fb6cf0c3e284c2cb834ad7d2b15cdd1/c59085774bfa4a3ba0c609070fe57301.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "c5fee009788544db9e4aaf5c6312c6b5",
+            "size": 19763,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/deb84998fae54c9394720f282bfc582f/thumbnails/6fb6cf0c3e284c2cb834ad7d2b15cdd1/14e09470e64844e3adaada4d55b0cae0.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "2a2a24b8c6c24bb18ea46bed8d3a0ca5",
+            "size": 4220,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/deb84998fae54c9394720f282bfc582f/thumbnails/6fb6cf0c3e284c2cb834ad7d2b15cdd1/ec764d0d1b0e4296a5e91482b2ded139.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "2654d057335b4b20ba28878b6d4d8c04",
+            "size": 758,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/deb84998fae54c9394720f282bfc582f/thumbnails/6fb6cf0c3e284c2cb834ad7d2b15cdd1/e8adc18e0c694546832eaff58672a1ce.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "a70a294394064351b69696311550845f",
+        "username": "yessica.servindominguez",
+        "displayName": "Yessica  Servin Dominguez",
+        "profileUrl": "https://sketchfab.com/yessica.servindominguez",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/1ae8b9d1c8c7495090711a1c49e2f3fb",
+          "images": [
+            {
+              "size": 927,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/1ae8b9d1c8c7495090711a1c49e2f3fb/3badcd6468854e4aafa336f7c3a6d538.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1470,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/1ae8b9d1c8c7495090711a1c49e2f3fb/69073f3d834948a4b4963524e1924474.jpeg",
+              "height": 48
+            },
+            {
+              "size": 3404,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/1ae8b9d1c8c7495090711a1c49e2f3fb/753b42c10cdc428b8143634296f6f7cb.jpeg",
+              "height": 90
+            },
+            {
+              "size": 4008,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/1ae8b9d1c8c7495090711a1c49e2f3fb/29720c0bd8a843628fd4296f7e07e0fc.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/a70a294394064351b69696311550845f"
+      },
+      "description": "",
+      "faceCount": 966,
+      "createdAt": "2020-11-08T18:23:42.187109",
+      "vertexCount": 485,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 2,
+          "size": 17573024,
+          "type": "glb",
+          "textureMaxResolution": 4096,
+          "faceCount": 966,
+          "vertexCount": 704
+        },
+        "gltf": {
+          "textureCount": 2,
+          "size": 17522949,
+          "type": "gltf",
+          "textureMaxResolution": 4096,
+          "faceCount": 966,
+          "vertexCount": 704
+        },
+        "source": {
+          "textureCount": null,
+          "size": 34436850,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 1867507,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    },
+    "8b78239cb0a7415ab53605d1a8eb96aa": {
+      "uri": "https://api.sketchfab.com/v3/models/8b78239cb0a7415ab53605d1a8eb96aa",
+      "uid": "8b78239cb0a7415ab53605d1a8eb96aa",
+      "name": "虎年公仔-Boy",
+      "staffpickedAt": null,
+      "viewCount": 312,
+      "likeCount": 3,
+      "animationCount": 0,
+      "viewerUrl": "https://sketchfab.com/3d-models/8b78239cb0a7415ab53605d1a8eb96aa",
+      "embedUrl": "https://sketchfab.com/models/8b78239cb0a7415ab53605d1a8eb96aa/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2022-01-29T04:22:25.844520",
+      "tags": [
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "hu-nian-gong-zi",
+          "slug": "hu-nian-gong-zi",
+          "uri": "https://api.sketchfab.com/v3/tags/hu-nian-gong-zi"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "7082cb32f86b4d248822b131bb8b5c26",
+            "size": 73226,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/8b78239cb0a7415ab53605d1a8eb96aa/thumbnails/f73e225e6eff46fc90130d5a90399565/9ac7dbd842a84793bd72181f54445246.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "fe2fed643d6748eaa004d63e0609292e",
+            "size": 27010,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/8b78239cb0a7415ab53605d1a8eb96aa/thumbnails/f73e225e6eff46fc90130d5a90399565/729473e6e5a24306a8b692fb89e7e385.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "8a0ad714456b41af84b2831e938d32e5",
+            "size": 16352,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/8b78239cb0a7415ab53605d1a8eb96aa/thumbnails/f73e225e6eff46fc90130d5a90399565/848c761ffab24089a7766a9b3b99a4f4.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "05f24d56ea0e40b3af1f822e8d4ed508",
+            "size": 3683,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/8b78239cb0a7415ab53605d1a8eb96aa/thumbnails/f73e225e6eff46fc90130d5a90399565/2e9319411202436288be7119d992355a.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "17b26ea8dfd349b0ac7bfedf96d3092f",
+            "size": 944,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/8b78239cb0a7415ab53605d1a8eb96aa/thumbnails/f73e225e6eff46fc90130d5a90399565/fc1aca1bcb314cb4b063e93568c1635c.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "7813531074414894bce88aadd96fa5c3",
+        "username": "orangeteacher",
+        "displayName": "orangeteacher",
+        "profileUrl": "https://sketchfab.com/orangeteacher",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/a28870c12ff849b4b188a680c654e846",
+          "images": [
+            {
+              "size": 1138,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/a28870c12ff849b4b188a680c654e846/d13bb2174cfb4ef9a257febb050274c1.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1591,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/a28870c12ff849b4b188a680c654e846/7729703715b646908d6c482cdf2648dd.jpeg",
+              "height": 48
+            },
+            {
+              "size": 3427,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/a28870c12ff849b4b188a680c654e846/9aec9fd317964744bd7cf6ab1808bcb1.jpeg",
+              "height": 90
+            },
+            {
+              "size": 1138,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/a28870c12ff849b4b188a680c654e846/272e80c8796d4f509ae16b6e6c4c2acc.jpeg",
+              "height": 32
+            },
+            {
+              "size": 3958,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/a28870c12ff849b4b188a680c654e846/6095068a42d14afe87f10771fe1a06b7.jpeg",
+              "height": 100
+            },
+            {
+              "size": 1591,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/a28870c12ff849b4b188a680c654e846/9c9809ff18064aa3aa316633e9accb03.jpeg",
+              "height": 48
+            },
+            {
+              "size": 3427,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/a28870c12ff849b4b188a680c654e846/df782cf9f2314936900d320880dd5dbe.jpeg",
+              "height": 90
+            },
+            {
+              "size": 3958,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/a28870c12ff849b4b188a680c654e846/649f8bcd9c6041aaa789fb6b836d8770.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/7813531074414894bce88aadd96fa5c3"
+      },
+      "description": "虎年公仔-Boy",
+      "faceCount": 1252800,
+      "createdAt": "2022-01-29T04:21:00.838497",
+      "vertexCount": 626402,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 0,
+          "size": 45673328,
+          "type": "glb",
+          "textureMaxResolution": 0,
+          "faceCount": 1252800,
+          "vertexCount": 765720
+        },
+        "gltf": {
+          "textureCount": 0,
+          "size": 20638879,
+          "type": "gltf",
+          "textureMaxResolution": 0,
+          "faceCount": 1252800,
+          "vertexCount": 765720
+        },
+        "source": {
+          "textureCount": null,
+          "size": 46183940,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 21429831,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by-nc-sa"
+    },
+    "70eef95489c046c5bc3fcc07a19b20fa": {
+      "uri": "https://api.sketchfab.com/v3/models/70eef95489c046c5bc3fcc07a19b20fa",
+      "uid": "70eef95489c046c5bc3fcc07a19b20fa",
+      "name": "Tiger- Dog Hybrid",
+      "staffpickedAt": null,
+      "viewCount": 61,
+      "likeCount": 1,
+      "animationCount": 5,
+      "viewerUrl": "https://sketchfab.com/3d-models/70eef95489c046c5bc3fcc07a19b20fa",
+      "embedUrl": "https://sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/embed",
+      "commentCount": 0,
+      "isDownloadable": true,
+      "publishedAt": "2021-11-18T02:15:15.570457",
+      "tags": [
+        {
+          "name": "dog",
+          "slug": "dog",
+          "uri": "https://api.sketchfab.com/v3/tags/dog"
+        },
+        {
+          "name": "tiger",
+          "slug": "tiger",
+          "uri": "https://api.sketchfab.com/v3/tags/tiger"
+        },
+        {
+          "name": "hybrid",
+          "slug": "hybrid",
+          "uri": "https://api.sketchfab.com/v3/tags/hybrid"
+        },
+        {
+          "name": "animation",
+          "slug": "animation",
+          "uri": "https://api.sketchfab.com/v3/tags/animation"
+        }
+      ],
+      "categories": [
+        {
+          "name": "animals-pets"
+        },
+        {
+          "name": "characters-creatures"
+        }
+      ],
+      "thumbnails": {
+        "images": [
+          {
+            "uid": "6e11dc0901864c329d2b6f1f24808a1e",
+            "size": 267456,
+            "width": 1920,
+            "url": "https://media.sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/thumbnails/90b38197770f4eaab9f2d203b4c881f2/9097a0bd18114056a0ab6558e1cf91d1.jpeg",
+            "height": 1080
+          },
+          {
+            "uid": "4ae2d1043f414b6bbd000460cf7998e8",
+            "size": 44547,
+            "width": 1024,
+            "url": "https://media.sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/thumbnails/90b38197770f4eaab9f2d203b4c881f2/471ce04d768a460e8864df87d29a1507.jpeg",
+            "height": 576
+          },
+          {
+            "uid": "5fa3a36ddf0c46f085a8fc7e2f44b0ec",
+            "size": 23073,
+            "width": 720,
+            "url": "https://media.sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/thumbnails/90b38197770f4eaab9f2d203b4c881f2/ef470771152b4b3fbbd4a04525fd3e5a.jpeg",
+            "height": 405
+          },
+          {
+            "uid": "fe5fcb6ddb02444c8aaafb87e48e6ca2",
+            "size": 4707,
+            "width": 256,
+            "url": "https://media.sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/thumbnails/90b38197770f4eaab9f2d203b4c881f2/58113aa053244a9686fe1bc489e3b119.jpeg",
+            "height": 144
+          },
+          {
+            "uid": "d8095a28917f4eecbb1c3cc7383e7b63",
+            "size": 1136,
+            "width": 64,
+            "url": "https://media.sketchfab.com/models/70eef95489c046c5bc3fcc07a19b20fa/thumbnails/90b38197770f4eaab9f2d203b4c881f2/f260d84b3d52454d82d7e9872801b03a.jpeg",
+            "height": 36
+          }
+        ]
+      },
+      "user": {
+        "uid": "cba263ffec8247b48a46d5a3de7b5fc0",
+        "username": "Memorie",
+        "displayName": "Memorie",
+        "profileUrl": "https://sketchfab.com/Memorie",
+        "account": "basic",
+        "avatar": {
+          "uri": "https://api.sketchfab.com/v3/avatars/1ed34c0bfaae4fc1ab7f60d8d1ef0a8b",
+          "images": [
+            {
+              "size": 720,
+              "width": 32,
+              "url": "https://media.sketchfab.com/avatars/1ed34c0bfaae4fc1ab7f60d8d1ef0a8b/31c71a50e5014c2fa231663f8b415fa8.jpeg",
+              "height": 32
+            },
+            {
+              "size": 1203,
+              "width": 48,
+              "url": "https://media.sketchfab.com/avatars/1ed34c0bfaae4fc1ab7f60d8d1ef0a8b/c80ccedc9f1043419e5939be103657d9.jpeg",
+              "height": 48
+            },
+            {
+              "size": 2793,
+              "width": 90,
+              "url": "https://media.sketchfab.com/avatars/1ed34c0bfaae4fc1ab7f60d8d1ef0a8b/b6a6bcf1880a4780b81509266e8afcf8.jpeg",
+              "height": 90
+            },
+            {
+              "size": 3176,
+              "width": 100,
+              "url": "https://media.sketchfab.com/avatars/1ed34c0bfaae4fc1ab7f60d8d1ef0a8b/1f9ae5b46dce46dab2ea9598a41e8d65.jpeg",
+              "height": 100
+            }
+          ]
+        },
+        "uri": "https://api.sketchfab.com/v3/users/cba263ffec8247b48a46d5a3de7b5fc0"
+      },
+      "description": "A 3D model of a tiger/dog hybrid.\n\n[Made With Blender 2.8]",
+      "faceCount": 13832,
+      "createdAt": "2021-11-18T02:05:30.519683",
+      "vertexCount": 7062,
+      "isAgeRestricted": false,
+      "archives": {
+        "glb": {
+          "textureCount": 3,
+          "size": 10849876,
+          "type": "glb",
+          "textureMaxResolution": 2048,
+          "faceCount": 13832,
+          "vertexCount": 12803
+        },
+        "gltf": {
+          "textureCount": 3,
+          "size": 8838990,
+          "type": "gltf",
+          "textureMaxResolution": 2048,
+          "faceCount": 13832,
+          "vertexCount": 12803
+        },
+        "source": {
+          "textureCount": null,
+          "size": 17521297,
+          "type": "source",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        },
+        "usdz": {
+          "textureCount": null,
+          "size": 4812242,
+          "type": "usdz",
+          "textureMaxResolution": null,
+          "faceCount": null,
+          "vertexCount": null
+        }
+      },
+      "license": "by"
+    }
+  }
+}
