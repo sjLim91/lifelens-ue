@@ -1137,7 +1137,8 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
-    const SettlementPopulation* population=nullptr)
+    const SettlementPopulation* population=nullptr,
+    MaterialKind requestedMaterial=MaterialKind::Unknown)
 {
     struct GatherMaterialEvaluation {
         bool initialized=false;
@@ -1248,7 +1249,9 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
     for(const auto& node:world.resourceNodes){
         if(node.id==0
            || node.quantity<=0
-           || node.material==MaterialKind::Unknown){
+           || node.material==MaterialKind::Unknown
+           || (requestedMaterial!=MaterialKind::Unknown
+               &&node.material!=requestedMaterial)){
             continue;
         }
         if(node.material==MaterialKind::Water
