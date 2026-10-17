@@ -2,7 +2,7 @@
   "status": "PASS_SKIN_ANIMATION_AND_POOL_CONTRACT",
   "input": "STAGED_PINNED_SOURCE_DERIVATIVE",
   "threeRevision": "180",
-  "maximumDeformation": 0.2572827064371139,
+  "maximumDeformation": 0.2508064170207717,
   "nearBudget": 2,
   "midBudget": 4,
   "coreBinding": {
