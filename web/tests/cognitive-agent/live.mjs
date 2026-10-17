@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { source } from './compile.mjs';
 
-const { ResidentAIController, LIVE_AI_BUDGET } =
+const { ResidentAIController, LIVE_AI_BUDGET, liveActionableCognitiveRequest } =
   await source('cognition/live-resident-ai.ts');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -192,6 +192,84 @@ const provider = {
   assert(Object.keys(f.controller.getSnapshot().byResident).length
     <= LIVE_AI_BUDGET.maxResidents,
     'status/history must remain bounded even as populations grow');
+  f.controller.dispose();
+}
+
+{
+  const f = fixture();
+  const original = f.runtime.cognitiveRequest('1');
+  original.allowedIntents = [
+    'ImproveFoodSecurity', 'TradeWithResident', 'CareForDependent',
+    'ImproveShelter', 'CooperateWithResident', 'ResolveConflict',
+  ];
+  const safe = liveActionableCognitiveRequest(original);
+  assert.deepEqual(safe.allowedIntents, [
+    'ImproveFoodSecurity', 'CooperateWithResident', 'ResolveConflict',
+  ]);
+  assert.equal(original.allowedIntents.length, 6,
+    'the authoritative Core request must not be modified in place');
+  f.controller.dispose();
+}
+
+{
+  // A free local model must not receive journal-only strategies that appear
+  // to make progress but can never execute a Core action.
+  const received = [];
+  const f = fixture({
+    name: 'local-only-executable',
+    reason: async (request) => {
+      received.push([...request.allowedIntents]);
+      return {
+        actor: request.actor,
+        intent: 'ImproveFoodSecurity',
+        targetResident: null, priority: .9, rationale: '실제 식량 채집',
+      };
+    },
+  });
+  const read = f.runtime.cognitiveRequest;
+  f.runtime.cognitiveRequest = (actor) => {
+    const request = read(actor);
+    request.allowedIntents = [
+      'TeachKnowledge', 'TradeWithResident', 'MigrateHousehold',
+      'ImproveFoodSecurity', 'CareForDependent',
+    ];
+    return request;
+  };
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.deepEqual(received, [['ImproveFoodSecurity']]);
+  assert.equal(f.submitted.length, 1);
+  assert.equal(f.submitted[0].proposal.intent, 'ImproveFoodSecurity');
+  assert.deepEqual(f.contexts[0].allowedIntents, [
+    'CooperateWithResident',
+  ], 'underlying fixture Core observations are not mutated');
+  f.controller.dispose();
+}
+
+{
+  // When Core advertises ONLY future, non-executable intents, refuse to
+  // make a costly model call. Shadow can still study them read-only.
+  let calls = 0;
+  const f = fixture({
+    name: 'inert-intents',
+    reason: async () => {
+      calls += 1;
+      return null;
+    },
+  });
+  const read = f.runtime.cognitiveRequest;
+  f.runtime.cognitiveRequest = (actor) => ({
+    ...read(actor),
+    allowedIntents: ['TeachKnowledge', 'MigrateHousehold', 'ImproveShelter'],
+  });
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(calls, 0);
+  assert.equal(f.submitted.length, 0);
+  assert.equal(f.controller.getSnapshot().pendingActor, null);
+  assert.equal(f.controller.getSnapshot().rejected, 0);
   f.controller.dispose();
 }
 
