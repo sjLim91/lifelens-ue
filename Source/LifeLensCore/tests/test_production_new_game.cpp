@@ -3,6 +3,7 @@
 #include <string>
 
 #include "lifelens/Simulation.h"
+#include "lifelens/InitialPopulationPlacement.h"
 
 using namespace lifelens;
 
@@ -97,6 +98,47 @@ int main()
     }
     assert(first.logs()==sameSeed.logs());
 
+    // The production Web client requests v4 worlds. Initial visual separation
+    // belongs to actual Core coordinates, not random presentation offsets.
+    for(const WorldSeed seed:{77ULL,42ULL,874213954ULL,874213955ULL,2ULL}){
+        Simulation production(seed,0,4),repeat(seed,0,4);
+        production.setupNewGame();repeat.setupNewGame();
+        std::array<GridPos,4> positions{};
+        for(std::size_t i=0;i<positions.size();++i){
+            GridPos repeated{};
+            assert(production.runtimePosition(i+1,positions[i]));
+            assert(repeat.runtimePosition(i+1,repeated));
+            assert(sameGridPos(positions[i],repeated));
+            assert(coreGroundTraversable(production.world(),positions[i]));
+            for(std::size_t j=0;j<i;++j)
+                assert(initialPlacementDistanceSquared(positions[i],positions[j])>=64);
+        }
+        const auto& populations=production.world().wildlifePopulations;
+        assert(populations.size()==repeat.world().wildlifePopulations.size());
+        for(std::size_t p=0;p<populations.size();++p){
+            const auto& population=populations[p];
+            assert(population.animals.size()==repeat.world().wildlifePopulations[p].animals.size());
+            for(std::size_t a=0;a<population.animals.size();++a){
+                const auto& animal=population.animals[a];
+                assert(sameGridPos(animal.position,repeat.world().wildlifePopulations[p].animals[a].position));
+                if(animal.species==WildlifeSpecies::FreshwaterFish) continue;
+                assert(coreGroundTraversable(production.world(),animal.position));
+                const bool predator=animal.species==WildlifeSpecies::Wolf||animal.species==WildlifeSpecies::Tiger;
+                const int clearance=predator?12:8;
+                for(const GridPos founder:positions)
+                    assert(initialPlacementDistanceSquared(animal.position,founder)>=clearance*clearance);
+            }
+        }
+        // Restoring existing positions must not run New Game placement again.
+        const auto snapshot=production.captureSnapshot();
+        Simulation restored(seed);
+        assert(restored.restoreSnapshot(snapshot));
+        for(std::size_t i=0;i<positions.size();++i){
+            GridPos loaded{};assert(restored.runtimePosition(i+1,loaded));
+            assert(sameGridPos(positions[i],loaded));
+        }
+    }
+
     // Different New Game seeds must be able to create a different society.
     Simulation differentSeed(874213955);
     differentSeed.setupNewGame();
@@ -119,3 +161,4 @@ int main()
 
     return 0;
 }
+

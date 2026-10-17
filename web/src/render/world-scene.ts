@@ -357,6 +357,7 @@ export class WorldScene {
     }
     this.vegetationLayer.setObservationFocus(
       this.camera, this.foliageLookTarget, Boolean(selectedAnchor),
+      this.residentLayer.observationFocuses(this.camera),
     );
     this.vegetationLayer.update(this.camera);
     this.waterLayer.update(deltaSeconds);
@@ -377,7 +378,8 @@ export class WorldScene {
   }
 
   private applyCamera(state: WorldSceneCameraState): void {
-    const distance = 180 / Math.max(0.35, state.zoom);
+    const distance = OBSERVER_CAMERA_CONTRACT.orbitDistanceWorldUnitsAtZoom1
+      / Math.max(OBSERVER_CAMERA_CONTRACT.minZoom, state.zoom);
     const elevation = Math.max(0.12, Math.min(1.35, state.elevation));
     const groundRadius = Math.cos(elevation) * distance;
     const panX = Number(state.panX) || 0;
@@ -583,6 +585,7 @@ export class WorldScene {
   }
 
 }
+
 
 
 
