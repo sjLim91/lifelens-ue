@@ -1,6 +1,9 @@
 """Bounded unmodified-source review; no anatomy, materials or weights are edited."""
 import json
 import math
+import hashlib
+import struct
+import tempfile
 from pathlib import Path
 import bpy
 from mathutils import Vector
@@ -10,6 +13,39 @@ bpy.context.preferences.filepaths.save_version=0
 for source in sorted(ROOT.glob('*/source.glb')):
     bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
     for action in list(bpy.data.actions):bpy.data.actions.remove(action)
+    # Keep source geometry/skin/animation buffer views byte-identical. Only
+    # inspection textures are reduced so the local offline review can load it.
+    original=source.read_bytes();json_size=struct.unpack_from('<I',original,12)[0]
+    doc=json.loads(original[20:20+json_size]);start=20+json_size
+    bin_size,bin_type=struct.unpack_from('<II',original,start)
+    if bin_type!=0x004e4942:raise ValueError('Expected a binary GLB buffer')
+    binary=original[start+8:start+8+bin_size]
+    image_views={image['bufferView']:image for image in doc.get('images',[])}
+    packed=bytearray();input_geometry=hashlib.sha256();output_geometry=hashlib.sha256()
+    for index,view in enumerate(doc['bufferViews']):
+        offset=view.get('byteOffset',0);piece=binary[offset:offset+view['byteLength']]
+        if index in image_views:
+            with tempfile.TemporaryDirectory() as temp:
+                path=Path(temp)/'original';path.write_bytes(piece)
+                img=bpy.data.images.load(str(path),check_existing=False)
+                w,h=img.size;factor=min(1,512/max(w,h));img.scale(max(1,round(w*factor)),max(1,round(h*factor)))
+                img.file_format='PNG';img.filepath_raw=str(Path(temp)/'inspection.png');img.save()
+                piece=Path(img.filepath_raw).read_bytes();bpy.data.images.remove(img)
+            image_views[index]['mimeType']='image/png'
+        else:
+            input_geometry.update(piece);output_geometry.update(piece)
+        packed.extend(b'\0'*((-len(packed))%4));view['byteOffset']=len(packed);view['byteLength']=len(piece);packed.extend(piece)
+    doc['buffers'][0]['byteLength']=len(packed)
+    geometry_hash=input_geometry.hexdigest()
+    if output_geometry.hexdigest()!=geometry_hash:raise ValueError('Inspection geometry changed')
+    doc['asset'].setdefault('extras',{})['lifelensInspectionOnly']={'sourceSha256':hashlib.sha256(original).hexdigest(),'nonImageBufferViewsSha256':geometry_hash,'textureLimit':512,'runtimeAdmission':False}
+    encoded=json.dumps(doc,separators=(',',':')).encode();encoded+=b' '*((-len(encoded))%4)
+    packed.extend(b'\0'*((-len(packed))%4))
+    result=struct.pack('<4sII',b'glTF',2,28+len(encoded)+len(packed))+struct.pack('<II',len(encoded),0x4e4f534a)+encoded+struct.pack('<II',len(packed),0x004e4942)+packed
+    (source.parent/'inspection-texture512.glb').write_bytes(result)
+    (source.parent/'asset-structure.json').write_text(json.dumps(doc,indent=2)+'\n')
+    if (source.parent/'inspection.json').is_file():
+        continue
     bpy.ops.import_scene.gltf(filepath=str(source))
     scene=bpy.context.scene;scene.frame_set(1)
     meshes=[obj for obj in scene.objects if obj.type=='MESH']

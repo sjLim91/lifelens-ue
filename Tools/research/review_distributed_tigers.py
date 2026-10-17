@@ -17,6 +17,7 @@ ROOT = Path('docs/asset-reviews/distributed-tigers')
 ROOT.mkdir(parents=True, exist_ok=True)
 BASE = 'https://huggingface.co/datasets/allenai/objaverse/resolve/'
 KNOWN = 'fc2c7fd74dd04e39935803b884c77258'
+SELECTED = [KNOWN, '733afd855f5d4c378f041cc89e231770', 'ca123df978a04daa860c0d8e9d3511d1']
 
 def read(url, limit=32 * 1024 * 1024):
     req = urllib.request.Request(url, headers={'User-Agent': 'LifeLens-free-asset-review/1'})
@@ -71,7 +72,9 @@ for uid in uids:
     if permitted and not excluded:
         allowed.append((uid, item))
 allowed.sort(key=lambda pair: (pair[0] != KNOWN, not bool(pair[1].get('animationCount')), -min(pair[1].get('vertexCount', 0), 100000)))
-for uid, item in allowed[:3]:
+for uid, item in allowed:
+    if uid not in SELECTED:
+        continue
     out = ROOT / uid
     out.mkdir(exist_ok=True)
     raw = read(base + paths[uid])
