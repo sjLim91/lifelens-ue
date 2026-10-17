@@ -6,6 +6,8 @@ on:
       - 'web/tools/build-native-tiger.mjs'
       - 'web/tools/static-native-tiger.mjs'
       - 'web/tests/procedural-environment/native-tiger-contact.mjs'
+      - 'web/src/render/native-tiger-grounding.ts'
+      - 'web/tests/procedural-environment/native-tiger-grounding.mjs'
       - 'Tools/blender/review_native_tiger.py'
       - 'Tools/blender/resize_native_tiger_textures.py'
       - '.github/workflows/native-tiger-source-review.yml'
@@ -33,11 +35,13 @@ jobs:
       - name: Install free Blender for packed source and image verification
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends blender
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
       - name: Apply bounded 2048 1024 512 texture LODs
         run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/resize_native_tiger_textures.py -- docs/asset-reviews/amil-tiger
       - name: Validate real source skin contacts loop seams and behavioral poses
         run: node web/tests/procedural-environment/native-tiger-contact.mjs docs/asset-reviews/amil-tiger
+      - name: Validate turning and stance contact on sloped uneven terrain
+        run: node web/tests/procedural-environment/native-tiger-grounding.mjs docs/asset-reviews/amil-tiger
       - name: Render all native states and preserve editable packed Blender source
         run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_native_tiger.py -- docs/asset-reviews/amil-tiger
       - name: Preserve original-source candidate evidence without acceptance

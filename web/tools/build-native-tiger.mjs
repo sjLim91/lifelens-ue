@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptSimplifier} from 'meshoptimizer';
+import {bakeStaticFar} from './static-native-tiger.mjs';
 const project=resolve(import.meta.dirname,'../..');
 const flags=process.argv.slice(2);
 const inspection=flags.includes('--inspection');
@@ -125,7 +126,7 @@ function sample(name,phase){
  else if(name==='walk'||name==='hunt')retarget(phase,1);
  else{
   if(name==='rest'){
-   moveWorld(bones[0],new T.Vector3(0,-.43/unit,0));
+   moveWorld(bones[0],new T.Vector3(0,-.415/unit,0));
    rotateWorld(bone('Bip01_Neck'),axisX,.42);rotateWorld(bone('Bip01_Head'),axisX,.18);
   }else if(name==='forage'||name==='drink'){
    moveWorld(bones[0],new T.Vector3(0,(name==='drink'?-.17:-.12)/unit,0));
@@ -212,8 +213,10 @@ for(const tier of ['near','mid','far']){
  doc.asset.extras={...(doc.asset.extras??{}),lifelensTiger:contract};doc.buffers[0].byteLength=length;
  let packed=Buffer.concat(chunks);packed=Buffer.concat([packed,Buffer.alloc((4-packed.length%4)%4)]);let json=Buffer.from(JSON.stringify(doc));json=Buffer.concat([json,Buffer.alloc((4-json.length%4)%4,32)]);
  const header=Buffer.alloc(20);header.write('glTF');header.writeUInt32LE(2,4);header.writeUInt32LE(28+json.length+packed.length,8);header.writeUInt32LE(json.length,12);header.writeUInt32LE(0x4e4f534a,16);const bh=Buffer.alloc(8);bh.writeUInt32LE(packed.length);bh.writeUInt32LE(0x004e4942,4);
- const bytes=Buffer.concat([header,json,bh,packed]),name=tier==='near'?'tiger-rigged.glb':`tiger-${tier}.glb`;writeFileSync(resolve(output,name),bytes);
- receipts.push({file:name,sha256:digest(bytes),bytes:bytes.length,triangles,simplificationError,contract});
+ let bytes=Buffer.concat([header,json,bh,packed]),outputContract=contract;
+ if(tier==='far'){const far=await bakeStaticFar(bytes);bytes=far.bytes;outputContract=far.contract;}
+ const name=tier==='near'?'tiger-rigged.glb':`tiger-${tier}.glb`;writeFileSync(resolve(output,name),bytes);
+ receipts.push({file:name,sha256:digest(bytes),bytes:bytes.length,triangles,simplificationError,contract:outputContract});
 }
 writeFileSync(resolve(output,'native-authoring.json'),JSON.stringify({status:inspection?'INSPECTION_ONLY':'DRAFT_SOURCE_DERIVATIVE',runtimeAdmission:false,sourceHashes:hashes,uvTopologyHash:topology,mappedBones:38,preservedBones:47,correctedPawPadVertices:correctedPads.size,metrics,receipts},null,2)+'\n');
 console.log(JSON.stringify({status:inspection?'INSPECTION_ONLY':'DRAFT_SOURCE_DERIVATIVE',output,metrics,files:receipts.map(r=>({file:r.file,bytes:r.bytes,triangles:r.triangles}))}));
