@@ -55,6 +55,9 @@ function worldIdentity(world: WorldOverview): string {
 
 export class ResidentAIController {
   private readonly listeners = new Set<() => void>();
+  // Keep only a bounded visible history; inference fairness covers ALL living
+  // residents, not permanently the first N founders.
+  private readonly residentHistory = new Map<string, ResidentAIDecision>();
   private state: ResidentAIState = {
     enabled: false, suspended: false, pendingActor: null,
     configuration: null, accepted: 0, rejected: 0,
@@ -75,6 +78,16 @@ export class ResidentAIController {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   };
+  private latestResidentDecisions(decision: ResidentAIDecision): Readonly<Record<string, ResidentAIDecision>> {
+    this.residentHistory.delete(decision.actor);
+    this.residentHistory.set(decision.actor, decision);
+    while (this.residentHistory.size > LIVE_AI_BUDGET.maxResidents) {
+      const oldest = this.residentHistory.keys().next().value;
+      if (oldest === undefined) break;
+      this.residentHistory.delete(oldest);
+    }
+    return Object.fromEntries(this.residentHistory);
+  }
   private update(delta: Partial<ResidentAIState>): void {
     this.state = { ...this.state, ...delta };
     for (const listener of this.listeners) listener();
@@ -129,6 +142,7 @@ export class ResidentAIController {
     this.identity = null;
     this.lastMinute = -1;
     this.cursor = 0;
+    this.residentHistory.clear();
     this.update({
       pendingActor: null, accepted: 0, rejected: 0,
       lastDecision: null, byResident: {},
@@ -157,9 +171,10 @@ export class ResidentAIController {
       || !this.source || this.state.pendingActor
       || this.now() - this.lastCall < LIVE_AI_BUDGET.wallCadenceMs) return;
 
+    // Rotate across the entire living population. The model concurrency
+    // remains 1 and displayed history is bounded separately to 32 actors.
     const candidates = residents
-      .filter((resident) => resident.alive === true)
-      .slice(0, LIVE_AI_BUDGET.maxResidents);
+      .filter((resident) => resident.alive === true);
     if (candidates.length === 0) return;
     const resident = candidates[this.cursor % candidates.length];
     this.cursor += 1;
@@ -171,9 +186,27 @@ export class ResidentAIController {
       || this.state.pendingActor
       || this.now() - this.lastCall < LIVE_AI_BUDGET.wallCadenceMs) return;
     const source = this.source;
-    const world = source.worldOverview();
+    let world: WorldOverview;
+    let request: CognitiveRequestDto | null;
+    try {
+      world = source.worldOverview();
+      request = source.cognitiveRequest(actor, 'Reflection');
+    } catch {
+      // The Core may be resetting while the observer refreshes. A failed
+      // source read must NOT become an unhandled rejected Promise on the
+      // renderer's fire-and-forget loop, or submit a fabricated request.
+      this.lastCall = this.now();
+      const lastDecision: ResidentAIDecision = {
+        actor, minute: -1, status: 'error', intent: null, target: null,
+      };
+      this.update({
+        pendingActor: null, rejected: this.state.rejected + 1,
+        lastDecision,
+        byResident: this.latestResidentDecisions(lastDecision),
+      });
+      return;
+    }
     const initialIdentity = worldIdentity(world);
-    const request = source.cognitiveRequest(actor, 'Reflection');
     this.lastCall = this.now();
     if (!request || request.actor !== actor
       || request.minute !== world.minute) return;
@@ -220,7 +253,7 @@ export class ResidentAIController {
       accepted: this.state.accepted + (status === 'recorded' ? 1 : 0),
       rejected: this.state.rejected + (status === 'recorded' ? 0 : 1),
       lastDecision,
-      byResident: { ...this.state.byResident, [actor]: lastDecision },
+      byResident: this.latestResidentDecisions(lastDecision),
     });
   }
 }
