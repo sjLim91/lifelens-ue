@@ -1,5 +1,6 @@
 import type { CognitiveProposalDto, CognitiveRequestDto } from './cognitive-contract';
 import { CognitionScheduler } from './cognition-scheduler';
+import type { CognitiveProvider } from './cognitive-provider';
 import { LocalCognitionProvider, isLoopbackCognitionUrl } from './local-cognition-provider';
 import type { Resident, WorldOverview } from '../runtime/core-types';
 
@@ -90,6 +91,16 @@ export class ResidentAIController {
     this.update({ configuration: { baseUrl, model: model.trim() } });
     this.rebuildScheduler();
     return true;
+  }
+  // Deterministic local fakes are injected only by tests; the production
+  // configuration path is restricted to loopback/local inference servers.
+  setProvider(provider: CognitiveProvider): void {
+    this.scheduler?.dispose();
+    this.resetWorld();
+    this.scheduler = this.source && !this.disposed
+      ? new CognitionScheduler(provider,
+        () => this.source?.worldOverview().minute ?? NaN, LIVE_AI_BUDGET)
+      : null;
   }
   private rebuildScheduler(): void {
     this.scheduler?.dispose();
