@@ -1079,7 +1079,8 @@ inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
-    const SettlementPopulation* population=nullptr)
+    const SettlementPopulation* population=nullptr,
+    MaterialKind requestedMaterial=MaterialKind::Unknown)
 {
     CivilizationUtilityDecision best;
     const MigrationPressureObservation migration=
@@ -1098,6 +1099,8 @@ inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
     };
 
     for(const MaterialKind material:naturalMaterials){
+        if(requestedMaterial!=MaterialKind::Unknown
+           &&material!=requestedMaterial) continue;
         const double pressure=civilizationResourceExplorationPressure(
             world,self,material,authoritativePosition);
         if(pressure<=0.0) continue;
