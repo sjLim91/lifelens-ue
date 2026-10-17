@@ -2183,6 +2183,49 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         sharedCadenceDecision=&cadenceDecision;
     }
 
+    // First live resident-AI action lane: an accepted, snapshot-backed
+    // resident preference can win ONE normal social planning slot over
+    // optional civilization. The model never executes actions, shortcuts
+    // travel, changes Need thresholds, or creates a relationship. Core
+    // re-scores the chosen target and checks life, locality and safety.
+    if(sharedCadenceDecision!=nullptr && !hasUrgentPhysicalNeed){
+        for(auto it=acceptedCognitiveDecisions_.rbegin();
+            it!=acceptedCognitiveDecisions_.rend();++it){
+            if(it->actor!=c.id) continue;
+            if(it->minute>world_.minute
+               ||world_.minute-it->minute>96) break;
+            if(it->priority<0.50) break;
+            const bool cooperate=
+                it->intent==CognitiveIntentKind::CooperateWithResident;
+            const bool repair=
+                it->intent==CognitiveIntentKind::ResolveConflict;
+            if(!cooperate && !repair) break;
+            // A Core-selected avoidance or urgent comfort event is more
+            // important than an optional model-generated social preference.
+            if(cadenceDecision.kind==UnifiedDecisionKind::Social
+               && (cadenceDecision.social.intent==SocialIntent::Avoid
+                   ||cadenceDecision.social.intent==SocialIntent::Comfort))
+                break;
+            const Character* target=findCharacter(world_,it->target);
+            const auto targetRuntime=runtime_.find(it->target);
+            if(target==nullptr ||!target->alive
+               ||targetRuntime==runtime_.end()
+               ||manhattan(r.pos,targetRuntime->second.pos)
+                   >SettlementServiceRadiusGrid)
+                break;
+            const SocialIntent selectedIntent=
+                repair?SocialIntent::Repair:SocialIntent::Approach;
+            const double score=repair
+                ?scoreRepairIntent(c,it->target,relationships_)
+                :scoreApproachIntent(world_,c,it->target,relationships_);
+            if(score<0.18) break;
+            cadenceDecision.kind=UnifiedDecisionKind::Social;
+            cadenceDecision.social={selectedIntent,it->target,score};
+            cadenceDecision.utility=score;
+            break;
+        }
+    }
+
     // Survival needs that can be satisfied immediately pre-empt settlement
     // projects and social activity. If an urgent need cannot yet be satisfied,
     // ordinary civilization remains available for acquisition/progression.
