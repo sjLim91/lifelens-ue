@@ -25,7 +25,7 @@ jobs:
           node-version: '24'
       - name: Verify original source receipts and unchanged motion donor
         run: |
-          python3 Tools/assets/fetch_resident_cc0_sources.py
+          python3 Tools/assets/fetch_resident_cc0_sources.py --verify-local
           python3 Tools/prepare_web_character_assets.py
       - name: Install free local authoring and browser tools
         run: |

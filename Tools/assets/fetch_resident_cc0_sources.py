@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,6 +47,25 @@ def main():
         inputs.append(('assets', f'base/skins/textures/young_lightskinned_{sex}_diffuse.png'))
         for suffix in ['.obj', '.mhclo', '_diffuse.png']:
             inputs.append(('assets', f'base/hair/{hairstyle}/{hairstyle}{suffix}'))
+    if '--verify-local' in sys.argv:
+        expected_files = {f'{label}/{path}' for label, path in inputs}
+        assert set(prior) == expected_files, 'Incomplete pinned source receipt'
+        for name, receipt in prior.items():
+            path = (OUT / name).resolve()
+            assert path.is_relative_to(OUT.resolve()), 'Source receipt escapes its directory'
+            data = path.read_bytes()
+            assert len(data) == receipt['bytes'], name
+            assert hashlib.sha256(data).hexdigest() == receipt['sha256'], name
+            assert receipt['license'] == 'CC0-1.0', name
+            pointer = receipt.get('lfsPointer')
+            if pointer:
+                assert pointer['sha256'] == receipt['sha256'] and pointer['bytes'] == len(data), name
+            else:
+                assert git_hash(data) == receipt['gitBlob'], name
+        assert 'released under CC0' in (OUT/'official/LICENSE.md').read_text()
+        assert 'Creative Commons CC0' in (OUT/'assets/README.md').read_text()
+        print(json.dumps({'status':'VERIFIED_PINNED_LOCAL_CC0_SOURCES','assets':len(prior)}))
+        return
     trees = {}
     for label, (repo, pin) in [('official', OFFICIAL), ('assets', BUNDLED)]:
         tree = json.loads(get(f'https://api.github.com/repos/{repo}/git/trees/{pin}?recursive=1', 12 * 1024 * 1024))
@@ -102,3 +122,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
