@@ -10,21 +10,25 @@ using namespace lifelens;
 
 int main()
 {
-    World world(993);
+    // Use a known traversable seeded region with a real frontier. An empty
+    // synthetic ocean-adjacent world does not guarantee an Explore option.
+    World world(606002);
     world.minute=480;
+    const GridPos camp=world.initialStartRegionCenterGrid();
+    world.resourceNodes.clear();
     Character resident;
     resident.id=9;
     resident.alive=true;
     resident.civilization.character=9;
     resident.lifeStage=LifeStage::Adult;
-    resident.needs={0.10,0.10,0.10,0.10,0.10};
+    resident.needs={0.72,0.10,0.10,0.10,0.10};
 
     ResourceNode food;
     food.id=101;
     food.material=MaterialKind::PlantFood;
     food.quantity=20;
     food.maxQuantity=20;
-    food.pos={0,0};
+    food.pos=camp;
     world.resourceNodes.push_back(food);
 
     AcceptedCognitiveDecision thought;
@@ -34,7 +38,7 @@ int main()
     thought.priority=0.9;
 
     const auto original=chooseResidentAIExistingCivilizationAffordance(
-        world,resident,{0,0},thought);
+        world,resident,camp,thought);
     assert(original && original->intent==CivilizationIntent::Gather);
     assert(original->material==MaterialKind::PlantFood);
     assert(!residentAIHasRecentRepeatedGatherFailure(
@@ -54,7 +58,7 @@ int main()
         resident,MaterialKind::PlantFood,world.minute));
     // Two attempts do not suppress a perfectly real nearby food source.
     const auto twoFailures=chooseResidentAIExistingCivilizationAffordance(
-        world,resident,{0,0},thought);
+        world,resident,camp,thought);
     assert(twoFailures && twoFailures->intent==CivilizationIntent::Gather);
 
     rememberCivilizationAttemptOutcome(resident,gather,482,false);
@@ -64,24 +68,24 @@ int main()
     // not invent a new frontier or block an accessible gather just because
     // prior attempts were bad.
     const auto stillAvailable=chooseResidentAIExistingCivilizationAffordance(
-        world,resident,{0,0},thought);
+        world,resident,camp,thought);
     assert(stillAvailable &&stillAvailable->intent==CivilizationIntent::Gather);
 
     // Exhaustion of real nearby food changes the afforded strategy.
     world.resourceNodes.front().quantity=0;
     const auto unfiltered=bestResourceExplorationDecisionAtPosition(
-        world,resident,{0,0});
+        world,resident,camp);
     const auto explicitlyUnfiltered=bestResourceExplorationDecisionAtPosition(
-        world,resident,{0,0},nullptr,MaterialKind::Unknown);
+        world,resident,camp,nullptr,MaterialKind::Unknown);
     assert(unfiltered.intent==explicitlyUnfiltered.intent);
     assert(unfiltered.material==explicitlyUnfiltered.material);
     assert(unfiltered.utility==explicitlyUnfiltered.utility);
     const auto alternative=bestResourceExplorationDecisionAtPosition(
-        world,resident,{0,0},nullptr,MaterialKind::PlantFood);
+        world,resident,camp,nullptr,MaterialKind::PlantFood);
     assert(alternative.intent==CivilizationIntent::Explore);
     assert(alternative.material==MaterialKind::PlantFood);
     const auto retry=chooseResidentAIExistingCivilizationAffordance(
-        world,resident,{0,0},thought);
+        world,resident,camp,thought);
     assert(retry &&retry->intent==CivilizationIntent::Explore);
     assert(retry->material==MaterialKind::PlantFood);
     assert(retry->resourceNode==0);
@@ -96,7 +100,7 @@ int main()
     assert(!residentAIHasRecentRepeatedGatherFailure(
         bystander,MaterialKind::PlantFood,world.minute));
     const auto noLearning=chooseResidentAIExistingCivilizationAffordance(
-        world,bystander,{0,0},AcceptedCognitiveDecision{
+        world,bystander,camp,AcceptedCognitiveDecision{
             10,482,CognitiveTriggerKind::Reflection,1,"local",
             CognitiveIntentKind::ImproveFoodSecurity,0.9,0,"digest"});
     assert(!noLearning.has_value()); // depleted resource, no evidence
