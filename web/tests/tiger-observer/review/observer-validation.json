@@ -10,7 +10,7 @@
       "baseline": false,
       "pausedCameraObservationUnchanged": true,
       "sample": {
-        "minute": 494,
+        "minute": 495,
         "worldSeed": "77",
         "core": {
           "id": "25:32:1704075738371588112",
@@ -29,20 +29,21 @@
           "clip": "idle",
           "tier": "near"
         },
+        "farIds": [],
         "runtime": {
           "status": "ready",
           "errorMessage": null
         },
         "simulationSpeed": 0,
         "renderStats": {
-          "frame": 61,
-          "calls": 102,
-          "triangles": 2653194,
+          "frame": 64,
+          "calls": 105,
+          "triangles": 2630204,
           "points": 0,
           "lines": 0
         },
         "renderMemory": {
-          "geometries": 534,
+          "geometries": 532,
           "textures": 18
         },
         "canvas": {
@@ -53,319 +54,26 @@
       },
       "motion": [
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.7447543789215842,
-              23.210938546106384,
-              -0.48285492377760875
+              -3.7396526044354346,
+              23.211439523784566,
+              -0.48078925849193865
             ],
             "clip": "hunt",
             "tier": "near"
           },
-          "runtime": {
-            "status": "ready",
-            "errorMessage": null
-          },
-          "simulationSpeed": 0,
-          "renderStats": {
-            "frame": 117,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
-            "lines": 24
-          },
-          "renderMemory": {
-            "geometries": 534,
-            "textures": 18
-          },
-          "canvas": {
-            "width": 620,
-            "height": 662,
-            "contextLost": false
-          }
-        },
-        {
-          "minute": 728,
-          "worldSeed": "77",
-          "core": {
-            "id": "25:32:1704075738371588112",
-            "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
-            "behavior": "Hunt"
-          },
-          "actor": {
-            "id": "25:32:1704075738371588112",
-            "position": [
-              -3.7395087578431685,
-              23.210690000508404,
-              -0.47508484755519476
-            ],
-            "clip": "hunt",
-            "tier": "near"
-          },
-          "runtime": {
-            "status": "ready",
-            "errorMessage": null
-          },
-          "simulationSpeed": 0,
-          "renderStats": {
-            "frame": 118,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
-            "lines": 24
-          },
-          "renderMemory": {
-            "geometries": 534,
-            "textures": 18
-          },
-          "canvas": {
-            "width": 620,
-            "height": 662,
-            "contextLost": false
-          }
-        },
-        {
-          "minute": 728,
-          "worldSeed": "77",
-          "core": {
-            "id": "25:32:1704075738371588112",
-            "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
-            "behavior": "Hunt"
-          },
-          "actor": {
-            "id": "25:32:1704075738371588112",
-            "position": [
-              -3.7342631367647527,
-              23.210455980762603,
-              -0.46731477133278077
-            ],
-            "clip": "hunt",
-            "tier": "near"
-          },
-          "runtime": {
-            "status": "ready",
-            "errorMessage": null
-          },
-          "simulationSpeed": 0,
-          "renderStats": {
-            "frame": 119,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
-            "lines": 24
-          },
-          "renderMemory": {
-            "geometries": 534,
-            "textures": 18
-          },
-          "canvas": {
-            "width": 620,
-            "height": 662,
-            "contextLost": false
-          }
-        },
-        {
-          "minute": 728,
-          "worldSeed": "77",
-          "core": {
-            "id": "25:32:1704075738371588112",
-            "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
-            "behavior": "Hunt"
-          },
-          "actor": {
-            "id": "25:32:1704075738371588112",
-            "position": [
-              -3.7325110993245687,
-              23.2103778181675,
-              -0.46471956587447494
-            ],
-            "clip": "hunt",
-            "tier": "near"
-          },
-          "runtime": {
-            "status": "ready",
-            "errorMessage": null
-          },
-          "simulationSpeed": 0,
-          "renderStats": {
-            "frame": 120,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
-            "lines": 24
-          },
-          "renderMemory": {
-            "geometries": 534,
-            "textures": 18
-          },
-          "canvas": {
-            "width": 620,
-            "height": 662,
-            "contextLost": false
-          }
-        },
-        {
-          "minute": 728,
-          "worldSeed": "77",
-          "core": {
-            "id": "25:32:1704075738371588112",
-            "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
-            "behavior": "Hunt"
-          },
-          "actor": {
-            "id": "25:32:1704075738371588112",
-            "position": [
-              -3.727265478246153,
-              23.210141341294392,
-              -0.45694948965206095
-            ],
-            "clip": "hunt",
-            "tier": "near"
-          },
-          "runtime": {
-            "status": "ready",
-            "errorMessage": null
-          },
-          "simulationSpeed": 0,
-          "renderStats": {
-            "frame": 121,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
-            "lines": 24
-          },
-          "renderMemory": {
-            "geometries": 534,
-            "textures": 18
-          },
-          "canvas": {
-            "width": 620,
-            "height": 662,
-            "contextLost": false
-          }
-        },
-        {
-          "minute": 728,
-          "worldSeed": "77",
-          "core": {
-            "id": "25:32:1704075738371588112",
-            "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
-            "behavior": "Hunt"
-          },
-          "actor": {
-            "id": "25:32:1704075738371588112",
-            "position": [
-              -3.722019857167737,
-              23.209887691385394,
-              -0.44917941342964696
-            ],
-            "clip": "hunt",
-            "tier": "near"
-          },
-          "runtime": {
-            "status": "ready",
-            "errorMessage": null
-          },
-          "simulationSpeed": 0,
-          "renderStats": {
-            "frame": 122,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
-            "lines": 24
-          },
-          "renderMemory": {
-            "geometries": 534,
-            "textures": 18
-          },
-          "canvas": {
-            "width": 620,
-            "height": 662,
-            "contextLost": false
-          }
-        },
-        {
-          "minute": 728,
-          "worldSeed": "77",
-          "core": {
-            "id": "25:32:1704075738371588112",
-            "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
-            "behavior": "Hunt"
-          },
-          "actor": {
-            "id": "25:32:1704075738371588112",
-            "position": [
-              -3.7167742360893214,
-              23.209634041476395,
-              -0.44140933720723297
-            ],
-            "clip": "hunt",
-            "tier": "near"
-          },
-          "runtime": {
-            "status": "ready",
-            "errorMessage": null
-          },
-          "simulationSpeed": 0,
-          "renderStats": {
-            "frame": 123,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
-            "lines": 24
-          },
-          "renderMemory": {
-            "geometries": 534,
-            "textures": 18
-          },
-          "canvas": {
-            "width": 620,
-            "height": 662,
-            "contextLost": false
-          }
-        },
-        {
-          "minute": 728,
-          "worldSeed": "77",
-          "core": {
-            "id": "25:32:1704075738371588112",
-            "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
-            "behavior": "Hunt"
-          },
-          "actor": {
-            "id": "25:32:1704075738371588112",
-            "position": [
-              -3.7115286150109057,
-              23.209380391567397,
-              -0.433639260984819
-            ],
-            "clip": "hunt",
-            "tier": "near"
-          },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -373,14 +81,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 124,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -389,25 +97,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.70628299393249,
-              23.209126741658395,
-              -0.425869184762405
+              -3.733777931833856,
+              23.21136128506689,
+              -0.47348317562733655
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -415,14 +124,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 125,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -431,25 +140,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.701037372854074,
-              23.208873091749396,
-              -0.418099108539991
+              -3.727903259232278,
+              23.211287062096417,
+              -0.46617709276273445
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -457,14 +167,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 126,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -473,25 +183,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6957917517756584,
-              23.208619441840394,
-              -0.410329032317577
+              -3.7220285866306995,
+              23.211212839125942,
+              -0.45887100989813234
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -499,14 +210,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 127,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -515,25 +226,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6905461306972427,
-              23.208365791931392,
-              -0.402558956095163
+              -3.716153914029121,
+              23.21113861615547,
+              -0.45156492703353024
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -541,14 +253,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 128,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -557,25 +269,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.685300509618827,
-              23.208112142022397,
-              -0.394788879872749
+              -3.7102792414275427,
+              23.211064393184998,
+              -0.44425884416892814
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -583,14 +296,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 129,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -599,25 +312,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.680054888540411,
-              23.207858492113395,
-              -0.38701880365033503
+              -3.7044045688259644,
+              23.210990170214526,
+              -0.43695276130432603
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -625,14 +339,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 130,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -641,25 +355,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6748092674619954,
-              23.207604842204397,
-              -0.37924872742792104
+              -3.698529896224386,
+              23.210915947244047,
+              -0.42964667843972393
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -667,14 +382,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 131,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -683,25 +398,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6695636463835797,
-              23.20735119229539,
-              -0.37147865120550705
+              -3.6926552236228076,
+              23.21083927772588,
+              -0.4223405955751218
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -709,14 +425,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 132,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -725,25 +441,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.664318025305164,
-              23.207097542386393,
-              -0.36370857498309306
+              -3.6867805510212293,
+              23.210753924109202,
+              -0.4150345127105197
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -751,14 +468,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 133,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -767,25 +484,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.659072404226748,
-              23.206843892477394,
-              -0.35593849876067907
+              -3.680905878419651,
+              23.210668570492523,
+              -0.4077284298459176
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -793,14 +511,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 134,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2593492,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -809,25 +527,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6538267831483324,
-              23.206590242568396,
-              -0.3481684225382651
+              -3.6750312058180725,
+              23.210583216875843,
+              -0.4004223469813155
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -835,14 +554,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 135,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -851,25 +570,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6485811620699167,
-              23.206336592659397,
-              -0.3403983463158511
+              -3.669156533216494,
+              23.210497863259164,
+              -0.3931162641167134
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -877,14 +597,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 136,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -893,25 +613,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.643335540991501,
-              23.206082942750392,
-              -0.3326282700934371
+              -3.663281860614916,
+              23.210412509642484,
+              -0.3858101812521113
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -919,14 +640,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 137,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -935,25 +656,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.638089919913085,
-              23.205829292841393,
-              -0.3248581938710231
+              -3.6574071880133374,
+              23.210327156025805,
+              -0.3785040983875092
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -961,14 +683,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 138,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -977,25 +699,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6328442988346694,
-              23.205575642932395,
-              -0.3170881176486091
+              -3.651532515411759,
+              23.21024180240913,
+              -0.3711980155229071
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -1003,14 +726,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 139,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -1019,25 +742,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6275986777562537,
-              23.205321993023396,
-              -0.3093180414261951
+              -3.6456578428101807,
+              23.210156448792453,
+              -0.363891932658305
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -1045,14 +769,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 140,
-            "calls": 113,
-            "triangles": 2691692,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -1061,25 +785,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.622353056677838,
-              23.205068343114398,
-              -0.30154796520378113
+              -3.6397831702086023,
+              23.210071095175774,
+              -0.3565858497937029
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -1087,14 +812,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 141,
-            "calls": 114,
-            "triangles": 2692204,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -1103,25 +828,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.617107435599422,
-              23.204814693205392,
-              -0.29377788898136714
+              -3.633908497607024,
+              23.209985741559095,
+              -0.3492797669291008
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -1129,14 +855,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 142,
-            "calls": 114,
-            "triangles": 2692204,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -1145,25 +871,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.613603360719054,
-              23.204645255066193,
-              -0.28858747806481233
+              -3.6280338250054456,
+              23.20990038794242,
+              -0.3419736840644987
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -1171,14 +898,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 143,
-            "calls": 114,
-            "triangles": 2692204,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -1187,25 +914,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6083577396406383,
-              23.20439160515719,
-              -0.28081740184239834
+              -3.622159152403867,
+              23.20981503432574,
+              -0.3346676011998966
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -1213,14 +941,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 144,
-            "calls": 114,
-            "triangles": 2692204,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -1229,25 +957,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6031121185622226,
-              23.204137955248193,
-              -0.27304732561998435
+              -3.616284479802289,
+              23.20972968070906,
+              -0.3273615183352945
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -1255,14 +984,14 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 145,
-            "calls": 114,
-            "triangles": 2692204,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -1271,25 +1000,26 @@
           }
         },
         {
-          "minute": 728,
+          "minute": 882,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 803,
-            "gridY": 1041,
+            "gridX": 805,
+            "gridY": 1043,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.597866497483807,
-              23.20388430533919,
-              -0.26527724939757036
+              -3.6104098072007105,
+              23.209644327092384,
+              -0.3200554354706924
             ],
             "clip": "hunt",
             "tier": "near"
           },
+          "farIds": [],
           "runtime": {
             "status": "ready",
             "errorMessage": null
@@ -1297,14 +1027,315 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 146,
-            "calls": 114,
-            "triangles": 2692204,
-            "points": 544,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 534,
-            "textures": 18
+            "geometries": 538,
+            "textures": 19
+          },
+          "canvas": {
+            "width": 620,
+            "height": 662,
+            "contextLost": false
+          }
+        },
+        {
+          "minute": 882,
+          "worldSeed": "77",
+          "core": {
+            "id": "25:32:1704075738371588112",
+            "species": "Tiger",
+            "gridX": 805,
+            "gridY": 1043,
+            "behavior": "Hunt"
+          },
+          "actor": {
+            "id": "25:32:1704075738371588112",
+            "position": [
+              -3.604535134599132,
+              23.2095589734757,
+              -0.31274935260609027
+            ],
+            "clip": "hunt",
+            "tier": "near"
+          },
+          "farIds": [],
+          "runtime": {
+            "status": "ready",
+            "errorMessage": null
+          },
+          "simulationSpeed": 0,
+          "renderStats": {
+            "frame": 147,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
+            "lines": 24
+          },
+          "renderMemory": {
+            "geometries": 538,
+            "textures": 19
+          },
+          "canvas": {
+            "width": 620,
+            "height": 662,
+            "contextLost": false
+          }
+        },
+        {
+          "minute": 882,
+          "worldSeed": "77",
+          "core": {
+            "id": "25:32:1704075738371588112",
+            "species": "Tiger",
+            "gridX": 805,
+            "gridY": 1043,
+            "behavior": "Hunt"
+          },
+          "actor": {
+            "id": "25:32:1704075738371588112",
+            "position": [
+              -3.5986604619975537,
+              23.209473619859025,
+              -0.30544326974148817
+            ],
+            "clip": "hunt",
+            "tier": "near"
+          },
+          "farIds": [],
+          "runtime": {
+            "status": "ready",
+            "errorMessage": null
+          },
+          "simulationSpeed": 0,
+          "renderStats": {
+            "frame": 148,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
+            "lines": 24
+          },
+          "renderMemory": {
+            "geometries": 538,
+            "textures": 19
+          },
+          "canvas": {
+            "width": 620,
+            "height": 662,
+            "contextLost": false
+          }
+        },
+        {
+          "minute": 882,
+          "worldSeed": "77",
+          "core": {
+            "id": "25:32:1704075738371588112",
+            "species": "Tiger",
+            "gridX": 805,
+            "gridY": 1043,
+            "behavior": "Hunt"
+          },
+          "actor": {
+            "id": "25:32:1704075738371588112",
+            "position": [
+              -3.5927857893959754,
+              23.209388266242346,
+              -0.29813718687688606
+            ],
+            "clip": "hunt",
+            "tier": "near"
+          },
+          "farIds": [],
+          "runtime": {
+            "status": "ready",
+            "errorMessage": null
+          },
+          "simulationSpeed": 0,
+          "renderStats": {
+            "frame": 149,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
+            "lines": 24
+          },
+          "renderMemory": {
+            "geometries": 538,
+            "textures": 19
+          },
+          "canvas": {
+            "width": 620,
+            "height": 662,
+            "contextLost": false
+          }
+        },
+        {
+          "minute": 882,
+          "worldSeed": "77",
+          "core": {
+            "id": "25:32:1704075738371588112",
+            "species": "Tiger",
+            "gridX": 805,
+            "gridY": 1043,
+            "behavior": "Hunt"
+          },
+          "actor": {
+            "id": "25:32:1704075738371588112",
+            "position": [
+              -3.586911116794397,
+              23.209302912625667,
+              -0.29083110401228396
+            ],
+            "clip": "hunt",
+            "tier": "near"
+          },
+          "farIds": [],
+          "runtime": {
+            "status": "ready",
+            "errorMessage": null
+          },
+          "simulationSpeed": 0,
+          "renderStats": {
+            "frame": 150,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
+            "lines": 24
+          },
+          "renderMemory": {
+            "geometries": 538,
+            "textures": 19
+          },
+          "canvas": {
+            "width": 620,
+            "height": 662,
+            "contextLost": false
+          }
+        },
+        {
+          "minute": 882,
+          "worldSeed": "77",
+          "core": {
+            "id": "25:32:1704075738371588112",
+            "species": "Tiger",
+            "gridX": 805,
+            "gridY": 1043,
+            "behavior": "Hunt"
+          },
+          "actor": {
+            "id": "25:32:1704075738371588112",
+            "position": [
+              -3.5810364441928186,
+              23.20921755900899,
+              -0.28352502114768185
+            ],
+            "clip": "hunt",
+            "tier": "near"
+          },
+          "farIds": [],
+          "runtime": {
+            "status": "ready",
+            "errorMessage": null
+          },
+          "simulationSpeed": 0,
+          "renderStats": {
+            "frame": 151,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
+            "lines": 24
+          },
+          "renderMemory": {
+            "geometries": 538,
+            "textures": 19
+          },
+          "canvas": {
+            "width": 620,
+            "height": 662,
+            "contextLost": false
+          }
+        },
+        {
+          "minute": 882,
+          "worldSeed": "77",
+          "core": {
+            "id": "25:32:1704075738371588112",
+            "species": "Tiger",
+            "gridX": 805,
+            "gridY": 1043,
+            "behavior": "Hunt"
+          },
+          "actor": {
+            "id": "25:32:1704075738371588112",
+            "position": [
+              -3.5751617715912403,
+              23.20913220539231,
+              -0.27621893828307975
+            ],
+            "clip": "hunt",
+            "tier": "near"
+          },
+          "farIds": [],
+          "runtime": {
+            "status": "ready",
+            "errorMessage": null
+          },
+          "simulationSpeed": 0,
+          "renderStats": {
+            "frame": 152,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
+            "lines": 24
+          },
+          "renderMemory": {
+            "geometries": 538,
+            "textures": 19
+          },
+          "canvas": {
+            "width": 620,
+            "height": 662,
+            "contextLost": false
+          }
+        },
+        {
+          "minute": 882,
+          "worldSeed": "77",
+          "core": {
+            "id": "25:32:1704075738371588112",
+            "species": "Tiger",
+            "gridX": 805,
+            "gridY": 1043,
+            "behavior": "Hunt"
+          },
+          "actor": {
+            "id": "25:32:1704075738371588112",
+            "position": [
+              -3.569287098989662,
+              23.209046851775632,
+              -0.26891285541847765
+            ],
+            "clip": "hunt",
+            "tier": "near"
+          },
+          "farIds": [],
+          "runtime": {
+            "status": "ready",
+            "errorMessage": null
+          },
+          "simulationSpeed": 0,
+          "renderStats": {
+            "frame": 153,
+            "calls": 117,
+            "triangles": 2563248,
+            "points": 0,
+            "lines": 24
+          },
+          "renderMemory": {
+            "geometries": 538,
+            "textures": 19
           },
           "canvas": {
             "width": 620,
@@ -1313,6 +1344,43 @@
           }
         }
       ],
+      "farSample": {
+        "minute": 495,
+        "worldSeed": "77",
+        "core": {
+          "id": "25:32:1704075738371588112",
+          "species": "Tiger",
+          "gridX": 801,
+          "gridY": 1038,
+          "behavior": "Hunt"
+        },
+        "actor": null,
+        "farIds": [
+          "25:32:1704075738371588112",
+          "25:32:1704075738371588113"
+        ],
+        "runtime": {
+          "status": "ready",
+          "errorMessage": null
+        },
+        "simulationSpeed": 0,
+        "renderStats": {
+          "frame": 69,
+          "calls": 104,
+          "triangles": 2712152,
+          "points": 0,
+          "lines": 0
+        },
+        "renderMemory": {
+          "geometries": 532,
+          "textures": 16
+        },
+        "canvas": {
+          "width": 620,
+          "height": 662,
+          "contextLost": false
+        }
+      },
       "motionObserved": true,
       "mobileCanvas": {
         "width": 412,
@@ -1325,7 +1393,7 @@
       "baseline": true,
       "pausedCameraObservationUnchanged": true,
       "sample": {
-        "minute": 494,
+        "minute": 495,
         "worldSeed": "77",
         "core": {
           "id": "25:32:1704075738371588112",
@@ -1335,20 +1403,21 @@
           "behavior": "Hunt"
         },
         "actor": null,
+        "farIds": [],
         "runtime": {
           "status": "ready",
           "errorMessage": null
         },
         "simulationSpeed": 0,
         "renderStats": {
-          "frame": 66,
-          "calls": 101,
-          "triangles": 2710616,
+          "frame": 69,
+          "calls": 104,
+          "triangles": 2712152,
           "points": 0,
           "lines": 0
         },
         "renderMemory": {
-          "geometries": 534,
+          "geometries": 532,
           "textures": 16
         },
         "canvas": {
@@ -1364,178 +1433,1178 @@
   "android": "NOT_MEASURED",
   "visualQuality": "REQUIRES_IMAGE_REVIEW",
   "mergeAllowed": false,
-  "receipts": [
-    {
-      "file": "tiger-rigged.glb",
-      "bytes": 9638896,
-      "sha256": "c797317862d664b7ad421e283e7d82ed7eb7acf2c428b85e16158571d57c49ce",
-      "version": 1,
-      "units": "metres",
-      "forward": "+Z",
-      "up": "+Y",
-      "tier": "near",
-      "license": "CC-BY-4.0",
-      "creator": "TopoForge",
-      "source": "https://www.sloyd.ai/free-3d-models/model/tiger-7m4ap2k1",
-      "source_sha256": "f7e3b63e83efd92ba379f750f02e9971f52679173c6a268a29f352ad0c2092be",
-      "status": "DRAFT_REQUIRES_OBSERVER_AND_DEVICE_VALIDATION",
-      "clips": {
-        "idle": {
-          "name": "tiger_idle",
-          "duration": 2,
-          "cycle_distance": 0
-        },
-        "walk": {
-          "name": "tiger_walk",
-          "duration": 1.2,
-          "cycle_distance": 0.7096774193548387
-        },
-        "run": {
-          "name": "tiger_run",
-          "duration": 0.7,
-          "cycle_distance": 1.7105263157894737
-        },
-        "hunt": {
-          "name": "tiger_hunt",
-          "duration": 1.6,
-          "cycle_distance": 0.4571428571428572
-        },
-        "forage": {
-          "name": "tiger_forage",
-          "duration": 2,
-          "cycle_distance": 0
-        },
-        "drink": {
-          "name": "tiger_drink",
-          "duration": 2,
-          "cycle_distance": 0
-        },
-        "rest": {
-          "name": "tiger_rest",
-          "duration": 2,
-          "cycle_distance": 0
-        }
+  "receipts": {
+    "status": "DRAFT_SOURCE_DERIVATIVE",
+    "sourcePins": [
+      {
+        "uid": "fc2c7fd74dd04e39935803b884c77258",
+        "sha256": "6e152d1d98c6149d4241c292bf21cbc9e8ab16f81a456ea1515d174f7f7d1e40",
+        "sourceUrl": "https://sketchfab.com/3d-models/fc2c7fd74dd04e39935803b884c77258",
+        "author": "Amil (francescolima74)",
+        "license": "CC-BY-4.0",
+        "retrievedAt": "2026-10-17T03:14:44.612676+00:00",
+        "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-101/fc2c7fd74dd04e39935803b884c77258.glb"
       },
-      "paws": [
-        {
-          "name": "Fore.L.Paw",
-          "upper": "Fore.L.Upper",
-          "lower": "Fore.L.Lower",
-          "tip": "Fore.L.Paw",
-          "phase": 0.25,
-          "ankle_height": 0.16509665548801422
+      {
+        "uid": "733afd855f5d4c378f041cc89e231770",
+        "sha256": "4a6e97f3130d5f525e52e958cfcd687ee0ba1224eca18cff1a070b4765caec28",
+        "sourceUrl": "https://sketchfab.com/3d-models/733afd855f5d4c378f041cc89e231770",
+        "author": "Unity (shehab house)",
+        "license": "CC-BY-4.0",
+        "retrievedAt": "2026-10-17T03:14:46.993171+00:00",
+        "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-105/733afd855f5d4c378f041cc89e231770.glb"
+      }
+    ],
+    "receipts": [
+      {
+        "file": "tiger-rigged.glb",
+        "sha256": "9e3d01541a8f1ab154cb6550f5fc8a749e237adca815758ff4cf0970a7c8ffd4",
+        "bytes": 2780544,
+        "triangles": 4650,
+        "simplificationError": 0,
+        "contract": {
+          "version": 2,
+          "tier": "near",
+          "units": "metres",
+          "forward": "+Z",
+          "up": "+Y",
+          "creator": "Amil (francescolima74)",
+          "license": "CC-BY-4.0",
+          "source_sha256": "6e152d1d98c6149d4241c292bf21cbc9e8ab16f81a456ea1515d174f7f7d1e40",
+          "donor_sha256": "4a6e97f3130d5f525e52e958cfcd687ee0ba1224eca18cff1a070b4765caec28",
+          "status": "DRAFT_REQUIRES_OBSERVER_AND_DEVICE_VALIDATION",
+          "bone_count": 47,
+          "head_joint": "Bip01_Head_06",
+          "triangles": 4650,
+          "clips": {
+            "idle": {
+              "name": "tiger_idle",
+              "duration": 2,
+              "cycle_distance": 0
+            },
+            "walk": {
+              "name": "tiger_walk",
+              "duration": 1.2,
+              "cycle_distance": 0.5161290322580645
+            },
+            "run": {
+              "name": "tiger_run",
+              "duration": 0.5329999923706055,
+              "cycle_distance": 2
+            },
+            "hunt": {
+              "name": "tiger_hunt",
+              "duration": 1.4,
+              "cycle_distance": 0.2285714285714286
+            },
+            "forage": {
+              "name": "tiger_forage",
+              "duration": 2,
+              "cycle_distance": 0
+            },
+            "drink": {
+              "name": "tiger_drink",
+              "duration": 2,
+              "cycle_distance": 0
+            },
+            "rest": {
+              "name": "tiger_rest",
+              "duration": 3,
+              "cycle_distance": 0
+            }
+          },
+          "paws": [
+            {
+              "name": "Bip01_L_Hand_020",
+              "upper": "Bip01_L_UpperArm_018",
+              "lower": "Bip01_L_Forearm_019",
+              "sole_vertices": [
+                2571,
+                2576,
+                2577,
+                2578,
+                2579,
+                2626,
+                2627,
+                2628,
+                2630,
+                2632,
+                2633,
+                2637,
+                2638,
+                2639,
+                2640,
+                2641,
+                2642,
+                2651,
+                2652,
+                2653,
+                2654,
+                2655,
+                2656,
+                2665,
+                2666,
+                2667,
+                2668,
+                2670,
+                2671,
+                2672,
+                2673,
+                2675,
+                2679,
+                2680,
+                2681,
+                2682,
+                2683,
+                2684,
+                2685,
+                2686,
+                2687,
+                2691,
+                2692,
+                2693,
+                2694,
+                2695,
+                2696,
+                2697,
+                2698,
+                2699,
+                2700,
+                2701,
+                2702,
+                2703,
+                2704,
+                2705,
+                2706,
+                2707,
+                2708,
+                2709,
+                2710,
+                2711,
+                2712,
+                2713,
+                2714,
+                2715,
+                2716,
+                2717,
+                2718,
+                2719,
+                2720,
+                2721,
+                2722,
+                2723,
+                2724,
+                2725,
+                2726,
+                2727,
+                2728,
+                2729,
+                2730,
+                2731,
+                2732,
+                2733,
+                2734,
+                2735,
+                2736,
+                2737,
+                2738,
+                2740,
+                2741,
+                2742,
+                2743,
+                2901,
+                2902,
+                2907,
+                2908,
+                2909,
+                2910,
+                2911,
+                2912,
+                2913,
+                2914,
+                2915,
+                2916,
+                2920,
+                2921,
+                2922,
+                2923,
+                2966
+              ]
+            },
+            {
+              "name": "Bip01_R_Hand_026",
+              "upper": "Bip01_R_UpperArm_024",
+              "lower": "Bip01_R_Forearm_025",
+              "sole_vertices": [
+                1330,
+                1334,
+                1335,
+                1337,
+                1338,
+                1385,
+                1386,
+                1388,
+                1389,
+                1391,
+                1392,
+                1396,
+                1397,
+                1398,
+                1399,
+                1400,
+                1403,
+                1410,
+                1411,
+                1412,
+                1413,
+                1414,
+                1417,
+                1424,
+                1425,
+                1426,
+                1427,
+                1429,
+                1430,
+                1431,
+                1432,
+                1434,
+                1438,
+                1439,
+                1440,
+                1441,
+                1442,
+                1443,
+                1444,
+                1445,
+                1446,
+                1450,
+                1451,
+                1452,
+                1453,
+                1454,
+                1455,
+                1456,
+                1457,
+                1458,
+                1459,
+                1460,
+                1461,
+                1462,
+                1463,
+                1464,
+                1465,
+                1466,
+                1467,
+                1468,
+                1469,
+                1470,
+                1471,
+                1472,
+                1473,
+                1474,
+                1475,
+                1476,
+                1477,
+                1478,
+                1479,
+                1480,
+                1481,
+                1482,
+                1483,
+                1484,
+                1485,
+                1486,
+                1487,
+                1488,
+                1489,
+                1490,
+                1491,
+                1492,
+                1493,
+                1494,
+                1495,
+                1496,
+                1498,
+                1499,
+                1500,
+                1501,
+                1502,
+                1674,
+                1675,
+                1680,
+                1681,
+                1682,
+                1683,
+                1684,
+                1685,
+                1686,
+                1687,
+                1688,
+                1689,
+                1693,
+                1694,
+                1695,
+                1696,
+                1759
+              ]
+            },
+            {
+              "name": "Bip01_L_Foot_032",
+              "upper": "Bip01_L_Thigh_029",
+              "lower": "Bip01_L_HorseLink_031",
+              "sole_vertices": [
+                2967,
+                2970,
+                2971,
+                2972,
+                2973,
+                2974,
+                2975,
+                3006,
+                3007,
+                3008,
+                3010,
+                3012,
+                3013,
+                3017,
+                3018,
+                3019,
+                3020,
+                3021,
+                3022,
+                3031,
+                3032,
+                3033,
+                3034,
+                3035,
+                3036,
+                3045,
+                3046,
+                3047,
+                3048,
+                3050,
+                3051,
+                3052,
+                3053,
+                3055,
+                3059,
+                3060,
+                3061,
+                3062,
+                3063,
+                3064,
+                3065,
+                3066,
+                3067,
+                3068,
+                3071,
+                3072,
+                3073,
+                3074,
+                3075,
+                3076,
+                3077,
+                3078,
+                3079,
+                3080,
+                3081,
+                3082,
+                3083,
+                3084,
+                3085,
+                3086,
+                3087,
+                3088,
+                3089,
+                3090,
+                3091,
+                3092,
+                3093,
+                3094,
+                3095,
+                3096,
+                3097,
+                3098,
+                3099,
+                3100,
+                3101,
+                3102,
+                3103,
+                3104,
+                3105,
+                3106,
+                3107,
+                3108,
+                3109,
+                3110,
+                3111,
+                3112,
+                3113,
+                3114,
+                3115,
+                3116,
+                3117,
+                3118,
+                3119,
+                3120,
+                3121,
+                3122,
+                3123,
+                3124,
+                3129,
+                3130,
+                3131,
+                3132,
+                3133,
+                3134,
+                3135,
+                3136,
+                3137,
+                3138,
+                3142,
+                3143,
+                3144,
+                3145,
+                3147
+              ]
+            },
+            {
+              "name": "Bip01_R_Foot_038",
+              "upper": "Bip01_R_Thigh_035",
+              "lower": "Bip01_R_HorseLink_037",
+              "sole_vertices": [
+                1760,
+                1763,
+                1764,
+                1765,
+                1766,
+                1767,
+                1768,
+                1799,
+                1800,
+                1802,
+                1803,
+                1805,
+                1806,
+                1810,
+                1811,
+                1812,
+                1813,
+                1814,
+                1817,
+                1824,
+                1825,
+                1826,
+                1827,
+                1828,
+                1831,
+                1838,
+                1839,
+                1840,
+                1841,
+                1843,
+                1844,
+                1845,
+                1846,
+                1848,
+                1852,
+                1853,
+                1854,
+                1855,
+                1856,
+                1857,
+                1858,
+                1859,
+                1860,
+                1861,
+                1864,
+                1865,
+                1866,
+                1867,
+                1868,
+                1869,
+                1870,
+                1871,
+                1872,
+                1873,
+                1874,
+                1875,
+                1876,
+                1877,
+                1878,
+                1879,
+                1880,
+                1881,
+                1882,
+                1883,
+                1884,
+                1885,
+                1886,
+                1887,
+                1888,
+                1889,
+                1890,
+                1891,
+                1892,
+                1893,
+                1894,
+                1895,
+                1896,
+                1897,
+                1898,
+                1899,
+                1900,
+                1901,
+                1902,
+                1903,
+                1904,
+                1905,
+                1906,
+                1907,
+                1908,
+                1909,
+                1910,
+                1911,
+                1912,
+                1913,
+                1914,
+                1915,
+                1916,
+                1917,
+                1922,
+                1923,
+                1924,
+                1925,
+                1926,
+                1927,
+                1928,
+                1929,
+                1930,
+                1931,
+                1935,
+                1936,
+                1937,
+                1938,
+                1940
+              ]
+            }
+          ]
         },
-        {
-          "name": "Fore.R.Paw",
-          "upper": "Fore.R.Upper",
-          "lower": "Fore.R.Lower",
-          "tip": "Fore.R.Paw",
-          "phase": 0.75,
-          "ankle_height": 0.1786096370778978
-        },
-        {
-          "name": "Hind.R.Paw",
-          "upper": "Hind.R.Upper",
-          "lower": "Hind.R.Lower",
-          "tip": "Hind.R.Metatarsal",
-          "phase": 0.5,
-          "ankle_height": 0.22125561349093914
-        },
-        {
-          "name": "Hind.L.Paw",
-          "upper": "Hind.L.Upper",
-          "lower": "Hind.L.Lower",
-          "tip": "Hind.L.Metatarsal",
-          "phase": 0,
-          "ankle_height": 0.2376103699207306
-        }
-      ]
-    },
-    {
-      "file": "tiger-mid.glb",
-      "bytes": 2837632,
-      "sha256": "f0e1230f450a8a7b841f548b6936c5490338b1e1e4b5731c7c17e8c8bfa7e0e7",
-      "version": 1,
-      "units": "metres",
-      "forward": "+Z",
-      "up": "+Y",
-      "tier": "mid",
-      "license": "CC-BY-4.0",
-      "creator": "TopoForge",
-      "source": "https://www.sloyd.ai/free-3d-models/model/tiger-7m4ap2k1",
-      "source_sha256": "f7e3b63e83efd92ba379f750f02e9971f52679173c6a268a29f352ad0c2092be",
-      "status": "DRAFT_REQUIRES_OBSERVER_AND_DEVICE_VALIDATION",
-      "clips": {
-        "idle": {
-          "name": "tiger_idle",
-          "duration": 2,
-          "cycle_distance": 0
-        },
-        "walk": {
-          "name": "tiger_walk",
-          "duration": 1.2,
-          "cycle_distance": 0.7096774193548387
-        },
-        "run": {
-          "name": "tiger_run",
-          "duration": 0.7,
-          "cycle_distance": 1.7105263157894737
-        },
-        "hunt": {
-          "name": "tiger_hunt",
-          "duration": 1.6,
-          "cycle_distance": 0.4571428571428572
-        },
-        "forage": {
-          "name": "tiger_forage",
-          "duration": 2,
-          "cycle_distance": 0
-        },
-        "drink": {
-          "name": "tiger_drink",
-          "duration": 2,
-          "cycle_distance": 0
-        },
-        "rest": {
-          "name": "tiger_rest",
-          "duration": 2,
-          "cycle_distance": 0
-        }
+        "textureLimit": 2048,
+        "maximumTextureSize": 1024
       },
-      "paws": [
-        {
-          "name": "Fore.L.Paw",
-          "upper": "Fore.L.Upper",
-          "lower": "Fore.L.Lower",
-          "tip": "Fore.L.Paw",
-          "phase": 0.25,
-          "ankle_height": 0.16509665548801422
+      {
+        "file": "tiger-mid.glb",
+        "sha256": "8cf6b59382cb18fb15f30f06705f560388df19601502578339144a4b23dd732c",
+        "bytes": 2811892,
+        "triangles": 2600,
+        "simplificationError": 0.002489220118150115,
+        "contract": {
+          "version": 2,
+          "tier": "mid",
+          "units": "metres",
+          "forward": "+Z",
+          "up": "+Y",
+          "creator": "Amil (francescolima74)",
+          "license": "CC-BY-4.0",
+          "source_sha256": "6e152d1d98c6149d4241c292bf21cbc9e8ab16f81a456ea1515d174f7f7d1e40",
+          "donor_sha256": "4a6e97f3130d5f525e52e958cfcd687ee0ba1224eca18cff1a070b4765caec28",
+          "status": "DRAFT_REQUIRES_OBSERVER_AND_DEVICE_VALIDATION",
+          "bone_count": 47,
+          "head_joint": "Bip01_Head_06",
+          "triangles": 2600,
+          "clips": {
+            "idle": {
+              "name": "tiger_idle",
+              "duration": 2,
+              "cycle_distance": 0
+            },
+            "walk": {
+              "name": "tiger_walk",
+              "duration": 1.2,
+              "cycle_distance": 0.5161290322580645
+            },
+            "run": {
+              "name": "tiger_run",
+              "duration": 0.5329999923706055,
+              "cycle_distance": 2
+            },
+            "hunt": {
+              "name": "tiger_hunt",
+              "duration": 1.4,
+              "cycle_distance": 0.2285714285714286
+            },
+            "forage": {
+              "name": "tiger_forage",
+              "duration": 2,
+              "cycle_distance": 0
+            },
+            "drink": {
+              "name": "tiger_drink",
+              "duration": 2,
+              "cycle_distance": 0
+            },
+            "rest": {
+              "name": "tiger_rest",
+              "duration": 3,
+              "cycle_distance": 0
+            }
+          },
+          "paws": [
+            {
+              "name": "Bip01_L_Hand_020",
+              "upper": "Bip01_L_UpperArm_018",
+              "lower": "Bip01_L_Forearm_019",
+              "sole_vertices": [
+                2571,
+                2576,
+                2577,
+                2578,
+                2579,
+                2626,
+                2627,
+                2628,
+                2630,
+                2632,
+                2633,
+                2637,
+                2638,
+                2639,
+                2640,
+                2641,
+                2642,
+                2651,
+                2652,
+                2653,
+                2654,
+                2655,
+                2656,
+                2665,
+                2666,
+                2667,
+                2668,
+                2670,
+                2671,
+                2672,
+                2673,
+                2675,
+                2679,
+                2680,
+                2681,
+                2682,
+                2683,
+                2684,
+                2685,
+                2686,
+                2687,
+                2691,
+                2692,
+                2693,
+                2694,
+                2695,
+                2696,
+                2697,
+                2698,
+                2699,
+                2700,
+                2701,
+                2702,
+                2703,
+                2704,
+                2705,
+                2706,
+                2707,
+                2708,
+                2709,
+                2710,
+                2711,
+                2712,
+                2713,
+                2714,
+                2715,
+                2716,
+                2717,
+                2718,
+                2719,
+                2720,
+                2721,
+                2722,
+                2723,
+                2724,
+                2725,
+                2726,
+                2727,
+                2728,
+                2729,
+                2730,
+                2731,
+                2732,
+                2733,
+                2734,
+                2735,
+                2736,
+                2737,
+                2738,
+                2740,
+                2741,
+                2742,
+                2743,
+                2901,
+                2902,
+                2907,
+                2908,
+                2909,
+                2910,
+                2911,
+                2912,
+                2913,
+                2914,
+                2915,
+                2916,
+                2920,
+                2921,
+                2922,
+                2923,
+                2966
+              ]
+            },
+            {
+              "name": "Bip01_R_Hand_026",
+              "upper": "Bip01_R_UpperArm_024",
+              "lower": "Bip01_R_Forearm_025",
+              "sole_vertices": [
+                1330,
+                1334,
+                1335,
+                1337,
+                1338,
+                1385,
+                1386,
+                1388,
+                1389,
+                1391,
+                1392,
+                1396,
+                1397,
+                1398,
+                1399,
+                1400,
+                1403,
+                1410,
+                1411,
+                1412,
+                1413,
+                1414,
+                1417,
+                1424,
+                1425,
+                1426,
+                1427,
+                1429,
+                1430,
+                1431,
+                1432,
+                1434,
+                1438,
+                1439,
+                1440,
+                1441,
+                1442,
+                1443,
+                1444,
+                1445,
+                1446,
+                1450,
+                1451,
+                1452,
+                1453,
+                1454,
+                1455,
+                1456,
+                1457,
+                1458,
+                1459,
+                1460,
+                1461,
+                1462,
+                1463,
+                1464,
+                1465,
+                1466,
+                1467,
+                1468,
+                1469,
+                1470,
+                1471,
+                1472,
+                1473,
+                1474,
+                1475,
+                1476,
+                1477,
+                1478,
+                1479,
+                1480,
+                1481,
+                1482,
+                1483,
+                1484,
+                1485,
+                1486,
+                1487,
+                1488,
+                1489,
+                1490,
+                1491,
+                1492,
+                1493,
+                1494,
+                1495,
+                1496,
+                1498,
+                1499,
+                1500,
+                1501,
+                1502,
+                1674,
+                1675,
+                1680,
+                1681,
+                1682,
+                1683,
+                1684,
+                1685,
+                1686,
+                1687,
+                1688,
+                1689,
+                1693,
+                1694,
+                1695,
+                1696,
+                1759
+              ]
+            },
+            {
+              "name": "Bip01_L_Foot_032",
+              "upper": "Bip01_L_Thigh_029",
+              "lower": "Bip01_L_HorseLink_031",
+              "sole_vertices": [
+                2967,
+                2970,
+                2971,
+                2972,
+                2973,
+                2974,
+                2975,
+                3006,
+                3007,
+                3008,
+                3010,
+                3012,
+                3013,
+                3017,
+                3018,
+                3019,
+                3020,
+                3021,
+                3022,
+                3031,
+                3032,
+                3033,
+                3034,
+                3035,
+                3036,
+                3045,
+                3046,
+                3047,
+                3048,
+                3050,
+                3051,
+                3052,
+                3053,
+                3055,
+                3059,
+                3060,
+                3061,
+                3062,
+                3063,
+                3064,
+                3065,
+                3066,
+                3067,
+                3068,
+                3071,
+                3072,
+                3073,
+                3074,
+                3075,
+                3076,
+                3077,
+                3078,
+                3079,
+                3080,
+                3081,
+                3082,
+                3083,
+                3084,
+                3085,
+                3086,
+                3087,
+                3088,
+                3089,
+                3090,
+                3091,
+                3092,
+                3093,
+                3094,
+                3095,
+                3096,
+                3097,
+                3098,
+                3099,
+                3100,
+                3101,
+                3102,
+                3103,
+                3104,
+                3105,
+                3106,
+                3107,
+                3108,
+                3109,
+                3110,
+                3111,
+                3112,
+                3113,
+                3114,
+                3115,
+                3116,
+                3117,
+                3118,
+                3119,
+                3120,
+                3121,
+                3122,
+                3123,
+                3124,
+                3129,
+                3130,
+                3131,
+                3132,
+                3133,
+                3134,
+                3135,
+                3136,
+                3137,
+                3138,
+                3142,
+                3143,
+                3144,
+                3145,
+                3147
+              ]
+            },
+            {
+              "name": "Bip01_R_Foot_038",
+              "upper": "Bip01_R_Thigh_035",
+              "lower": "Bip01_R_HorseLink_037",
+              "sole_vertices": [
+                1760,
+                1763,
+                1764,
+                1765,
+                1766,
+                1767,
+                1768,
+                1799,
+                1800,
+                1802,
+                1803,
+                1805,
+                1806,
+                1810,
+                1811,
+                1812,
+                1813,
+                1814,
+                1817,
+                1824,
+                1825,
+                1826,
+                1827,
+                1828,
+                1831,
+                1838,
+                1839,
+                1840,
+                1841,
+                1843,
+                1844,
+                1845,
+                1846,
+                1848,
+                1852,
+                1853,
+                1854,
+                1855,
+                1856,
+                1857,
+                1858,
+                1859,
+                1860,
+                1861,
+                1864,
+                1865,
+                1866,
+                1867,
+                1868,
+                1869,
+                1870,
+                1871,
+                1872,
+                1873,
+                1874,
+                1875,
+                1876,
+                1877,
+                1878,
+                1879,
+                1880,
+                1881,
+                1882,
+                1883,
+                1884,
+                1885,
+                1886,
+                1887,
+                1888,
+                1889,
+                1890,
+                1891,
+                1892,
+                1893,
+                1894,
+                1895,
+                1896,
+                1897,
+                1898,
+                1899,
+                1900,
+                1901,
+                1902,
+                1903,
+                1904,
+                1905,
+                1906,
+                1907,
+                1908,
+                1909,
+                1910,
+                1911,
+                1912,
+                1913,
+                1914,
+                1915,
+                1916,
+                1917,
+                1922,
+                1923,
+                1924,
+                1925,
+                1926,
+                1927,
+                1928,
+                1929,
+                1930,
+                1931,
+                1935,
+                1936,
+                1937,
+                1938,
+                1940
+              ]
+            }
+          ]
         },
-        {
-          "name": "Fore.R.Paw",
-          "upper": "Fore.R.Upper",
-          "lower": "Fore.R.Lower",
-          "tip": "Fore.R.Paw",
-          "phase": 0.75,
-          "ankle_height": 0.1786096370778978
+        "textureLimit": 1024,
+        "maximumTextureSize": 1024
+      },
+      {
+        "file": "tiger-far.glb",
+        "sha256": "a7bc3f4b51e43ea300525200b97810bff0d5e0fbc3a8e7dfdd5ef4b6032bf2d3",
+        "bytes": 574848,
+        "triangles": 998,
+        "simplificationError": 0.007672230713069439,
+        "contract": {
+          "version": 2,
+          "tier": "far",
+          "units": "metres",
+          "forward": "+Z",
+          "up": "+Y",
+          "creator": "Amil (francescolima74)",
+          "license": "CC-BY-4.0",
+          "source_sha256": "6e152d1d98c6149d4241c292bf21cbc9e8ab16f81a456ea1515d174f7f7d1e40",
+          "donor_sha256": "4a6e97f3130d5f525e52e958cfcd687ee0ba1224eca18cff1a070b4765caec28",
+          "status": "DRAFT_REQUIRES_OBSERVER_AND_DEVICE_VALIDATION",
+          "bone_count": 0,
+          "head_joint": "",
+          "triangles": 998,
+          "clips": {},
+          "paws": [],
+          "source_clips": {
+            "idle": {
+              "name": "tiger_idle",
+              "duration": 2,
+              "cycle_distance": 0
+            },
+            "walk": {
+              "name": "tiger_walk",
+              "duration": 1.2,
+              "cycle_distance": 0.5161290322580645
+            },
+            "run": {
+              "name": "tiger_run",
+              "duration": 0.5329999923706055,
+              "cycle_distance": 2
+            },
+            "hunt": {
+              "name": "tiger_hunt",
+              "duration": 1.4,
+              "cycle_distance": 0.2285714285714286
+            },
+            "forage": {
+              "name": "tiger_forage",
+              "duration": 2,
+              "cycle_distance": 0
+            },
+            "drink": {
+              "name": "tiger_drink",
+              "duration": 2,
+              "cycle_distance": 0
+            },
+            "rest": {
+              "name": "tiger_rest",
+              "duration": 3,
+              "cycle_distance": 0
+            }
+          },
+          "source_bone_count": 47,
+          "render_mode": "instanced-static",
+          "static_poses": [
+            "idle",
+            "rest",
+            "forage"
+          ],
+          "asset_triangle_count": 2994,
+          "maximum_instances": 128
         },
-        {
-          "name": "Hind.R.Paw",
-          "upper": "Hind.R.Upper",
-          "lower": "Hind.R.Lower",
-          "tip": "Hind.R.Metatarsal",
-          "phase": 0.5,
-          "ankle_height": 0.22125561349093914
-        },
-        {
-          "name": "Hind.L.Paw",
-          "upper": "Hind.L.Upper",
-          "lower": "Hind.L.Lower",
-          "tip": "Hind.L.Metatarsal",
-          "phase": 0,
-          "ankle_height": 0.2376103699207306
-        }
-      ]
-    }
-  ]
+        "textureLimit": 512,
+        "maximumTextureSize": 512
+      }
+    ],
+    "visualQuality": "REQUIRES_ACTUAL_OBSERVER_REVIEW",
+    "android": "NOT_MEASURED",
+    "mergeAllowed": false
+  }
 }
