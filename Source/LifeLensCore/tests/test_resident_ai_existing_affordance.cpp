@@ -67,6 +67,64 @@ int main()
     assert(anyMaterial->intent==CivilizationIntent::Gather);
     assert(anyMaterial->resourceNode!=0);
 
+    // A model cannot force the same FAILED gathering method forever.
+    // Before REAL attempts are observed, the model's choice stays intact.
+    thought.intent=CognitiveIntentKind::ImproveFoodSecurity;
+    world.minute=510;
+    thought.minute=510;
+    assert(chooseResidentAIExistingCivilizationAffordance(
+        world,actor,{0,0},thought)->intent==CivilizationIntent::Gather);
+    CivilizationUtilityDecision failedFood;
+    failedFood.intent=CivilizationIntent::Gather;
+    failedFood.material=MaterialKind::PlantFood;
+    rememberCivilizationAttemptOutcome(actor,failedFood,501,false);
+    // One failure is not enough to conclude a strategy is unproductive.
+    assert(chooseResidentAIExistingCivilizationAffordance(
+        world,actor,{0,0},thought)->intent==CivilizationIntent::Gather);
+    rememberCivilizationAttemptOutcome(actor,failedFood,502,false);
+    assert(residentAIRecentRepeatedActionFailure(actor,failedFood,510));
+    const auto reconsidered=chooseResidentAIExistingCivilizationAffordance(
+        world,actor,{0,0},thought);
+    // The only permitted substitute is a REAL Core exploration candidate;
+    // when exploration is impossible, the normal planner owns the next slot.
+    assert(!reconsidered
+           ||reconsidered->intent==CivilizationIntent::Explore);
+    assert(!reconsidered
+           ||reconsidered->resourceNode!=plantFood.id);
+
+    // Other residents do not inherit the first actor's private failures.
+    Character newcomer=actor;
+    newcomer.id=77;
+    newcomer.civilization.character=newcomer.id;
+    newcomer.memory=MemoryState{};
+    newcomer.beliefs=BeliefState{};
+    AcceptedCognitiveDecision newThought=thought;
+    newThought.actor=newcomer.id;
+    const auto independent=chooseResidentAIExistingCivilizationAffordance(
+        world,newcomer,{0,0},newThought);
+    assert(independent &&independent->intent==CivilizationIntent::Gather);
+    assert(independent->material==MaterialKind::PlantFood);
+
+    // A verified success can reverse the soft deterrent, while neither a
+    // fabricated recollection nor a stale failure persists forever.
+    rememberCivilizationAttemptOutcome(actor,failedFood,503,true);
+    assert(!residentAIRecentRepeatedActionFailure(actor,failedFood,510));
+    const auto recovered=chooseResidentAIExistingCivilizationAffordance(
+        world,actor,{0,0},thought);
+    assert(recovered &&recovered->intent==CivilizationIntent::Gather);
+    world.minute=660;
+    thought.minute=660;
+    assert(!residentAIRecentRepeatedActionFailure(actor,failedFood,660));
+    const auto afterTime=chooseResidentAIExistingCivilizationAffordance(
+        world,actor,{0,0},thought);
+    assert(afterTime &&afterTime->intent==CivilizationIntent::Gather);
+
+    // Restore a neutral test baseline for the existing contract assertions.
+    world.minute=480;
+    thought.minute=480;
+    actor.memory=MemoryState{};
+    actor.beliefs=BeliefState{};
+
     thought.intent=CognitiveIntentKind::CraftUsefulTools;
     // Without technology/ingredients, a thought is NOT a crafted item.
     const auto craft=chooseResidentAIExistingCivilizationAffordance(
