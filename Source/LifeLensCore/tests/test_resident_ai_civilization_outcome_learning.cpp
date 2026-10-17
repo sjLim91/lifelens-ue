@@ -15,6 +15,13 @@ const Character* lookup(const Simulation& sim,CharacterId id)
     return nullptr;
 }
 
+const ResourceNode* resource(const Simulation& sim,ResourceNodeId id)
+{
+    for(const auto& node:sim.world().resourceNodes)
+        if(node.id==id) return &node;
+    return nullptr;
+}
+
 int main()
 {
     // A model proposal or an uncompleted pending action cannot create a
@@ -30,14 +37,23 @@ int main()
     for(auto& character:simulation.world().characters)
         character.needs={0.01,0.01,0.01,0.01,0.01};
 
-    ResourceNode food;
-    food.id=987654321;
-    food.material=MaterialKind::PlantFood;
-    food.pos=actorPosition;
-    food.quantity=40;
-    food.maxQuantity=40;
-    simulation.world().resourceNodes.clear();
-    simulation.world().resourceNodes.push_back(food);
+    // Keep genuine generated-world resource identities. The snapshot codec
+    // requires each original chunk's patch to have its matching world node.
+    // Depleting alternatives is legal simulation state; replacing the whole
+    // natural resource list with a made-up ID is NOT.
+    ResourceNodeId foodId=0;
+    for(auto& node:simulation.world().resourceNodes){
+        if(node.material!=MaterialKind::PlantFood) continue;
+        if(foodId==0 &&node.maxQuantity>0){
+            foodId=node.id;
+            node.quantity=std::min(40,node.maxQuantity);
+        }else{
+            node.quantity=0;
+        }
+    }
+    assert(foodId!=0);
+    const int initialFoodStock=resource(simulation,foodId)->quantity;
+    assert(initialFoodStock>0);
 
     const CognitiveRequest observed=simulation.observeCognitiveRequest(
         actorId,CognitiveTriggerKind::Reflection);
@@ -59,9 +75,9 @@ int main()
     assert(pending.kind==ContextActionKind::Civilization);
     assert(pending.civilizationIntent==CivilizationIntent::Gather);
     assert(pending.material==MaterialKind::PlantFood);
-    assert(pending.resourceNode==food.id);
+    assert(pending.resourceNode==foodId);
     assert(lookup(simulation,actorId)->beliefs.find(0,proposition)==nullptr);
-    assert(simulation.world().resourceNodes.front().quantity==40);
+    assert(resource(simulation,foodId)->quantity==initialFoodStock);
 
     // Snapshot/restart with an accepted-but-not-executed plan must not
     // synthesize a memory of success.
@@ -76,9 +92,9 @@ int main()
         actorId,pending.token,pending.targetPos));
     assert(replay.completeExternalContextAction(
         actorId,pending.token,pending.targetPos));
-    assert(simulation.world().resourceNodes.front().quantity<40);
-    assert(simulation.world().resourceNodes.front().quantity
-           ==replay.world().resourceNodes.front().quantity);
+    assert(resource(simulation,foodId)->quantity<initialFoodStock);
+    assert(resource(simulation,foodId)->quantity
+           ==resource(replay,foodId)->quantity);
 
     const Character* resident=lookup(simulation,actorId);
     const Character* replayed=lookup(replay,actorId);
@@ -114,10 +130,11 @@ int main()
     // out while the resident is on their way. No virtual food is created.
     Simulation exhausted(99551);
     assert(exhausted.restoreSnapshot(pendingTruth,&error));
-    exhausted.world().resourceNodes.front().quantity=0;
+    for(auto& node:exhausted.world().resourceNodes)
+        if(node.id==foodId) node.quantity=0;
     assert(!exhausted.completeExternalContextAction(
         actorId,pending.token,pending.targetPos));
-    assert(exhausted.world().resourceNodes.front().quantity==0);
+    assert(resource(exhausted,foodId)->quantity==0);
     const Character* failedActor=lookup(exhausted,actorId);
     assert(failedActor!=nullptr);
     const BeliefRecord* attemptedFailure=
