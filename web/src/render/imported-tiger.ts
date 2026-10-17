@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
-import { ImportedTigerFar } from './imported-tiger-far';
+import { ImportedTigerFar, nativeTigerFarMesh } from './imported-tiger-far';
 import { NativeTigerGrounding, type NativeTigerPaw } from './native-tiger-grounding';
 import type { WildlifeAnimalObservation } from '../runtime/core-types';
 
@@ -38,8 +38,7 @@ function inspect(gltf: GLTF, tier: Tier): Asset {
   if (tier === 'far') {
     if (contract.render_mode !== 'instanced-static' || contract.bone_count !== 0) throw new Error('Far rig must be baked');
     for (const pose of ['Idle', 'Rest', 'Forage']) {
-      const mesh = gltf.scenes.map(scene => scene.getObjectByName(`LifeLensTigerFar${pose}`))
-        .find(object => object instanceof THREE.Mesh) as THREE.Mesh | undefined;
+      const mesh = nativeTigerFarMesh(gltf, `LifeLensTigerFar${pose}`);
       if (!mesh || mesh instanceof THREE.SkinnedMesh || !mesh.geometry.getAttribute('_lifelens_leg')
         || !(mesh.material instanceof THREE.MeshStandardMaterial)
         || !mesh.geometry.index || mesh.geometry.index.count > 3300) throw new Error('Far source pose or budget changed');

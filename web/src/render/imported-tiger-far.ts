@@ -10,6 +10,18 @@ type Batch = {
 };
 const LIMIT = 128;
 
+export function nativeTigerFarMesh(gltf: GLTF, name: string): THREE.Mesh | undefined {
+  let found: THREE.Mesh | undefined;
+  // glTF scene and mesh names can be identical. getObjectByName would return
+  // the scene Group; GLTFLoader also suffixes the mesh name to make it unique.
+  // Its original node name is preserved in userData.name.
+  for (const scene of gltf.scenes) scene.traverse(object => {
+    if (!found && object instanceof THREE.Mesh && (object.name === name
+      || object.userData.name === name)) found = object;
+  });
+  return found;
+}
+
 /** Three baked poses of the original source; one bounded draw per used pose. */
 export class ImportedTigerFar {
   readonly group = new THREE.Group();
@@ -29,8 +41,7 @@ export class ImportedTigerFar {
     this.group.userData.coreIds = [] as string[];
     for (const pose of ['idle', 'rest', 'forage'] as const) {
       const name = `LifeLensTigerFar${pose[0].toUpperCase()}${pose.slice(1)}`;
-      const source = gltf.scenes.map(scene => scene.getObjectByName(name))
-        .find(object => object instanceof THREE.Mesh) as THREE.Mesh | undefined;
+      const source = nativeTigerFarMesh(gltf, name);
       if (!source || !(source.material instanceof THREE.MeshStandardMaterial)
         || !source.geometry.getAttribute('_lifelens_leg')) throw new Error('Native far pose missing');
       const geometry = source.geometry.clone();
