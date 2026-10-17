@@ -248,10 +248,15 @@ export class ResidentAIController {
     const source = this.source;
     let world: WorldOverview;
     let request: CognitiveRequestDto | null;
+    let authoritativeRequest: CognitiveRequestDto | null;
     try {
       world = source.worldOverview();
-      const observed = source.cognitiveRequest(actor, 'Reflection');
-      request = observed === null ? null : liveActionableCognitiveRequest(observed);
+      // Keep the untouched Core-authored request for fingerprint validation.
+      // Filtering is solely the model's inference constraint, never a change
+      // to the Core request that must be submitted with the chosen proposal.
+      authoritativeRequest = source.cognitiveRequest(actor, 'Reflection');
+      request = authoritativeRequest === null
+        ? null : liveActionableCognitiveRequest(authoritativeRequest);
     } catch {
       // The Core may be resetting while the observer refreshes. A failed
       // source read must NOT become an unhandled rejected Promise on the
@@ -269,7 +274,7 @@ export class ResidentAIController {
     }
     const initialIdentity = worldIdentity(world);
     this.lastCall = this.now();
-    if (!request || request.actor !== actor
+    if (!authoritativeRequest || !request || request.actor !== actor
       || request.minute !== world.minute
       || request.allowedIntents.length === 0) return;
 
@@ -298,7 +303,7 @@ export class ResidentAIController {
         status = 'stale';
       } else if (result.proposal !== null && result.status === 'validated') {
         status = source.submitLocalCognitiveProposal(
-          request, result.proposal, String(world.worldSeed),
+          authoritativeRequest, result.proposal, String(world.worldSeed),
         ) ? 'recorded' : 'rejected';
       }
     } catch {
