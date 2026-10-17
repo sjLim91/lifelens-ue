@@ -48,7 +48,7 @@ function fixture(provider) {
   controller.attach(runtime);
   if (provider) controller.setProvider(provider);
   return {
-    controller, contexts, submitted, residents, world,
+    controller, contexts, submitted, residents, world, runtime,
     advance: () => { wall += LIVE_AI_BUDGET.wallCadenceMs; world.minute += 15; },
   };
 }
@@ -139,4 +139,32 @@ const provider = {
   assert.equal(f.controller.getSnapshot().rejected, 1);
   f.controller.dispose();
 }
+{
+  const f = fixture(provider);
+  f.runtime.cognitiveRequest = () => {
+    throw new Error('Core simulation replaced during observation');
+  };
+  f.controller.setEnabled(true);
+  // The render loop calls observe() without awaiting the async sample.
+  // A transient Core failure must be reported, never unhandled.
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.submitted.length, 0);
+  assert.equal(f.controller.getSnapshot().pendingActor, null);
+  assert.equal(f.controller.getSnapshot().accepted, 0);
+  assert.equal(f.controller.getSnapshot().rejected, 1);
+  assert.equal(f.controller.getSnapshot().lastDecision.status, 'error');
+
+  f.runtime.cognitiveRequest = actor => ({
+    actor, minute: f.world.minute, trigger: 'Reflection',
+    needs: { hunger: .2 }, personality: { empathy: .7 },
+    emotion: { joy: .2 }, memories: [], beliefs: [], relationships: [],
+    allowedIntents: ['CooperateWithResident'],
+  });
+  f.advance();
+  await f.controller.sample('1');
+  assert.equal(f.submitted.length, 1, 'recovered source can submit later');
+  f.controller.dispose();
+}
+
 console.log('Live Resident AI: independent actor context, Core handoff, cancellation PASS');
