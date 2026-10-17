@@ -139,7 +139,7 @@ class Writer:
             for vertex,texcoord in face:
                 key=(vertex,texcoord)
                 if key not in lookup:
-                    lookup[key]=len(p);p.append(positions[vertex]);t.append(uv[texcoord]);j.append(joints[vertex]);w.append(weights[vertex]);smooth.append(original_normals[vertex])
+                    lookup[key]=len(p);p.append(positions[vertex]);t.append([uv[texcoord,0],1-uv[texcoord,1]]);j.append(joints[vertex]);w.append(weights[vertex]);smooth.append(original_normals[vertex])
                 idx.append(lookup[key])
         p=np.array(p);idx=np.array(idx).reshape(-1,3)
         normals=np.array(smooth)
@@ -167,7 +167,7 @@ class Writer:
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--geometry-only',action='store_true')
     parser.add_argument('--donor',type=Path,default=ROOT/'web/public/vendor/characters/character.glb')
-    args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else None)
+    args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else ([] if 'blender' in Path(sys.argv[0]).name.lower() else None))
     donor,binary=read_glb(args.donor)
     skin=donor['skins'][0]
     names=[donor['nodes'][i]['name'] for i in skin['joints']]

@@ -81,6 +81,15 @@ export function syncNativeResidentBody(model: THREE.Group, profile: ResidentAppe
         material.map = originalMaterial.map;
         material.alphaMap = originalMaterial.alphaMap;
         if (!isBody && source.name === 'NativeResidentHair') material.color.set(profile.hairColor);
+        if (source.name === 'NativeResidentEyes') {
+          material.onBeforeCompile = shader => {
+            shader.uniforms.nativeEyeTint = { value: new THREE.Color(profile.eyeColor) };
+            shader.fragmentShader = 'uniform vec3 nativeEyeTint;\n' + shader.fragmentShader;
+            shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>',
+              '#include <color_fragment>\nfloat eyeLuma=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722));\nfloat irisMask=smoothstep(.025,.09,eyeLuma)*(1.0-smoothstep(.5,.8,eyeLuma));\ndiffuseColor.rgb=mix(diffuseColor.rgb,nativeEyeTint*(.6+eyeLuma),irisMask);');
+          };
+          material.customProgramCacheKey = () => 'LifeLensNativeEyePigment-v1';
+        }
         const mesh = new THREE.SkinnedMesh(geometry, material);
         mesh.name = isBody && tier === 'near' ? BODY : source.name + ':' + tier;
         mesh.position.copy(donor.position); mesh.quaternion.copy(donor.quaternion); mesh.scale.copy(donor.scale);

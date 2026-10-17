@@ -44,6 +44,7 @@ export class ResidentLifeShape {
         if(material.userData.lifeShapeInstalled)continue;
         material.userData.lifeShapeInstalled=true;
         const prior=material.onBeforeCompile;
+        const priorProgramKey=material.customProgramCacheKey();
 
         material.onBeforeCompile=(shader,renderer)=>{
           prior.call(material,shader,renderer);
@@ -53,7 +54,7 @@ export class ResidentLifeShape {
           shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',
             '#include <begin_vertex>\nvec3 lifePoint = (lifeToModel * vec4(transformed, 1.0)).xyz;\nlifePoint.z += lifeBelly * lifeUnitHeight * lifeTorsoMask;\ntransformed = (lifeFromModel * vec4(lifePoint, 1.0)).xyz;');
         };
-        material.customProgramCacheKey=()=> 'LifeLensResidentLifeShape-v1';material.needsUpdate=true;
+        material.customProgramCacheKey=()=> priorProgramKey+'-LifeLensResidentLifeShape-v1';material.needsUpdate=true;
       }
     });
   }
@@ -75,3 +76,4 @@ export class ResidentLifeShape {
     if(this.spine && lean){this.rotation.setFromAxisAngle(this.axis,lean);this.spine.quaternion.multiply(this.rotation);this.previousLean=lean;}
   }
 }
+
