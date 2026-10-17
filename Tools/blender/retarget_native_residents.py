@@ -201,11 +201,24 @@ def main():
                     groups[f'{label}_{segment:02d}'+suffix]=(f'finger{digit}-{segment}.'+side,f'finger{digit}-{segment}.'+side,
                          f'{label}_{segment+1:02d}'+suffix if segment<3 else f'{label}_04_leaf'+suffix)
         scale=.103
-        transforms={}
+        transforms={}; segment_ratios={}
         for name,(first,last,child) in groups.items():
             a=point(first,'head');b=point(last,'tail');ta=target[name]
+            if name.startswith('hand_'):
+                side='L' if name.endswith('_l') else 'R'
+                b=point('finger3-1.'+side,'head')
+            if name.startswith(('foot_','ball_')):
+                side='L' if name.endswith('_l') else 'R'
+                ball=np.mean([point(f'toe{digit}-1.'+side,'head') for digit in range(1,6)],axis=0)
+                if name.startswith('foot_'): b=ball
+                else:
+                    a=ball
+                    b=np.mean([point(f'toe{digit}-{2 if digit==1 else 3}.'+side,'tail') for digit in range(1,6)],axis=0)
             tb=target[child] if child else ta+np.array([0,.19,0])
             axis=b-a; length=np.linalg.norm(axis);axis/=length
+            segment_ratios[name]=float(np.linalg.norm(tb-ta)/(length*scale))
+            if name.startswith(('hand_','foot_')):
+                assert .5 < segment_ratios[name] < 2, ('Palm/metatarsal landmark mismatch',name,segment_ratios[name])
             matrix=rotation(axis,tb-ta)@(scale*np.eye(3)+(np.linalg.norm(tb-ta)/length-scale)*np.outer(axis,axis))
             transforms[name]=(matrix,ta-matrix@a)
         by_vertex=[{} for _ in vertices]
@@ -270,7 +283,7 @@ def main():
                 lod_path=output.with_name(f'resident-{sex}-{tier}.glb')
                 bpy.ops.export_scene.gltf(filepath=str(lod_path),export_format='GLB',export_animations=False,export_extras=True)
                 lods.append({'tier':tier,'file':lod_path.name,'bytes':lod_path.stat().st_size,'sha256':hashlib.sha256(lod_path.read_bytes()).hexdigest()})
-        reports.append({'sex':sex,'file':output.name,'sha256':digest,'bytes':output.stat().st_size,'meshes':meshes,'bones':names,'lods':lods})
+        reports.append({'sex':sex,'file':output.name,'sha256':digest,'bytes':output.stat().st_size,'meshes':meshes,'bones':names,'segmentLengthRatios':segment_ratios,'lods':lods})
     result={'status':'GEOMETRY_ONLY_NOT_RUNTIME_ASSET' if args.geometry_only else 'GENERATED_REQUIRES_WEB_VERIFICATION','license':'CC0-1.0','sourceReceipt':hashlib.sha256((SOURCE/'receipts.json').read_bytes()).hexdigest(),'assets':reports,'mergeAllowed':False}
     path=ROOT/'docs/asset-reviews/resident-makehuman/generated/retarget.json';path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps(result,indent=2))
