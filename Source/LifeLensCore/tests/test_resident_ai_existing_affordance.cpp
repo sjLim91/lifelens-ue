@@ -1,5 +1,6 @@
 #include <cassert>
 #include "lifelens/ResidentAIExistingAffordance.h"
+#include "lifelens/Simulation.h"
 
 using namespace lifelens;
 
@@ -91,5 +92,43 @@ int main()
     thought.minute=0;
     assert(!chooseResidentAIExistingCivilizationAffordance(
         world,actor,{0,0},thought));
+
+    // True NEW GAME Core execution: a resident thought cannot mutate the
+    // resource or invent a harvest, but it can select a legal gathering
+    // context in the ordinary 15-minute planning slot.
+    Simulation sim(99551);
+    sim.setupNewGame();
+    assert(sim.world().minute==480);
+    assert(!sim.world().characters.empty());
+    const CharacterId self=sim.world().characters.front().id;
+    GridPos actorPosition{};
+    assert(sim.runtimePosition(self,actorPosition));
+    for(Character& resident:sim.world().characters)
+        resident.needs={0.01,0.01,0.01,0.01,0.01};
+    ResourceNode actualFood;
+    actualFood.id=987654321;
+    actualFood.material=MaterialKind::PlantFood;
+    actualFood.pos=actorPosition;
+    actualFood.quantity=40;
+    actualFood.maxQuantity=40;
+    sim.world().resourceNodes.clear();
+    sim.world().resourceNodes.push_back(actualFood);
+    const auto request=sim.observeCognitiveRequest(
+        self,CognitiveTriggerKind::Reflection);
+    CognitiveProposal plan;
+    plan.actor=self;
+    plan.intent=CognitiveIntentKind::ImproveFoodSecurity;
+    plan.priority=0.90;
+    assert(sim.acceptCognitiveProposal(
+        request,plan,"local-test-model","resource-001"));
+    sim.step();
+    const auto pending=sim.observePendingContextAction(self);
+    assert(pending.active);
+    assert(pending.kind==ContextActionKind::Civilization);
+    assert(pending.civilizationIntent==CivilizationIntent::Gather);
+    assert(pending.resourceNode==actualFood.id);
+    assert(pending.material==MaterialKind::PlantFood);
+    // Issuing a thought/plan is NOT a successful action commit.
+    assert(sim.world().resourceNodes.front().quantity==40);
     return 0;
 }
