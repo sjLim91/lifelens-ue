@@ -167,4 +167,26 @@ const provider = {
   f.controller.dispose();
 }
 
+{
+  const f = fixture(provider);
+  for (let id = 3; id <= 40; id++) {
+    f.residents.push({ id: String(id), alive: true, name: String(id) });
+  }
+  f.controller.setEnabled(true);
+  for (let i = 0; i < f.residents.length; i++) {
+    f.controller.observe(f.world, f.residents);
+    await tick();
+    f.advance();
+  }
+  assert.equal(f.submitted.length, 40,
+    'all 40 living residents must receive an independent AI slot');
+  assert.equal(new Set(f.submitted.map(x => x.request.actor)).size, 40,
+    'the first 32 residents must not monopolize model access');
+  assert.equal(f.controller.getSnapshot().byResident['40'].status, 'recorded');
+  assert(Object.keys(f.controller.getSnapshot().byResident).length
+    <= LIVE_AI_BUDGET.maxResidents,
+    'status/history must remain bounded even as populations grow');
+  f.controller.dispose();
+}
+
 console.log('Live Resident AI: independent actor context, Core handoff, cancellation PASS');
