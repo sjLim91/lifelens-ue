@@ -9,17 +9,19 @@ from mathutils import Vector
 
 out=Path(sys.argv[sys.argv.index('--')+1]).resolve()
 prior=out/'blender-review.json'
+reviewer_hash=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 if prior.is_file():
  saved=json.loads(prior.read_text())
  names=['idle-front','idle-side','idle-quarter','idle-back','idle-face','idle-feet','walk','run','hunt','forage','drink','rest']
- if saved.get('sourceSha256')==hashlib.sha256((out/'tiger-rigged.glb').read_bytes()).hexdigest() and all((out/(name+'.png')).is_file() for name in names) and (out/'tiger-native-authoring.blend').is_file():
+ if saved.get('reviewerSha256')==reviewer_hash and saved.get('sourceSha256')==hashlib.sha256((out/'tiger-rigged.glb').read_bytes()).hexdigest() and all((out/(name+'.png')).is_file() for name in names) and (out/'tiger-native-authoring.blend').is_file():
   print('REUSE_IDENTICAL_NATIVE_REVIEW');sys.exit(0)
 bpy.context.preferences.filepaths.save_version=0
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
 source_hash=hashlib.sha256((out/'tiger-rigged.glb').read_bytes()).hexdigest()
 bpy.ops.import_scene.gltf(filepath=str(out/'tiger-rigged.glb'))
 scene=bpy.context.scene
-objects=list(scene.objects);meshes=[obj for obj in objects if obj.type=='MESH']
+objects=list(scene.objects);meshes=[obj for obj in objects if obj.type=='MESH' and any(mod.type=='ARMATURE' for mod in obj.modifiers)]
+assert meshes, 'Imported tiger has no deformed skin to measure'
 scene.render.engine='CYCLES';scene.cycles.samples=8;scene.cycles.use_denoising=False
 scene.render.resolution_x=640;scene.render.resolution_y=640;scene.render.resolution_percentage=100
 scene.render.image_settings.file_format='PNG';scene.world.color=(.15,.15,.15)
@@ -57,5 +59,5 @@ render('idle-feet',math.pi/8,close='feet')
 for name in ['walk','run','hunt','forage','drink','rest']:render(name,math.pi/4)
 activate('idle',0)
 bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=str(out/'tiger-native-authoring.blend'))
-(out/'blender-review.json').write_text(json.dumps({'status':'VISUAL_REVIEW_REQUIRED','sourceSha256':source_hash,'runtimeAdmission':False,'views':report},indent=2)+'\n')
+(out/'blender-review.json').write_text(json.dumps({'status':'VISUAL_REVIEW_REQUIRED','sourceSha256':source_hash,'reviewerSha256':reviewer_hash,'runtimeAdmission':False,'views':report},indent=2)+'\n')
 print('NATIVE_TIGER_REVIEW',json.dumps(report))
