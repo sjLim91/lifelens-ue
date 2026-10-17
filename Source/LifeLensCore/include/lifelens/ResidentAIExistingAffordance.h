@@ -25,7 +25,8 @@ chooseResidentAIExistingCivilizationAffordance(
        ||thought.minute>world.minute
        ||world.minute-thought.minute>96
        ||thought.priority<0.55
-       ||thought.target!=0)
+       ||thought.target!=0
+       ||!std::isfinite(thought.priority))
         return std::nullopt;
 
     CivilizationUtilityDecision candidate;
