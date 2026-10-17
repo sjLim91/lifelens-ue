@@ -1983,6 +1983,7 @@ bool Simulation::trySocialDecision(
     // spatial routing, timeout and observed relationship consequences.
     std::optional<AutonomousPreferredSocialGoal> selectedPersonalGoal;
     bool modelPreferredSocialTarget=false;
+    std::uint64_t modelSocialContextFingerprint=0;
     for(auto it=acceptedCognitiveDecisions_.rbegin();
         it!=acceptedCognitiveDecisions_.rend();++it){
         if(it->actor!=c.id) continue;
@@ -1994,6 +1995,8 @@ bool Simulation::trySocialDecision(
                  &&decision.social.intent==SocialIntent::Approach)
                ||(it->intent==CognitiveIntentKind::ResolveConflict
                    &&decision.social.intent==SocialIntent::Repair));
+        if(modelPreferredSocialTarget)
+            modelSocialContextFingerprint=it->contextFingerprint;
         break;
     }
     if(!modelPreferredSocialTarget){
@@ -2041,6 +2044,29 @@ bool Simulation::trySocialDecision(
             link.contextFingerprint=selectedPersonalGoal->contextFingerprint;
             link.trustThreshold=predicate.threshold;
             link.trustAtIssue=myRelationship->trust;
+            if(validAutonomousGoalActionLink(link))
+                pending.autonomousGoal=link;
+        }
+    }
+    // A model-selected partner receives the same snapshot-backed execution
+    // token/progress observer as existing Core-authored relationship goals.
+    // The target threshold is a Core-owned measurement proxy, NOT a promise
+    // made by the model or a fabricated change in private trust.
+    if(modelPreferredSocialTarget && !pending.autonomousGoal.active()
+       &&modelSocialContextFingerprint!=0){
+        const Relationship* own=relationships_.find(
+            c.id,decision.social.target);
+        if(own!=nullptr &&std::isfinite(own->trust)
+           &&own->trust>=0.0 &&own->trust<1.0){
+            AutonomousGoalActionLink link;
+            link.token=pending.token;
+            link.actor=c.id;
+            link.target=decision.social.target;
+            link.intent=decision.social.intent;
+            link.issuedMinute=pending.issuedMinute;
+            link.contextFingerprint=modelSocialContextFingerprint;
+            link.trustAtIssue=own->trust;
+            link.trustThreshold=std::min(1.0,own->trust+0.12);
             if(validAutonomousGoalActionLink(link))
                 pending.autonomousGoal=link;
         }
