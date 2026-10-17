@@ -3,6 +3,7 @@
 
 #include "lifelens/Simulation.h"
 #include "lifelens/WebClientBridge.h"
+#include "lifelens/SimulationSnapshotCodec.h"
 
 using namespace lifelens;
 
@@ -96,5 +97,67 @@ int main()
            ||ordinary.targetResident!=preferred);
     assert(withAI.world().characters[0].needs.hunger
            ==baseline.world().characters[0].needs.hunger);
+
+    // Only a real completed action may become personal firsthand evidence.
+    // The model's target and Core-validated context fingerprint are linked
+    // to the same pending token; no model text can forge a trust result.
+    const auto beforeExecution=withAI.captureSnapshot();
+    const auto pendingIt=beforeExecution.runtime.find(self);
+    assert(pendingIt!=beforeExecution.runtime.end());
+    const auto& link=pendingIt->second.pendingContext.autonomousGoal;
+    assert(link.active());
+    assert(link.token==selected.token);
+    assert(link.actor==self &&link.target==preferred);
+    assert(link.contextFingerprint==cognitiveRequestFingerprint(request));
+    assert(link.intent==SocialIntent::Approach);
+    for(const auto& m:withAI.world().characters[0].memory.entries){
+        assert(m.tags.empty() ||m.tags[0]!="goal_action_feedback");
+    }
+
+    // Persistence before execution retains the exact observation token.
+    std::vector<std::uint8_t> bytes;
+    assert(encodeSimulationSnapshot(beforeExecution,bytes,&error));
+    SimulationStateSnapshot loaded;
+    assert(decodeSimulationSnapshot(bytes,loaded,&error));
+    Simulation persisted(417123);
+    assert(persisted.restoreSnapshot(loaded,&error));
+    const auto persistedLink=
+        persisted.captureSnapshot().runtime.at(self).pendingContext.autonomousGoal;
+    assert(persistedLink.token==link.token);
+    assert(persistedLink.contextFingerprint==link.contextFingerprint);
+
+    withAI.setExternalPhysicalExecution(true);
+    persisted.setExternalPhysicalExecution(true);
+    assert(withAI.completeExternalContextAction(
+        self,selected.token,selected.targetPos));
+    assert(persisted.completeExternalContextAction(
+        self,selected.token,selected.targetPos));
+
+    const Character& experienced=withAI.world().characters[0];
+    const Character& replayExperience=persisted.world().characters[0];
+    bool observed=false;
+    for(const auto& m:experienced.memory.entries){
+        if(m.tags.size()==3 &&m.tags[0]=="goal_action_feedback"
+           &&m.tags[1]=="self_trust" &&m.tags[2]=="Approach"
+           &&m.who==preferred &&m.source==MemorySource::DirectWitness){
+            observed=true;
+            assert(m.witnessed);
+            bool same=false;
+            for(const auto& rm:replayExperience.memory.entries)
+                if(rm.tags==m.tags &&rm.who==m.who &&rm.what==m.what)
+                    same=true;
+            assert(same);
+        }
+    }
+    assert(observed);
+    const auto nextThought=withAI.observeCognitiveRequest(
+        self,CognitiveTriggerKind::Reflection);
+    bool personallyLearned=false;
+    for(const auto& memory:nextThought.memories)
+        if(memory.source==MemorySource::DirectWitness
+           && memory.who==preferred
+           &&memory.what.find("during-action")!=std::string::npos)
+            personallyLearned=true;
+    assert(personallyLearned);
     return 0;
 }
