@@ -27,7 +27,7 @@ for(const chunk of terrain.chunks){
 }
 const loader=new GLTFLoader();
 const layer=new WildlifeLayer(baseline?async()=>{throw Error('Requested baseline fallback');}:tier=>{
-  const file=tier==='near'?'tiger-rigged.glb':'tiger-mid.glb';
+  const file=tier==='near'?'tiger-rigged.glb':`tiger-${tier}.glb`;
   return loader.loadAsync(inspection?`./review/inspection-assets/${file}`:`/public/vendor/wildlife/${file}`);
 });
 scene.add(layer.group);layer.setTerrain(terrain);

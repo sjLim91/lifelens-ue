@@ -66,3 +66,42 @@ import {ImportedTigerPool} from '../../src/render/imported-tiger.ts';
     console.log('LL_TIGER_STAGE scene-render-done');
    };
 
+// Present only on the explicit Draft review URL. Measure the running Observer,
+// recording hardware context instead of treating a mobile viewport as a phone.
+if(new URLSearchParams(location.search).get('review')==='1'){
+ addEventListener('DOMContentLoaded',()=>{
+  const panel=document.createElement('aside');
+  panel.style.cssText='position:fixed;bottom:8px;left:8px;z-index:10000;max-width:340px;padding:10px;background:#10251fee;color:white;font:13px/1.5 system-ui;border-radius:8px';
+  const label=document.createElement('div');label.textContent='검증용 미리보기 · 최종 품질 검증 전';panel.append(label);
+  const status=document.createElement('div');status.textContent='Android 성능은 실기기에서 측정해 주세요.';
+  const button=(title,run)=>{const b=document.createElement('button');b.textContent=title;b.style.margin='4px';b.onclick=run;panel.append(b);return b;};
+  button('현재 호랑이 보기',()=>{
+   const tiger=qa.store.getSnapshot().terrain?.wildlife?.animals.find(a=>a.species==='Tiger');
+   if(!tiger){status.textContent='현재 관찰 영역에 호랑이가 없습니다.';return;}
+   qa.id=tiger.id;qa.view='quarter';qa.renderer?.start();status.textContent=`Core ID ${tiger.id}`;
+  });
+  button('가까이 / 멀리',()=>{qa.view=qa.view==='far'?'quarter':'far';});
+  const measure=button('30초 성능 측정',async()=>{
+   if(!qa.renderer||!qa.world){status.textContent='월드를 불러온 뒤 측정해 주세요.';return;}
+   measure.disabled=true;status.textContent='측정 중 · 이 창을 화면에 유지해 주세요.';
+   const renderer=qa.renderer.renderer,gl=renderer.getContext(),extension=gl.getExtension('WEBGL_debug_renderer_info');
+   const startSample=qa.sample(),times=[];let previous=performance.now();const start=previous;
+   qa.renderer.start();
+   await new Promise(resolve=>{const frame=now=>{if(now-start>2000)times.push(now-previous);previous=now;if(now-start<32000)requestAnimationFrame(frame);else resolve();};requestAnimationFrame(frame);});
+   const sorted=times.slice().sort((a,b)=>a-b),mean=times.reduce((a,b)=>a+b,0)/times.length;
+   const result={status:'USER_BROWSER_MEASUREMENT_REQUIRES_DEVICE_CONFIRMATION',commit:import.meta.env.VITE_REVIEW_COMMIT??'unknown',
+    measuredAt:new Date().toISOString(),samples:times.length,durationSeconds:30,fps:1000/mean,
+    frameMsP50:sorted[Math.floor(sorted.length*.5)],frameMsP95:sorted[Math.floor(sorted.length*.95)],
+    physicalDevice:'USER_CONFIRMATION_REQUIRED',userAgent:navigator.userAgent,devicePixelRatio,
+    viewport:[innerWidth,innerHeight],canvas:[renderer.domElement.width,renderer.domElement.height],
+    gpu:extension?gl.getParameter(extension.UNMASKED_RENDERER_WEBGL):null,
+    visibleAtEnd:document.visibilityState,start:startSample,end:qa.sample(),
+    visibleWildlife:qa.store.getSnapshot().terrain?.wildlife?.animals.length,mergeAllowed:false};
+   const blob=new Blob([JSON.stringify(result,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob);
+   const a=document.createElement('a');a.href=url;a.download='lifelens-tiger-device-performance.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+   status.textContent=`${result.fps.toFixed(1)} FPS · p95 ${result.frameMsP95.toFixed(1)} ms · JSON 저장됨`;measure.disabled=false;
+  });
+  panel.append(status);document.body.append(panel);
+ });
+}
+

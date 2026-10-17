@@ -50,8 +50,8 @@ jobs:
       - name: Verify source skins, production layer binding and existing wildlife regressions
         working-directory: web
         run: |
-          node tests/procedural-environment/native-tiger-contact.mjs ../../docs/asset-reviews/amil-tiger
-          node tests/procedural-environment/native-tiger-grounding.mjs ../../docs/asset-reviews/amil-tiger
+          node tests/procedural-environment/native-tiger-contact.mjs ../docs/asset-reviews/amil-tiger
+          node tests/procedural-environment/native-tiger-grounding.mjs ../docs/asset-reviews/amil-tiger
           node tests/procedural-environment/imported-tiger.mjs
           node tests/procedural-environment/grounding-wildlife.mjs
           npm run typecheck
@@ -142,11 +142,22 @@ jobs:
           python3 Tools/prepare_web_character_assets.py
           npm run generate:core-contract --prefix web
       - name: Build production React Observer with camera measurement bridge
+        env:
+          VITE_REVIEW_COMMIT: ${{ github.sha }}
         working-directory: web
         run: npm run build -- --config tests/tiger-observer/vite.config.mjs
       - name: Capture real React-WASM Observer and actual Core movement
         working-directory: web
         run: node tests/tiger-observer/capture.mjs
+      - name: Publish passing Draft review in an isolated existing Pages subdirectory
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web/tests/tiger-observer/preview
+          publish_branch: gh-pages
+          destination_dir: review/tiger-728
+          keep_files: true
+          commit_message: "Draft tiger review: ${{ github.sha }}"
       - name: Record actual capture outcome on Draft branch (including failures)
         if: always()
         env:
