@@ -31,6 +31,9 @@ export class ResidentProceduralMotion {
   private readonly worldRotation = new THREE.Quaternion();
   private readonly rootRotation = new THREE.Quaternion();
   private readonly footSole = { left: .035, right: .035 };
+  private nativeBody: THREE.SkinnedMesh | null = null;
+  private readonly nativeSoleVertices = { left: [] as number[], right: [] as number[] };
+  private readonly solePoint = new THREE.Vector3();
   constructor(private readonly root: THREE.Object3D, model: THREE.Object3D) {
     this.rig = new ResidentRig(model);
     for (const object of this.rig.joints.values()) this.saved.set(object,object.quaternion.clone());
@@ -40,6 +43,29 @@ export class ResidentProceduralMotion {
    * The skin mesh's real bare sole offsets replace the old fixed shoe clearance.
    */
   setAnatomicalBody(object: THREE.Object3D | null | undefined): void {
+    this.nativeBody = object instanceof THREE.SkinnedMesh && object.geometry.userData.anatomyVersion === 'MakeHuman-native-v1' ? object : null;
+    for (const side of ['left', 'right'] as const) {
+      this.nativeSoleVertices[side] = [];
+      if (!this.nativeBody) continue;
+      const mesh = this.nativeBody, p = mesh.geometry.getAttribute('position');
+      const j = mesh.geometry.getAttribute('skinIndex'), w = mesh.geometry.getAttribute('skinWeight');
+      const suffix = side === 'left' ? '_l' : '_r';
+      const candidates: number[] = [];
+      for (let v = 0; v < p.count; v++) {
+        let influence = 0;
+        for (let k = 0; k < 4; k++) if (['foot' + suffix, 'ball' + suffix, 'ball_leaf' + suffix].includes(mesh.skeleton.bones[j.getComponent(v, k)]?.name)) influence += w.getComponent(v, k);
+        if (influence >= .65) candidates.push(v);
+      }
+      candidates.sort((a, b) => p.getY(a) - p.getY(b));
+      const low = candidates.length ? p.getY(candidates[0]) : 0;
+      const sole = candidates.filter(v => p.getY(v) <= low + .04);
+      const selected = new Set(sole.slice(0, 16));
+      for (const component of [0, 2]) {
+        sole.sort((a, b) => p.getComponent(a, component) - p.getComponent(b, component));
+        for (const v of [...sole.slice(0, 8), ...sole.slice(-8)]) selected.add(v);
+      }
+      this.nativeSoleVertices[side] = [...selected].slice(0, 48);
+    }
     const soles = object instanceof THREE.SkinnedMesh
       ? object.geometry.userData.residentFootSole as { left?: number; right?: number } | undefined
       : undefined;
@@ -88,6 +114,21 @@ export class ResidentProceduralMotion {
       this.ik.solve(upper,lower,foot,this.target,.8);
       const front=frame.ground.height(this.point.x+Math.sin(this.root.rotation.y)*.08,this.point.z+Math.cos(this.root.rotation.y)*.08);
       if(front!==null)this.rotate(`${side}Foot`,THREE.MathUtils.clamp(Math.atan2(front-h,.08),-.3,.3)*.6,0,0);
+      // Source-derived feet have real toes/heels, not the old donor's shoe.
+      // Correct only actual penetration using a bounded set of real skinned
+      // sole vertices. Swing clearance and the Core actor root are preserved.
+      if (this.nativeBody) for (let pass = 0; pass < 2; pass++) {
+        this.root.updateWorldMatrix(true, true); this.nativeBody.skeleton.update();
+        let lift = 0;
+        for (const vertex of this.nativeSoleVertices[side]) {
+          this.nativeBody.getVertexPosition(vertex, this.solePoint).applyMatrix4(this.nativeBody.matrixWorld);
+          const support = frame.ground.height(this.solePoint.x, this.solePoint.z);
+          if (support !== null) lift = Math.max(lift, support + .002 - this.solePoint.y);
+        }
+        if (lift < .0005) break;
+        foot.getWorldPosition(this.target); this.target.y += Math.min(lift, height * .12);
+        this.ik.solve(upper, lower, foot, this.target, 1);
+      }
     }
     if(this.hasLastHand && this.handWeight>.001){
       const upper=this.rig.joints.get('rightArm'),lower=this.rig.joints.get('rightForearm'),hand=this.rig.joints.get('rightHand');
@@ -106,3 +147,4 @@ export class ResidentProceduralMotion {
     this.axis.set(0,0,1).applyQuaternion(this.rootRotation).applyQuaternion(this.worldRotation);this.rotation.setFromAxisAngle(this.axis,z);object.quaternion.multiply(this.rotation);
   }
 }
+

@@ -15,7 +15,7 @@ try{
  await page.goto('http://127.0.0.1:8770/tests/native-resident/fixture.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.nativeReady,{},{timeout:180000});
  reports.adults=await page.evaluate(()=>window.nativeQA.sample());
- for(const a of reports.adults){assert(a.native&&a.sameSkeleton&&a.uv&&a.texture);assert.equal(a.version,'MakeHuman-native-v1');assert.deepEqual(a.meshCount,[3,3,3]);assert(a.tiers[0].triangles>a.tiers[1].triangles&&a.tiers[1].triangles>a.tiers[2].triangles);assert(a.bounds.max[1]-a.bounds.min[1]>.8);}
+ for(const a of reports.adults){assert(a.native&&a.sameSkeleton&&a.uv&&a.texture);assert.equal(a.version,'MakeHuman-native-v1');assert.deepEqual(a.meshCount,[3,3,3]);assert(a.tiers[0].triangles>a.tiers[1].triangles&&a.tiers[1].triangles>a.tiers[2].triangles);assert(a.bounds.max[1]-a.bounds.min[1]>.8);assert(a.bounds.min[1]>=-.01,'Native soles must not penetrate the actual ground');}
  for(const view of ['front','side']){const data=await page.evaluate(view=>window.nativeQA.view(view),view);writeFileSync(resolve(out,'adults-'+view+'.png'),Buffer.from(data.split(',')[1],'base64'));}
  reports.lods=[];for(const distance of [4,12,25])reports.lods.push(await page.evaluate(d=>window.nativeQA.lod(d),distance));
  for(const [i,rows] of reports.lods.entries())for(const row of rows)assert.equal(row.tiers.findIndex(t=>t.visible),i);

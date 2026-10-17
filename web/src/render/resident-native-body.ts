@@ -9,6 +9,24 @@ const BODY = 'LifeLensAuthoredAnatomicalBody';
 const templates = new Map<string, GLTF>();
 let loading: Promise<void> | undefined;
 
+function smoothUVSeams(geometry: THREE.BufferGeometry): void {
+  const positions = geometry.getAttribute('position'), normals = geometry.getAttribute('normal');
+  if (!positions || !normals) return;
+  const sums = new Map<string, THREE.Vector3>();
+  const keys: string[] = [];
+  for (let v = 0; v < positions.count; v++) {
+    const key = `${positions.getX(v).toFixed(6)}/${positions.getY(v).toFixed(6)}/${positions.getZ(v).toFixed(6)}`;
+    keys.push(key);
+    const sum = sums.get(key) ?? new THREE.Vector3();
+    sum.x += normals.getX(v); sum.y += normals.getY(v); sum.z += normals.getZ(v); sums.set(key, sum);
+  }
+  for (const sum of sums.values()) sum.normalize();
+  for (let v = 0; v < positions.count; v++) {
+    const sum = sums.get(keys[v])!; normals.setXYZ(v, sum.x, sum.y, sum.z);
+  }
+  normals.needsUpdate = true;
+}
+
 /** Load verified, locally published assets once. An unavailable asset retains
  * the established resident presentation; it never replaces Core observations. */
 export function loadNativeResidentTemplates(loader: GLTFLoader): Promise<void> {
@@ -104,6 +122,7 @@ export function syncNativeResidentBody(model: THREE.Group, profile: ResidentAppe
         const phenotype = { ...profile, shoulderScale: 1 + (profile.shoulderScale - (sex === 'male' ? 1.10 : .90)) * .5,
           hipScale: 1 + (profile.hipScale - (sex === 'female' ? 1.14 : .98)) * .5, breastVolume: 0, waistScale: 1 };
         applyBodyProportions(mesh, phenotype, model.matrixWorld.clone().invert(), model);
+        smoothUVSeams(mesh.geometry);
         if (isBody) {
           const sole = { left: .035, right: .035 };
           const p = mesh.geometry.getAttribute('position'), j = mesh.geometry.getAttribute('skinIndex'), w = mesh.geometry.getAttribute('skinWeight');
