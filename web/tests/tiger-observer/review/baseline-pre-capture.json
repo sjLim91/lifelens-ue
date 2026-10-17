@@ -1,5 +1,5 @@
 {
-  "minute": 495,
+  "minute": 499,
   "worldSeed": "77",
   "core": {
     "id": "25:32:1704075738371588112",
@@ -9,6 +9,7 @@
     "behavior": "Hunt"
   },
   "actor": null,
+  "cameraChoice": null,
   "farIds": [],
   "runtime": {
     "status": "ready",
@@ -16,15 +17,15 @@
   },
   "simulationSpeed": 0,
   "renderStats": {
-    "frame": 64,
+    "frame": 62,
     "calls": 105,
     "triangles": 2630204,
     "points": 0,
     "lines": 0
   },
   "renderMemory": {
-    "geometries": 532,
-    "textures": 16
+    "geometries": 499,
+    "textures": 8
   },
   "canvas": {
     "width": 620,

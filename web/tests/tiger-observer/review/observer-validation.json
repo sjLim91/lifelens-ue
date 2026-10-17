@@ -10,7 +10,7 @@
       "baseline": false,
       "pausedCameraObservationUnchanged": true,
       "sample": {
-        "minute": 495,
+        "minute": 499,
         "worldSeed": "77",
         "core": {
           "id": "25:32:1704075738371588112",
@@ -29,6 +29,7 @@
           "clip": "idle",
           "tier": "near"
         },
+        "cameraChoice": null,
         "farIds": [],
         "runtime": {
           "status": "ready",
@@ -36,15 +37,15 @@
         },
         "simulationSpeed": 0,
         "renderStats": {
-          "frame": 64,
+          "frame": 62,
           "calls": 105,
           "triangles": 2630204,
           "points": 0,
           "lines": 0
         },
         "renderMemory": {
-          "geometries": 532,
-          "textures": 18
+          "geometries": 499,
+          "textures": 10
         },
         "canvas": {
           "width": 620,
@@ -54,24 +55,217 @@
       },
       "motion": [
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.7396526044354346,
-              23.211439523784566,
-              -0.48078925849193865
+              -3.738371491901461,
+              23.212267756288213,
+              -0.48529940866939114
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
+          },
+          "farIds": [],
+          "runtime": {
+            "status": "ready",
+            "errorMessage": null
+          },
+          "simulationSpeed": 0,
+          "renderStats": {
+            "frame": 121,
+            "calls": 96,
+            "triangles": 2640162,
+            "points": 0,
+            "lines": 24
+          },
+          "renderMemory": {
+            "geometries": 539,
+            "textures": 19
+          },
+          "canvas": {
+            "width": 620,
+            "height": 662,
+            "contextLost": false
+          }
+        },
+        {
+          "minute": 953,
+          "worldSeed": "77",
+          "core": {
+            "id": "25:32:1704075738371588112",
+            "species": "Tiger",
+            "gridX": 806,
+            "gridY": 1044,
+            "behavior": "Hunt"
+          },
+          "actor": {
+            "id": "25:32:1704075738371588112",
+            "position": [
+              -3.7323679838029307,
+              23.212200705793798,
+              -0.47809881733877546
+            ],
+            "clip": "hunt",
+            "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
+          },
+          "farIds": [],
+          "runtime": {
+            "status": "ready",
+            "errorMessage": null
+          },
+          "simulationSpeed": 0,
+          "renderStats": {
+            "frame": 122,
+            "calls": 98,
+            "triangles": 2640342,
+            "points": 0,
+            "lines": 24
+          },
+          "renderMemory": {
+            "geometries": 540,
+            "textures": 19
+          },
+          "canvas": {
+            "width": 620,
+            "height": 662,
+            "contextLost": false
+          }
+        },
+        {
+          "minute": 953,
+          "worldSeed": "77",
+          "core": {
+            "id": "25:32:1704075738371588112",
+            "species": "Tiger",
+            "gridX": 806,
+            "gridY": 1044,
+            "behavior": "Hunt"
+          },
+          "actor": {
+            "id": "25:32:1704075738371588112",
+            "position": [
+              -3.7263644757044005,
+              23.212160618690692,
+              -0.4708982260081598
+            ],
+            "clip": "hunt",
+            "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
+          },
+          "farIds": [],
+          "runtime": {
+            "status": "ready",
+            "errorMessage": null
+          },
+          "simulationSpeed": 0,
+          "renderStats": {
+            "frame": 123,
+            "calls": 98,
+            "triangles": 2640342,
+            "points": 0,
+            "lines": 24
+          },
+          "renderMemory": {
+            "geometries": 540,
+            "textures": 19
+          },
+          "canvas": {
+            "width": 620,
+            "height": 662,
+            "contextLost": false
+          }
+        },
+        {
+          "minute": 953,
+          "worldSeed": "77",
+          "core": {
+            "id": "25:32:1704075738371588112",
+            "species": "Tiger",
+            "gridX": 806,
+            "gridY": 1044,
+            "behavior": "Hunt"
+          },
+          "actor": {
+            "id": "25:32:1704075738371588112",
+            "position": [
+              -3.724359303999478,
+              23.21214722959826,
+              -0.4684932285037462
+            ],
+            "clip": "hunt",
+            "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -81,13 +275,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 124,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2640342,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -97,24 +291,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.733777931833856,
-              23.21136128506689,
-              -0.47348317562733655
+              -3.7183557959009477,
+              23.21210714249515,
+              -0.4612926371731305
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -124,13 +334,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 125,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2640342,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -140,24 +350,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.727903259232278,
-              23.211287062096417,
-              -0.46617709276273445
+              -3.7123522878024175,
+              23.21206705539204,
+              -0.45409204584251484
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -167,13 +393,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 126,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2640342,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -183,24 +409,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.7220285866306995,
-              23.211212839125942,
-              -0.45887100989813234
+              -3.7063487797038874,
+              23.21202696828894,
+              -0.44689145451189916
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -210,13 +452,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 127,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2640342,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -226,24 +468,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.716153914029121,
-              23.21113861615547,
-              -0.45156492703353024
+              -3.7003452716053573,
+              23.21198688118583,
+              -0.4396908631812835
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -253,13 +511,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 128,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2640342,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -269,24 +527,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.7102792414275427,
-              23.211064393184998,
-              -0.44425884416892814
+              -3.694341763506827,
+              23.211946794082724,
+              -0.4324902718506678
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -296,13 +570,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 129,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2640342,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -312,24 +586,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.7044045688259644,
-              23.210990170214526,
-              -0.43695276130432603
+              -3.688338255408297,
+              23.21190670697962,
+              -0.4252896805200521
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -339,13 +629,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 130,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2640342,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -355,24 +645,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.698529896224386,
-              23.210915947244047,
-              -0.42964667843972393
+              -3.682334747309767,
+              23.211866619876513,
+              -0.41808908918943644
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -382,13 +688,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 131,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -398,24 +704,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6926552236228076,
-              23.21083927772588,
-              -0.4223405955751218
+              -3.676331239211237,
+              23.211826532773404,
+              -0.41088849785882076
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -425,13 +747,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 132,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -441,24 +763,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6867805510212293,
-              23.210753924109202,
-              -0.4150345127105197
+              -3.6703277311127067,
+              23.211786445670295,
+              -0.4036879065282051
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -468,13 +806,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 133,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -484,24 +822,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.680905878419651,
-              23.210668570492523,
-              -0.4077284298459176
+              -3.6643242230141766,
+              23.211746358567193,
+              -0.3964873151975894
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -511,13 +865,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 134,
-            "calls": 117,
-            "triangles": 2593492,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -527,24 +881,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6750312058180725,
-              23.210583216875843,
-              -0.4004223469813155
+              -3.6583207149156465,
+              23.211706271464084,
+              -0.3892867238669737
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -554,13 +924,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 135,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -570,24 +940,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.669156533216494,
-              23.210497863259164,
-              -0.3931162641167134
+              -3.6523172068171164,
+              23.21166438752737,
+              -0.38208613253635804
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -597,13 +983,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 136,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -613,24 +999,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.663281860614916,
-              23.210412509642484,
-              -0.3858101812521113
+              -3.6463136987185862,
+              23.21161499190505,
+              -0.37488554120574236
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -640,13 +1042,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 137,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -656,24 +1058,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6574071880133374,
-              23.210327156025805,
-              -0.3785040983875092
+              -3.640310190620056,
+              23.211565596282732,
+              -0.3676849498751267
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -683,13 +1101,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 138,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -699,24 +1117,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.651532515411759,
-              23.21024180240913,
-              -0.3711980155229071
+              -3.634306682521526,
+              23.211516200660412,
+              -0.360484358544511
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -726,13 +1160,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 139,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -742,24 +1176,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6456578428101807,
-              23.210156448792453,
-              -0.363891932658305
+              -3.628303174422996,
+              23.211466805038093,
+              -0.3532837672138953
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -769,13 +1219,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 140,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -785,24 +1235,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6397831702086023,
-              23.210071095175774,
-              -0.3565858497937029
+              -3.6222996663244658,
+              23.211417409415773,
+              -0.34608317588327964
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -812,13 +1278,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 141,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -828,24 +1294,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.633908497607024,
-              23.209985741559095,
-              -0.3492797669291008
+              -3.6162961582259356,
+              23.211368013793454,
+              -0.33888258455266396
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -855,13 +1337,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 142,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -871,24 +1353,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6280338250054456,
-              23.20990038794242,
-              -0.3419736840644987
+              -3.6102926501274055,
+              23.21131861817114,
+              -0.3316819932220483
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -898,13 +1396,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 143,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 98,
+            "triangles": 2649690,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -914,24 +1412,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.622159152403867,
-              23.20981503432574,
-              -0.3346676011998966
+              -3.6042891420288754,
+              23.21126922254882,
+              -0.3244814018914326
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -941,13 +1455,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 144,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 99,
+            "triangles": 2649780,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -957,24 +1471,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.616284479802289,
-              23.20972968070906,
-              -0.3273615183352945
+              -3.5982856339303453,
+              23.211219826926495,
+              -0.3172808105608169
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -984,13 +1514,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 145,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 99,
+            "triangles": 2649780,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -1000,24 +1530,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.6104098072007105,
-              23.209644327092384,
-              -0.3200554354706924
+              -3.592282125831815,
+              23.211170431304183,
+              -0.31008021923020124
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -1027,13 +1573,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 146,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 99,
+            "triangles": 2649780,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -1043,24 +1589,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.604535134599132,
-              23.2095589734757,
-              -0.31274935260609027
+              -3.586278617733285,
+              23.21112103568186,
+              -0.30287962789958556
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -1070,13 +1632,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 147,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 99,
+            "triangles": 2649780,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -1086,24 +1648,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.5986604619975537,
-              23.209473619859025,
-              -0.30544326974148817
+              -3.580275109634755,
+              23.211071640059544,
+              -0.2956790365689699
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -1113,13 +1691,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 148,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 99,
+            "triangles": 2649780,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -1129,24 +1707,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.5927857893959754,
-              23.209388266242346,
-              -0.29813718687688606
+              -3.574271601536225,
+              23.211022244437224,
+              -0.2884784452383542
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -1156,13 +1750,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 149,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 99,
+            "triangles": 2649780,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -1172,24 +1766,40 @@
           }
         },
         {
-          "minute": 882,
+          "minute": 953,
           "worldSeed": "77",
           "core": {
             "id": "25:32:1704075738371588112",
             "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
+            "gridX": 806,
+            "gridY": 1044,
             "behavior": "Hunt"
           },
           "actor": {
             "id": "25:32:1704075738371588112",
             "position": [
-              -3.586911116794397,
-              23.209302912625667,
-              -0.29083110401228396
+              -3.5682680934376947,
+              23.210972848814905,
+              -0.2812778539077385
             ],
             "clip": "hunt",
             "tier": "near"
+          },
+          "cameraChoice": {
+            "score": 5.9985,
+            "clear": 6,
+            "total": 6,
+            "position": [
+              -1.909188309203678,
+              1.5,
+              1.9091883092036785
+            ],
+            "target": [
+              -0.06586658152427294,
+              0.3990227197009055,
+              0.21171691680805965
+            ],
+            "deviation": 0
           },
           "farIds": [],
           "runtime": {
@@ -1199,142 +1809,13 @@
           "simulationSpeed": 0,
           "renderStats": {
             "frame": 150,
-            "calls": 117,
-            "triangles": 2563248,
+            "calls": 99,
+            "triangles": 2649780,
             "points": 0,
             "lines": 24
           },
           "renderMemory": {
-            "geometries": 538,
-            "textures": 19
-          },
-          "canvas": {
-            "width": 620,
-            "height": 662,
-            "contextLost": false
-          }
-        },
-        {
-          "minute": 882,
-          "worldSeed": "77",
-          "core": {
-            "id": "25:32:1704075738371588112",
-            "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
-            "behavior": "Hunt"
-          },
-          "actor": {
-            "id": "25:32:1704075738371588112",
-            "position": [
-              -3.5810364441928186,
-              23.20921755900899,
-              -0.28352502114768185
-            ],
-            "clip": "hunt",
-            "tier": "near"
-          },
-          "farIds": [],
-          "runtime": {
-            "status": "ready",
-            "errorMessage": null
-          },
-          "simulationSpeed": 0,
-          "renderStats": {
-            "frame": 151,
-            "calls": 117,
-            "triangles": 2563248,
-            "points": 0,
-            "lines": 24
-          },
-          "renderMemory": {
-            "geometries": 538,
-            "textures": 19
-          },
-          "canvas": {
-            "width": 620,
-            "height": 662,
-            "contextLost": false
-          }
-        },
-        {
-          "minute": 882,
-          "worldSeed": "77",
-          "core": {
-            "id": "25:32:1704075738371588112",
-            "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
-            "behavior": "Hunt"
-          },
-          "actor": {
-            "id": "25:32:1704075738371588112",
-            "position": [
-              -3.5751617715912403,
-              23.20913220539231,
-              -0.27621893828307975
-            ],
-            "clip": "hunt",
-            "tier": "near"
-          },
-          "farIds": [],
-          "runtime": {
-            "status": "ready",
-            "errorMessage": null
-          },
-          "simulationSpeed": 0,
-          "renderStats": {
-            "frame": 152,
-            "calls": 117,
-            "triangles": 2563248,
-            "points": 0,
-            "lines": 24
-          },
-          "renderMemory": {
-            "geometries": 538,
-            "textures": 19
-          },
-          "canvas": {
-            "width": 620,
-            "height": 662,
-            "contextLost": false
-          }
-        },
-        {
-          "minute": 882,
-          "worldSeed": "77",
-          "core": {
-            "id": "25:32:1704075738371588112",
-            "species": "Tiger",
-            "gridX": 805,
-            "gridY": 1043,
-            "behavior": "Hunt"
-          },
-          "actor": {
-            "id": "25:32:1704075738371588112",
-            "position": [
-              -3.569287098989662,
-              23.209046851775632,
-              -0.26891285541847765
-            ],
-            "clip": "hunt",
-            "tier": "near"
-          },
-          "farIds": [],
-          "runtime": {
-            "status": "ready",
-            "errorMessage": null
-          },
-          "simulationSpeed": 0,
-          "renderStats": {
-            "frame": 153,
-            "calls": 117,
-            "triangles": 2563248,
-            "points": 0,
-            "lines": 24
-          },
-          "renderMemory": {
-            "geometries": 538,
+            "geometries": 540,
             "textures": 19
           },
           "canvas": {
@@ -1345,7 +1826,7 @@
         }
       ],
       "farSample": {
-        "minute": 495,
+        "minute": 499,
         "worldSeed": "77",
         "core": {
           "id": "25:32:1704075738371588112",
@@ -1355,6 +1836,7 @@
           "behavior": "Hunt"
         },
         "actor": null,
+        "cameraChoice": null,
         "farIds": [
           "25:32:1704075738371588112",
           "25:32:1704075738371588113"
@@ -1365,15 +1847,15 @@
         },
         "simulationSpeed": 0,
         "renderStats": {
-          "frame": 69,
+          "frame": 67,
           "calls": 104,
           "triangles": 2712152,
           "points": 0,
           "lines": 0
         },
         "renderMemory": {
-          "geometries": 532,
-          "textures": 16
+          "geometries": 499,
+          "textures": 8
         },
         "canvas": {
           "width": 620,
@@ -1393,7 +1875,7 @@
       "baseline": true,
       "pausedCameraObservationUnchanged": true,
       "sample": {
-        "minute": 495,
+        "minute": 499,
         "worldSeed": "77",
         "core": {
           "id": "25:32:1704075738371588112",
@@ -1403,6 +1885,7 @@
           "behavior": "Hunt"
         },
         "actor": null,
+        "cameraChoice": null,
         "farIds": [],
         "runtime": {
           "status": "ready",
@@ -1410,15 +1893,15 @@
         },
         "simulationSpeed": 0,
         "renderStats": {
-          "frame": 69,
+          "frame": 67,
           "calls": 104,
           "triangles": 2712152,
           "points": 0,
           "lines": 0
         },
         "renderMemory": {
-          "geometries": 532,
-          "textures": 16
+          "geometries": 499,
+          "textures": 8
         },
         "canvas": {
           "width": 620,
