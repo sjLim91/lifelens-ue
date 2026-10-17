@@ -227,20 +227,38 @@ const provider = {
     },
   });
   const read = f.runtime.cognitiveRequest;
+  const submit = f.runtime.submitLocalCognitiveProposal;
+  let originalCoreRequest;
   f.runtime.cognitiveRequest = (actor) => {
     const request = read(actor);
     request.allowedIntents = [
       'TeachKnowledge', 'TradeWithResident', 'MigrateHousehold',
       'ImproveFoodSecurity', 'CareForDependent',
     ];
+    originalCoreRequest = request;
     return request;
+  };
+  // Core fingerprints the entire original request (including all intents).
+  // Rejecting a filtered copy here reproduces Core's exact-request boundary.
+  f.runtime.submitLocalCognitiveProposal = (request, proposal, seed) => {
+    if (request !== originalCoreRequest) return false;
+    return submit(request, proposal, seed);
   };
   f.controller.setEnabled(true);
   f.controller.observe(f.world, f.residents);
   await tick();
-  assert.deepEqual(received, [['ImproveFoodSecurity']]);
-  assert.equal(f.submitted.length, 1);
+  assert.deepEqual(received, [['ImproveFoodSecurity']],
+    'the model must still see only the Core-executable intent');
+  assert.equal(f.submitted.length, 1,
+    'the original request must pass unchanged to Core submission');
+  assert.equal(f.submitted[0].request, originalCoreRequest);
+  assert.deepEqual(f.submitted[0].request.allowedIntents, [
+    'TeachKnowledge', 'TradeWithResident', 'MigrateHousehold',
+    'ImproveFoodSecurity', 'CareForDependent',
+  ]);
   assert.equal(f.submitted[0].proposal.intent, 'ImproveFoodSecurity');
+  assert.equal(f.controller.getSnapshot().accepted, 1,
+    'a valid executable decision must not be rejected by Core fingerprinting');
   assert.deepEqual(f.contexts[0].allowedIntents, [
     'CooperateWithResident',
   ], 'underlying fixture Core observations are not mutated');
