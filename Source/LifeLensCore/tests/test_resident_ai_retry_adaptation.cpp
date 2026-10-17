@@ -69,6 +69,13 @@ int main()
 
     // Exhaustion of real nearby food changes the afforded strategy.
     world.resourceNodes.front().quantity=0;
+    const auto unfiltered=bestResourceExplorationDecisionAtPosition(
+        world,resident,{0,0});
+    const auto explicitlyUnfiltered=bestResourceExplorationDecisionAtPosition(
+        world,resident,{0,0},nullptr,MaterialKind::Unknown);
+    assert(unfiltered.intent==explicitlyUnfiltered.intent);
+    assert(unfiltered.material==explicitlyUnfiltered.material);
+    assert(unfiltered.utility==explicitlyUnfiltered.utility);
     const auto alternative=bestResourceExplorationDecisionAtPosition(
         world,resident,{0,0},nullptr,MaterialKind::PlantFood);
     assert(alternative.intent==CivilizationIntent::Explore);
@@ -122,6 +129,8 @@ int main()
     // Snapshot retains the actor's evidence without any new schema.
     Simulation simulation(1442);
     simulation.setupNewGame();
+    simulation.runMinutes(3); // latest witnessed outcome is minute 483
+    assert(simulation.world().minute==483);
     const auto id=simulation.world().characters.front().id;
     for(auto& c:simulation.world().characters)
         if(c.id==id){c.beliefs=resident.beliefs;c.memory=resident.memory;}
