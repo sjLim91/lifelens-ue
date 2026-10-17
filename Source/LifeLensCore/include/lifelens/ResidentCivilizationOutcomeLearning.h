@@ -73,9 +73,14 @@ inline ResidentGatherFailureCause diagnoseResidentGatherFailure(
     if(!actor.alive ||actor.id==0
        ||decision.intent!=CivilizationIntent::Gather
        ||decision.resourceNode==0) return ResidentGatherFailureCause::Unknown;
-    const ResourceNode* node=findCivilizationResource(
-        world,decision.resourceNode);
-    if(node==nullptr) return ResidentGatherFailureCause::SourceRemoved;
+    const auto nodeIt=std::find_if(
+        world.resourceNodes.begin(),world.resourceNodes.end(),
+        [&](const ResourceNode& node){
+            return node.id==decision.resourceNode;
+        });
+    if(nodeIt==world.resourceNodes.end())
+        return ResidentGatherFailureCause::SourceRemoved;
+    const ResourceNode* node=&*nodeIt;
     if(node->material!=decision.material)
         return ResidentGatherFailureCause::Unknown;
     if(node->quantity<=0) return ResidentGatherFailureCause::SourceExhausted;
