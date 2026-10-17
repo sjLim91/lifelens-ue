@@ -158,10 +158,39 @@ int main()
     noClay.civilization.inventory=Inventory{};
     assert(!chooseResidentAIExistingCivilizationAffordance(
         waterWorld,noClay,waterPosition,waterThought));
+    // Recipe-based prerequisite planning uses only actually observed
+    // materials. No clay inventory => gathering real clay is the next
+    // action; it does not fabricate a container or water.
+    World withClay=waterWorld;
+    ResourceNode clayNode;
+    clayNode.id=410;
+    clayNode.material=MaterialKind::Clay;
+    clayNode.pos=waterPosition;
+    clayNode.quantity=12;
+    clayNode.maxQuantity=12;
+    withClay.resourceNodes.push_back(clayNode);
+    const auto obtainClay=chooseResidentAIExistingCivilizationAffordance(
+        withClay,noClay,waterPosition,waterThought);
+    assert(obtainClay);
+    assert(obtainClay->intent==CivilizationIntent::Gather);
+    assert(obtainClay->material==MaterialKind::Clay);
+    assert(obtainClay->resourceNode==clayNode.id);
+    assert(obtainClay->quantity>0);
+    assert(noClay.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Clay)==0);
+    assert(withClay.resourceNodes.back().quantity==12);
+
+    // A different resident with no container technology does not
+    // spontaneously understand recipes or gather unrelated ingredients.
     Character untrained=potter;
     untrained.civilization.knowledge=KnowledgeState{};
+    untrained.civilization.inventory=Inventory{};
     assert(!chooseResidentAIExistingCivilizationAffordance(
-        waterWorld,untrained,waterPosition,waterThought));
+        withClay,untrained,waterPosition,waterThought));
+    World noWater=withClay;
+    noWater.resourceNodes.front().quantity=0;
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        noWater,noClay,waterPosition,waterThought));
 
     // True NEW GAME Core execution: a resident thought cannot mutate the
     // resource or invent a harvest, but it can select a legal gathering
