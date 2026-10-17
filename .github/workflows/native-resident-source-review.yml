@@ -1,0 +1,43 @@
+name: Native Resident CC0 Source Review
+on:
+  push:
+    branches: ['feat/native-resident-*']
+    paths:
+      - 'Tools/assets/fetch_resident_cc0_sources.py'
+      - '.github/workflows/native-resident-source-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: native-resident-source-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  cc0-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire original CC0 geometry UV skin eyes hair and official weights
+        run: python3 Tools/assets/fetch_resident_cc0_sources.py
+      - name: Acquire unchanged existing Web skeleton and animation sources
+        run: python3 Tools/prepare_web_character_assets.py
+      - name: Retain original input provenance on the Draft branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/asset-reviews/resident-makehuman/source
+          if ! git diff --cached --quiet; then
+            git commit -m 'Preserve pinned CC0 human graphical inputs and full per-file provenance; no acceptance [skip ci]'
+            for attempt in 1 2 3; do
+              git pull --rebase origin "$GITHUB_REF_NAME"
+              if git push origin "HEAD:$GITHUB_REF_NAME"; then break; fi
+              test "$attempt" -lt 3
+            done
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-resident-original-inputs
+          path: |
+            docs/asset-reviews/resident-makehuman/source/
+          retention-days: 14
