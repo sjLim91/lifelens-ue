@@ -1981,6 +1981,21 @@ bool Simulation::trySocialDecision(
     // are never displaced by cognition; normal Core pending actions still own
     // spatial routing, timeout and observed relationship consequences.
     std::optional<AutonomousPreferredSocialGoal> selectedPersonalGoal;
+    bool modelPreferredSocialTarget=false;
+    for(auto it=acceptedCognitiveDecisions_.rbegin();
+        it!=acceptedCognitiveDecisions_.rend();++it){
+        if(it->actor!=c.id) continue;
+        modelPreferredSocialTarget=it->minute<=world_.minute
+            &&world_.minute-it->minute<=96
+            &&it->priority>=0.50
+            &&it->target==decision.social.target
+            &&((it->intent==CognitiveIntentKind::CooperateWithResident
+                 &&decision.social.intent==SocialIntent::Approach)
+               ||(it->intent==CognitiveIntentKind::ResolveConflict
+                   &&decision.social.intent==SocialIntent::Repair));
+        break;
+    }
+    if(!modelPreferredSocialTarget){
     if(const auto preferred=preferAutonomousSocialGoalTargetWithGoal(
            world_,relationships_,c,decision.social)){
         const auto candidateRuntime=runtime_.find(preferred->decision.target);
@@ -1992,6 +2007,7 @@ bool Simulation::trySocialDecision(
             decision.social=preferred->decision;
             selectedPersonalGoal=*preferred;
         }
+    }
     }
 
     const Character* target=findCharacter(world_,decision.social.target);
