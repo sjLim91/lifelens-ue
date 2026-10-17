@@ -4,8 +4,46 @@
 
 #include "CognitiveDecisionJournal.h"
 #include "CivilizationDecision.h"
+#include "ResidentCivilizationOutcomeLearning.h"
 
 namespace lifelens {
+
+// Repeated failure is a resident's OWN firsthand evidence. It does not
+// establish that all resources are gone, and a later successful attempt
+// immediately cancels this short-lived alternative-seeking preference.
+inline bool residentAIHasRecentRepeatedFailure(
+    const Character& actor,
+    const CivilizationUtilityDecision& candidate,
+    int currentMinute)
+{
+    if(currentMinute<0 ||candidate.intent==CivilizationIntent::None)
+        return false;
+    const std::string key=civilizationActionExperienceKey(candidate);
+    const BeliefRecord* belief=actor.beliefs.find(
+        0,actionExperienceProposition(key.c_str()));
+    if(belief==nullptr
+       ||belief->contradictionCount<3
+       ||belief->contradictionWeight<belief->supportWeight+2.0)
+        return false;
+
+    int lastFailure=-1;
+    int lastSuccess=-1;
+    for(const MemoryRecord& memory:actor.memory.entries){
+        if(memory.source!=MemorySource::DirectWitness
+           ||!memory.witnessed
+           ||memory.minute<0 ||memory.minute>currentMinute
+           ||memory.tags.size()!=3
+           ||memory.tags[0]!="action_experience"
+           ||memory.tags[1]!=key)
+            continue;
+        if(memory.tags[2]=="failure")
+            lastFailure=std::max(lastFailure,memory.minute);
+        else if(memory.tags[2]=="success")
+            lastSuccess=std::max(lastSuccess,memory.minute);
+    }
+    return lastFailure>=0 &&currentMinute-lastFailure<=1440
+        &&lastFailure>lastSuccess;
+}
 
 // Translate an accepted resident's *strategic preference* into ONE existing
 // Core-authorized affordance candidate. This is never an action execution:
@@ -71,6 +109,25 @@ chooseResidentAIExistingCivilizationAffordance(
        ||candidate.utility<0.14
        ||candidate.utility>1.0)
         return std::nullopt;
+
+    // A resident should not let the same optional model suggestion
+    // monopolize every future slot after repeated REAL failures. Explore
+    // only an existing Core-certified opportunity for that SAME material.
+    // If no such route exists, let the ordinary Core planner choose again.
+    // Urgent survival is selected before this optional resident-AI lane.
+    if(residentAIHasRecentRepeatedFailure(actor,candidate,world.minute)){
+        if(candidate.intent==CivilizationIntent::Gather){
+            const auto alternative=bestResourceExplorationDecisionAtPosition(
+                world,actor,actorPosition,settlementPopulation,
+                candidate.material);
+            if(alternative.intent==CivilizationIntent::Explore
+               &&alternative.material==candidate.material
+               &&alternative.utility>=0.14
+               &&alternative.utility<=1.0)
+                return alternative;
+        }
+        return std::nullopt;
+    }
     return candidate;
 }
 
