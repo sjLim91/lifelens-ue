@@ -171,9 +171,26 @@ export class ResidentAIController {
       || this.state.pendingActor
       || this.now() - this.lastCall < LIVE_AI_BUDGET.wallCadenceMs) return;
     const source = this.source;
-    const world = source.worldOverview();
-    const initialIdentity = worldIdentity(world);
-    const request = source.cognitiveRequest(actor, 'Reflection');
+    let world: WorldOverview;
+    let request: CognitiveRequestDto | null;
+    try {
+      world = source.worldOverview();
+      request = source.cognitiveRequest(actor, 'Reflection');
+    } catch {
+      // The Core may be resetting while the observer refreshes. A failed
+      // source read must NOT become an unhandled rejected Promise on the
+      // renderer's fire-and-forget loop, or submit a fabricated request.
+      this.lastCall = this.now();
+      const lastDecision: ResidentAIDecision = {
+        actor, minute: -1, status: 'error', intent: null, target: null,
+      };
+      this.update({
+        pendingActor: null, rejected: this.state.rejected + 1,
+        lastDecision,
+        byResident: { ...this.state.byResident, [actor]: lastDecision },
+      });
+      return;
+    }
     this.lastCall = this.now();
     if (!request || request.actor !== actor
       || request.minute !== world.minute) return;
