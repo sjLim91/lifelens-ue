@@ -320,8 +320,11 @@ bool Simulation::completeContextAction(
                 // A real Core attempt at the reached target failed. The
                 // resident can learn this outcome, but no plan-only AI
                 // proposal is ever credited as an attempt.
+                const ResidentGatherFailureCause cause=
+                    diagnoseResidentGatherFailure(
+                        world_,actor,decision,resolvedPosition);
                 rememberCivilizationAttemptOutcome(
-                    actor,decision,world_.minute,false);
+                    actor,decision,world_.minute,false,cause);
                 pending.clear();
                 return false;
             }
