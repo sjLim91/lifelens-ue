@@ -29,6 +29,10 @@ target_link_libraries(ll_balance_audit PRIVATE lifelens_core)
 add_executable(ll_autonomy_audit harness/autonomy_audit.cpp)
 target_link_libraries(ll_autonomy_audit PRIVATE lifelens_core)
 
+# Controlled same-seed baseline vs deterministic proxy, not a hosted model.
+add_executable(ll_resident_ai_paired_audit harness/resident_ai_paired_audit.cpp)
+target_link_libraries(ll_resident_ai_paired_audit PRIVATE lifelens_core)
+
 # Keep assertions active for test executables in every configuration. Release
 # normally defines NDEBUG and would remove both checks and setup side effects.
 function(lifelens_add_test name)
@@ -91,6 +95,7 @@ lifelens_add_test(test_resident_ai_completed_plan_guard)
 lifelens_add_test(test_resident_ai_retry_adaptation)
 lifelens_add_test(test_resident_ai_civilization_outcome_learning)
 lifelens_add_test(test_resident_ai_failure_cause)
+lifelens_add_test(test_resident_ai_paired_causal_audit)
 
 lifelens_add_test(test_social_utility)
 
