@@ -1,6 +1,7 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/EmotionRuntime.h"
 #include "lifelens/AutonomousSocialOutcomeLearning.h"
+#include "lifelens/ResidentCivilizationOutcomeLearning.h"
 #include "lifelens/ToolEffectiveness.h"
 #include "lifelens/SocietyEconomy.h"
 
@@ -316,9 +317,16 @@ bool Simulation::completeContextAction(
                     world_,actor,decision,resolvedPosition,&population);
             }
             if(!result.executed){
+                // A real Core attempt at the reached target failed. The
+                // resident can learn this outcome, but no plan-only AI
+                // proposal is ever credited as an attempt.
+                rememberCivilizationAttemptOutcome(
+                    actor,decision,world_.minute,false);
                 pending.clear();
                 return false;
             }
+            rememberCivilizationAttemptOutcome(
+                actor,decision,world_.minute,result.success);
 
             if(decision.intent==CivilizationIntent::Gather
                && result.event.type==CivilizationEventType::Gathered
