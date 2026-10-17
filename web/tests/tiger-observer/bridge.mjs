@@ -7,7 +7,8 @@ import {ResidentGroundSurface} from '../../src/render/resident-grounding.ts';
 import {WORLD_GRID_CONTRACT as grid} from '../../src/runtime/lifelens-contract.ts';
 import {Vector3} from 'three';
 import {ImportedTigerPool} from '../../src/render/imported-tiger.ts';
-   const qa=window.__tigerObserver={store:observerStore,actions:observerActions,world:null,view:'quarter',id:null,baseline:false,faceTarget:null};
+import {chooseTigerCamera} from './camera-visibility.mjs';
+   const qa=window.__tigerObserver={reviewCommit:import.meta.env.VITE_REVIEW_COMMIT,store:observerStore,actions:observerActions,world:null,view:'quarter',id:null,baseline:false,faceTarget:null,cameraChoices:{}};
    const draw=ImportedTigerPool.prototype.draw;
    ImportedTigerPool.prototype.draw=function(...args){return qa.baseline?false:draw.apply(this,args);};
    const setCamera=WorldRenderer.prototype.setCamera;
@@ -29,6 +30,14 @@ import {ImportedTigerPool} from '../../src/render/imported-tiger.ts';
     // Match the ordinary observer's pan/focus state so its existing foliage
     // clarity follows the actual animal; do not remove or move vegetation.
     state.panX=x;state.panZ=z;original.call(this,state);
+    if(actor&&['front','side','quarter','back'].includes(qa.view)&&!qa.cameraChoices[qa.view]){
+     qa.cameraChoices[qa.view]=chooseTigerCamera(this.scene,actor,qa.view);
+    }
+    const chosen=qa.cameraChoices[qa.view];
+    if(chosen){
+     this.camera.position.set(x+chosen.position[0],y+chosen.position[1],z+chosen.position[2]);
+     this.camera.lookAt(x+chosen.target[0],y+chosen.target[1],z+chosen.target[2]);this.camera.updateMatrixWorld();return;
+    }
     if(qa.view==='face'){
      const head=actor?.getObjectByName(actor.userData.headJoint??'Head');
      if(head){
@@ -50,6 +59,7 @@ import {ImportedTigerPool} from '../../src/render/imported-tiger.ts';
     return {minute:snapshot.world.minute,worldSeed:snapshot.world.worldSeed,
      core:tiger?{id:tiger.id,species:tiger.species,gridX:tiger.gridX,gridY:tiger.gridY,behavior:tiger.behavior}:null,
      actor:actor?{id:actor.userData.coreId,position:actor.position.toArray(),clip:actor.userData.clip,tier:actor.userData.tier}:null,
+     cameraChoice:qa.cameraChoices[qa.view]??null,
      farIds:qa.world?.scene.getObjectByName('LifeLensTigerFarInstances')?.userData.coreIds??[],
      runtime:snapshot.runtime,simulationSpeed:snapshot.simulationSpeed,
      renderStats:qa.renderer?{...qa.renderer.renderer.info.render}:null,
@@ -78,9 +88,10 @@ if(new URLSearchParams(location.search).get('review')==='1'){
   button('현재 호랑이 보기',()=>{
    const tiger=qa.store.getSnapshot().terrain?.wildlife?.animals.find(a=>a.species==='Tiger');
    if(!tiger){status.textContent='현재 관찰 영역에 호랑이가 없습니다.';return;}
-   qa.id=tiger.id;qa.view='quarter';qa.renderer?.start();status.textContent=`Core ID ${tiger.id}`;
+   qa.id=tiger.id;qa.cameraChoices={};qa.view='face';qa.renderer?.start();status.textContent=`Core ID ${tiger.id}`;
   });
-  button('가까이 / 멀리',()=>{qa.view=qa.view==='far'?'quarter':'far';});
+  button('가까이 / 멀리',()=>{qa.view=qa.view==='far'?'face':'far';});
+  button('자유 카메라',()=>{qa.id=null;});
   const measure=button('30초 성능 측정',async()=>{
    if(!qa.renderer||!qa.world){status.textContent='월드를 불러온 뒤 측정해 주세요.';return;}
    measure.disabled=true;status.textContent='측정 중 · 이 창을 화면에 유지해 주세요.';

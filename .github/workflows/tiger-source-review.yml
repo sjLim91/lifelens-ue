@@ -161,6 +161,9 @@ jobs:
           destination_dir: review/tiger-728
           keep_files: true
           commit_message: "Draft tiger review: ${{ github.sha }}"
+      - name: Verify public Pages boot WASM controls and pinned native GLB
+        working-directory: web
+        run: node tests/tiger-observer/published.mjs
       - name: Record actual capture outcome on Draft branch (including failures)
         if: always()
         env:
