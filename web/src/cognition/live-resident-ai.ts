@@ -193,9 +193,11 @@ export class ResidentAIController {
 
     try {
       const latest = source.worldOverview();
+      const latestMinute = Number(latest.minute);
       if (worldIdentity(latest) !== initialIdentity
-        || latest.minute < request.minute
-        || latest.minute - request.minute
+        || !Number.isFinite(latestMinute)
+        || latestMinute < request.minute
+        || latestMinute - request.minute
           > LIVE_AI_BUDGET.staleAfterSimulationMinutes) {
         status = 'stale';
       } else if (result.proposal !== null && result.status === 'validated') {
