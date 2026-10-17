@@ -1,40 +1,15 @@
 {
   "status": "FAIL_PUBLISHED_OBSERVER",
   "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/index.html?review=1",
-  "error": "AssertionError [ERR_ASSERTION]: [{\"text\":\"Failed to load resource: the server responded with a status of 404 ()\",\"location\":{\"url\":\"https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/ual1.glb\",\"line\":0,\"column\":0,\"lineNumber\":0,\"columnNumber\":0}},{\"text\":\"Failed to load resource: the server responded with a status of 404 ()\",\"location\":{\"url\":\"https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/ual2.glb\",\"line\":0,\"column\":0,\"lineNumber\":0,\"columnNumber\":0}}]\n\n2 !== 0\n",
-  "errors": [
-    {
-      "text": "Failed to load resource: the server responded with a status of 404 ()",
-      "location": {
-        "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/ual1.glb",
-        "line": 0,
-        "column": 0,
-        "lineNumber": 0,
-        "columnNumber": 0
-      }
-    },
-    {
-      "text": "Failed to load resource: the server responded with a status of 404 ()",
-      "location": {
-        "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/ual2.glb",
-        "line": 0,
-        "column": 0,
-        "lineNumber": 0,
-        "columnNumber": 0
-      }
-    }
-  ],
+  "error": "TimeoutError: page.screenshot: Timeout 30000ms exceeded.\nCall log:\n  - taking page screenshot\n  - waiting for fonts to load...\n  - fonts loaded\n",
+  "errors": [],
   "httpErrors": [
     {
       "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/character.glb",
       "status": 404
     },
     {
-      "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/ual1.glb",
-      "status": 404
-    },
-    {
-      "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/ual2.glb",
+      "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/character.glb",
       "status": 404
     }
   ],
