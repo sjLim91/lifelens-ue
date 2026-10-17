@@ -3,6 +3,7 @@
 #include "lifelens/WaterSourceExperience.h"
 #include "lifelens/AutonomousSocialGoalRouting.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
+#include "lifelens/ResidentAICompletedPlanGuard.h"
 #include "lifelens/CoreNavigation.h"
 #include "lifelens/CultivationProgression.h"
 #include "lifelens/FamilyProgression.h"
@@ -2239,6 +2240,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
             const auto candidate=chooseResidentAIExistingCivilizationAffordance(
                 world_,c,r.pos,*it,&residentAIPopulation);
             if(candidate
+               &&!residentAIPlanAlreadyAttempted(
+                   c,*it,*candidate,world_.minute)
                &&!(cadenceDecision.kind==UnifiedDecisionKind::Civilization
                     &&cadenceDecision.civilization.intent==CivilizationIntent::Craft
                     &&cadenceDecision.civilization.facilityAction
