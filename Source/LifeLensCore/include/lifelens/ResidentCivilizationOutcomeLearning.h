@@ -110,7 +110,15 @@ inline void rememberCivilizationAttemptOutcome(
     if(actor.id==0 || !actor.alive ||minute<0) return;
     const std::string key=civilizationActionExperienceKey(decision);
     if(key.empty()) return;
+    const auto proposition=actionExperienceProposition(key.c_str());
+    const BeliefRecord* prior=actor.beliefs.find(0,proposition);
+    const std::size_t priorCount=prior
+        ? prior->supportCount+prior->contradictionCount : 0;
     rememberActionOutcome(actor,key.c_str(),minute,succeeded);
+    const BeliefRecord* recorded=actor.beliefs.find(0,proposition);
+    if(recorded==nullptr
+       ||recorded->supportCount+recorded->contradictionCount==priorCount)
+        return; // No new Core outcome => no new claimed cause.
 
     // Existing snapshot-backed memory/belief storage is the single truth.
     // Make the latest direct evidence legible to the next local-model
