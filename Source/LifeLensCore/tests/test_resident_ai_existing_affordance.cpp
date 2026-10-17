@@ -204,20 +204,64 @@ int main()
     assert(nowGatherWater->resourceNode==waterSupply.id);
     assert(withClay.resourceNodes.front().quantity==20);
 
+    // A four-stage Core-only dependency chain also works when the
+    // resident has NOT learned to craft a water vessel yet:
+    // real clay -> probabilistic ShapeClay experiment -> known recipe craft
+    // -> real water gathered with the resulting empty vessel.
     Character noTechNoClay=potter;
     noTechNoClay.civilization.knowledge=KnowledgeState{};
     noTechNoClay.civilization.inventory=Inventory{};
-    assert(!chooseResidentAIExistingCivilizationAffordance(
-        withClay,noTechNoClay,waterPosition,waterThought));
+    const auto collectExperimentClay=chooseResidentAIExistingCivilizationAffordance(
+        withClay,noTechNoClay,waterPosition,waterThought);
+    assert(collectExperimentClay);
+    assert(collectExperimentClay->intent==CivilizationIntent::Gather);
+    assert(collectExperimentClay->material==MaterialKind::Clay);
+    assert(collectExperimentClay->resourceNode==clayNode.id);
+    assert(noTechNoClay.civilization.knowledge.level(
+        TechniqueId::SimpleContainer)==KnowledgeLevel::Unknown);
+
+    Character noviceWithClay=noTechNoClay;
+    noviceWithClay.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Clay,3,0.5,1.0
+    });
+    const auto actualExperiment=chooseResidentAIExistingCivilizationAffordance(
+        withClay,noviceWithClay,waterPosition,waterThought);
+    assert(actualExperiment);
+    assert(actualExperiment->intent==CivilizationIntent::Experiment);
+    assert(actualExperiment->experiment==ExperimentKind::ShapeClay);
+    assert(actualExperiment->technique==TechniqueId::SimpleContainer);
+    assert(noviceWithClay.civilization.knowledge.level(
+        TechniqueId::SimpleContainer)==KnowledgeLevel::Unknown);
+    assert(noviceWithClay.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Clay)==3);
+    // Optional filtering must preserve the original unfiltered chooser.
+    const auto experimentDefault=bestExperimentDecisionAtPosition(
+        withClay,noviceWithClay,waterPosition);
+    const auto experimentUnfiltered=bestExperimentDecisionAtPosition(
+        withClay,noviceWithClay,waterPosition,nullptr,TechniqueId::None);
+    assert(experimentDefault.intent==experimentUnfiltered.intent);
+    assert(experimentDefault.experiment==experimentUnfiltered.experiment);
+    assert(experimentDefault.utility==experimentUnfiltered.utility);
+
     World noWater=withClay;
     noWater.resourceNodes.front().quantity=0;
     assert(!chooseResidentAIExistingCivilizationAffordance(
         noWater,noClay,waterPosition,waterThought));
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        noWater,noTechNoClay,waterPosition,waterThought));
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        noWater,noviceWithClay,waterPosition,waterThought));
 
     Character untrained=potter;
     untrained.civilization.knowledge=KnowledgeState{};
     assert(!chooseResidentAIExistingCivilizationAffordance(
-        waterWorld,untrained,waterPosition,waterThought));
+        waterWorld,noTechNoClay,waterPosition,waterThought));
+    const auto learnedExperiment=chooseResidentAIExistingCivilizationAffordance(
+        waterWorld,untrained,waterPosition,waterThought);
+    assert(learnedExperiment);
+    assert(learnedExperiment->intent==CivilizationIntent::Experiment);
+    assert(learnedExperiment->experiment==ExperimentKind::ShapeClay);
+    assert(learnedExperiment->technique==TechniqueId::SimpleContainer);
 
     // True NEW GAME Core execution: a resident thought cannot mutate the
     // resource or invent a harvest, but it can select a legal gathering
