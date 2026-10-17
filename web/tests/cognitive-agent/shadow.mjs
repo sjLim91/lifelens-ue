@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { source } from './compile.mjs';
 const { ShadowObserver, SHADOW_BUDGET } = await source('cognition/shadow-observer.ts');
 const { CognitionScheduler } = await source('cognition/cognition-scheduler.ts');
-const { LocalCognitionProvider } = await source('cognition/local-cognition-provider.ts');
+const { LocalCognitionProvider, cognitiveSystemPrompt } = await source('cognition/local-cognition-provider.ts');
 const { parseCognitiveProposal, parseCognitiveRequest } = await source('cognition/cognitive-contract.ts');
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
 const proposal = request => ({ actor: request.actor, intent: request.allowedIntents[0], priority: .6, targetResident: null, rationale: '현재 욕구와 기억을 확인했습니다.' });
@@ -30,6 +30,40 @@ function fixture(provider = { name: 'free-local-test', reason: async req => prop
     enable: () => controller.setEnabled(true),
   };
 }
+await test('resident model learns only from personally witnessed Core action outcomes', async () => {
+  const guidance = cognitiveSystemPrompt();
+  assert.match(guidance, /action_experience/);
+  assert.match(guidance, /DirectWitness/);
+  assert.match(guidance, /NEXT strategy/);
+  assert.match(guidance, /Repeated firsthand failures/);
+  assert.match(guidance, /NOT that the requested food/);
+  assert.match(guidance, /do not invent an observed success/);
+
+  const core = request('1', 100);
+  core.memories = [{
+    who: '0', what: '실제 문명 행동 Civilization:Gather:PlantFood 수행을 시도했지만 실패했다',
+    where: '내가 직접 시도한 행동', minute: 99,
+    source: 'DirectWitness', witnessed: true, recallScore: .9,
+    confidence: .9, importance: .42, emotionValence: -.28,
+    emotionIntensity: .38, tags: ['action_experience', 'Civilization:Gather:PlantFood', 'failure'],
+  }];
+  let captured = null;
+  const p = new LocalCognitionProvider(
+    { baseUrl: 'http://localhost:8080', model: 'free-local-model' },
+    async (_url, init) => {
+      captured = JSON.parse(init.body);
+      return new Response(JSON.stringify({
+        choices: [{ message: { content: JSON.stringify(proposal(core)) } }],
+      }));
+    },
+  );
+  const answer = await p.reason(core, new AbortController().signal);
+  assert.equal(answer?.intent, 'ImproveFoodSecurity');
+  assert.deepEqual(JSON.parse(captured.messages[1].content).memories, core.memories);
+  assert.equal(captured.messages[0].content, guidance);
+  assert.equal(captured.temperature, 0);
+});
+
 await test('local Core goal inspection works with Shadow OFF and cannot change World',()=>{
   const f=fixture();
   const baseline=JSON.stringify([f.world,f.residents]);
