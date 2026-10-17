@@ -3,6 +3,7 @@ import type { Resident } from '../runtime/core-types';
 import { deriveResidentLifeVisualState } from './resident-life-presentation';
 
 export interface ResidentAppearanceProfile {
+  nativeSex?: 'Male' | 'Female' | 'Unknown';
   seed: number;
   heightWorldUnits: number;
   widthScale: number;
@@ -132,6 +133,7 @@ export function createResidentAppearanceProfile(
 
   return {
     seed,
+    nativeSex: resident.sex === 'Male' || resident.sex === 'Female' ? resident.sex : 'Unknown',
     heightWorldUnits: heightForResident(resident, seed),
     widthScale: sexWidthBias * widthVariation * life.bodyWidth,
     depthScale: depthVariation,
@@ -270,7 +272,7 @@ export function applyResidentMaterialVariant(
 }
 
 /** Small rest-mesh adjustments; no invented asset gender or skeleton changes. */
-function applyBodyProportions(mesh: THREE.Mesh, profile: ResidentAppearanceProfile, referenceInverse: THREE.Matrix4, root: THREE.Object3D): void {
+export function applyBodyProportions(mesh: THREE.Mesh, profile: ResidentAppearanceProfile, referenceInverse: THREE.Matrix4, root: THREE.Object3D): void {
   if (!(mesh instanceof THREE.SkinnedMesh)) return;
   const joints = mesh.geometry.getAttribute('skinIndex');
   const weights = mesh.geometry.getAttribute('skinWeight');
@@ -440,4 +442,5 @@ function applyBodyColors(
   }
   mesh.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
+
 

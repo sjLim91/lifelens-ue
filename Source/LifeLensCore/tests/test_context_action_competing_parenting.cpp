@@ -141,6 +141,51 @@ int main(){
     childToEscort.affection=0.95;
     childToEscort.comfort=0.95;
 
+    // A pit can become inactive while the parent is traveling to it.
+    // Reject stale care BEFORE changing a dependent's bladder Need, bonds,
+    // positions or waste field. Previously the result was false but the
+    // child had already received the toilet-care effect.
+    {
+        SimulationStateSnapshot staleCare=escortedSnapshot;
+        CHECK(!staleCare.world.primitiveSanitationSites.empty());
+        staleCare.world.primitiveSanitationSites.front().active=false;
+        auto& stalePending=staleCare.runtime[escortParent].pendingContext;
+        stalePending.token=staleCare.nextContextActionToken++;
+        stalePending.kind=ContextActionKind::Parenting;
+        stalePending.issuedMinute=staleCare.world.minute;
+        stalePending.parentingTarget=escortedChild.id;
+        stalePending.parentingAction=ParentingAction::ToiletAssist;
+        stalePending.sanitationSiteId=childPit.id;
+        stalePending.hasSpatialTarget=true;
+        stalePending.targetPos=sanitationTarget;
+        staleCare.runtime[escortParent].pos=sanitationTarget;
+        staleCare.runtime[escortedChild.id].pos=sanitationTarget;
+
+        Simulation rejectedCare(50505);
+        std::string rejectionError;
+        CHECK(rejectedCare.restoreSnapshot(staleCare,&rejectionError));
+        CHECK(rejectionError.empty());
+        rejectedCare.setExternalPhysicalExecution(true);
+        const Character* rejectedChildBefore=
+            findCharacter(rejectedCare,escortedChild.id);
+        CHECK(rejectedChildBefore!=nullptr);
+        const double bladderBeforeRejectedAttempt=
+            rejectedChildBefore->needs.bladder;
+        const double attachmentBeforeRejectedAttempt=
+            rejectedChildBefore->development.attachment;
+        const std::size_t residueBeforeRejectedAttempt=
+            rejectedCare.world().environmentalResidues.all().size();
+        CHECK(!rejectedCare.completeExternalContextAction(
+            escortParent,stalePending.token,sanitationTarget));
+        const Character* rejectedChildAfter=
+            findCharacter(rejectedCare,escortedChild.id);
+        CHECK(rejectedChildAfter!=nullptr);
+        CHECK(rejectedChildAfter->needs.bladder==bladderBeforeRejectedAttempt);
+        CHECK(rejectedChildAfter->development.attachment==attachmentBeforeRejectedAttempt);
+        CHECK(rejectedCare.world().environmentalResidues.all().size()
+            ==residueBeforeRejectedAttempt);
+    }
+
     std::string escortedError;
     CHECK(escorted.restoreSnapshot(
         escortedSnapshot,&escortedError));

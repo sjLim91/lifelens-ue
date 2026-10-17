@@ -1,5 +1,5 @@
 {
-  "minute": 499,
+  "minute": 495,
   "worldSeed": "77",
   "core": {
     "id": "25:32:1704075738371588112",
@@ -19,20 +19,20 @@
     "tier": "near"
   },
   "cameraChoice": {
-    "score": 5.9985,
+    "score": 5.9733,
     "clear": 6,
     "total": 6,
     "position": [
-      -1.909188309203678,
+      -2.873162719371642,
       1.5,
-      1.9091883092036785
+      4.334159201969046
     ],
     "target": [
-      -0.06586658152427294,
-      0.3990227197009055,
-      0.21171691680805965
+      -0.07015392330848425,
+      0.4791528631976263,
+      0.15174938180737962
     ],
-    "deviation": 0
+    "deviation": 0.2
   },
   "farIds": [],
   "runtime": {
@@ -41,15 +41,15 @@
   },
   "simulationSpeed": 0,
   "renderStats": {
-    "frame": 57,
-    "calls": 309,
-    "triangles": 2285152,
+    "frame": 58,
+    "calls": 340,
+    "triangles": 2377576,
     "points": 0,
     "lines": 0
   },
   "renderMemory": {
-    "geometries": 494,
-    "textures": 3
+    "geometries": 531,
+    "textures": 15
   },
   "canvas": {
     "width": 620,

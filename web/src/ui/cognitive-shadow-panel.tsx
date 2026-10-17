@@ -1,4 +1,5 @@
 import { useState, useSyncExternalStore } from 'react';
+import { ResidentAILivePanel } from './resident-ai-live-panel';
 import type { Resident } from '../runtime/core-types';
 import type { AutonomousGoalCondition, AutonomousGoalPreview } from '../cognition/autonomous-goal-preview';
 import { shadowObserver, type ShadowObserver, type ShadowRecord } from '../cognition/shadow-observer';
@@ -80,6 +81,7 @@ export function CognitiveShadowPanel({ resident, residents, controller = shadowO
   const latest = records.find((record) => record.outcome.status === 'validated') ?? records[0];
   return <details className="cognitive-shadow-panel">
     <summary>{L.title}</summary>
+    <ResidentAILivePanel resident={resident} />
     <p className="hint">{L.description}</p>
     <section className="autonomous-goal-preview">
       <button

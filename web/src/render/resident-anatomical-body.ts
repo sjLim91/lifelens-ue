@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RESIDENT_JOINTS, type ResidentJoint } from './resident-rig';
 import type { ResidentAppearanceProfile } from './resident-appearance';
 import { createResidentSkinMaterial } from './resident-surface-material';
+import { syncNativeResidentBody } from './resident-native-body';
 
 // The visual body is new, LifeLens-authored parametric anatomy. The imported
 // CC0 GLB contributes ONLY its existing joint positions, inverse bind matrices
@@ -596,6 +597,7 @@ export function syncResidentAnatomicalBody(
   model: THREE.Group,
   profile: ResidentAppearanceProfile,
 ): boolean {
+  if (syncNativeResidentBody(model, profile)) return true;
   const donor = model.getObjectByName('SuperHero_Male');
   if (!(donor instanceof THREE.SkinnedMesh)) return false;
   // Keep the original alive for A1/A2 face & hair attachment bounds, while
@@ -624,3 +626,4 @@ export function syncResidentAnatomicalBody(
   donor.castShadow = false;
   return true;
 }
+

@@ -18,13 +18,13 @@
       "fullObserver": "NOT_RUN",
       "android": "NOT_MEASURED",
       "renderer": {
-        "frame": 28,
+        "frame": 26,
         "calls": 11,
         "triangles": 549344,
         "points": 0,
         "lines": 0
       },
-      "frames": 28,
+      "frames": 26,
       "samples": [],
       "width": 960,
       "height": 720,
@@ -44,16 +44,18 @@
       "fullObserver": "NOT_RUN",
       "android": "NOT_MEASURED",
       "renderer": {
-        "frame": 33,
+        "frame": 35,
         "calls": 12,
         "triangles": 467396,
         "points": 0,
         "lines": 0
       },
-      "frames": 33,
+      "frames": 35,
       "samples": [
         100,
-        16.599999999998545
+        16.69999999999891,
+        16.700000000000728,
+        100
       ],
       "width": 960,
       "height": 720,
@@ -73,22 +75,24 @@
       "fullObserver": "NOT_RUN",
       "android": "NOT_MEASURED",
       "renderer": {
-        "frame": 39,
+        "frame": 41,
         "calls": 12,
         "triangles": 467396,
         "points": 0,
         "lines": 0
       },
-      "frames": 39,
+      "frames": 41,
       "samples": [
         100,
-        16.599999999998545,
+        16.69999999999891,
+        16.700000000000728,
         100,
         100,
         100,
-        16.600000000000364,
+        16.69999999999891,
         100,
-        16.700000000000728
+        100,
+        100
       ],
       "width": 412,
       "height": 915,

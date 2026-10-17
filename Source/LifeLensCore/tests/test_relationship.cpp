@@ -65,5 +65,34 @@ int main()
     assert(near(saturated.affection,1.0));
     assert(near(saturated.trust,0.0));
 
+    // The lookup index must be self-contained across the default copy/move
+    // operations used by Simulation snapshot capture/restore.
+    RelationshipBook copied=book;
+    assert(copied.size()==book.size());
+    assert(copied.find(10,20)!=nullptr);
+    assert(copied.find(10,20)!=book.find(10,20));
+    assert(near(copied.find(10,20)->trust,aToB.trust));
+    copied.getOrCreate(10,20).trust=0.11;
+    assert(near(book.find(10,20)->trust,aToB.trust));
+    assert(copied.size()==book.size());
+
+    RelationshipBook assigned;
+    assigned.getOrCreate(99999,99998);
+    assigned=book;
+    assert(assigned.size()==book.size());
+    assert(assigned.find(99999,99998)==nullptr);
+    assert(assigned.find(20,10)!=nullptr);
+    assert(&assigned.getOrCreate(20,10)==assigned.find(20,10));
+    assert(assigned.all().front().from==10);
+    assert(assigned.all().back().from==1099);
+
+    RelationshipBook moved=std::move(copied);
+    assert(moved.find(10,20)!=nullptr);
+    assert(near(moved.find(10,20)->trust,0.11));
+    assert(moved.size()==book.size());
+    moved.getOrCreate(1100,1101);
+    assert(moved.size()==book.size()+1);
+    assert(moved.find(1100,1101)!=nullptr);
+
     return 0;
 }

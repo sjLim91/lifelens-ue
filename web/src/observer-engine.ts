@@ -1,4 +1,5 @@
 import { shadowObserver } from './cognition/shadow-observer';
+import { residentAI } from './cognition/live-resident-ai';
 import { CharacterLayer } from './character-layer';
 import { LifeLensCoreBridge } from './runtime/core-bridge';
 import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
@@ -242,6 +243,7 @@ export function startObserverEngine(): () => void {
     });
     const selectedResidentId = observerStore.getSnapshot().selectedResidentId;
     shadowObserver.observe(snapshot.overview, residentSnapshot, selectedResidentId);
+    residentAI.observe(snapshot.overview, residentSnapshot);
     threeWorldRenderer?.setSelectedResident(selectedResidentId);
     if (snapshot.terrainStaticChanged) {
       threeWorldRenderer?.setTerrain(terrain);
@@ -303,6 +305,7 @@ export function startObserverEngine(): () => void {
 
   function resetAfterWorldCreated(): void {
     shadowObserver.resetWorld();
+    residentAI.resetWorld();
     centerX = 0;
     centerY = 0;
     followResidents = false;
@@ -456,6 +459,7 @@ export function startObserverEngine(): () => void {
     const totalMinutes = requestedDays * MINUTES_PER_DAY;
     fastForwardRunning = true;
     shadowObserver.suspend(true);
+    residentAI.suspend(true);
     simulationClock?.stop();
     threeWorldRenderer?.breakFootTrafficContinuity();
 
@@ -506,8 +510,10 @@ export function startObserverEngine(): () => void {
       console.error('LifeLens day fast-forward failed', error);
     } finally {
       fastForwardRunning = false;
-      if (!stopped) shadowObserver.suspend(false);
-      else ownedCore?.dispose();
+      if (!stopped) {
+        shadowObserver.suspend(false);
+        residentAI.suspend(false);
+      } else ownedCore?.dispose();
       threeWorldRenderer?.breakFootTrafficContinuity();
       simulationClock?.resetAccumulator();
       if (!stopped) simulationClock?.start();
@@ -567,6 +573,7 @@ export function startObserverEngine(): () => void {
       if (stopped) { core.dispose(); return; }
       ownedCore = core;
       shadowObserver.attach(core);
+      residentAI.attach(core);
       worldSession = new WorldSession(core, residentContinuity);
       observerStore.setRuntime('ready');
       createWorld('');
@@ -584,6 +591,7 @@ export function startObserverEngine(): () => void {
   return () => {
     stopped = true;
     shadowObserver.dispose();
+    residentAI.dispose();
     simulationClock?.stop();
     unbindActions();
     resizeObserver.disconnect();

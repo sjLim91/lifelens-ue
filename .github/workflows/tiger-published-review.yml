@@ -22,8 +22,15 @@ jobs:
           node-version: '24'
       - name: Identify the existing published review build
         run: |
-          git fetch --depth=1 origin gh-pages
-          git log -1 --format=%B FETCH_HEAD > /tmp/tiger-pages-message.txt
+          # A source rebuild may be publishing concurrently. A normal preview
+          # can replace the old review; wait for the review publication first.
+          for attempt in $(seq 1 60); do
+            git fetch --depth=1 origin gh-pages
+            git log -1 --format=%B FETCH_HEAD > /tmp/tiger-pages-message.txt
+            if grep -q '^Draft tiger review:' /tmp/tiger-pages-message.txt; then break; fi
+            test "$attempt" -lt 60
+            sleep 5
+          done
           python3 - <<'PY'
           import os,re
           from pathlib import Path
@@ -34,6 +41,7 @@ jobs:
           PY
       - name: Install free browser verification dependencies
         run: |
+          python3 Tools/prepare_web_character_assets.py
           npm install --prefix web --ignore-scripts --no-audit --no-fund
           npm install --prefix web --no-save --ignore-scripts --no-audit --no-fund playwright
           cd web
@@ -46,8 +54,15 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f web/tests/tiger-observer/review/published-validation.json
-          if [ -f web/tests/tiger-observer/review/published-observer.jpg ]; then git add -f web/tests/tiger-observer/review/published-observer.jpg; fi
+          # The full Observer job also writes the canonical report. Keep this
+          # independent probe append-only so simultaneous successful captures
+          # cannot conflict while rebasing their measured samples or images.
+          evidence="web/tests/tiger-observer/review/public-probes/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$evidence"
+          cp web/tests/tiger-observer/review/published-validation.json "$evidence/"
+          if [ -f web/tests/tiger-observer/review/published-observer.jpg ]; then cp web/tests/tiger-observer/review/published-observer.jpg "$evidence/"; fi
+          git add -f "$evidence"
+          git restore --worktree -- web/tests/tiger-observer/review
           if ! git diff --cached --quiet; then
             git commit -m 'Record public Observer verification outcome without quality acceptance [skip ci]'
             for attempt in 1 2 3; do
@@ -62,3 +77,4 @@ jobs:
           name: tiger-public-probe
           path: web/tests/tiger-observer/review/published-*
           retention-days: 7
+

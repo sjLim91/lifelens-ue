@@ -1,9 +1,12 @@
-name: Native Resident CC0 Source Review
+name: Native Resident Source and Web Integration
 on:
   push:
     branches: ['feat/native-resident-*']
     paths:
       - 'Tools/assets/fetch_resident_cc0_sources.py'
+      - 'Tools/blender/retarget_native_residents.py'
+      - 'web/src/render/resident-*.ts'
+      - 'web/tests/native-resident/**'
       - '.github/workflows/native-resident-source-review.yml'
   workflow_dispatch:
 permissions:
@@ -12,32 +15,64 @@ concurrency:
   group: native-resident-source-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  cc0-source:
+  native-web:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Acquire original CC0 geometry UV skin eyes hair and official weights
-        run: python3 Tools/assets/fetch_resident_cc0_sources.py
-      - name: Acquire unchanged existing Web skeleton and animation sources
-        run: python3 Tools/prepare_web_character_assets.py
-      - name: Retain original input provenance on the Draft branch
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify original source receipts and unchanged motion donor
         run: |
+          python3 Tools/assets/fetch_resident_cc0_sources.py
+          python3 Tools/prepare_web_character_assets.py
+      - name: Install free local authoring and browser tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
+          npm install --prefix web --ignore-scripts --no-audit --no-fund
+          npm install --prefix web --no-save --ignore-scripts --no-audit --no-fund playwright
+          cd web
+          npx playwright install --with-deps chromium
+      - name: Retarget original male and female UV surfaces and real LOD skins
+        run: blender --background --factory-startup --threads 2 --python Tools/blender/retarget_native_residents.py
+      - name: Typecheck and existing resident contracts
+        working-directory: web
+        run: |
+          npm run typecheck
+          node tests/resident-motion/run.mjs
+          node tests/resident-lifecycle/run.mjs
+          node tests/resident-lifecycle/integration.mjs
+      - name: Verify native surfaces in the actual production resident layer
+        working-directory: web
+        run: node tests/native-resident/browser.mjs
+      - name: Preserve generated assets and exact browser evidence
+        if: always()
+        env:
+          REVIEW_BRANCH: ${{ github.ref_name }}
+        run: |
+          case "$REVIEW_BRANCH" in feat/native-resident-*) ;; *) exit 1 ;; esac
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/asset-reviews/resident-makehuman/source
+          if [ -d docs/asset-reviews/resident-makehuman/generated ]; then git add -f docs/asset-reviews/resident-makehuman/generated; fi
+          if [ -f web/public/vendor/characters/resident-female.glb ]; then git add -f web/public/vendor/characters/resident-*.glb; fi
+          if [ -d web/tests/native-resident/review ]; then git add -f web/tests/native-resident/review; fi
           if ! git diff --cached --quiet; then
-            git commit -m 'Preserve pinned CC0 human graphical inputs and full per-file provenance; no acceptance [skip ci]'
+            git commit -m '주민: 원본 기반 남녀 리깅·LOD와 실제 웹 검증 증거 보존 [skip ci]'
             for attempt in 1 2 3; do
-              git pull --rebase origin "$GITHUB_REF_NAME"
-              if git push origin "HEAD:$GITHUB_REF_NAME"; then break; fi
+              git pull --rebase origin "$REVIEW_BRANCH"
+              if git push origin "HEAD:$REVIEW_BRANCH"; then break; fi
               test "$attempt" -lt 3
             done
           fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: native-resident-original-inputs
+          name: native-resident-integration
           path: |
-            docs/asset-reviews/resident-makehuman/source/
+            docs/asset-reviews/resident-makehuman/generated/
+            web/tests/native-resident/review/
+            web/public/vendor/characters/resident-*.glb
           retention-days: 14
+

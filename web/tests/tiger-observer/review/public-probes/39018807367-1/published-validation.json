@@ -1,0 +1,89 @@
+{
+  "status": "PASS_PUBLISHED_REACT_WASM_AND_PINNED_NATIVE_MODEL",
+  "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/index.html?review=1",
+  "expectedBuild": "f18b62090b094624b6ea5e5c3d88b44b9880479f",
+  "expectedSha256": "9e3d01541a8f1ab154cb6550f5fc8a749e237adca815758ff4cf0970a7c8ffd4",
+  "assets": [
+    {
+      "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/wildlife/tiger-rigged.glb",
+      "status": 200,
+      "sha256": "9e3d01541a8f1ab154cb6550f5fc8a749e237adca815758ff4cf0970a7c8ffd4"
+    }
+  ],
+  "publishedCharacters": [
+    {
+      "file": "character.glb",
+      "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/character.glb",
+      "status": 200,
+      "bytes": 741320,
+      "sha256": "d6f3b64cab629f6ddca9ba063811aeffd3663a8a4e49ade47cd9505dc2bbd70f"
+    },
+    {
+      "file": "ual1.glb",
+      "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/ual1.glb",
+      "status": 200,
+      "bytes": 2714756,
+      "sha256": "4c748767741a3e495d89667b9a218b690ba9810b9517a12e960780e3ca72c4e9"
+    },
+    {
+      "file": "ual2.glb",
+      "url": "https://sjlim91.github.io/lifelens-ue/review/tiger-728/vendor/characters/ual2.glb",
+      "status": 200,
+      "bytes": 8061600,
+      "sha256": "9a0ffda4931f934f13fb584002c51673723b03f9655a581167e7e5dae744f086"
+    }
+  ],
+  "sample": {
+    "minute": 491,
+    "worldSeed": "77",
+    "core": {
+      "id": "25:32:1704075738371588112",
+      "species": "Tiger",
+      "gridX": 801,
+      "gridY": 1038,
+      "behavior": "Hunt"
+    },
+    "actor": {
+      "id": "25:32:1704075738371588112",
+      "position": [
+        -3.75,
+        23.2125216,
+        -0.5
+      ],
+      "clip": "idle",
+      "tier": "near"
+    },
+    "cameraChoice": null,
+    "farIds": [],
+    "runtime": {
+      "status": "ready",
+      "errorMessage": null
+    },
+    "simulationSpeed": 0,
+    "renderStats": {
+      "frame": 128,
+      "calls": 105,
+      "triangles": 2630204,
+      "points": 0,
+      "lines": 0
+    },
+    "renderMemory": {
+      "geometries": 535,
+      "textures": 19
+    },
+    "canvas": {
+      "width": 620,
+      "height": 662,
+      "contextLost": false
+    }
+  },
+  "capture": {
+    "width": 620,
+    "height": 662,
+    "canvasId": "threeWorldCanvas"
+  },
+  "errors": [],
+  "httpErrors": [],
+  "physicalAndroid": "NOT_MEASURED",
+  "mergeAllowed": false
+}

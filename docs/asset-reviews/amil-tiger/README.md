@@ -86,3 +86,31 @@ same paused WASM observation, camera and lighting, then show actual Core-driven
 movement, far instancing and a mobile viewport without runtime/shader errors.
 Actual-device 30 FPS measurement and the separate male/female resident work
 are still required before the requested project can be called complete.
+
+## 2026-10-17 interrupted deployment checkpoint recovered
+
+The screenshot checkpoint was commit `f0c345bc`: publish generated character
+GLBs despite the copied source `.gitignore`, and frame the full tiger. That
+commit was preserved. Its local React/WASM capture passed, but public checking
+still recorded character 404 responses and timed out in the full-page screenshot.
+A subsequent normal main Pages publication removed the isolated Draft review.
+
+Recovery code commit `f18b6209` verifies the staged character receipt before
+publishing, waits for the review publication, checks all three public character
+GLBs against pinned local receipts, rejects browser HTTP errors, and uses the
+existing actual Observer canvas export instead of the hanging full-page capture.
+
+[Recovery run 39018352801](https://github.com/sjLim91/lifelens-ue/actions/runs/39018352801)
+passed source/skin/grounding/runtime checks, actual React/WASM comparison and
+movement capture, and public-page verification. The retained
+[`published-validation.json`](../../../web/tests/tiger-observer/review/published-validation.json)
+records all four model/animation responses as HTTP 200, matching SHA-256,
+ready WASM runtime, no browser/HTTP errors, and an actual `threeWorldCanvas`
+image. This fixes the interrupted deployment checkpoint; it is not final
+visual approval or measured physical Android performance.
+
+[Draft review](https://sjlim91.github.io/lifelens-ue/review/tiger-728/index.html?review=1).
+Normal main deployments can still replace this review directory until the
+separate preview lifecycle is resolved. Main remains unmerged. The independent
+MakeHuman resident-retarget Draft #731 remains source-input preparation; the
+restored existing resident GLBs do not complete that replacement work.
