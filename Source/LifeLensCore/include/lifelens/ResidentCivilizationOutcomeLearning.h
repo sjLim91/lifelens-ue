@@ -24,7 +24,14 @@ inline std::string civilizationActionExperienceKey(
     }else if(decision.intent==CivilizationIntent::Craft
              ||decision.intent==CivilizationIntent::Experiment){
         label+=':';
-        label+=techniqueName(decision.technique);
+        // Experiments store their identity as ExperimentKind, not always as
+        // decision.technique. Avoid collapsing every failed discovery attempt
+        // into the same misleading "Experiment:None" belief.
+        const TechniqueId learnedTechnique=
+            decision.intent==CivilizationIntent::Experiment
+                ?experimentTechnique(decision.experiment)
+                :decision.technique;
+        label+=techniqueName(learnedTechnique);
         if(decision.facilityAction!=FacilityBuildAction::None){
             label+=':';
             label+=facilityBuildActionName(decision.facilityAction);
