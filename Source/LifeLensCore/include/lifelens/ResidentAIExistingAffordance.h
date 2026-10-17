@@ -83,6 +83,16 @@ chooseResidentAIExistingCivilizationAffordance(
             candidate=bestGatherDecisionAtPosition(
                 world,actor,actorPosition,settlementPopulation,
                 MaterialKind::Water);
+            // A desire for water does not create an imaginary water item.
+            // If the real blocker is the absence of a transport vessel, the
+            // resident may instead craft an actually known, affordable
+            // SimpleContainer using the existing Core recipe.
+            if(candidate.intent==CivilizationIntent::None
+               &&emptySimpleContainerCount(actor.civilization.inventory)<=0){
+                candidate=bestCraftDecisionAtPosition(
+                    world,actor,actorPosition,settlementPopulation,
+                    TechniqueId::SimpleContainer);
+            }
             break;
         case CognitiveIntentKind::AcquireMaterials:
             candidate=bestGatherDecisionAtPosition(
