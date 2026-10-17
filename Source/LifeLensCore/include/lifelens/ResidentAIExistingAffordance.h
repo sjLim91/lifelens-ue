@@ -50,6 +50,41 @@ inline bool residentAIHasRecentRepeatedGatherFailure(
     return latestFailed &&minute-latest<=1440;
 }
 
+// One-step recipe precondition solving: the recipe is Core-authored, and
+// the only possible result is a real, currently feasible gather affordance.
+// No missing ingredient, technology, place, or resource is created here.
+inline CivilizationUtilityDecision
+chooseResidentAIMissingRecipeMaterial(
+    const World& world,
+    const Character& resident,
+    GridPos position,
+    TechniqueId technique,
+    const SettlementPopulation* population=nullptr)
+{
+    CivilizationUtilityDecision none;
+    if(technique==TechniqueId::None
+       ||!resident.civilization.knowledge.knowsAtLeast(
+           technique,KnowledgeLevel::Reproducible))
+        return none;
+    const TechniqueRecipe recipe=techniqueRecipe(technique);
+    if(recipe.technique!=technique) return none;
+    for(const Ingredient& ingredient:recipe.inputs){
+        if(ingredient.quantity<=0
+           ||ingredient.kind!=ItemKind::RawMaterial
+           ||ingredient.material==MaterialKind::Unknown
+           ||resident.civilization.inventory.count(
+                ingredient.kind,ingredient.material,
+                ingredient.anyMaterial)>=ingredient.quantity)
+            continue;
+        const auto gather=bestGatherDecisionAtPosition(
+            world,resident,position,population,ingredient.material);
+        if(gather.intent==CivilizationIntent::Gather
+           &&gather.material==ingredient.material)
+            return gather;
+    }
+    return none;
+}
+
 // Translate an accepted resident's *strategic preference* into ONE existing
 // Core-authorized affordance candidate. This is never an action execution:
 // normal Civilization routing, inventory, terrain, path and outcome checks
@@ -88,10 +123,16 @@ chooseResidentAIExistingCivilizationAffordance(
             // resident may instead craft an actually known, affordable
             // SimpleContainer using the existing Core recipe.
             if(candidate.intent==CivilizationIntent::None
-               &&emptySimpleContainerCount(actor.civilization.inventory)<=0){
+               &&emptySimpleContainerCount(actor.civilization.inventory)<=0
+               &&knownNaturalResourceUnits(world,MaterialKind::Water)>0){
                 candidate=bestCraftDecisionAtPosition(
                     world,actor,actorPosition,settlementPopulation,
                     TechniqueId::SimpleContainer);
+                if(candidate.intent==CivilizationIntent::None){
+                    candidate=chooseResidentAIMissingRecipeMaterial(
+                        world,actor,actorPosition,
+                        TechniqueId::SimpleContainer,settlementPopulation);
+                }
             }
             break;
         case CognitiveIntentKind::AcquireMaterials:
