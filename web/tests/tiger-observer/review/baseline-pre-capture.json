@@ -1,5 +1,5 @@
 {
-  "minute": 494,
+  "minute": 495,
   "worldSeed": "77",
   "core": {
     "id": "25:32:1704075738371588112",
@@ -17,14 +17,14 @@
   },
   "simulationSpeed": 0,
   "renderStats": {
-    "frame": 87,
+    "frame": 63,
     "calls": 105,
     "triangles": 2630204,
     "points": 0,
     "lines": 0
   },
   "renderMemory": {
-    "geometries": 534,
+    "geometries": 532,
     "textures": 16
   },
   "canvas": {
