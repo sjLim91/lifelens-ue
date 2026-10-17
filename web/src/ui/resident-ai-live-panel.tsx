@@ -20,7 +20,8 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
     <p className="hint">
       무료 로컬 모델 하나로 모든 주민이 각자의 기억·감정·성격을 바탕으로 판단합니다.
       Core는 협력·갈등 해결과 식량·물·재료 채집, 탐색, 가능한 제작·재배
-      판단을 기존 물리 행동으로 연결합니다. 그 밖의 전략은 기록만 합니다.
+      판단을 기존 물리 행동으로 연결합니다. 아직 실행 경로가 없는
+      전략은 실동작 AI의 선택지에서 제외하며, 관찰용 Shadow 기능에서는 확인할 수 있습니다.
     </p>
     <form onSubmit={(event) => {
       event.preventDefault();
