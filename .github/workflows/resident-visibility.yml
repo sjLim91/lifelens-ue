@@ -1,0 +1,70 @@
+name: Resident Default View Regression
+on:
+  push:
+    branches: ['fix/resident-visibility-spawn']
+permissions:
+  contents: write
+concurrency:
+  group: resident-visibility-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-observer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Restore unchanged simulation WASM
+        id: wasm
+        uses: actions/cache/restore@v4
+        with:
+          path: web/public/runtime
+          key: resident-wasm-v1-${{ runner.os }}-${{ hashFiles('Source/LifeLensCore/**', 'Tools/build_web_client.py') }}
+      - name: Compile the actual Core when not cached
+        if: steps.wasm.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends emscripten
+          emcmake cmake -S Source/LifeLensCore -B /tmp/resident-wasm -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/resident-wasm --target lifelens_web_core -j2
+          mkdir -p web/public/runtime
+          cp /tmp/resident-wasm/web/lifelens_core.js /tmp/resident-wasm/web/lifelens_core.wasm web/public/runtime/
+      - uses: actions/cache/save@v4
+        if: steps.wasm.outputs.cache-hit != 'true'
+        with:
+          path: web/public/runtime
+          key: ${{ steps.wasm.outputs.cache-primary-key }}
+      - name: Build the actual React Observer and free browser
+        run: |
+          npm install --prefix web --ignore-scripts --no-audit --no-fund
+          npm install --prefix web --no-save --ignore-scripts --no-audit --no-fund playwright
+          cd web
+          npx playwright install --with-deps chromium
+          npm run build -- --config tests/native-resident/vite.config.mjs
+      - name: Verify actual WASM residents use the new skins
+        working-directory: web
+        run: node tests/native-resident/visibility.mjs
+      - name: Preserve actual Observer evidence on the work branch
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ -d web/tests/native-resident/visibility-review ]; then
+            git add -f web/tests/native-resident/visibility-review
+            if ! git diff --cached --quiet; then
+              git commit -m '주민: 실제 React WASM 화면 검증 결과 보존 [skip ci]'
+              git pull --rebase origin "$GITHUB_REF_NAME"
+              git push origin "HEAD:$GITHUB_REF_NAME"
+            fi
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-resident-actual-observer
+          path: web/tests/native-resident/visibility-review/
+          retention-days: 14
+
