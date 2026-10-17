@@ -1,0 +1,64 @@
+name: Tiger Published Observer Probe
+on:
+  push:
+    branches: ['feat/tiger-source-web-integration-*']
+    paths:
+      - 'web/tests/tiger-observer/published.mjs'
+      - '.github/workflows/tiger-published-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: tiger-public-probe-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  public-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Identify the existing published review build
+        run: |
+          git fetch --depth=1 origin gh-pages
+          git log -1 --format=%B FETCH_HEAD > /tmp/tiger-pages-message.txt
+          python3 - <<'PY'
+          import os,re
+          from pathlib import Path
+          message=Path('/tmp/tiger-pages-message.txt').read_text()
+          assert message.startswith('Draft tiger review:'), message
+          sha=re.search(r'[0-9a-f]{40}',message).group(0)
+          with open(os.environ['GITHUB_ENV'],'a') as out: out.write('LIFELENS_REVIEW_EXPECTED_BUILD='+sha+'\n')
+          PY
+      - name: Install free browser verification dependencies
+        run: |
+          npm install --prefix web --ignore-scripts --no-audit --no-fund
+          npm install --prefix web --no-save --ignore-scripts --no-audit --no-fund playwright
+          cd web
+          npx playwright install --with-deps chromium
+      - name: Verify actual public app WASM and model bytes
+        working-directory: web
+        run: node tests/tiger-observer/published.mjs
+      - name: Retain actual outcome including failures
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f web/tests/tiger-observer/review/published-validation.json
+          if [ -f web/tests/tiger-observer/review/published-observer.jpg ]; then git add -f web/tests/tiger-observer/review/published-observer.jpg; fi
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record public Observer verification outcome without quality acceptance [skip ci]'
+            for attempt in 1 2 3; do
+              git pull --rebase origin "$GITHUB_REF_NAME"
+              if git push origin "HEAD:$GITHUB_REF_NAME"; then break; fi
+              test "$attempt" -lt 3
+            done
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tiger-public-probe
+          path: web/tests/tiger-observer/review/published-*
+          retention-days: 7

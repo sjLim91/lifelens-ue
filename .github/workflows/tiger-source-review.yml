@@ -17,6 +17,7 @@ on:
       - 'web/tests/procedural-environment/imported-tiger.mjs'
       - 'web/tests/procedural-environment/tiger-*'
       - 'web/tests/tiger-observer/**'
+      - '!web/tests/tiger-observer/published.mjs'
   workflow_dispatch:
 
 permissions:
