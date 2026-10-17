@@ -156,7 +156,8 @@ int main()
     for(const auto& memory:nextThought.memories)
         if(memory.source==MemorySource::DirectWitness
            && memory.who==preferred
-           &&memory.what.find("during-action")!=std::string::npos)
+           &&std::find(memory.tags.begin(),memory.tags.end(),
+                         "goal_action_feedback")!=memory.tags.end())
             personallyLearned=true;
     assert(personallyLearned);
     return 0;
