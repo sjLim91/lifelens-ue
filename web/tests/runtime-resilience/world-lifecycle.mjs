@@ -61,6 +61,7 @@ try {
       simulationClock: clock,
       observerStore,
       shadowObserver: { resetWorld() { calls.push('reset-shadow'); } },
+      residentAI: { resetWorld() { calls.push('reset-resident-ai'); } },
       threeWorldRenderer: renderer,
       refresh: () => { calls.push('refresh'); },
     };
@@ -73,6 +74,7 @@ try {
     const f = fixture(speed);
     f.createWorld('42');
     assert(f.calls.indexOf('reset-shadow') < f.calls.indexOf('refresh'), 'shadow observations must clear before new-world refresh');
+    assert(f.calls.indexOf('reset-resident-ai') < f.calls.indexOf('refresh'), 'live AI state must reset before new-world refresh');
     assert.equal(f.clock.speed, observerStore.getSnapshot().simulationSpeed, 'clock must match displayed new-world speed');
     assert.equal(f.renderer.speed, f.clock.speed, 'resident animation speed must match simulation');
     assert.equal(f.renderer.selectedSettlement, null);
