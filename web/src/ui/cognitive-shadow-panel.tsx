@@ -1,4 +1,6 @@
 import { useState, useSyncExternalStore } from 'react';
+import type { CognitiveIntent } from '../cognition/cognitive-contract';
+import { residentAI } from '../cognition/live-resident-ai';
 import type { Resident } from '../runtime/core-types';
 import type { AutonomousGoalCondition, AutonomousGoalPreview } from '../cognition/autonomous-goal-preview';
 import { shadowObserver, type ShadowObserver, type ShadowRecord } from '../cognition/shadow-observer';
@@ -69,6 +71,8 @@ export function CognitiveShadowPanel({ resident, residents, controller = shadowO
   resident: Resident; residents: Resident[]; controller?: ShadowObserver;
 }) {
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
+  const liveAI = useSyncExternalStore(residentAI.subscribe, residentAI.getSnapshot, residentAI.getSnapshot);
+  const [liveError, setLiveError] = useState('');
   const [endpoint, setEndpoint] = useState(state.configuration?.baseUrl ?? 'http://127.0.0.1:8080');
   const [model, setModel] = useState(state.configuration?.model ?? '');
   const [inspectedActor, setInspectedActor] = useState<string | null>(null);
@@ -76,10 +80,43 @@ export function CognitiveShadowPanel({ resident, residents, controller = shadowO
   const shownGoals = inspectedActor === resident.id
     && coreGoalPreview?.actor === resident.id ? coreGoalPreview : null;
   const records = state.records.filter((record) => record.actor === resident.id);
+  const liveDecision = liveAI.byResident[resident.id];
   // Keep the most recent validated proposal visible even after a provider failure.
   const latest = records.find((record) => record.outcome.status === 'validated') ?? records[0];
   return <details className="cognitive-shadow-panel">
-    <summary>{L.title}</summary>
+    <summary>주민 AI · 사고와 실제 행동</summary>
+    <section className="resident-ai-live-config">
+      <strong>자율 주민 AI — 실동작 연결</strong>
+      <p className="hint">
+        무료 로컬 모델 하나로 살아 있는 주민들이 각각 독립적으로 판단합니다.
+        현재 Core에 연결된 행동 범위는 협력과 갈등 해결이며,
+        다른 전략 제안은 기록하지만 아직 직접 실행하지 않습니다.
+      </p>
+      <p className="hint">모델 설정은 아래 로컬 주소와 모델명을 사용합니다. 외부 유료 API는 지원하지 않습니다.</p>
+      {liveAI.enabled
+        ? <button type="button" onClick={() => residentAI.setEnabled(false)}>
+            주민 AI 중지
+          </button>
+        : <button type="button" onClick={() => {
+            setLiveError('');
+            if (!residentAI.configure(endpoint, model) || !residentAI.setEnabled(true)) {
+              setLiveError('로컬 모델 주소 또는 모델 설정을 확인해 주세요.');
+            }
+          }}>주민 AI 시작</button>}
+      {liveError && <p role="alert">{liveError}</p>}
+      <p role="status">
+        {liveAI.enabled ? '주민별 AI 실행 중' : 'AI 미실행 · 기본 Core로 자율 생활'}
+        {' · '}승인 {liveAI.accepted}회 · 미승인/오류 {liveAI.rejected}회
+      </p>
+      {liveDecision && <p className="hint">
+        현재 주민의 최근 AI 판단: {liveDecision.intent
+          ? formatCognitiveIntent(liveDecision.intent as CognitiveIntent) : '없음'}
+        {' · '}{liveDecision.status === 'recorded' ? 'Core 검증 승인'
+          : liveDecision.status === 'stale' ? '시효 만료'
+          : liveDecision.status === 'unavailable' ? '모델 응답 없음'
+          : liveDecision.status === 'error' ? '추론 오류' : 'Core 거부'}
+      </p>}
+    </section>
     <p className="hint">{L.description}</p>
     <section className="autonomous-goal-preview">
       <button
