@@ -72,6 +72,7 @@ export function syncNativeResidentBody(model: THREE.Group, profile: ResidentAppe
     previous.removeFromParent();
   }
   const group = new THREE.Group(); group.name = GROUP;
+  donor.parent.add(group);
   const donorIndices = new Map(donor.skeleton.bones.map((bone, i) => [bone.name, i]));
   try {
     for (const tier of ['near', 'mid', 'far']) {
@@ -117,6 +118,7 @@ export function syncNativeResidentBody(model: THREE.Group, profile: ResidentAppe
         mesh.userData.nativeResidentSource = 'MakeHuman CC0';
         mesh.frustumCulled = false; mesh.castShadow = isBody; mesh.receiveShadow = true;
         level.add(mesh);
+        model.updateMatrixWorld(true);
         // The source already contains the observed sex morphology. Reuse the
         // existing face/build genetics without applying that sex bias twice.
         const phenotype = { ...profile, shoulderScale: 1 + (profile.shoulderScale - (sex === 'male' ? 1.10 : .90)) * .5,
@@ -146,7 +148,7 @@ export function syncNativeResidentBody(model: THREE.Group, profile: ResidentAppe
       });
     }
   } catch (error) { disposeNative(group); console.warn('Native resident binding rejected', error); return false; }
-  donor.parent.add(group); model.userData.nativeResidentBody = true;
+  model.userData.nativeResidentBody = true;
   model.traverse(object => {
     if (!(object instanceof THREE.Mesh) || object.userData.nativeResidentSource) return;
     if (['SuperHero_Male', 'Eyes', 'Eyebrows'].includes(object.name)) {
