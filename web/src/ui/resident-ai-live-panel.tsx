@@ -19,8 +19,8 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
     <strong>자율 주민 AI — 실제 행동 연결</strong>
     <p className="hint">
       무료 로컬 모델 하나로 모든 주민이 각자의 기억·감정·성격을 바탕으로 판단합니다.
-      현재 Core는 협력·갈등 해결 선택을 실행 경로로 연결합니다.
-      다른 전략은 검증 후 기록하지만 아직 직접 실행하지 않습니다.
+      Core는 협력·갈등 해결과 식량·물·재료 채집, 탐색, 가능한 제작·재배
+      판단을 기존 물리 행동으로 연결합니다. 그 밖의 전략은 기록만 합니다.
     </p>
     <form onSubmit={(event) => {
       event.preventDefault();
@@ -55,6 +55,10 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
         : decision.status === 'stale' ? '시효 만료'
         : decision.status === 'unavailable' ? '모델 응답 없음'
         : decision.status === 'error' ? '추론 오류' : 'Core 거부'}
+    </p>}
+    {decision?.latestPersonalExperience && <p className="hint">
+      AI가 실제로 참고한 최근 개인 경험 (시뮬레이션 {decision.latestPersonalExperience.minute}분):
+      {' '}{decision.latestPersonalExperience.what}
     </p>}
     <p className="hint">
       Core 승인 기록은 행동 실행이나 목표 성공을 의미하지 않습니다.
