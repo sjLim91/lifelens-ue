@@ -1,52 +1,35 @@
-# Native resident integration — active checkpoint, 2026-10-17
+# Native resident Web integration — merged, 2026-10-17
 
-## User scope and authorization
-- Complete the MakeHuman male/female integration and merge into main after verification.
-- Use the connected GitHub tools for all remote repository operations. Do not retry terminal network access.
-- Main merge is explicitly authorized in this conversation; no additional permission is pending.
-- Do not spawn subagents unless the user explicitly asks.
+## Completed product checkpoint
+- PR #731 merged to main: 42a9053ff3f88fe78612ad4463911f7da949c0c6.
+- Tiger #728 is included and marked merged. Older rejected Q3/Q4 prototype PRs were not separately merged.
+- Final implementation code 21eaf5d8 plus generated assets/reports at PR head 8346c98e.
+- Current user authorization (complete people integration and merge) has been fulfilled.
+- Remote repository work uses connected GitHub tools. Do not retry terminal network access.
 
-## Canonical branch / PR
-- PR #731: feat/native-resident-retarget-20261017 -> main.
-- Main baseline: 6b4fd15f8b690df0e195f8f446c000cf108d4ebf.
-- Included latest tiger #728 head bc17a47c5196748e66decc147ce6b334aa47b9bf.
-- Main's later AI/Core changes and tiger/human changed paths had no overlap.
-- Integrated tree was built on latest main, preserving its AI/Core files.
-- Current implementation code checkpoint: 21eaf5d80f1f76f086a961ca78c7b78cee6d5751.
-- Re-query actual PR head: workflows append generated assets/reports using [skip ci] commits.
+## Implementation
+- Original MakeHuman CC0 anatomy, sex morphs, UV skin/eyes/hair and official weights are retained with pinned source receipts.
+- Tools/blender/retarget_native_residents.py uses real palm/metatarsal landmarks and the established UAL bind skeleton. It produces near, mid and far skinned GLBs.
+- resident-native-body.ts shares each existing actor skeleton, retargets source joint names, applies phenotype/PBR pigments, preserves UV seam normals and selects actual LODs.
+- Existing Core IDs, coordinates, motion meanings, save format and life/relationship authority remain unchanged.
+- Existing growth, pregnancy, sleep and prop/action paths use the new surface. Native soles use bounded per-skin-group extrema, excluding UV duplicates, for positive-only contact correction without moving Core roots.
+- Late phenotype refresh at large world coordinates is independent of the actor's current world transform.
 
-## Implemented
-- Tools/blender/retarget_native_residents.py: original CC0 body/sex morphs/UV/official weights, source eyes and hair, retarget to existing UAL skeleton, embedded resized textures, actual decimated mid/far skins.
-- resident-native-body.ts: six local native GLBs, existing per-actor skeleton sharing, bone-name remap, phenotype/skin/hair/eye pigments, UV seam normals, near/mid/far presentation.
-- Existing resident anatomy/appearance/world layer now use native assets, with established fallback if unavailable.
-- Existing actions, sleep calibration, props, pregnancy/growth and Core identities remain on the existing runtime.
-- Native foot contact samples deduplicate UV vertices, retain per-skin-group extrema, and perform bounded positive-only IK correction; Core root is not moved.
-- Late phenotype refresh is applied in the attached mesh's correct frame, not the actor's current world transform.
-- Source verification has --verify-local to validate committed source receipts without unauthenticated GitHub API rate limits.
-- Native source workflow includes WebGL contracts plus actual production React/WASM Observer capture. WASM cache resident-wasm-v1 is populated for this unchanged Core.
+## Verified evidence
+- Native WebGL and actual production React/WASM: https://github.com/sjLim91/lifelens-ue/actions/runs/39021921627 — SUCCESS.
+- Four actual founders (2 male, 2 female) use new skins while Core time and carry/walk actions progress. Browser and HTTP errors: 0.
+- Source skin/UV/PBR/common skeleton, decreasing LOD triangle counts, growth/pregnancy/sleep, strict contact and phenotype-refresh invariant: PASS.
+- Maximum rest-position difference for the same phenotype at world offset (10000,40,-10000): about 2.2e-14; input Core facts unchanged.
+- Full shared Web regression/typecheck/build/eight capture domains: https://github.com/sjLim91/lifelens-ue/actions/runs/39021982708 — SUCCESS.
+- Authoritative originals/generated receipts: docs/asset-reviews/resident-makehuman/.
+- Browser evidence: web/tests/native-resident/review/ and web/tests/native-resident/observer-review/.
 
-## Evidence already observed
-- Run 39020612119, implementation 25097bf1: both native-web and actual-observer SUCCESS.
-- Actual React/WASM had all four founders on new skins, 2 male / 2 female, Core time progressed, idle/carry/walk observed, browser errors 0 and HTTP errors 0.
-- Old source geometry left about 6 cm of foot penetration; bounded sole contact reduced this but strict new test still found 14–19 mm.
-- Late phenotype refresh invariant PASS: maximum rest-position difference ~2.2e-14 at world offset (10000,40,-10000), Core input unchanged.
-- Existing typecheck, 15 resident-motion regressions and resident lifecycle tests passed in native workflow.
-- These are earlier checkpoints, not acceptance of the latest unverified correction.
+## Main and deployment
+- Main parent at merge was 34ea6295932d7a403d8f967e9f1ac1aa8381c0b0. Its 294 Core/Web bridge/cognition files were unchanged by the integration.
+- Web Preview 39023026143, Pages 39023106736 and External Preview Probe 39023110559: SUCCESS.
+- gh-pages 57e2183f0af5a83017233cf06c2f3727cee75ad7 publishes product commit 42a9053f.
+- All six resident GLBs were confirmed on gh-pages with Git blob hashes identical to main.
+- Product: https://sjlim91.github.io/lifelens-ue/index.html?v=42a9053f
+- This closeout documentation does not require a new runtime build or preview publication.
 
-## Latest corrections needing verification
-- Contact coverage now includes calf-blended heel/toe vertices, directional extrema, 3 bounded passes and 4 mm clearance; strict minimum ground y remains >= -0.01 (not weakened).
-- Corrected palm frame endpoint to middle-finger origin instead of short wrist-bone tail.
-- Corrected foot/ball frame shared point to average metatarsal origins, with toe-tip average for ball endpoint.
-- New normalized segment ratio checks: female hand/foot ~1.217/1.209; male ~0.998/1.055. This avoids previous over-stretch.
-- Current workflow triggered from 21eaf5d8 must regenerate assets and re-verify these changes.
-
-## Finish
-1. Fetch current runs for 21eaf5d8 and PR #731. Fix any actual failure; do not infer success from artifacts alone.
-2. Inspect latest native WebGL and actual Observer validation JSON and front/side/lifecycle images. Ensure strict contact and phenotype invariant pass.
-3. Require current typecheck/build/shared Web regressions and native actual-Observer checks. Avoid rerunning unchanged Core unnecessarily.
-4. Update this checkpoint and PR description with final evidence and limitations.
-5. Mark #731 ready and merge using expected current head SHA. Preserve main's latest changes.
-6. Verify main Web Preview / Pages and external probe, and confirm gh-pages includes all six resident GLBs and tiger assets.
-7. Update tasks/WORK_STATE.md after actual completion and return main preview link.
-
-Physical Android FPS has NOT been measured. Browser viewport success is not a physical-device result. Do not claim final photorealism or measured Android 30 FPS.
+Physical Android FPS has NOT been measured. The evidence establishes source integration and browser/runtime correctness, not measured device 30 FPS or final photorealism.

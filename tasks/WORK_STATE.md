@@ -1,10 +1,15 @@
-## 2026-10-17 ACTIVE — 남녀 원본 메시 웹 연결 및 main 통합 검증
+## 2026-10-17 DONE — 남녀 원본 메시·기존 동작/생애/LOD와 호랑이 main 통합 (#731)
 
-- 사용자 요청: 사람 연결 완료 후 main 병합. GitHub 연결 도구로 원격 작업; 터미널 네트워크 재시도 금지.
-- PR #731은 최신 main AI/Core를 보존하고 최신 호랑이 #728을 포함한 통합 브랜치다.
-- 실제 React/WASM 초기 주민 4명 새 스킨·시간 진행·오류 0 검증은 39020612119에서 PASS. 이후 실제 발바닥 접지·늦은 유전 갱신·손/발 비율 보정을 추가해 최종 재검증 중이다. 아직 main 병합하지 않았다.
-- 현재 코드 21eaf5d8. 최신 PR/Actions/산출물 재조회 후 검증과 병합을 이어간다.
-- 상세 복구: [NATIVE_RESIDENT_INTEGRATION_HANDOFF_2026-10-17.md](NATIVE_RESIDENT_INTEGRATION_HANDOFF_2026-10-17.md).
+- 사용자 요청대로 #731을 main에 merge. 제품 코드: `42a9053ff3f88fe78612ad4463911f7da949c0c6`. #728도 동일 통합 이력으로 병합 상태다.
+- 원본 CC0 남녀 표면·UV·눈·헤어를 기존 UAL 골격/모션에 연결. 실제 3단계 스킨 LOD, 성장/임신/유전 표현, 실제 스킨 발 접지와 늦은 유전 갱신 좌표 불변 회귀를 완료했다.
+- Native WebGL + 실제 React/WASM 앱 run [39021921627](https://github.com/sjLim91/lifelens-ue/actions/runs/39021921627) PASS. 초기 4명 남2/여2 새 스킨, Core 시간 진행·carry/walk, 브라우저/HTTP 오류 0.
+- 전체 Web Checks [39021982708](https://github.com/sjLim91/lifelens-ue/actions/runs/39021982708) PASS: typecheck/build/전체 회귀/8개 화면 영역.
+- 병합 직전 main `34ea6295`의 Core/Web 브리지/로컬 추론 294개 파일은 병합 후 해시 동일. 기존 AI 수정 보존.
+- Web Preview [39023026143](https://github.com/sjLim91/lifelens-ue/actions/runs/39023026143), Pages [39023106736](https://github.com/sjLim91/lifelens-ue/actions/runs/39023106736), 외부 점검 [39023110559](https://github.com/sjLim91/lifelens-ue/actions/runs/39023110559) 모두 PASS.
+- gh-pages `57e2183f`는 제품 source `42a9053f`를 게시했다. 새 남녀 GLB 6개가 main과 Git blob 해시 동일하게 게시됐음을 확인.
+- 실행: https://sjlim91.github.io/lifelens-ue/index.html?v=42a9053f
+- 실제 Android FPS는 미측정이다. 브라우저 검증을 실기기 성능이나 최종 사진 수준 품질로 표시하지 않는다.
+- 복구/증거: [NATIVE_RESIDENT_INTEGRATION_HANDOFF_2026-10-17.md](NATIVE_RESIDENT_INTEGRATION_HANDOFF_2026-10-17.md). 원격 작업은 GitHub 연결 도구를 사용하며 터미널 네트워크 재시도는 하지 않는다.
 
 ## 2026-10-13 DONE — 발 접지 보정·직접 제작 동식물 시각화 (#710/#711)
 
