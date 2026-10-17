@@ -179,6 +179,18 @@ int main()
         recalled.memory.add(episode);
     }
     rememberActionOutcome(recalled,"Civilization:Gather:PlantFood",999,false);
+    const MemoryRecord* personalAction=nullptr;
+    for(const auto& record:recalled.memory.entries)
+        if(record.tags.size()==3
+           &&record.tags[0]=="action_experience")
+            personalAction=&record;
+    assert(personalAction!=nullptr);
+    int higherRankedEpisodes=0;
+    for(const auto& record:recalled.memory.entries)
+        if(record.what.find("unrelated powerful memory")==0
+           &&record.recallScore(1000)>personalAction->recallScore(1000))
+            ++higherRankedEpisodes;
+    assert(higherRankedEpisodes>=4); // normally omitted without one reserved slot
     const auto learned=buildCognitiveRequest(
         recalled,relationships,1000,CognitiveTriggerKind::Reflection,
         allowed,4,1,1);
