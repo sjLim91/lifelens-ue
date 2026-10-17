@@ -89,6 +89,7 @@ lifelens_add_test(test_live_resident_ai)
 lifelens_add_test(test_resident_ai_existing_affordance)
 lifelens_add_test(test_resident_ai_retry_adaptation)
 lifelens_add_test(test_resident_ai_civilization_outcome_learning)
+lifelens_add_test(test_resident_ai_failure_cause)
 
 lifelens_add_test(test_social_utility)
 
