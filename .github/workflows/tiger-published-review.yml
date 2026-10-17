@@ -54,8 +54,14 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f web/tests/tiger-observer/review/published-validation.json
-          if [ -f web/tests/tiger-observer/review/published-observer.jpg ]; then git add -f web/tests/tiger-observer/review/published-observer.jpg; fi
+          # The full Observer job also writes the canonical report. Keep this
+          # independent probe append-only so simultaneous successful captures
+          # cannot conflict while rebasing their measured samples or images.
+          evidence="web/tests/tiger-observer/review/public-probes/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$evidence"
+          cp web/tests/tiger-observer/review/published-validation.json "$evidence/"
+          if [ -f web/tests/tiger-observer/review/published-observer.jpg ]; then cp web/tests/tiger-observer/review/published-observer.jpg "$evidence/"; fi
+          git add -f "$evidence"
           if ! git diff --cached --quiet; then
             git commit -m 'Record public Observer verification outcome without quality acceptance [skip ci]'
             for attempt in 1 2 3; do
