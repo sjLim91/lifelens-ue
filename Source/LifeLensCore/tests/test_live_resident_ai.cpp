@@ -1,4 +1,5 @@
 #include <cassert>
+#include <algorithm>
 #include <string>
 
 #include "lifelens/Simulation.h"
