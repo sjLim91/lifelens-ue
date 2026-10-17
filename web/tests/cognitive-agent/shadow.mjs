@@ -38,6 +38,13 @@ await test('resident model learns only from personally witnessed Core action out
   assert.match(guidance, /Repeated firsthand failures/);
   assert.match(guidance, /NOT that the requested food/);
   assert.match(guidance, /do not invent an observed success/);
+  assert.match(guidance, /source-exhausted/);
+  assert.match(guidance, /source-removed/);
+  assert.match(guidance, /container-missing/);
+  assert.match(guidance, /access-unavailable/);
+  assert.match(guidance, /water is absent/);
+  assert.match(guidance, /Inferred memory/);
+  assert.match(guidance, /when exploration is allowed/);
 
   const core = request('1', 100);
   core.memories = [{
