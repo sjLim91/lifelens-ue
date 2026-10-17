@@ -1,0 +1,192 @@
+{
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-17T03:09:19.835848+00:00",
+  "uid": "fc2c7fd74dd04e39935803b884c77258",
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/fc2c7fd74dd04e39935803b884c77258",
+    "uid": "fc2c7fd74dd04e39935803b884c77258",
+    "name": "Running Tiger",
+    "staffpickedAt": null,
+    "viewCount": 13013,
+    "likeCount": 122,
+    "animationCount": 1,
+    "viewerUrl": "https://sketchfab.com/3d-models/fc2c7fd74dd04e39935803b884c77258",
+    "embedUrl": "https://sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/embed",
+    "commentCount": 4,
+    "isDownloadable": true,
+    "publishedAt": "2019-09-18T08:28:46.147481",
+    "tags": [
+      {
+        "name": "tiger",
+        "slug": "tiger",
+        "uri": "https://api.sketchfab.com/v3/tags/tiger"
+      },
+      {
+        "name": "animal",
+        "slug": "animal",
+        "uri": "https://api.sketchfab.com/v3/tags/animal"
+      },
+      {
+        "name": "animation",
+        "slug": "animation",
+        "uri": "https://api.sketchfab.com/v3/tags/animation"
+      },
+      {
+        "name": "rigged",
+        "slug": "rigged",
+        "uri": "https://api.sketchfab.com/v3/tags/rigged"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "9b95910b3a794c8097ce460a089b9164",
+          "size": 103231,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/thumbnails/ac74854dfd644ae2bbc50b4f2ed6011b/4065069883e04a2faf048fab5dcecebf.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "4b029719f4e241019b3474cf1d1c4072",
+          "size": 34598,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/thumbnails/ac74854dfd644ae2bbc50b4f2ed6011b/cee414dfadd449e081b5420eaa9178a7.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "159080c4fb214175aa59bc0ace553f35",
+          "size": 19984,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/thumbnails/ac74854dfd644ae2bbc50b4f2ed6011b/1ded23fc7428450b994be0f58106bad4.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "e745c944876b45edae3f3a085966d2a9",
+          "size": 4073,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/thumbnails/ac74854dfd644ae2bbc50b4f2ed6011b/2ea3aba7d35242f18548c8c2d8ed929a.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "0c0bb4dde5ed420eab0ac7f8ce3a606c",
+          "size": 797,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/fc2c7fd74dd04e39935803b884c77258/thumbnails/ac74854dfd644ae2bbc50b4f2ed6011b/9be2238084594c689950038afadb2d95.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "6651498f70a44a24b56df59d46f18049",
+      "username": "francescolima74",
+      "displayName": "Amil (francescolima74)",
+      "profileUrl": "https://sketchfab.com/francescolima74",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/59bc19b1d96d420db29b55858d2e8220",
+        "images": [
+          {
+            "size": 1503,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/59bc19b1d96d420db29b55858d2e8220/5d8f0d0c8fe04574913215f2226c5ae7.png",
+            "height": 32
+          },
+          {
+            "size": 2502,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/59bc19b1d96d420db29b55858d2e8220/a8182614056a4faaaa79e14c1c632063.png",
+            "height": 48
+          },
+          {
+            "size": 5648,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/59bc19b1d96d420db29b55858d2e8220/c10821098f3344f9b96a2c52e141352e.png",
+            "height": 90
+          },
+          {
+            "size": 6491,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/59bc19b1d96d420db29b55858d2e8220/e132a73b019645289c750fa1929b6315.png",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/6651498f70a44a24b56df59d46f18049"
+    },
+    "description": "3d rigged and animated tiger",
+    "faceCount": 4650,
+    "createdAt": "2019-09-18T08:19:43.023818",
+    "vertexCount": 2514,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 1,
+        "size": 1996448,
+        "type": "glb",
+        "textureMaxResolution": 1024,
+        "faceCount": 4650,
+        "vertexCount": 3204
+      },
+      "gltf": {
+        "textureCount": 1,
+        "size": 1770970,
+        "type": "gltf",
+        "textureMaxResolution": 1024,
+        "faceCount": 4650,
+        "vertexCount": 3204
+      },
+      "source": {
+        "textureCount": null,
+        "size": 5257780,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 1945055,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-101/fc2c7fd74dd04e39935803b884c77258.glb",
+  "sha256": "6e152d1d98c6149d4241c292bf21cbc9e8ab16f81a456ea1515d174f7f7d1e40",
+  "bytes": 1996448,
+  "datasetLicense": "ODC-By-1.0",
+  "dataset": "https://huggingface.co/datasets/allenai/objaverse",
+  "asset": {
+    "extras": {
+      "author": "Amil (francescolima74) (https://sketchfab.com/francescolima74)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/running-tiger-fc2c7fd74dd04e39935803b884c77258",
+      "title": "Running Tiger"
+    },
+    "generator": "Sketchfab-12.66.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 47
+    }
+  ],
+  "animations": [
+    {
+      "name": "Run",
+      "channels": 96,
+      "extras": null
+    }
+  ]
+}

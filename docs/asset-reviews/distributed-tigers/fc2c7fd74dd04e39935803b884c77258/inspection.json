@@ -1,0 +1,102 @@
+{
+  "status": "REQUIRES_VISUAL_REVIEW",
+  "runtimeAdmission": false,
+  "bounds": [
+    [
+      -28.71435546875,
+      -165.87355041503906,
+      -19.083904266357422
+    ],
+    [
+      35.71091842651367,
+      111.43843078613281,
+      123.54193115234375
+    ]
+  ],
+  "triangles": 4890,
+  "rigs": [
+    {
+      "name": "Object_7",
+      "bones": [
+        "_rootJoint",
+        "Bip01 Pelvis_01",
+        "Bip01 Spine_02",
+        "Bip01 Spine1_03",
+        "Bip01 Spine2_04",
+        "Bip01 Neck_05",
+        "Bip01 Head_06",
+        "Bip01 Ponytail1_00",
+        "Bip01 Ponytail1Nub_08",
+        "Bip01 Ponytail2_09",
+        "Bip01 Ponytail2Nub_010",
+        "Bone01_011",
+        "Bone02(mirrored)_012",
+        "Bone02_013",
+        "Bone03_014",
+        "Bone04_015",
+        "Bone05_016",
+        "Bip01 HeadNub_07",
+        "Bip01 L Clavicle_017",
+        "Bip01 L UpperArm_018",
+        "Bip01 L Forearm_019",
+        "Bip01 L Hand_020",
+        "Bip01 L Finger0_021",
+        "Bip01 L Finger0Nub_022",
+        "Bip01 R Clavicle_023",
+        "Bip01 R UpperArm_024",
+        "Bip01 R Forearm_025",
+        "Bip01 R Hand_026",
+        "Bip01 R Finger0_027",
+        "Bip01 R Finger0Nub_028",
+        "Bip01 L Thigh_029",
+        "Bip01 L Calf_030",
+        "Bip01 L HorseLink_031",
+        "Bip01 L Foot_032",
+        "Bip01 L Toe0_033",
+        "Bip01 L Toe0Nub_034",
+        "Bip01 R Thigh_035",
+        "Bip01 R Calf_036",
+        "Bip01 R HorseLink_037",
+        "Bip01 R Foot_038",
+        "Bip01 R Toe0_039",
+        "Bip01 R Toe0Nub_040",
+        "Bip01 Tail_041",
+        "Bip01 Tail1_042",
+        "Bip01 Tail2_043",
+        "Bip01 Tail3_044",
+        "Bip01 TailNub_045"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "Run_Bip01",
+      "frames": [
+        0.0,
+        12.791999816894531
+      ]
+    },
+    {
+      "name": "Run_Bip01 Footsteps",
+      "frames": [
+        0.0,
+        12.791999816894531
+      ]
+    },
+    {
+      "name": "Run_Object_7",
+      "frames": [
+        0.0,
+        12.791999816894531
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Tiger_Default",
+      "textures": [
+        "Image_0.002"
+      ]
+    }
+  ]
+}
