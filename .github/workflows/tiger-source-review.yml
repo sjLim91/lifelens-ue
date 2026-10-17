@@ -153,6 +153,17 @@ jobs:
       - name: Publish verified CC0 character files instead of the source ignore rule
         run: |
           printf '# Generated verified CC0 assets are intentionally published here.\n' > web/tests/tiger-observer/preview/vendor/characters/.gitignore
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          assets=Path('web/tests/tiger-observer/preview/vendor/characters')
+          receipt=json.loads((assets/'receipt.json').read_text())
+          assert {entry['file'] for entry in receipt} == {'character.glb','ual1.glb','ual2.glb'}
+          for entry in receipt:
+              data=(assets/entry['file']).read_bytes()
+              assert len(data) == entry['bytes'], entry['file']
+              assert hashlib.sha256(data).hexdigest() == entry['sha256'], entry['file']
+          PY
       - name: Capture real React-WASM Observer and actual Core movement
         working-directory: web
         run: node tests/tiger-observer/capture.mjs
@@ -203,3 +214,4 @@ jobs:
           path: web/tests/tiger-observer/preview/
           if-no-files-found: warn
           retention-days: 3
+
