@@ -1,0 +1,94 @@
+{
+  "status": "REQUIRES_VISUAL_REVIEW",
+  "runtimeAdmission": false,
+  "bounds": [
+    [
+      -0.9510578513145447,
+      -0.9999999403953552,
+      -1.0
+    ],
+    [
+      12.138116836547852,
+      30.074783325195312,
+      11.902565956115723
+    ]
+  ],
+  "triangles": 4730,
+  "rigs": [
+    {
+      "name": "GLTF_created_0",
+      "bones": [
+        "GLTF_created_0_rootJoint",
+        "Bip01 Pelvis_5",
+        "Bip01 Spine_6",
+        "Bip01 Spine1_19",
+        "Bip01 Spine2_20",
+        "Bip01 Neck_21",
+        "Bip01 Head_22",
+        "Bone03_31",
+        "Bone04_32",
+        "Bone05_33",
+        "Bone01_28",
+        "Bip01 Ponytail2_26",
+        "Bip01 Ponytail1_24",
+        "Bone02_29",
+        "Bone02(mirrored)_30",
+        "Bip01 L Clavicle_34",
+        "Bip01 L UpperArm_35",
+        "Bip01 L Forearm_36",
+        "Bip01 L Hand_37",
+        "Bip01 L Finger0_38",
+        "Bip01 R Clavicle_40",
+        "Bip01 R UpperArm_41",
+        "Bip01 R Forearm_42",
+        "Bip01 R Hand_43",
+        "Bip01 R Finger0_44",
+        "Bip01 R Thigh_13",
+        "Bip01 R Calf_14",
+        "Bip01 R HorseLink_15",
+        "Bip01 R Foot_16",
+        "Bip01 R Toe0_17",
+        "Bip01 Tail_46",
+        "Bip01 Tail1_47",
+        "Bip01 Tail2_48",
+        "Bip01 Tail3_49",
+        "Bip01 L Thigh_7",
+        "Bip01 L Calf_8",
+        "Bip01 L HorseLink_9",
+        "Bip01 L Foot_10",
+        "Bip01 L Toe0_11"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "Take 001_Bip01 Footsteps_4",
+      "frames": [
+        0.0,
+        17.684173583984375
+      ]
+    },
+    {
+      "name": "Take 001_Bip01_3",
+      "frames": [
+        0.0,
+        17.684173583984375
+      ]
+    },
+    {
+      "name": "Take 001_GLTF_created_0",
+      "frames": [
+        0.0,
+        17.684173583984375
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "FbxTemp_0001",
+      "textures": [
+        "Image_0"
+      ]
+    }
+  ]
+}
