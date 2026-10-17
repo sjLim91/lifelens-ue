@@ -1,6 +1,7 @@
 #include <cassert>
 #include <limits>
 #include "lifelens/ResidentAIExistingAffordance.h"
+#include "lifelens/ResidentAICompletedPlanGuard.h"
 #include "lifelens/Simulation.h"
 
 using namespace lifelens;
@@ -300,5 +301,120 @@ int main()
     assert(pending.material==MaterialKind::PlantFood);
     // Issuing a thought/plan is NOT a successful action commit.
     assert(sim.world().resourceNodes.front().quantity==40);
+    const CivilizationUtilityDecision executedDecision=sim.captureSnapshot()
+        .runtime.at(self).pendingContext.civilization;
+    const std::string gatherKey="Civilization:Gather:PlantFood";
+    const auto hasFirsthandOutcome=[&](const Character& resident,
+                                       const char* outcome){
+        for(const MemoryRecord& memory:resident.memory.entries){
+            if(memory.tags.size()==3 &&memory.tags[0]=="action_experience"
+               &&memory.tags[1]==gatherKey &&memory.tags[2]==outcome
+               &&memory.source==MemorySource::DirectWitness
+               &&memory.witnessed &&memory.sourceCharacter==resident.id)
+                return true;
+        }
+        return false;
+    };
+    assert(!hasFirsthandOutcome(sim.world().characters.front(),"success"));
+    assert(!hasFirsthandOutcome(sim.world().characters.front(),"failure"));
+    const auto& accepted=sim.acceptedCognitiveDecisions().back();
+    assert(!residentAIPlanAlreadyAttempted(
+        sim.world().characters.front(),accepted,executedDecision,
+        sim.world().minute));
+
+    // The authorized AI choice alone is not an action: only completing the
+    // pending Core token can alter the resource and firsthand evidence.
+    // This fixture intentionally uses an injected test resource, so it is
+    // not a valid production snapshot world and must not be restore-tested.
+    const int foodBefore=sim.world().characters.front().civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood);
+    sim.setExternalPhysicalExecution(true);
+    assert(sim.completeExternalContextAction(
+        self,pending.token,pending.targetPos));
+
+    // Success is a Core Gather result, not a claim in the local-model text.
+    const Character& succeeded=sim.world().characters.front();
+    assert(sim.world().resourceNodes.front().quantity<40);
+    assert(succeeded.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)>foodBefore);
+    assert(hasFirsthandOutcome(succeeded,"success"));
+    const BeliefRecord* successBelief=succeeded.beliefs.find(
+        0,actionExperienceProposition(gatherKey.c_str()));
+    assert(successBelief!=nullptr &&successBelief->supportCount>0);
+    assert(residentAIPlanAlreadyAttempted(
+        succeeded,accepted,executedDecision,sim.world().minute));
+    // A subsequent independent inference may legitimately choose Gather again.
+    AcceptedCognitiveDecision fresh=accepted;
+    fresh.minute=sim.world().minute;
+    assert(!residentAIPlanAlreadyAttempted(
+        succeeded,fresh,executedDecision,sim.world().minute));
+
+    // Snapshot persistence is separately covered by the native live AI and
+    // snapshot-codec tests using an unmodified, valid NEW GAME world.
+    const CognitiveRequest nextRequest=sim.observeCognitiveRequest(
+        self,CognitiveTriggerKind::Reflection);
+    bool modelCanReadSuccess=false;
+    for(const auto& memory:nextRequest.memories){
+        if(memory.tags.size()==3 &&memory.tags[0]=="action_experience"
+           &&memory.tags[1]==gatherKey &&memory.tags[2]=="success"
+           &&memory.source==MemorySource::DirectWitness &&memory.witnessed)
+            modelCanReadSuccess=true;
+    }
+    assert(modelCanReadSuccess);
+
+    // Independent NEW GAME under the same seed and physical fixture:
+    // if another process exhausts the node AFTER planning but BEFORE work,
+    // Core must not invent food and must record the firsthand failure.
+    Simulation exhausted(99551);
+    exhausted.setupNewGame();
+    assert(exhausted.world().characters.front().id==self);
+    GridPos failedPosition{};
+    assert(exhausted.runtimePosition(self,failedPosition));
+    for(Character& resident:exhausted.world().characters)
+        resident.needs={0.01,0.01,0.01,0.01,0.01};
+    ResourceNode exhaustedNode=actualFood;
+    exhaustedNode.pos=failedPosition;
+    exhausted.world().resourceNodes.clear();
+    exhausted.world().resourceNodes.push_back(exhaustedNode);
+    const CognitiveRequest failedPlanRequest=exhausted.observeCognitiveRequest(
+        self,CognitiveTriggerKind::Reflection);
+    assert(exhausted.acceptCognitiveProposal(
+        failedPlanRequest,plan,"local-test-model","resource-001"));
+    exhausted.step();
+    const auto failingPending=exhausted.observePendingContextAction(self);
+    assert(failingPending.active);
+    assert(failingPending.kind==ContextActionKind::Civilization);
+    assert(failingPending.civilizationIntent==CivilizationIntent::Gather);
+    assert(failingPending.resourceNode==actualFood.id);
+    const CivilizationUtilityDecision failedDecision=exhausted.captureSnapshot()
+        .runtime.at(self).pendingContext.civilization;
+    assert(exhausted.world().resourceNodes.front().quantity==40);
+    exhausted.world().resourceNodes.front().quantity=0;
+    exhausted.setExternalPhysicalExecution(true);
+    assert(!exhausted.completeExternalContextAction(
+        self,failingPending.token,failingPending.targetPos));
+    const Character& failed=exhausted.world().characters.front();
+    assert(exhausted.world().resourceNodes.front().quantity==0);
+    assert(failed.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)==foodBefore);
+    assert(!hasFirsthandOutcome(failed,"success"));
+    assert(hasFirsthandOutcome(failed,"failure"));
+    const BeliefRecord* failureBelief=failed.beliefs.find(
+        0,actionExperienceProposition(gatherKey.c_str()));
+    assert(failureBelief!=nullptr &&failureBelief->contradictionCount>0);
+    bool modelCanReadFailureCause=false;
+    const CognitiveRequest failedRequest=exhausted.observeCognitiveRequest(
+        self,CognitiveTriggerKind::Reflection);
+    for(const auto& memory:failedRequest.memories){
+        if(memory.tags.size()==3 &&memory.tags[0]=="action_experience"
+           &&memory.tags[1]==gatherKey &&memory.tags[2]=="failure"
+           &&memory.source==MemorySource::DirectWitness &&memory.witnessed
+           &&memory.what.find("source-exhausted")!=std::string::npos)
+            modelCanReadFailureCause=true;
+    }
+    assert(modelCanReadFailureCause);
+    assert(residentAIPlanAlreadyAttempted(
+        failed,exhausted.acceptedCognitiveDecisions().back(),
+        failedDecision,exhausted.world().minute));
     return 0;
 }
