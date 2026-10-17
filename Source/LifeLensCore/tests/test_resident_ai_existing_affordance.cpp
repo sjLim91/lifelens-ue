@@ -1,6 +1,7 @@
 #include <cassert>
 #include <limits>
 #include "lifelens/ResidentAIExistingAffordance.h"
+#include "lifelens/ResidentAICompletedPlanGuard.h"
 #include "lifelens/Simulation.h"
 
 using namespace lifelens;
