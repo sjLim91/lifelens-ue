@@ -4,8 +4,49 @@
 
 #include "CognitiveDecisionJournal.h"
 #include "CivilizationDecision.h"
+#include "ResidentCivilizationOutcomeLearning.h"
 
 namespace lifelens {
+
+// A recent, repeatedly FAILED firsthand action should no longer be forced
+// as the next AI action every 15 simulated minutes. The Core's authoritative
+// completed-attempt beliefs and memory are the only evidence here. Model
+// assertions and a pending (unexecuted) action are not learning signals.
+// This is a soft fallback: it never disables urgent provision, rewrites Core
+// Need thresholds, invents materials, or blocks future successful attempts.
+inline bool residentAIRecentRepeatedActionFailure(
+    const Character& actor,
+    const CivilizationUtilityDecision& candidate,
+    int minute)
+{
+    if(minute<0 ||candidate.intent==CivilizationIntent::None) return false;
+    const std::string action=civilizationActionExperienceKey(candidate);
+    if(action.empty()) return false;
+    const BeliefRecord* belief=actor.beliefs.find(
+        0,actionExperienceProposition(action.c_str()));
+    if(belief==nullptr ||belief->contradictionCount<2
+       ||belief->contradictionWeight<belief->supportWeight+1.5
+       ||belief->lastUpdatedMinute>minute
+       ||minute-belief->lastUpdatedMinute>120) return false;
+
+    int latestFailure=-1;
+    int latestSuccess=-1;
+    for(const auto& memory:actor.memory.entries){
+        if(memory.source!=MemorySource::DirectWitness
+           ||!memory.witnessed
+           ||memory.minute<0 ||memory.minute>minute
+           ||minute-memory.minute>120
+           ||memory.tags.size()!=3
+           ||memory.tags[0]!="action_experience"
+           ||memory.tags[1]!=action)
+            continue;
+        if(memory.tags[2]=="failure")
+            latestFailure=std::max(latestFailure,memory.minute);
+        if(memory.tags[2]=="success")
+            latestSuccess=std::max(latestSuccess,memory.minute);
+    }
+    return latestFailure>=0 &&latestFailure>latestSuccess;
+}
 
 // Translate an accepted resident's *strategic preference* into ONE existing
 // Core-authorized affordance candidate. This is never an action execution:
@@ -64,6 +105,22 @@ chooseResidentAIExistingCivilizationAffordance(
             break;
         default:
             return std::nullopt;
+    }
+    // After real repeated failures, prefer an EXISTING exploration
+    // affordance instead of reissuing the same model-backed attempt.
+    // If none is legal, leave the slot to the ordinary Core planner.
+    if(residentAIRecentRepeatedActionFailure(actor,candidate,world.minute)){
+        const CivilizationUtilityDecision alternative=
+            bestResourceExplorationDecisionAtPosition(
+                world,actor,actorPosition);
+        if(alternative.intent==CivilizationIntent::Explore
+           &&alternative.utility>=0.14
+           &&alternative.utility<=1.0
+           &&std::isfinite(alternative.utility)
+           &&!residentAIRecentRepeatedActionFailure(
+                actor,alternative,world.minute))
+            return alternative;
+        return std::nullopt;
     }
     // Never grant a new virtual action. The Core must have produced
     // a positive, currently applicable candidate from actual world truth.
