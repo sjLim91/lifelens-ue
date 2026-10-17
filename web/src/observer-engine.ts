@@ -324,6 +324,9 @@ export function startObserverEngine(): () => void {
     threeWorldRenderer?.setSelectedHumanTrace(null);
     threeWorldRenderer?.setSelectedSettlement(null);
     refresh();
+    // Building the initial terrain is presentation work, not elapsed life.
+    // Start the new world's wall-clock baseline after that synchronous work.
+    simulationClock?.resetAccumulator();
   }
 
   function selectResident(residentId: string | null): void {
@@ -602,3 +605,4 @@ export function startObserverEngine(): () => void {
     worldSession = null;
   };
   }
+

@@ -44,6 +44,12 @@ jobs:
           npm install --prefix web --no-save --ignore-scripts --no-audit --no-fund playwright
           cd web
           npx playwright install --with-deps chromium
+          python3 ../Tools/prepare_web_character_assets.py
+          npm run typecheck
+          node tests/resident-motion/run.mjs
+          node tests/resident-lifecycle/run.mjs
+          node tests/resident-lifecycle/integration.mjs
+          node tests/native-resident/browser.mjs
           npm run build -- --config tests/native-resident/vite.config.mjs
       - name: Verify actual WASM residents use the new skins
         working-directory: web

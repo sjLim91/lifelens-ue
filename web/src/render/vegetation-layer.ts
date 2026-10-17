@@ -70,8 +70,9 @@ export class VegetationLayer {
   }
   update(camera: THREE.Camera): void { for (const asset of this.actualTrees) asset.update(camera); }
   setObservationFocus(camera: THREE.Camera, target: THREE.Vector3 | null,
-    selected: boolean): void {
+    selected: boolean, residents: readonly THREE.Vector3[] = []): void {
     this.observerClarity.set(camera, target, selected);
+    this.observerClarity.setResidents(residents);
   }
 
   setTerrain(window: TerrainWindow, resources = new NaturalResourceProjection({ available: false }, window)): void {
@@ -247,3 +248,4 @@ export class VegetationLayer {
 
   dispose(): void { this.stumps.geometry.dispose(); this.stumpMaterial.dispose(); this.stumps.dispose(); for (const asset of this.actualTrees) asset.dispose(); this.group.clear(); }
 }
+

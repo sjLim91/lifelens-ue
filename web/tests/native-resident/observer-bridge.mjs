@@ -16,7 +16,7 @@ WorldRenderer.prototype.setCamera=function(state){qa.renderer=this;return camera
 qa.sample=()=>({runtime:observerStore.getSnapshot().runtime,minute:observerStore.getSnapshot().world.minute,
  actors:[...(qa.world?.residentLayer.actors??[])].map(([id,a])=>({id,sex:a.appearanceFacts.sex,age:a.appearanceFacts.ageYears,
  native:!!a.model.getObjectByName('LifeLensNativeResident'),version:a.model.getObjectByName('LifeLensAuthoredAnatomicalBody')?.geometry.userData.anatomyVersion,
- action:a.active,position:a.root.position.toArray(),coreGrid:[a.appearanceFacts.gridX,a.appearanceFacts.gridY]}))});
+ action:a.active,position:a.root.position.toArray(),coreGrid:[a.motionFacts.gridX,a.motionFacts.gridY],visible:a.root.visible,bodyVisible:a.model.getObjectByName('LifeLensAuthoredAnatomicalBody')?.material.visible}))});
 qa.capture=async()=>{
  qa.renderer.stop();qa.world.update(.016);await qa.renderer.renderer.compileAsync(qa.world.scene,qa.world.camera);
  qa.renderer.renderer.render(qa.world.scene,qa.world.camera);
