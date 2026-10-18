@@ -239,7 +239,7 @@ export class LifeLensCoreBridge {
       return this.client.submitLocalCognitiveProposal(
         request.actor, request.minute, observedWorldSeed,
         proposal.intent, proposal.priority, proposal.targetResident ?? '',
-        `local-${digest.toString(16).padStart(8, '0')}`,
+        `local-${digest.toString(16).padStart(8, '0')}`, request.trigger,
       );
     } catch {
       return false;
