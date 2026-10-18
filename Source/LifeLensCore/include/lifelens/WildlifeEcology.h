@@ -139,6 +139,81 @@ inline int wildlifeAliveCount(const WildlifePopulation& state,WildlifeSpecies s)
         [s](const WildlifeAnimal& a){return a.alive && a.species==s;}));
 }
 
+// Actual Core resident positions (not observer/camera positions) constrain
+// wild-animal movement. The current ecology does not implement human attacks
+// or wounds: until those Core outcomes exist, do NOT stage predators as tame
+// companions walking through the founders. Wildlife withdraws from contact.
+// Radii are logical grid cells; they are not physical metres.
+inline int wildlifeHumanAvoidanceRadius(WildlifeSpecies s)
+{
+    switch(s){
+        case WildlifeSpecies::Tiger: return 18;
+        case WildlifeSpecies::Wolf: return 14;
+        case WildlifeSpecies::Deer: return 10;
+        case WildlifeSpecies::Hare: return 8;
+        case WildlifeSpecies::FreshwaterFish: return 0;
+    }
+    return 0;
+}
+
+inline std::int64_t wildlifeNearestResidentDistance(
+    GridPos pos,const std::vector<GridPos>& residents)
+{
+    std::int64_t nearest=std::numeric_limits<std::int64_t>::max();
+    for(const GridPos other:residents){
+        const std::int64_t dx=static_cast<std::int64_t>(pos.x)-other.x;
+        const std::int64_t dy=static_cast<std::int64_t>(pos.y)-other.y;
+        nearest=std::min(nearest,std::abs(dx)+std::abs(dy));
+    }
+    return nearest;
+}
+
+inline bool wildlifeResidentClose(
+    const WildlifeAnimal& animal,const std::vector<GridPos>& residents)
+{
+    const int radius=wildlifeHumanAvoidanceRadius(animal.species);
+    return animal.alive &&radius>0 &&!residents.empty()
+        &&wildlifeNearestResidentDistance(animal.position,residents)<=radius;
+}
+
+// An already close animal moves away in bounded *single-grid* steps, never
+// teleports, never enters a neighbouring unmaterialized chunk, never invents
+// an attack or changes the human's position/health. Returns "danger detected"
+// even if a border prevents escape, so roaming/hunting cannot walk into humans.
+inline bool wildlifeRetreatFromResidents(
+    const WildlifePopulation& population,WildlifeAnimal& animal,
+    const std::vector<GridPos>& residents,int steps)
+{
+    if(!wildlifeResidentClose(animal,residents)) return false;
+    const GridPos origin=chunkOriginGrid(population.habitat.coord);
+    for(int i=0;i<std::max(0,steps);++i){
+        const GridPos current=animal.position;
+        GridPos best=current;
+        std::int64_t bestDistance=wildlifeNearestResidentDistance(
+            current,residents);
+        for(int dx=-1;dx<=1;++dx){
+            for(int dy=-1;dy<=1;++dy){
+                const GridPos candidate{
+                    std::clamp(current.x+dx,origin.x,
+                               origin.x+WildlifeCellsPerChunk-1),
+                    std::clamp(current.y+dy,origin.y,
+                               origin.y+WildlifeCellsPerChunk-1)
+                };
+                const auto distance=wildlifeNearestResidentDistance(
+                    candidate,residents);
+                if(distance>bestDistance){
+                    best=candidate;
+                    bestDistance=distance;
+                }
+            }
+        }
+        if(best.x==current.x &&best.y==current.y) break;
+        animal.position=best;
+        if(!wildlifeResidentClose(animal,residents)) break;
+    }
+    return true;
+}
+
 inline int wildlifeMaturityDays(WildlifeSpecies s)
 {
     switch(s){
@@ -235,7 +310,8 @@ inline WildlifePopulation startWildlifePopulation(
 // Explicit one-day Core-domain transition. Calling twice for the same day
 // never produces extra food, offspring, or RNG draws. No time-skips allowed.
 inline WildlifeStepResult stepWildlifeDay(
-    WildlifePopulation& state,std::int64_t targetDay)
+    WildlifePopulation& state,std::int64_t targetDay,
+    const std::vector<GridPos>& residentPositions={})
 {
     WildlifeStepResult report;
     if(!state.habitat.available
@@ -260,7 +336,8 @@ inline WildlifeStepResult stepWildlifeDay(
         animal.hunger01=std::min(1.0,animal.hunger01+(tiger?0.16:predator?0.20:fish?0.085:0.12));
         bool ate=false;
         bool pursuedPrey=false;
-        if(predator){
+        const bool humanNear=wildlifeResidentClose(animal,residentPositions);
+        if(predator && !humanNear){
             WildlifeAnimal* prey=nullptr;
             int nearestDistance=std::numeric_limits<int>::max();
             for(auto& candidate:state.animals){
@@ -299,7 +376,7 @@ inline WildlifeStepResult stepWildlifeDay(
                     ate=true;
                 }
             }
-        }else{
+        }else if(!humanNear){
             const double chance=fish?0.68:std::clamp(
                 0.15+0.68*state.habitat.forage01,0.0,0.90);
             ate=wildlifeRoll(state,animal.id,targetDay,0x464f52414745ULL)<chance;
@@ -314,6 +391,13 @@ inline WildlifeStepResult stepWildlifeDay(
             continue;
         }
         if(fish || pursuedPrey) continue;
+        if(humanNear){
+            const GridPos before=animal.position;
+            wildlifeRetreatFromResidents(state,animal,residentPositions,3);
+            if(before.x!=animal.position.x ||before.y!=animal.position.y)
+                ++report.moved;
+            continue;
+        }
         const std::uint64_t choice=wildlifeHash(
             state.worldSeed,state.habitat.coord,
             animal.id,static_cast<std::uint64_t>(targetDay),0x4d4f5645ULL);
@@ -363,10 +447,13 @@ enum class WildlifeBehavior : std::uint8_t {
 
 // Read-only Core explanation for observers; never fabricate browser agency.
 inline WildlifeBehavior wildlifeBehavior(
-    const WildlifePopulation& population,const WildlifeAnimal& animal)
+    const WildlifePopulation& population,const WildlifeAnimal& animal,
+    const std::vector<GridPos>& residentPositions={})
 {
     if(animal.species==WildlifeSpecies::FreshwaterFish)
         return WildlifeBehavior::Swim;
+    if(wildlifeResidentClose(animal,residentPositions))
+        return WildlifeBehavior::Flee;
     const bool predator=animal.species==WildlifeSpecies::Wolf
         || animal.species==WildlifeSpecies::Tiger;
     int nearestPrey=1000000,nearestThreat=1000000;
@@ -394,7 +481,9 @@ inline WildlifeBehavior wildlifeBehavior(
 // One authoritative spatial step per simulation hour. Age, hunger, births,
 // hunting kills and capacity remain day-owned; no new snapshot fields or
 // camera-driven ecology. Call only on the absolute Core hour boundary.
-inline int stepWildlifeHour(WildlifePopulation& population,std::int64_t hourIndex)
+inline int stepWildlifeHour(
+    WildlifePopulation& population,std::int64_t hourIndex,
+    const std::vector<GridPos>& residentPositions={})
 {
     if(!population.habitat.available || hourIndex<=0) return 0;
     const GridPos origin=chunkOriginGrid(population.habitat.coord);
@@ -402,7 +491,14 @@ inline int stepWildlifeHour(WildlifePopulation& population,std::int64_t hourInde
     for(auto& animal:population.animals){
         if(!animal.alive || animal.species==WildlifeSpecies::FreshwaterFish)
             continue;
-        const auto behavior=wildlifeBehavior(population,animal);
+        const GridPos before=animal.position;
+        if(wildlifeRetreatFromResidents(
+               population,animal,residentPositions,3)){
+            if(before.x!=animal.position.x ||before.y!=animal.position.y)
+                ++moved;
+            continue;
+        }
+        const auto behavior=wildlifeBehavior(population,animal,residentPositions);
         const std::uint64_t roll=wildlifeHash(
             population.worldSeed,population.habitat.coord,animal.id,
             static_cast<std::uint64_t>(hourIndex),0x57494c44484f5552ULL);
