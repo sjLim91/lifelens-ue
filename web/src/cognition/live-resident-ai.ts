@@ -1,5 +1,5 @@
 import type {
-  CognitiveIntent, CognitiveProposalDto, CognitiveRequestDto,
+  CognitiveIntent, CognitiveProposalDto, CognitiveRequestDto, CognitiveTrigger,
 } from './cognitive-contract';
 import { CognitionScheduler } from './cognition-scheduler';
 import type { CognitiveProvider } from './cognitive-provider';
@@ -20,7 +20,7 @@ export const LIVE_AI_BUDGET = Object.freeze({
 
 export interface ResidentAISource {
   worldOverview(): WorldOverview;
-  cognitiveRequest(actor: string, trigger: 'Reflection'): CognitiveRequestDto | null;
+  cognitiveRequest(actor: string, trigger: 'Reflection' | 'ResourceScarcity'): CognitiveRequestDto | null;
   submitLocalCognitiveProposal(
     request: CognitiveRequestDto,
     proposal: CognitiveProposalDto,
@@ -51,6 +51,37 @@ export function liveActionableCognitiveRequest(
       (intent) => EXECUTABLE_RESIDENT_AI_INTENTS.has(intent),
     ),
   };
+}
+
+// Only firsthand, Core-authored source exhaustion/removal evidence can make
+// the live model's strategic *attention* a scarcity event. A local model
+// never sends its own invented trigger or asserted world fact into Core.
+export function residentAIObservedTrigger(
+  request: CognitiveRequestDto,
+): Extract<CognitiveTrigger, 'Reflection' | 'ResourceScarcity'> {
+  const latest = new Map<string, { minute: number; lost: boolean }>();
+  for (const memory of request.memories) {
+    if (memory.source !== 'DirectWitness' || memory.witnessed !== true
+      || memory.minute < 0 || memory.minute > request.minute
+      || request.minute - memory.minute > 1440
+      || memory.tags?.length !== 3
+      || memory.tags[0] !== 'action_experience'
+      || (memory.tags[1] !== 'Civilization:Gather:PlantFood'
+        && memory.tags[1] !== 'Civilization:Gather:Water')
+      || (memory.tags[2] !== 'failure' && memory.tags[2] !== 'success')) continue;
+    const key = memory.tags[1];
+    const prefix = `실제 문명 행동 ${key} 수행을 시도했지만 실패했다 (직접 확인한 원인: `;
+    const lost = memory.tags[2] === 'failure'
+      && (memory.what === `${prefix}source-exhausted)`
+        || memory.what === `${prefix}source-removed)`);
+    const prior = latest.get(key);
+    if (!prior || memory.minute > prior.minute
+      || (memory.minute === prior.minute && !lost)) {
+      latest.set(key, { minute: memory.minute, lost });
+    }
+  }
+  return [...latest.values()].some(record => record.lost)
+    ? 'ResourceScarcity' : 'Reflection';
 }
 
 export type ResidentAIDecisionStatus =
@@ -277,7 +308,15 @@ export class ResidentAIController {
     let request: CognitiveRequestDto | null;
     try {
       world = source.worldOverview();
-      const observed = source.cognitiveRequest(actor, 'Reflection');
+      let observed = source.cognitiveRequest(actor, 'Reflection');
+      if (observed !== null && residentAIObservedTrigger(observed) === 'ResourceScarcity') {
+        const scarcity = source.cognitiveRequest(actor, 'ResourceScarcity');
+        // Both observations must refer to the same authoritative Core tick.
+        // If the world changed between reads, do not invent a new context.
+        if (scarcity && scarcity.actor === observed.actor
+          && scarcity.minute === observed.minute
+          && scarcity.trigger === 'ResourceScarcity') observed = scarcity;
+      }
       request = observed === null ? null : liveActionableCognitiveRequest(observed);
     } catch {
       // The Core may be resetting while the observer refreshes. A failed
