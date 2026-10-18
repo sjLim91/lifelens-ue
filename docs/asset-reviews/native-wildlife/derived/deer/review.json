@@ -1,0 +1,29 @@
+{
+  "status": "REQUIRES_VISUAL_AND_RUNTIME_REVIEW",
+  "sourceSha256": "fdf8e48b709094c726ba90fefa1dcaadd47486dff4f12e4fc4525d837d93bda6",
+  "generatorSha256": "9d9a42fecd8be21622e23c498d045c0c5c2a4b44ba820c1634b4aadde33393a1",
+  "views": [
+    "idle-front",
+    "idle-side",
+    "idle-quarter",
+    "idle-back",
+    "walk",
+    "run",
+    "hunt",
+    "forage",
+    "drink",
+    "rest"
+  ],
+  "bounds": [
+    [
+      -0.916467010974884,
+      -0.8606594204902649,
+      -1.5692785382270813e-07
+    ],
+    [
+      0.9103774428367615,
+      0.858272910118103,
+      2.048672914505005
+    ]
+  ]
+}

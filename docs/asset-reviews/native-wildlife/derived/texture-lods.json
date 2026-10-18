@@ -1,0 +1,534 @@
+[
+  {
+    "file": "deer-mid.glb",
+    "decodedRGBABytes": 0,
+    "nonImageBufferSha256": "8ffd3400547761fd2c11544f1a1fd7cddde8885dc6df5139ae0e169670e72e42",
+    "sha256": "3013d613bf9fc501de11d855ad8ee95d5b96cf10511d5013bf06db6934d54bb1",
+    "bytes": 5765572,
+    "images": []
+  },
+  {
+    "file": "deer-rigged.glb",
+    "decodedRGBABytes": 0,
+    "nonImageBufferSha256": "f8f60686126af9f2d510779922648ed31129ec6b2d8ab813f42c67b7433686d2",
+    "sha256": "fdf8e48b709094c726ba90fefa1dcaadd47486dff4f12e4fc4525d837d93bda6",
+    "bytes": 5658684,
+    "images": []
+  },
+  {
+    "file": "freshwater-fish-mid.glb",
+    "decodedRGBABytes": 131072,
+    "nonImageBufferSha256": "398f7dd48adc14c131818502b9b2ee71e6fa6c12498f4bd440ce6dfb7cfaae5f",
+    "sha256": "a6210b872b5bc07de18bb77e6b934dfced94ff44f95ce3ae1c2592cdabb12f19",
+    "bytes": 903372,
+    "images": [
+      {
+        "index": 0,
+        "source": [
+          512,
+          256
+        ],
+        "output": [
+          256,
+          128
+        ]
+      }
+    ]
+  },
+  {
+    "file": "freshwater-fish-rigged.glb",
+    "decodedRGBABytes": 524288,
+    "nonImageBufferSha256": "926aeef4cb9013fac717c80dbb4c96206fccf128438e85f099c20435ed1e180f",
+    "sha256": "793a6c9c32753073827d87016d54fc63a85b5f986d3257dc82073c9f11621160",
+    "bytes": 873548,
+    "images": [
+      {
+        "index": 0,
+        "source": [
+          512,
+          256
+        ],
+        "output": [
+          512,
+          256
+        ]
+      }
+    ]
+  },
+  {
+    "file": "hare-mid.glb",
+    "decodedRGBABytes": 2097152,
+    "nonImageBufferSha256": "21ee472e1b15a666bfe320d1366c44569579e3369b08167e7e94b6fb29ae6fee",
+    "sha256": "66bf90d843e4037815ec39d4a4cebda66ea76c6622f600a4cfb22352822c0a8e",
+    "bytes": 1388820,
+    "images": [
+      {
+        "index": 0,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          512,
+          512
+        ]
+      },
+      {
+        "index": 1,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          512,
+          512
+        ]
+      }
+    ]
+  },
+  {
+    "file": "hare-rigged.glb",
+    "decodedRGBABytes": 8388608,
+    "nonImageBufferSha256": "dd70a944ca87cec8b325066ac53563d303e113362e8e7c15237532e4dad9bd08",
+    "sha256": "cbe2586fc855df95d07f9bcb52f0d3d43c5b26081f14078941bfb88e1704beda",
+    "bytes": 2629568,
+    "images": [
+      {
+        "index": 0,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "index": 1,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          1024,
+          1024
+        ]
+      }
+    ]
+  },
+  {
+    "file": "wolf-mid.glb",
+    "decodedRGBABytes": 4718592,
+    "nonImageBufferSha256": "6e1d9c27a6189afee3febd922c67578da1da9b917bfe5b87f68d8b197d1c8c12",
+    "sha256": "838c2c60a7641563764425514b866029de0d37eb28457dbb03a8dac0f4d75230",
+    "bytes": 2662296,
+    "images": [
+      {
+        "index": 0,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          512,
+          512
+        ]
+      },
+      {
+        "index": 1,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          512,
+          512
+        ]
+      },
+      {
+        "index": 2,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          512,
+          512
+        ]
+      },
+      {
+        "index": 3,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 4,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 5,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 6,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 7,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 8,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 9,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 10,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 11,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 12,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 13,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 14,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          128,
+          128
+        ]
+      },
+      {
+        "index": 15,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 16,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 17,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      }
+    ]
+  },
+  {
+    "file": "wolf-rigged.glb",
+    "decodedRGBABytes": 18874368,
+    "nonImageBufferSha256": "eb2f7dfa9a3fbaa12b0d7b01d4235cc04503c6709ff8718c27bd44713f211672",
+    "sha256": "802ae9ad995038fbb24dda46b64bbb4172b5bcc74c0f8896e058269baa92c08b",
+    "bytes": 3761612,
+    "images": [
+      {
+        "index": 0,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "index": 1,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "index": 2,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "index": 3,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 4,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 5,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 6,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 7,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 8,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 9,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 10,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 11,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 12,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 13,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 14,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          256,
+          256
+        ]
+      },
+      {
+        "index": 15,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          512,
+          512
+        ]
+      },
+      {
+        "index": 16,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          512,
+          512
+        ]
+      },
+      {
+        "index": 17,
+        "source": [
+          1024,
+          1024
+        ],
+        "output": [
+          512,
+          512
+        ]
+      }
+    ]
+  }
+]

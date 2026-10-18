@@ -1,6 +1,143 @@
 {
   "status": "FAIL",
-  "error": "Error: browser.newPage: Target page, context or browser has been closed",
-  "records": [],
+  "error": "TimeoutError: page.waitForFunction: Timeout 30000ms exceeded.",
+  "records": [
+    {
+      "species": "Hare",
+      "id": "25:32:1704075738371588097",
+      "behavior": "Rest",
+      "sex": "Female",
+      "gridX": 824,
+      "gridY": 1028,
+      "baseline": true,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [],
+      "view": "back",
+      "frames": 22,
+      "visibleAnimals": 18,
+      "renderer": {
+        "frame": 22,
+        "calls": 16,
+        "triangles": 551904,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Hare",
+      "id": "25:32:1704075738371588097",
+      "behavior": "Rest",
+      "sex": "Female",
+      "gridX": 824,
+      "gridY": 1028,
+      "baseline": false,
+      "coreUnchanged": true,
+      "importedActor": true,
+      "clip": "rest",
+      "tier": "near",
+      "farIds": [],
+      "view": "back",
+      "frames": 24,
+      "visibleAnimals": 18,
+      "renderer": {
+        "frame": 24,
+        "calls": 143,
+        "triangles": 347069,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Hare",
+      "id": "25:32:1704075738371588097",
+      "behavior": "Rest",
+      "sex": "Female",
+      "gridX": 824,
+      "gridY": 1028,
+      "baseline": false,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [
+        "27:32:16424469176338350083",
+        "27:32:16424469176338350084",
+        "27:32:16424469176338350081",
+        "27:32:16424469176338350085",
+        "27:32:16424469176338350082",
+        "25:32:1704075738371588098",
+        "25:32:1704075738371588099",
+        "25:32:1704075738371588097",
+        "25:32:1704075738371588100"
+      ],
+      "view": "far",
+      "frames": 27,
+      "visibleAnimals": 18,
+      "renderer": {
+        "frame": 27,
+        "calls": 26,
+        "triangles": 34145,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Deer",
+      "id": "25:32:1704075738371588102",
+      "behavior": "Rest",
+      "sex": "Male",
+      "gridX": 815,
+      "gridY": 1046,
+      "baseline": true,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [],
+      "view": "back",
+      "frames": 21,
+      "visibleAnimals": 18,
+      "renderer": {
+        "frame": 21,
+        "calls": 14,
+        "triangles": 550880,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    }
+  ],
   "errors": []
 }

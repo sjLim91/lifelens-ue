@@ -1,0 +1,24 @@
+{
+  "status": "REQUIRES_VISUAL_AND_RUNTIME_REVIEW",
+  "sourceSha256": "793a6c9c32753073827d87016d54fc63a85b5f986d3257dc82073c9f11621160",
+  "generatorSha256": "9d9a42fecd8be21622e23c498d045c0c5c2a4b44ba820c1634b4aadde33393a1",
+  "views": [
+    "idle-front",
+    "idle-side",
+    "idle-quarter",
+    "idle-back",
+    "swim"
+  ],
+  "bounds": [
+    [
+      -0.03829331323504448,
+      -0.3266092538833618,
+      -0.0044508809223771095
+    ],
+    [
+      0.038293253630399704,
+      0.32569000124931335,
+      0.25479796528816223
+    ]
+  ]
+}

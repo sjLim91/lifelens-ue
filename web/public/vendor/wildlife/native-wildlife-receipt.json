@@ -13,7 +13,14 @@
       "sha256": "bf554a3c4a8b3684af8886427293e8def35ed2af7e21296eaf6903d77007bb5c",
       "license": "CC-BY-4.0",
       "original": "https://sketchfab.com/3d-models/347e5d4fbee14e53811c5df2221be8d0",
-      "author": "DarryleH"
+      "author": "DarryleH",
+      "upstream": {
+        "uid": "06598a376fb64c909a69dbfb9fe28d84",
+        "sha256": "139ca8c5c8b1e55bfaddf460fb6c0352ceab5321fb39ec26eac5175bc9b4a92b",
+        "license": "CC-BY-4.0",
+        "original": "https://sketchfab.com/3d-models/06598a376fb64c909a69dbfb9fe28d84",
+        "author": "Tyriese Miller"
+      }
     },
     "Wolf": {
       "uid": "9e7aceacef0f4486b605abdf1f62e4ac",
@@ -34,74 +41,74 @@
     {
       "species": "Deer",
       "file": "deer-rigged.glb",
-      "bytes": 5658412,
-      "sha256": "f2084dcee1a5b300642ef5f602a25fcd76debb882d643663c3fc25cb815c7b92"
+      "bytes": 5658684,
+      "sha256": "fdf8e48b709094c726ba90fefa1dcaadd47486dff4f12e4fc4525d837d93bda6"
     },
     {
       "species": "Deer",
       "file": "deer-mid.glb",
-      "bytes": 5765304,
-      "sha256": "6cd1840f597af0698ca0e8825d9ab92f3dfec220b117f499fb8b519579b61144"
+      "bytes": 5765572,
+      "sha256": "3013d613bf9fc501de11d855ad8ee95d5b96cf10511d5013bf06db6934d54bb1"
     },
     {
       "species": "Deer",
       "file": "deer-far.glb",
-      "bytes": 182140,
-      "sha256": "7b0f80baa0cd0057540058fcb20e1e7ecf9b69bc0c2e1897675bdc87308fae38"
+      "bytes": 182332,
+      "sha256": "919aa7fbfce70c470d8fd8c06c6df51d8c34e45588f7dba5ed3d9ed4c791a199"
     },
     {
       "species": "FreshwaterFish",
       "file": "freshwater-fish-rigged.glb",
-      "bytes": 873476,
-      "sha256": "3a9cd6321b6bb7e9b64e5c4f666898940ba07515e71f4c2d42303243fdfa5996"
+      "bytes": 873548,
+      "sha256": "793a6c9c32753073827d87016d54fc63a85b5f986d3257dc82073c9f11621160"
     },
     {
       "species": "FreshwaterFish",
       "file": "freshwater-fish-mid.glb",
-      "bytes": 1007740,
-      "sha256": "9b284e5e9d4d458df382a68f97fb8dd42d6b4898b4e163f77a7522fd488e80da"
+      "bytes": 903372,
+      "sha256": "a6210b872b5bc07de18bb77e6b934dfced94ff44f95ce3ae1c2592cdabb12f19"
     },
     {
       "species": "FreshwaterFish",
       "file": "freshwater-fish-far.glb",
-      "bytes": 201112,
-      "sha256": "d9d34dd2285bb9f64b9962821562a9a46d6b335ba838b9fb257ccaac80c65730"
+      "bytes": 201216,
+      "sha256": "778d290b9484a0ea1c8e1c1f061f0c2d00dcfdf71e4eae2534fb2ed592133f76"
     },
     {
       "species": "Hare",
       "file": "hare-rigged.glb",
-      "bytes": 2629356,
-      "sha256": "42316c40176d8c1ab93588a4c5f6438da7f3a4f60a59469a8c89e1303acc6a7f"
+      "bytes": 2629568,
+      "sha256": "cbe2586fc855df95d07f9bcb52f0d3d43c5b26081f14078941bfb88e1704beda"
     },
     {
       "species": "Hare",
       "file": "hare-mid.glb",
-      "bytes": 2670108,
-      "sha256": "8379b256e4150f2d252a38e33fe45727eb7673f2bdcaff383bf54371c6613652"
+      "bytes": 1388820,
+      "sha256": "66bf90d843e4037815ec39d4a4cebda66ea76c6622f600a4cfb22352822c0a8e"
     },
     {
       "species": "Hare",
       "file": "hare-far.glb",
-      "bytes": 114092,
-      "sha256": "7b53b83aa0a57cb0564fce992df31f2d3e162d378912bc6aa653cae9b1332e85"
+      "bytes": 114252,
+      "sha256": "66c505f11227a4e74c086ef43026732766991e326f6a13bb82f95dee284bd360"
     },
     {
       "species": "Wolf",
       "file": "wolf-rigged.glb",
-      "bytes": 3956184,
-      "sha256": "c98af11e4d1f371ee973c89ac1b002b44abfdb42d61c604b33f0b1c78b2381b1"
+      "bytes": 3761612,
+      "sha256": "802ae9ad995038fbb24dda46b64bbb4172b5bcc74c0f8896e058269baa92c08b"
     },
     {
       "species": "Wolf",
       "file": "wolf-mid.glb",
-      "bytes": 3996396,
-      "sha256": "faef9ba385ad5dbcda6c0b2a0a41d7dbf3e33e9fd0fcc11458314c617cd1cd4d"
+      "bytes": 2662296,
+      "sha256": "838c2c60a7641563764425514b866029de0d37eb28457dbb03a8dac0f4d75230"
     },
     {
       "species": "Wolf",
       "file": "wolf-far.glb",
-      "bytes": 143368,
-      "sha256": "f844c4f5d1d437cfe3380323d625de0e709cfd193408ca0686afff0cdc74e5f4"
+      "bytes": 144376,
+      "sha256": "aeeb4ad3c9a7910e7faea1b7a355a6e488ce13cea53b610252c707bb93d11fa8"
     }
   ],
   "android": "NOT_MEASURED"

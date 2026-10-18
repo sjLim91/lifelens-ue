@@ -1,14 +1,15 @@
 {
   "status": "DRAFT_SOURCE_DERIVATIVES",
   "runtimeAdmission": false,
-  "generatorSha256": "959ed7cbbe58f752e4ffee66972f7ddad5ed85eaac07b58d6f132e187ec00c2a",
+  "generatorSha256": "26182b02d6fa21aac45e00b8fbe34e32dfa259e0bcf08dc774f18d7930f9a6a2",
   "reports": [
     {
       "species": "Hare",
       "sourceUid": "073eef14ae3c4d06808498c3ba895e67",
       "sourceSha256": "2bb6f05bd3e58ccf437ddb05c77a97ddd8ff67b9841b6b69bce90ba275165538",
-      "derivedSha256": "42316c40176d8c1ab93588a4c5f6438da7f3a4f60a59469a8c89e1303acc6a7f",
-      "bytes": 2629356,
+      "upstreamProof": null,
+      "derivedSha256": "cbe2586fc855df95d07f9bcb52f0d3d43c5b26081f14078941bfb88e1704beda",
+      "bytes": 2629568,
       "contract": {
         "version": 1,
         "species": "Hare",
@@ -490,14 +491,46 @@
             0
           ]
         }
+      },
+      "textureLod": {
+        "file": "hare-rigged.glb",
+        "decodedRGBABytes": 8388608,
+        "nonImageBufferSha256": "dd70a944ca87cec8b325066ac53563d303e113362e8e7c15237532e4dad9bd08",
+        "sha256": "cbe2586fc855df95d07f9bcb52f0d3d43c5b26081f14078941bfb88e1704beda",
+        "bytes": 2629568,
+        "images": [
+          {
+            "index": 0,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              1024,
+              1024
+            ]
+          },
+          {
+            "index": 1,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              1024,
+              1024
+            ]
+          }
+        ]
       }
     },
     {
       "species": "Wolf",
       "sourceUid": "9e7aceacef0f4486b605abdf1f62e4ac",
       "sourceSha256": "8cf8c377a02ac417cda66737c82216c41a2ca329732c1ef7ef88024d7a9afe84",
-      "derivedSha256": "c98af11e4d1f371ee973c89ac1b002b44abfdb42d61c604b33f0b1c78b2381b1",
-      "bytes": 3956184,
+      "upstreamProof": null,
+      "derivedSha256": "802ae9ad995038fbb24dda46b64bbb4172b5bcc74c0f8896e058269baa92c08b",
+      "bytes": 3761612,
       "contract": {
         "version": 1,
         "species": "Wolf",
@@ -1224,14 +1257,230 @@
             0
           ]
         }
+      },
+      "textureLod": {
+        "file": "wolf-rigged.glb",
+        "decodedRGBABytes": 18874368,
+        "nonImageBufferSha256": "eb2f7dfa9a3fbaa12b0d7b01d4235cc04503c6709ff8718c27bd44713f211672",
+        "sha256": "802ae9ad995038fbb24dda46b64bbb4172b5bcc74c0f8896e058269baa92c08b",
+        "bytes": 3761612,
+        "images": [
+          {
+            "index": 0,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              1024,
+              1024
+            ]
+          },
+          {
+            "index": 1,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              1024,
+              1024
+            ]
+          },
+          {
+            "index": 2,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              1024,
+              1024
+            ]
+          },
+          {
+            "index": 3,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 4,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 5,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 6,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 7,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 8,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 9,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 10,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 11,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 12,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 13,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 14,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              256,
+              256
+            ]
+          },
+          {
+            "index": 15,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              512,
+              512
+            ]
+          },
+          {
+            "index": 16,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              512,
+              512
+            ]
+          },
+          {
+            "index": 17,
+            "source": [
+              1024,
+              1024
+            ],
+            "output": [
+              512,
+              512
+            ]
+          }
+        ]
       }
     },
     {
       "species": "Deer",
       "sourceUid": "347e5d4fbee14e53811c5df2221be8d0",
       "sourceSha256": "bf554a3c4a8b3684af8886427293e8def35ed2af7e21296eaf6903d77007bb5c",
-      "derivedSha256": "f2084dcee1a5b300642ef5f602a25fcd76debb882d643663c3fc25cb815c7b92",
-      "bytes": 5658412,
+      "upstreamProof": {
+        "status": "PASS_IDENTICAL_UV_TRIANGLE_MULTISET",
+        "uid": "06598a376fb64c909a69dbfb9fe28d84",
+        "sha256": "139ca8c5c8b1e55bfaddf460fb6c0352ceab5321fb39ec26eac5175bc9b4a92b",
+        "license": "CC-BY-4.0",
+        "original": "https://sketchfab.com/3d-models/06598a376fb64c909a69dbfb9fe28d84",
+        "author": "Tyriese Miller",
+        "uvTopologySha256": "24803779895c5b510519fb3bdc09971beeb53fa09b485438b58793dfa3e71a47"
+      },
+      "derivedSha256": "fdf8e48b709094c726ba90fefa1dcaadd47486dff4f12e4fc4525d837d93bda6",
+      "bytes": 5658684,
       "contract": {
         "version": 1,
         "species": "Deer",
@@ -1240,11 +1489,12 @@
         "forward": "+Z",
         "up": "+Y",
         "license": "CC-BY-4.0",
-        "creator": "DarryleH",
+        "creator": "Tyriese Miller (mesh/rig); DarryleH (animation derivative)",
         "source_sha256": "bf554a3c4a8b3684af8886427293e8def35ed2af7e21296eaf6903d77007bb5c",
         "body": "LifeLensDeerBody",
         "bone_count": 50,
         "status": "DRAFT_REQUIRES_RUNTIME_REVIEW",
+        "upstream_source_sha256": "139ca8c5c8b1e55bfaddf460fb6c0352ceab5321fb39ec26eac5175bc9b4a92b",
         "clips": {
           "idle": {
             "name": "deer_idle",
@@ -1801,14 +2051,23 @@
             0.004375996741909444
           ]
         }
+      },
+      "textureLod": {
+        "file": "deer-rigged.glb",
+        "decodedRGBABytes": 0,
+        "nonImageBufferSha256": "f8f60686126af9f2d510779922648ed31129ec6b2d8ab813f42c67b7433686d2",
+        "sha256": "fdf8e48b709094c726ba90fefa1dcaadd47486dff4f12e4fc4525d837d93bda6",
+        "bytes": 5658684,
+        "images": []
       }
     },
     {
       "species": "FreshwaterFish",
       "sourceUid": "4fa0cb7afc004d65bd49f406bffd5b2b",
       "sourceSha256": "25a1a41d574f80f46d716d74bc2572dc573d00da82811fbfb7767bc54da23871",
-      "derivedSha256": "3a9cd6321b6bb7e9b64e5c4f666898940ba07515e71f4c2d42303243fdfa5996",
-      "bytes": 873476,
+      "upstreamProof": null,
+      "derivedSha256": "793a6c9c32753073827d87016d54fc63a85b5f986d3257dc82073c9f11621160",
+      "bytes": 873548,
       "contract": {
         "version": 1,
         "species": "FreshwaterFish",
@@ -1868,7 +2127,28 @@
             0
           ]
         }
+      },
+      "textureLod": {
+        "file": "freshwater-fish-rigged.glb",
+        "decodedRGBABytes": 524288,
+        "nonImageBufferSha256": "926aeef4cb9013fac717c80dbb4c96206fccf128438e85f099c20435ed1e180f",
+        "sha256": "793a6c9c32753073827d87016d54fc63a85b5f986d3257dc82073c9f11621160",
+        "bytes": 873548,
+        "images": [
+          {
+            "index": 0,
+            "source": [
+              512,
+              256
+            ],
+            "output": [
+              512,
+              256
+            ]
+          }
+        ]
       }
     }
-  ]
+  ],
+  "textureGeneratorSha256": "44de9275b961813fbf2d0d1cd79f9c08e121c434ade90038858d3a7a07506b23"
 }
