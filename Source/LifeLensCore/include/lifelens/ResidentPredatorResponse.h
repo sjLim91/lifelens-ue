@@ -164,4 +164,116 @@ inline void rememberResidentPredatorSighting(
     applyEmotionEvent(resident.emotion,EmotionEventType::Threat);
 }
 
+// An encounter becomes an *injury* only after real adjacent physical
+// contact, sufficient predator hunger and an independently reproducible Core
+// risk roll. Seeing a distant tiger is NOT an attack. A predator cannot wound
+// someone just because a camera or local model mentions it.
+struct ResidentPredatorContact {
+    bool found=false;
+    WildlifeSpecies species=WildlifeSpecies::Tiger;
+    std::uint64_t animalId=0;
+    double hunger01=0.0;
+    GridPos position{};
+    std::int64_t distance=std::numeric_limits<std::int64_t>::max();
+    double roll=1.0;
+};
+
+inline constexpr std::uint64_t ResidentPredatorAttackDomain=
+    0x5245535041544b31ULL; // RESPATK1
+
+inline ResidentPredatorContact observeResidentPredatorContact(
+    const World& world,CharacterId actor,GridPos resident)
+{
+    ResidentPredatorContact contact;
+    if(!world.wildlifeEnabled ||actor==0) return contact;
+    for(const WildlifePopulation& population:world.wildlifePopulations){
+        for(const WildlifeAnimal& animal:population.animals){
+            if(!animal.alive
+               ||(animal.species!=WildlifeSpecies::Tiger
+                  &&animal.species!=WildlifeSpecies::Wolf)
+               ||animal.hunger01<0.80) continue;
+            const auto distance=residentPredatorDistance(
+                resident,animal.position);
+            if(distance>1) continue;
+            if(contact.found &&(distance>contact.distance
+                ||(distance==contact.distance
+                   &&animal.id>=contact.animalId))) continue;
+            contact.found=true;
+            contact.species=animal.species;
+            contact.animalId=animal.id;
+            contact.hunger01=animal.hunger01;
+            contact.position=animal.position;
+            contact.distance=distance;
+            // Stable once per in-world hour, independent of resident iteration
+            // order and the general wildlife/health random streams.
+            contact.roll=wildlifeRoll(population,animal.id,
+                world.minute/60,ResidentPredatorAttackDomain^actor);
+        }
+    }
+    return contact;
+}
+
+inline bool recentResidentPredatorContactInjury(
+    const Character& resident,int minute,std::uint64_t animalId)
+{
+    const std::string target=std::to_string(animalId);
+    for(const MemoryRecord& memory:resident.memory.entries){
+        if(memory.source!=MemorySource::DirectWitness
+           ||!memory.witnessed ||memory.sourceCharacter!=resident.id
+           ||memory.minute>minute ||memory.minute<0
+           ||minute-memory.minute>=60
+           ||memory.tags.size()!=2
+           ||memory.tags[0]!="predator_contact_injury"
+           ||memory.tags[1]!=target) continue;
+        return true;
+    }
+    return false;
+}
+
+inline bool applyResidentPredatorContactInjury(
+    const World& world,Character& resident,GridPos position)
+{
+    if(!resident.alive ||resident.id==0
+       ||world.minute<0 ||world.minute%60!=0) return false;
+    const auto contact=observeResidentPredatorContact(
+        world,resident.id,position);
+    if(!contact.found
+       ||recentResidentPredatorContactInjury(
+           resident,world.minute,contact.animalId)) return false;
+    // A starving tiger is more dangerous at arm's length than a wolf.
+    // Outside genuine contact or at lower hunger, no injury is generated.
+    const double chance=contact.species==WildlifeSpecies::Tiger
+        ? 0.38+0.32*healthClamp01((contact.hunger01-0.80)/0.20)
+        : 0.20+0.25*healthClamp01((contact.hunger01-0.80)/0.20);
+    if(contact.roll>=chance) return false;
+
+    const double severity=contact.species==WildlifeSpecies::Tiger
+        ? 0.32 : 0.22;
+    resident.health.injurySeverity=healthClamp01(
+        resident.health.injurySeverity+severity);
+    ++resident.health.accidentEpisodes;
+    resident.health.lastAccidentMinute=world.minute;
+    applyEmotionEvent(resident.emotion,EmotionEventType::Threat,1.35);
+
+    MemoryRecord memory;
+    memory.who=resident.id;
+    memory.sourceCharacter=resident.id;
+    memory.source=MemorySource::DirectWitness;
+    memory.witnessed=true;
+    memory.minute=world.minute;
+    memory.what=contact.species==WildlifeSpecies::Tiger
+        ? "야생 호랑이와 실제 근접 접촉 중 공격을 받아 부상했다"
+        : "야생 늑대와 실제 근접 접촉 중 공격을 받아 부상했다";
+    memory.where="Core 야생동물 실제 근접 접촉";
+    memory.importance=1.0;
+    memory.confidence=1.0;
+    memory.emotionValence=-0.95;
+    memory.emotionIntensity=1.0;
+    memory.tags={
+        "predator_contact_injury",std::to_string(contact.animalId)
+    };
+    resident.memory.add(memory);
+    return true;
+}
+
 } // namespace lifelens

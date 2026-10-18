@@ -3767,6 +3767,13 @@ void Simulation::step(){
         c.needs.decay(ruleset_.needs,c.metabolism,c.sleepTendency);
         c.needs.apply(healthNeedsPressurePerMinute(c.health));
         advanceEmotionOneMinute(c);
+        // Contact injuries use the SAME authoritative wildlife coordinates
+        // as avoidance. A hungry adjacent predator can strike once on a
+        // Core hour boundary before anyone retreats. The health subsystem
+        // owns severity, mobility cost, daily healing and accident mortality.
+        if(applyResidentPredatorContactInjury(world_,c,r.pos)){
+            emit(c.name+" 야생 포식자와 실제 근접 접촉 중 공격을 받아 부상");
+        }
         if(requiresDirectCare(c.lifeStage)){
             clearRuntimeActivity(r);
             continue;
