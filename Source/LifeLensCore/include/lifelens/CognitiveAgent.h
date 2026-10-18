@@ -311,11 +311,10 @@ inline CognitiveRequest buildCognitiveRequest(
             if(a.who!=b.who) return a.who<b.who;
             return a.what<b.what;
         });
-    // A resident's own newly completed action can be drowned out by many
-    // highly salient but unrelated memories. Keep ONE recent firsthand
-    // outcome in the already-bounded context when the normal recall ranking
-    // would otherwise omit all such evidence. This does not assert truth
-    // about other residents, create an outcome, or expand the context limit.
+    // Reserve one of the existing bounded slots for the resident's MOST
+    // RECENT firsthand outcome. Merely keeping any high-recall old outcome
+    // can hide a newer, low-salience failed attempt from the next local AI
+    // request. Never create an outcome or elevate hearsay/inference.
     const auto directActionEvidence=[&](const CognitiveMemoryEvidence& m){
         if(m.source!=MemorySource::DirectWitness ||!m.witnessed
            ||m.minute<0 ||m.minute>currentMinute
@@ -326,34 +325,29 @@ inline CognitiveRequest buildCognitiveRequest(
     };
     if(memoryLimit>0 &&memories.size()>memoryLimit){
         const std::size_t selected=memoryLimit;
-        bool alreadyRepresented=false;
-        for(std::size_t i=0;i<selected;++i)
-            if(directActionEvidence(memories[i])){
-                alreadyRepresented=true;
-                break;
-            }
-        if(!alreadyRepresented){
-            std::size_t best=memories.size();
-            for(std::size_t i=selected;i<memories.size();++i){
-                if(!directActionEvidence(memories[i])) continue;
-                if(best==memories.size()
-                   ||memories[i].minute>memories[best].minute
-                   ||(memories[i].minute==memories[best].minute
-                      &&memories[i].recallScore>memories[best].recallScore))
-                    best=i;
-            }
-            if(best!=memories.size()){
-                memories[selected-1]=std::move(memories[best]);
-                std::sort(memories.begin(),memories.begin()+selected,
-                    [](const CognitiveMemoryEvidence& x,
-                       const CognitiveMemoryEvidence& y){
-                        if(x.recallScore!=y.recallScore)
-                            return x.recallScore>y.recallScore;
-                        if(x.minute!=y.minute) return x.minute>y.minute;
-                        if(x.who!=y.who) return x.who<y.who;
-                        return x.what<y.what;
-                    });
-            }
+        std::size_t newest=memories.size();
+        for(std::size_t i=0;i<memories.size();++i){
+            if(!directActionEvidence(memories[i])) continue;
+            if(newest==memories.size()
+               ||memories[i].minute>memories[newest].minute
+               ||(memories[i].minute==memories[newest].minute
+                  &&memories[i].recallScore>memories[newest].recallScore))
+                newest=i;
+        }
+        if(newest>=selected &&newest<memories.size()){
+            // The freshest direct experience is not among the normal top
+            // memories. Replace only the weakest selected slot, keeping the
+            // same overall memory budget, ranking, and deterministic order.
+            memories[selected-1]=std::move(memories[newest]);
+            std::sort(memories.begin(),memories.begin()+selected,
+                [](const CognitiveMemoryEvidence& x,
+                   const CognitiveMemoryEvidence& y){
+                    if(x.recallScore!=y.recallScore)
+                        return x.recallScore>y.recallScore;
+                    if(x.minute!=y.minute) return x.minute>y.minute;
+                    if(x.who!=y.who) return x.who<y.who;
+                    return x.what<y.what;
+                });
         }
     }
     if(memories.size()>memoryLimit) memories.resize(memoryLimit);
