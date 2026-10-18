@@ -160,7 +160,11 @@ export class NativeWildlifePool {
     return asset.contract.boundsHeight;
   }
   draw(pose: NativeWildlifePose, tier: Tier, dt: number, ground?: Ground): boolean {
-    if (this.disposed || tier === 'near' && this.near >= 4 || tier === 'mid' && this.mid >= 8) return false;
+    if (this.disposed) return false;
+    // Keep the approved source silhouette when the skin budget is full.
+    // A crowded close view degrades through MID to static instancing.
+    if (tier === 'near' && this.near >= 4) tier = this.mid < 8 ? 'mid' : 'far';
+    if (tier === 'mid' && this.mid >= 8) tier = 'far';
     const key = pose.species + ':' + tier, asset = this.assets.get(key);
     if (!asset) { this.request(pose.species, tier); return false; }
     if (tier === 'far') {

@@ -151,6 +151,23 @@ console.log('PASS same-ID species replacement does not reuse a stale native body
  water.geometry.dispose();water.material.dispose();layer.dispose();
  console.log('PASS native fish fits the unchanged shallow Core river between bed and water surface');
 }
+// Crowds retain approved native surfaces while obeying both skin budgets.
+{
+ const parent=new T.Group(),cache=new Map(),pool=new NativeWildlifePool((s,t)=>{const key=s+':'+t;if(!cache.has(key))cache.set(key,load(s,t));return cache.get(key);});
+ let accepted=0;
+ for(let frame=0;frame<100;frame++){
+  pool.begin(.016);accepted=0;for(let i=0;i<20;i++)if(pool.draw(pose('Hare','crowd:'+i),'near',.016,()=>0))accepted++;pool.end(parent);
+  if(accepted===20)break;await settle();
+ }
+ assert.equal(accepted,20,'Budget overflow lost native animals instead of using reduced source surfaces');
+ const actors=pool.group.children.filter(o=>o.name.startsWith('LifeLensNativeAnimal:'));
+ assert.equal(actors.filter(o=>o.userData.tier==='near').length,4);assert.equal(actors.filter(o=>o.userData.tier==='mid').length,8);
+ const far=pool.group.getObjectByName('LifeLensNativeFar:Hare');assert.equal(far.userData.coreIds.length,8);
+ assert.equal(new Set([...actors.map(o=>o.userData.coreId),...far.userData.coreIds]).size,20,'Overflow duplicated an observed ID');
+ pool.begin(0);pool.draw(pose('Hare','crowd:19'),'near',0,()=>0);pool.end(parent);
+ assert(pool.group.getObjectByName('LifeLensNativeAnimal:crowd:19'));assert(!pool.group.getObjectByName('LifeLensNativeFar:Hare'),'Obsolete crowd far instances remained');pool.dispose();
+ console.log('PASS crowded native surfaces degrade to 4 near / 8 mid / static instances without dropping IDs');
+}
 // A visible subject must not lose its native skin to nearby offscreen animals.
 {
  const {WildlifeLayer}=await source('render/wildlife-layer.ts');

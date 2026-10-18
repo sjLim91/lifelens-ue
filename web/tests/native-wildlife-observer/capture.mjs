@@ -6,6 +6,14 @@ const root=resolve(import.meta.dirname,'../..'),out=resolve(import.meta.dirname,
 const base='http://127.0.0.1:8774',server=spawn('python3',['-m','http.server','8774','--bind','127.0.0.1','--directory',resolve(root,'tests/native-wildlife-observer/preview')],{stdio:'ignore'});
 const delay=ms=>new Promise(r=>setTimeout(r,ms)),results=[],errors=[];let browser,page;
 async function image(name){
+ // A view change can trigger an asynchronous tier replacement. Render it to
+ // completion before recording or comparing this actual application frame.
+ let ready=false;
+ for(let i=0;i<60;i++){
+  ready=await page.evaluate(async()=>{const q=window.__nativeWildlifeObserver;await q.still();return q.baseline||q.view==='far'||!!(q.sample().actor&&q.choices[q.view]);});
+  if(ready)break;await delay(50);
+ }
+ if(!ready)throw Error('Native subject/camera did not settle for '+name);
  const record=await page.evaluate(async()=>{const q=window.__nativeWildlifeObserver;await q.still();const c=q.renderer.renderer.domElement;
   if(c.id!=='threeWorldCanvas'||!document.querySelector('#app .brand')||q.renderer.renderer.getContext().isContextLost())throw Error('Not a valid actual production Observer canvas');
   return {url:c.toDataURL('image/jpeg',.88),width:c.width,height:c.height};});
@@ -35,6 +43,9 @@ try{
    const after=await page.evaluate(()=>JSON.stringify(window.__nativeWildlifeObserver.store.getSnapshot().terrain));if(after!==frozen)throw Error('Paused WASM observation changed during camera-only comparison');
    const sample=await page.evaluate(()=>window.__nativeWildlifeObserver.sample());
    if(!baseline&&sample.actor?.id!==sample.core?.id)throw Error('Native actor did not bind the actual WASM ID');pair.push({baseline,sample});
+   if(!baseline&&(!sample.actor.position.every(Number.isFinite)||sample.actor.behavior!==sample.core.behavior
+     ||Math.abs(sample.actor.position[0]-sample.expectedXZ[0])>1e-6||Math.abs(sample.actor.position[2]-sample.expectedXZ[1])>1e-6))
+    throw Error('Native actor differs from authoritative WASM position or behavior');
   }
   if(JSON.stringify(pair[0].sample.core)!==JSON.stringify(pair[1].sample.core)||pair[0].sample.minute!==pair[1].sample.minute)throw Error('Baseline and native compared different Core observations');
   await page.evaluate(()=>{const q=window.__nativeWildlifeObserver;q.baseline=false;q.view='far';});

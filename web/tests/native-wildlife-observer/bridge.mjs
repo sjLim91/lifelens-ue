@@ -20,7 +20,7 @@ function choose(scene,actor,view,camera){
  const box=new Box3(),p=new Vector3();actor.updateMatrixWorld(true);
  actor.traverse(o=>{if(!o.isSkinnedMesh||!o.visible)return;o.skeleton.update();const count=o.geometry.attributes.position.count;
   for(let i=0;i<count;i+=Math.max(1,Math.floor(count/240))){o.getVertexPosition(i,p);box.expandByPoint(p.applyMatrix4(o.matrixWorld));}});
- if(box.isEmpty())return null;
+ if(box.isEmpty()){qa.cameraDiagnostic={status:'EMPTY_SKIN_BOUNDS'};return null;}
  const target=box.getCenter(new Vector3()),extent=box.getSize(new Vector3()).length(),points=[target.clone()];
  for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z])points.push(new Vector3(x,y,z));
  const colliders=[],matrix=new Matrix4(),origin=actor.position.clone();
@@ -35,7 +35,7 @@ function choose(scene,actor,view,camera){
   let clear=0;for(const point of points){const dir=point.clone().sub(position);ray.set(position,dir.clone().normalize());ray.near=.02;ray.far=dir.length()-.08;if(!ray.intersectObjects(colliders,false).length)clear++;}
   const score=clear-.08*Math.abs(d)-.003*r-.001*h;if(!best||score>best.score)best={score,clear,total:points.length,position:position.sub(origin).toArray(),target:target.clone().sub(origin).toArray()};
  }
- return best;
+ qa.cameraDiagnostic={status:best?'SELECTED':'NO_FITTING_VIEW',bounds:[box.min.toArray(),box.max.toArray()],extent,aspect:camera.aspect};return best;
 }
 WorldScene.prototype.applyCamera=function(state){
  applyCamera.call(this,state);qa.world=this;const terrain=observerStore.getSnapshot().terrain;
@@ -57,9 +57,10 @@ qa.sample=()=>{
  const s=observerStore.getSnapshot(),animal=s.terrain?.wildlife?.animals.find(a=>a.id===qa.id),actor=qa.world?.scene.getObjectByName('LifeLensNativeAnimal:'+qa.id);
  return {minute:s.world.minute,worldSeed:s.world.worldSeed,runtime:s.runtime,
   core:animal?{id:animal.id,species:animal.species,sex:animal.sex,gridX:animal.gridX,gridY:animal.gridY,behavior:animal.behavior}:null,
-  actor:actor?{id:actor.userData.coreId,position:actor.position.toArray(),clip:actor.userData.clip,tier:actor.userData.tier}:null,
+  expectedXZ:animal?[(animal.gridX/grid.gridCellsPerChunk-s.terrain.centerChunkX-.5)*grid.worldUnitsPerChunk,(animal.gridY/grid.gridCellsPerChunk-s.terrain.centerChunkY-.5)*grid.worldUnitsPerChunk]:null,
+  actor:actor?{id:actor.userData.coreId,position:actor.position.toArray(),behavior:actor.userData.behavior,clip:actor.userData.clip,tier:actor.userData.tier}:null,
   farIds:animal?qa.world?.scene.getObjectByName('LifeLensNativeFar:'+animal.species)?.userData.coreIds??[]:[],
-  cameraChoice:qa.choices[qa.view]??null,renderStats:qa.renderer?{...qa.renderer.renderer.info.render}:null,
+  cameraChoice:qa.choices[qa.view]??null,cameraDiagnostic:qa.cameraDiagnostic??null,renderStats:qa.renderer?{...qa.renderer.renderer.info.render}:null,
   canvas:qa.renderer?{id:qa.renderer.renderer.domElement.id,width:qa.renderer.renderer.domElement.width,height:qa.renderer.renderer.domElement.height,contextLost:qa.renderer.renderer.getContext().isContextLost()}:null};
 };
 qa.still=async()=>{qa.renderer.stop();qa.world.update(.016);await qa.renderer.renderer.compileAsync(qa.world.scene,qa.world.camera);qa.renderer.renderer.render(qa.world.scene,qa.world.camera);};
