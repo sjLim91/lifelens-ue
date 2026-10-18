@@ -139,12 +139,10 @@ export class ResidentAISessionAudit {
       }
       for (const [key, counts] of current) {
         const before = prior.get(key);
-        if (!before) {
-          prior.set(key, counts);
-          continue; // Unknown preexisting record: don't manufacture delta.
-        }
-        const success = Math.max(0, counts.success - before.success);
-        const failure = Math.max(0, counts.failure - before.failure);
+        // This resident was observed at baseline. A newly appearing Core
+        // belief is new evidence; use zero as its previous count.
+        const success = Math.max(0, counts.success - (before?.success ?? 0));
+        const failure = Math.max(0, counts.failure - (before?.failure ?? 0));
         if (key.startsWith('experienced-action-outcome:Civilization:')) {
           report.coreCivilizationSuccessEvidenceDelta += success;
           report.coreCivilizationFailureEvidenceDelta += failure;
