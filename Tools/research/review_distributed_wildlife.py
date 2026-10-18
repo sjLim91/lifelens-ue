@@ -22,7 +22,7 @@ CATEGORIES = {
     'Wolf': {'wolf'},
     'FreshwaterFish': {'fish', 'trout', 'salmon', 'carp', 'perch', 'bass', 'pike'},
 }
-EXCLUDED = re.compile(r'\b(ripped|noai|no-ai|noncommercial|pokemon|fortnite|minecraft|warcraft|witcher|skyrim|anthro|furry|taxidermy)\b', re.I)
+EXCLUDED = re.compile(r"\b(ripped|noai|no-ai|non[ -]?commercial|personal use only|editorial only|pokemon|fortnite|minecraft|warcraft|witcher|skyrim|anthro|furry|taxidermy|not my mesh)\b", re.I)
 LICENSES = {
     'https://creativecommons.org/licenses/by/4.0': 'CC-BY-4.0',
     'https://creativecommons.org/publicdomain/zero/1.0': 'CC0-1.0',
@@ -83,7 +83,9 @@ def main():
     lvis = zipped('lvis-annotations.json.gz')
     species_uids = {}
     for species, categories in CATEGORIES.items():
-        found = [uid for key, values in lvis.items() if key.lower() in categories for uid in values]
+        found = [uid for key, values in lvis.items()
+                 if re.sub(r'_?\([^)]*\)', '', key.lower()).replace('_', ' ') in categories
+                 for uid in values]
         species_uids[species] = list(dict.fromkeys(config['selected'].get(species, []) + found))[:48]
     uids = set(uid for values in species_uids.values() for uid in values if uid in paths)
     parts = sorted({paths[uid].split('/')[1] for uid in uids})
@@ -96,7 +98,7 @@ def main():
             annotations.update(batch)
     report = {'status': 'SOURCE_REVIEW_ONLY', 'runtimeAdmission': False,
               'datasetRevision': revision, 'dataset': DATASET,
-              'datasetLicense': 'ODC-By-1.0', 'species': {}}
+              'datasetLicense': 'ODC-By-1.0', 'species': {}, 'selectedUnavailable': []}
     selected_count = 0
     for species, values in species_uids.items():
         candidates = []
@@ -113,7 +115,9 @@ def main():
             if uid not in config['selected'].get(species, []):
                 continue
             if not eligible(item) or uid not in paths:
-                raise ValueError('Selected source failed per-object provenance: ' + uid)
+                report['selectedUnavailable'].append({'species': species, 'uid': uid,
+                    'reason': 'Unavailable in pinned redistribution or per-object provenance rejected'})
+                continue
             raw = read(base + paths[uid])
             gltf = inspect_glb(raw)
             out = ROOT / species / uid
