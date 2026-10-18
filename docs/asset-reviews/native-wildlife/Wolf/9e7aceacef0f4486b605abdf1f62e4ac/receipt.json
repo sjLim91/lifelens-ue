@@ -1,0 +1,233 @@
+{
+  "uid": "9e7aceacef0f4486b605abdf1f62e4ac",
+  "name": "Wolf",
+  "author": {
+    "uid": "411026511ebf48e49dd9456f01157ccc",
+    "username": "HiagoTadeu",
+    "displayName": "Hiago Tadeu",
+    "profileUrl": "https://sketchfab.com/HiagoTadeu",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/0106d4c46c024a179acd3e446085e69c",
+      "images": [
+        {
+          "size": 570,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/0106d4c46c024a179acd3e446085e69c/80b6756ca37146b788d54c8a460674e3.jpeg",
+          "height": 32
+        },
+        {
+          "size": 871,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/0106d4c46c024a179acd3e446085e69c/6d847496db9d42d79399209a427f0cc1.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2061,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/0106d4c46c024a179acd3e446085e69c/7cb5878fc56240dbaeb0bc21bb660562.jpeg",
+          "height": 90
+        },
+        {
+          "size": 2407,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/0106d4c46c024a179acd3e446085e69c/a45d84b33efb4004b625657cb1b8d6d3.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/411026511ebf48e49dd9456f01157ccc"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/9e7aceacef0f4486b605abdf1f62e4ac",
+  "description": "3D model with rig and texture, made using blender and substance.",
+  "faceCount": 10156,
+  "vertexCount": 5513,
+  "animationCount": 1,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T07:29:51.297147+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-068/9e7aceacef0f4486b605abdf1f62e4ac.glb",
+  "sha256": "8cf8c377a02ac417cda66737c82216c41a2ca329732c1ef7ef88024d7a9afe84",
+  "bytes": 3036860,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/9e7aceacef0f4486b605abdf1f62e4ac",
+    "uid": "9e7aceacef0f4486b605abdf1f62e4ac",
+    "name": "Wolf",
+    "staffpickedAt": null,
+    "viewCount": 482,
+    "likeCount": 7,
+    "animationCount": 1,
+    "viewerUrl": "https://sketchfab.com/3d-models/9e7aceacef0f4486b605abdf1f62e4ac",
+    "embedUrl": "https://sketchfab.com/models/9e7aceacef0f4486b605abdf1f62e4ac/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2020-12-04T19:47:21.586077",
+    "tags": [
+      {
+        "name": "animal",
+        "slug": "animal",
+        "uri": "https://api.sketchfab.com/v3/tags/animal"
+      },
+      {
+        "name": "wolf",
+        "slug": "wolf",
+        "uri": "https://api.sketchfab.com/v3/tags/wolf"
+      },
+      {
+        "name": "rigged",
+        "slug": "rigged",
+        "uri": "https://api.sketchfab.com/v3/tags/rigged"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      },
+      {
+        "name": "characters-creatures"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "4296436f760d4ad0b5bed970daca4919",
+          "size": 258761,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/9e7aceacef0f4486b605abdf1f62e4ac/thumbnails/9ebe999623a846dbbbf67c7278e62522/7563d56970d844ecbff64319b927eb94.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "4936d7e83dac42619bf4ba0def2c3c44",
+          "size": 44790,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/9e7aceacef0f4486b605abdf1f62e4ac/thumbnails/9ebe999623a846dbbbf67c7278e62522/6d1dc6a4b3d1421e8194cef499259dbd.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "d4d0013257184c2bb9d88aeacf7dfad6",
+          "size": 25494,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/9e7aceacef0f4486b605abdf1f62e4ac/thumbnails/9ebe999623a846dbbbf67c7278e62522/cf1a6bc27b4945e3b6c60295e281e81a.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "8d410b7bd4ca4c8fa4903d1f8b04ce75",
+          "size": 4892,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/9e7aceacef0f4486b605abdf1f62e4ac/thumbnails/9ebe999623a846dbbbf67c7278e62522/dba094f1fc75484caccf32a74b025d9a.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "b4b54c0e040c4a0d89ea2d348449fde8",
+          "size": 842,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/9e7aceacef0f4486b605abdf1f62e4ac/thumbnails/9ebe999623a846dbbbf67c7278e62522/db948e2fe70f45a1a86acc562a2ae790.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "411026511ebf48e49dd9456f01157ccc",
+      "username": "HiagoTadeu",
+      "displayName": "Hiago Tadeu",
+      "profileUrl": "https://sketchfab.com/HiagoTadeu",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/0106d4c46c024a179acd3e446085e69c",
+        "images": [
+          {
+            "size": 570,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/0106d4c46c024a179acd3e446085e69c/80b6756ca37146b788d54c8a460674e3.jpeg",
+            "height": 32
+          },
+          {
+            "size": 871,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/0106d4c46c024a179acd3e446085e69c/6d847496db9d42d79399209a427f0cc1.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2061,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/0106d4c46c024a179acd3e446085e69c/7cb5878fc56240dbaeb0bc21bb660562.jpeg",
+            "height": 90
+          },
+          {
+            "size": 2407,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/0106d4c46c024a179acd3e446085e69c/a45d84b33efb4004b625657cb1b8d6d3.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/411026511ebf48e49dd9456f01157ccc"
+    },
+    "description": "3D model with rig and texture, made using blender and substance.",
+    "faceCount": 10156,
+    "createdAt": "2020-12-04T18:49:36.093302",
+    "vertexCount": 5513,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 18,
+        "size": 3036860,
+        "type": "glb",
+        "textureMaxResolution": 1024,
+        "faceCount": 10156,
+        "vertexCount": 6551
+      },
+      "gltf": {
+        "textureCount": 18,
+        "size": 2482708,
+        "type": "gltf",
+        "textureMaxResolution": 1024,
+        "faceCount": 10156,
+        "vertexCount": 6551
+      },
+      "source": {
+        "textureCount": null,
+        "size": 6396481,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 2376804,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "Hiago Tadeu (https://sketchfab.com/HiagoTadeu)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/wolf-9e7aceacef0f4486b605abdf1f62e4ac",
+      "title": "Wolf"
+    },
+    "generator": "Sketchfab-12.66.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 90
+    }
+  ],
+  "animations": [
+    {
+      "name": "Armature|Base",
+      "channels": 6
+    }
+  ]
+}

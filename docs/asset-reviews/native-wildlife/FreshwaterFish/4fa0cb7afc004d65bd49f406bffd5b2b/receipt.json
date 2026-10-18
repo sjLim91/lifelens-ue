@@ -1,0 +1,233 @@
+{
+  "uid": "4fa0cb7afc004d65bd49f406bffd5b2b",
+  "name": "Trout Fish Animated",
+  "author": {
+    "uid": "71fd5cdba51f4024aa618c633ca3fe60",
+    "username": "sbastuff",
+    "displayName": "Sba Stuff",
+    "profileUrl": "https://sketchfab.com/sbastuff",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/183e68c07d0447519ea55a6abb22f39a",
+      "images": [
+        {
+          "size": 815,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/183e68c07d0447519ea55a6abb22f39a/f57c961446cd4f0bac82044a1d73c4f1.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1296,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/183e68c07d0447519ea55a6abb22f39a/29ef189e92c2478d91d9f16ecb4e61d9.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2925,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/183e68c07d0447519ea55a6abb22f39a/53dafc2969394a0086db20bb906e24e9.jpeg",
+          "height": 90
+        },
+        {
+          "size": 3407,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/183e68c07d0447519ea55a6abb22f39a/6461b0b2ee76499c940a1249035b9226.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/71fd5cdba51f4024aa618c633ca3fe60"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/4fa0cb7afc004d65bd49f406bffd5b2b",
+  "description": "Aniamted Trougt fish for games, renders and animations. Although its not look good what who cares when it swims in the fish tank. Image reference taken from pixabay. Models is made and projected the UV over that image. Added bones and then added some keyframes for bone animation. A little work was done for low polymesh.\n\n**Referenced Image:**\n![Pixabay Image Reference](https://cdn.pixabay.com/photo/2014/03/24/13/49/trout-294469_960_720.png)",
+  "faceCount": 3224,
+  "vertexCount": 1616,
+  "animationCount": 1,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T07:29:52.057037+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-060/4fa0cb7afc004d65bd49f406bffd5b2b.glb",
+  "sha256": "25a1a41d574f80f46d716d74bc2572dc573d00da82811fbfb7767bc54da23871",
+  "bytes": 762532,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/4fa0cb7afc004d65bd49f406bffd5b2b",
+    "uid": "4fa0cb7afc004d65bd49f406bffd5b2b",
+    "name": "Trout Fish Animated",
+    "staffpickedAt": null,
+    "viewCount": 334,
+    "likeCount": 7,
+    "animationCount": 1,
+    "viewerUrl": "https://sketchfab.com/3d-models/4fa0cb7afc004d65bd49f406bffd5b2b",
+    "embedUrl": "https://sketchfab.com/models/4fa0cb7afc004d65bd49f406bffd5b2b/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2021-02-14T07:58:08.105923",
+    "tags": [
+      {
+        "name": "fish",
+        "slug": "fish",
+        "uri": "https://api.sketchfab.com/v3/tags/fish"
+      },
+      {
+        "name": "trout",
+        "slug": "trout",
+        "uri": "https://api.sketchfab.com/v3/tags/trout"
+      },
+      {
+        "name": "low-poly",
+        "slug": "low-poly",
+        "uri": "https://api.sketchfab.com/v3/tags/low-poly"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      },
+      {
+        "name": "characters-creatures"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "31ad150dfc3f400091cf94da0570f7c0",
+          "size": 43754,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/4fa0cb7afc004d65bd49f406bffd5b2b/thumbnails/aac64d4264784ed0913af2027c357910/54842745141e4ebcacd9105a5b82d3bb.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "e3896e9bff23495ba8c06a8eea3d8ce0",
+          "size": 15495,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/4fa0cb7afc004d65bd49f406bffd5b2b/thumbnails/aac64d4264784ed0913af2027c357910/f0d2a7e91eba48f9a8136c3fd5ac3b90.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "ac9a089b73364b1fb0aa458bcb658645",
+          "size": 9210,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/4fa0cb7afc004d65bd49f406bffd5b2b/thumbnails/aac64d4264784ed0913af2027c357910/d164c2e3ff444018840981de995f092f.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "0e97243bdcbd45478d244dce32e9c227",
+          "size": 1917,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/4fa0cb7afc004d65bd49f406bffd5b2b/thumbnails/aac64d4264784ed0913af2027c357910/c0426f405b4840efa3853b5bd8e8ebbb.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "cf791beee0d643d6b750f65fb1d439a2",
+          "size": 556,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/4fa0cb7afc004d65bd49f406bffd5b2b/thumbnails/aac64d4264784ed0913af2027c357910/c61ebff781e0402eae333a43e060b1d9.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "71fd5cdba51f4024aa618c633ca3fe60",
+      "username": "sbastuff",
+      "displayName": "Sba Stuff",
+      "profileUrl": "https://sketchfab.com/sbastuff",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/183e68c07d0447519ea55a6abb22f39a",
+        "images": [
+          {
+            "size": 815,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/183e68c07d0447519ea55a6abb22f39a/f57c961446cd4f0bac82044a1d73c4f1.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1296,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/183e68c07d0447519ea55a6abb22f39a/29ef189e92c2478d91d9f16ecb4e61d9.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2925,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/183e68c07d0447519ea55a6abb22f39a/53dafc2969394a0086db20bb906e24e9.jpeg",
+            "height": 90
+          },
+          {
+            "size": 3407,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/183e68c07d0447519ea55a6abb22f39a/6461b0b2ee76499c940a1249035b9226.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/71fd5cdba51f4024aa618c633ca3fe60"
+    },
+    "description": "Aniamted Trougt fish for games, renders and animations. Although its not look good what who cares when it swims in the fish tank. Image reference taken from pixabay. Models is made and projected the UV over that image. Added bones and then added some keyframes for bone animation. A little work was done for low polymesh.\n\n**Referenced Image:**\n![Pixabay Image Reference](https://cdn.pixabay.com/photo/2014/03/24/13/49/trout-294469_960_720.png)",
+    "faceCount": 3224,
+    "createdAt": "2021-02-14T07:50:53.765952",
+    "vertexCount": 1616,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 1,
+        "size": 762532,
+        "type": "glb",
+        "textureMaxResolution": 512,
+        "faceCount": 3224,
+        "vertexCount": 9666
+      },
+      "gltf": {
+        "textureCount": 1,
+        "size": 303427,
+        "type": "gltf",
+        "textureMaxResolution": 512,
+        "faceCount": 3224,
+        "vertexCount": 9666
+      },
+      "source": {
+        "textureCount": null,
+        "size": 1969067,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 529627,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "Sba Stuff (https://sketchfab.com/sbastuff)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/trout-fish-animated-4fa0cb7afc004d65bd49f406bffd5b2b",
+      "title": "Trout Fish Animated"
+    },
+    "generator": "Sketchfab-12.68.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 19
+    }
+  ],
+  "animations": [
+    {
+      "name": "Swim",
+      "channels": 40
+    }
+  ]
+}
