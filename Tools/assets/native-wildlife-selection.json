@@ -1,9 +1,9 @@
 {
   "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
   "selected": {
-    "Hare": ["7ab75a9c956340bbb917e5851c714536", "8ddd8d6309244f629b5ee3eed72d94a4"],
+    "Hare": ["7ab75a9c956340bbb917e5851c714536", "8ddd8d6309244f629b5ee3eed72d94a4", "073eef14ae3c4d06808498c3ba895e67", "4bb02868441d447187e27a60acfbc896"],
     "Deer": ["347e5d4fbee14e53811c5df2221be8d0"],
-    "Wolf": ["9e7aceacef0f4486b605abdf1f62e4ac", "79bd16a8c36a45c78ccd13b84b7ca99c"],
+    "Wolf": ["9e7aceacef0f4486b605abdf1f62e4ac", "79bd16a8c36a45c78ccd13b84b7ca99c", "b1bd4a382af347d1bc102bf731296331"],
     "FreshwaterFish": ["4fa0cb7afc004d65bd49f406bffd5b2b", "1eb2a605dad84949bbb8d4911ec41359"]
   }
 }

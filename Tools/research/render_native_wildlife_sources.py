@@ -17,8 +17,9 @@ for source in sorted(ROOT.glob('*/*/source.glb')):
         bpy.data.actions.remove(action)
     bpy.ops.import_scene.gltf(filepath=str(source))
     scene = bpy.context.scene
-    meshes = [obj for obj in scene.objects if obj.type == 'MESH']
     rigs = [obj for obj in scene.objects if obj.type == 'ARMATURE']
+    controls = {bone.custom_shape for rig in rigs for bone in rig.pose.bones if bone.custom_shape}
+    meshes = [obj for obj in scene.objects if obj.type == 'MESH' and obj not in controls]
     assert meshes, 'No source mesh'
     scene.frame_set(1)
     bpy.context.view_layer.update()

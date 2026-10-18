@@ -118,13 +118,17 @@ def main():
                 report['selectedUnavailable'].append({'species': species, 'uid': uid,
                     'reason': 'Unavailable in pinned redistribution or per-object provenance rejected'})
                 continue
-            raw = read(base + paths[uid])
-            gltf = inspect_glb(raw)
             out = ROOT / species / uid
             out.mkdir(parents=True, exist_ok=True)
+            prior = json.loads((out / 'receipt.json').read_text()) if (out / 'receipt.json').is_file() else {}
+            raw = (out / 'source.glb').read_bytes() if (out / 'source.glb').is_file() else b''
+            reuse = prior.get('datasetRevision') == revision and prior.get('sha256') == hashlib.sha256(raw).hexdigest()
+            if not reuse:
+                raw = read(base + paths[uid])
+            gltf = inspect_glb(raw)
             (out / 'source.glb').write_bytes(raw)
             receipt = {**entry, 'purpose': 'CANDIDATE_REVIEW_NOT_RUNTIME', 'runtimeAdmission': False,
-                       'retrievedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                       'retrievedAt': prior['retrievedAt'] if reuse else datetime.datetime.now(datetime.timezone.utc).isoformat(),
                        'datasetRevision': revision, 'downloadUrl': base + paths[uid],
                        'sha256': hashlib.sha256(raw).hexdigest(), 'bytes': len(raw),
                        'originalMetadata': item, 'asset': gltf.get('asset'),

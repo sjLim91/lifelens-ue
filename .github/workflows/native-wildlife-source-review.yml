@@ -27,6 +27,25 @@ jobs:
           sudo apt-get install -y --no-install-recommends blender python3-numpy
       - name: Render licensed originals and their native motion
         run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/research/render_native_wildlife_sources.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prepare offline text and dependency bundles for local verification
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund --prefix web
+          git ls-files -z web Tools Clients Source AGENTS.md | python3 -c 'import sys; names=sys.stdin.buffer.read().split(b"\0"); sys.stdout.buffer.write(b"\0".join(p for p in names if p and not p.endswith((b".png",b".jpg",b".jpeg",b".glb",b".wasm",b".blend",b".zip")))+b"\0")' > /tmp/wildlife-text-paths
+          tar -czf /tmp/wildlife-source-text.tgz --null -T /tmp/wildlife-text-paths
+          tar -czf /tmp/wildlife-node-modules.tgz -C web node_modules
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wildlife-offline-source-text
+          path: /tmp/wildlife-source-text.tgz
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wildlife-offline-dependencies
+          path: /tmp/wildlife-node-modules.tgz
+          retention-days: 3
       - name: Preserve source review receipts on this development branch
         if: always()
         run: |
