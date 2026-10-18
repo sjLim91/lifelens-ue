@@ -14,6 +14,8 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
   );
   const [model, setModel] = useState(state.configuration?.model ?? '');
   const [error, setError] = useState('');
+  const [auditMessage, setAuditMessage] = useState('');
+  const auditReport = residentAI.getAuditReport();
   const decision = state.byResident[resident.id];
   return <section className="resident-ai-live-config">
     <strong>자율 주민 AI — 실제 행동 연결</strong>
@@ -61,6 +63,42 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
       AI가 실제로 참고한 최근 개인 경험 (시뮬레이션 {decision.latestPersonalExperience.minute}분):
       {' '}{decision.latestPersonalExperience.what}
     </p>}
+    <section className="resident-ai-session-audit">
+      <strong>주민 AI 실행 증거 감사</strong>
+      <p className="hint">
+        같은 시드·인구 시드·시작 시점에서 기본 Core와 로컬 AI를 각각 실행해
+        측정 결과를 비교할 수 있습니다. 측정 시작 전 실행 모드를 선택하세요.
+      </p>
+      <button type="button" onClick={() => {
+        setAuditMessage(residentAI.beginAuditSession()
+          ? '현재 세계·실행 모드에서 새 측정을 시작했습니다.'
+          : '세계가 준비되지 않았거나 고속 진행 중입니다.');
+      }}>현재 모드 측정 시작</button>
+      <button type="button" disabled={!auditReport} onClick={async () => {
+        const latest = residentAI.getAuditReport();
+        if (!latest) return;
+        try {
+          await navigator.clipboard.writeText(JSON.stringify(latest, null, 2));
+          setAuditMessage('측정 JSON을 복사했습니다. 다른 실행 결과와 비교하세요.');
+        } catch {
+          setAuditMessage('클립보드 복사에 실패했습니다. 브라우저 권한을 확인해 주세요.');
+        }
+      }}>측정 JSON 복사</button>
+      {auditReport && <p className="hint">
+        {auditReport.mode === 'local-ai' ? '로컬 AI' : '기본 Core'} ·
+        시뮬레이션 {auditReport.startMinute}~{auditReport.endMinute}분 ·
+        승인 {auditReport.decisions.recorded}회 ·
+        Core 문명 경험 성공 증거 증가 {auditReport.coreCivilizationSuccessEvidenceDelta}회 ·
+        실패 증거 증가 {auditReport.coreCivilizationFailureEvidenceDelta}회
+        {auditReport.comparableWithinObservedWindow ? '' : ' · 비교 주의: 측정 연속성 깨짐'}
+      </p>}
+      {auditMessage && <p role="status" className="hint">{auditMessage}</p>}
+      <p className="hint">
+        측정 중 AI 모드 변경·새 게임·고속 진행 시 비교가 제한됩니다.
+        Core 경험 증거는 실제 행동의 기록이지만, AI 때문에 발생했다고 자동 귀속하지 않습니다.
+        주민 이름·개인 기억 내용·모델의 판단 이유는 내보내지 않습니다.
+      </p>
+    </section>
     <p className="hint">
       Core 승인 기록은 행동 실행이나 목표 성공을 의미하지 않습니다.
       무료 모델은 사용자가 로컬에서 실행해야 하며 유료 클라우드 모델은 연결하지 않습니다.
