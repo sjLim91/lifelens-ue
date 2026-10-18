@@ -18,9 +18,9 @@
   {
     "file": "freshwater-fish-mid.glb",
     "decodedRGBABytes": 131072,
-    "nonImageBufferSha256": "398f7dd48adc14c131818502b9b2ee71e6fa6c12498f4bd440ce6dfb7cfaae5f",
-    "sha256": "a6210b872b5bc07de18bb77e6b934dfced94ff44f95ce3ae1c2592cdabb12f19",
-    "bytes": 903372,
+    "nonImageBufferSha256": "8805f8bd5338b1c3ea5f748135c2a74e84eb00bdf16ea5d4c8eff0ffe967c4fc",
+    "sha256": "ddd104c528fc364c15c309d4f60ba7e11e681f8ab32f3f348af97cf1fb9fcb89",
+    "bytes": 903380,
     "images": [
       {
         "index": 0,
@@ -38,9 +38,9 @@
   {
     "file": "freshwater-fish-rigged.glb",
     "decodedRGBABytes": 524288,
-    "nonImageBufferSha256": "926aeef4cb9013fac717c80dbb4c96206fccf128438e85f099c20435ed1e180f",
-    "sha256": "793a6c9c32753073827d87016d54fc63a85b5f986d3257dc82073c9f11621160",
-    "bytes": 873548,
+    "nonImageBufferSha256": "8d4635e50398a55e04e6d2155af4210816ad9531114917948bd6584a6496cbb6",
+    "sha256": "08b2d72f2e78f1b02e8d0dab1661d02b562cca579770465852dd4c66dc074a9a",
+    "bytes": 873556,
     "images": [
       {
         "index": 0,

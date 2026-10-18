@@ -30,18 +30,18 @@
       "files": [
         {
           "file": "freshwater-fish-rigged.glb",
-          "bytes": 873548,
-          "sha256": "793a6c9c32753073827d87016d54fc63a85b5f986d3257dc82073c9f11621160"
+          "bytes": 873556,
+          "sha256": "08b2d72f2e78f1b02e8d0dab1661d02b562cca579770465852dd4c66dc074a9a"
         },
         {
           "file": "freshwater-fish-mid.glb",
-          "bytes": 903372,
-          "sha256": "a6210b872b5bc07de18bb77e6b934dfced94ff44f95ce3ae1c2592cdabb12f19"
+          "bytes": 903380,
+          "sha256": "ddd104c528fc364c15c309d4f60ba7e11e681f8ab32f3f348af97cf1fb9fcb89"
         },
         {
           "file": "freshwater-fish-far.glb",
-          "bytes": 201216,
-          "sha256": "778d290b9484a0ea1c8e1c1f061f0c2d00dcfdf71e4eae2534fb2ed592133f76"
+          "bytes": 201228,
+          "sha256": "b55e60e7d0fac9743dff7fa978a89dd3383bf1e2095639f14c77ac2583fbf28b"
         }
       ]
     },

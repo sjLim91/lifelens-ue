@@ -1,7 +1,7 @@
 {
   "status": "DRAFT_SOURCE_DERIVATIVES",
   "runtimeAdmission": false,
-  "generatorSha256": "26182b02d6fa21aac45e00b8fbe34e32dfa259e0bcf08dc774f18d7930f9a6a2",
+  "generatorSha256": "4b34e1b4427c097ae308c5f061d09f33af5baeabbded86f8c2db3361ca2ca4e9",
   "reports": [
     {
       "species": "Hare",
@@ -2066,8 +2066,8 @@
       "sourceUid": "4fa0cb7afc004d65bd49f406bffd5b2b",
       "sourceSha256": "25a1a41d574f80f46d716d74bc2572dc573d00da82811fbfb7767bc54da23871",
       "upstreamProof": null,
-      "derivedSha256": "793a6c9c32753073827d87016d54fc63a85b5f986d3257dc82073c9f11621160",
-      "bytes": 873548,
+      "derivedSha256": "08b2d72f2e78f1b02e8d0dab1661d02b562cca579770465852dd4c66dc074a9a",
+      "bytes": 873556,
       "contract": {
         "version": 1,
         "species": "FreshwaterFish",
@@ -2108,32 +2108,32 @@
           }
         },
         "paws": [],
-        "boundsHeight": 0.2505972145200986
+        "boundsHeight": 0.04258693835043159
       },
       "metrics": {
         "idle": {
           "frames": 81,
           "maxPenetration": 0,
           "floorRange": [
-            0,
-            0
+            -0.000509577259343013,
+            3.1409115683701805e-05
           ]
         },
         "swim": {
           "frames": 41,
           "maxPenetration": 0,
           "floorRange": [
-            0,
-            0
+            -0.0004908887207796843,
+            3.1409115683701805e-05
           ]
         }
       },
       "textureLod": {
         "file": "freshwater-fish-rigged.glb",
         "decodedRGBABytes": 524288,
-        "nonImageBufferSha256": "926aeef4cb9013fac717c80dbb4c96206fccf128438e85f099c20435ed1e180f",
-        "sha256": "793a6c9c32753073827d87016d54fc63a85b5f986d3257dc82073c9f11621160",
-        "bytes": 873548,
+        "nonImageBufferSha256": "8d4635e50398a55e04e6d2155af4210816ad9531114917948bd6584a6496cbb6",
+        "sha256": "08b2d72f2e78f1b02e8d0dab1661d02b562cca579770465852dd4c66dc074a9a",
+        "bytes": 873556,
         "images": [
           {
             "index": 0,
