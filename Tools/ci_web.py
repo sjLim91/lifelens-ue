@@ -7,9 +7,9 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "web"
 EXTRAS = ("runtime-resilience/continuity.mjs", "cognitive-agent/shadow-ui.mjs", "procedural-environment/lifecycle.mjs",
-          "procedural-environment/grounding-wildlife.mjs", "characters/export-review.mjs")
+          "procedural-environment/grounding-wildlife.mjs", "procedural-environment/native-wildlife.mjs", "characters/export-review.mjs")
 CAPTURES = {
-    "environment": ("procedural-environment/browser-review.mjs", "procedural-environment/wildlife-browser-review.mjs"),
+    "environment": ("procedural-environment/browser-review.mjs", "procedural-environment/wildlife-browser-review.mjs", "procedural-environment/native-wildlife-capture.mjs"),
     "consequences": ("environment-consequences/browser-review.mjs",),
     "characters": ("procedural-motion/browser-review.mjs",),
     "facilities": ("facility-construction/browser-review.mjs",),

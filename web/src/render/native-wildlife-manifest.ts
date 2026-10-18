@@ -14,7 +14,14 @@ export const NATIVE_WILDLIFE_SOURCES = {
     "sha256": "bf554a3c4a8b3684af8886427293e8def35ed2af7e21296eaf6903d77007bb5c",
     "license": "CC-BY-4.0",
     "original": "https://sketchfab.com/3d-models/347e5d4fbee14e53811c5df2221be8d0",
-    "author": "DarryleH"
+    "author": "DarryleH",
+    "upstream": {
+      "uid": "06598a376fb64c909a69dbfb9fe28d84",
+      "sha256": "139ca8c5c8b1e55bfaddf460fb6c0352ceab5321fb39ec26eac5175bc9b4a92b",
+      "license": "CC-BY-4.0",
+      "original": "https://sketchfab.com/3d-models/06598a376fb64c909a69dbfb9fe28d84",
+      "author": "Tyriese Miller"
+    }
   },
   "Wolf": {
     "slug": "wolf",

@@ -9,6 +9,11 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 const root=resolve(import.meta.dirname,'../..');
 const out=resolve(root,'docs/asset-reviews/native-wildlife/derived');
 const hash=b=>createHash('sha256').update(b).digest('hex');
+function uvSignature(gltf){
+ const triangles=[];gltf.scene.traverse(o=>{if(!o.isMesh)return;const uv=o.geometry.attributes.uv,index=o.geometry.index;if(!uv||!index)return;
+  for(let i=0;i<index.count;i+=3){const t=[];for(let k=0;k<3;k++){const v=index.getX(i+k);t.push(uv.getX(v).toFixed(5)+','+uv.getY(v).toFixed(5));}triangles.push(t.sort().join('|'));}
+ });return hash(triangles.sort().join('\n'));
+}
 const configs=[
  {species:'Hare',slug:'hare',uid:'073eef14ae3c4d06808498c3ba895e67',sha:'2bb6f05bd3e58ccf437ddb05c77a97ddd8ff67b9841b6b69bce90ba275165538',height:.80,head:'head_4',hip:'spine1_18',chest:'spine5_14',neck:'neck_5',
   legs:[['PawL_6','Upper_armL_9'],['PawR_10','Upper_armR_13'],['ToesL_20','upper_legL_23'],['ToesR_24','upper_legR_27']]},
@@ -31,6 +36,15 @@ for(const cfg of configs){
  const binary=raw.subarray(28+raw.readUInt32LE(12));
  const gltf=await new GLTFLoader().register(()=>({name:'LIFELENS_OFFLINE_GEOMETRY_AUTHORING',loadTexture:()=>Promise.resolve(new T.Texture())}))
   .parseAsync(raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.byteLength),'');
+ let upstreamProof=null;
+ if(cfg.species==='Deer'){
+  const pin=pins.Deer.upstream,folder=resolve(root,'docs/asset-reviews/native-wildlife/Deer',pin.uid),bytes=readFileSync(resolve(folder,'source.glb'));
+  const r=JSON.parse(readFileSync(resolve(folder,'receipt.json'),'utf8'));
+  if(hash(bytes)!==pin.sha256||r.sha256!==pin.sha256||r.license!=='CC-BY-4.0')throw Error('Original deer creator/license pin mismatch');
+  const original=await new GLTFLoader().register(()=>({name:'LIFELENS_UPSTREAM_TOPOLOGY_VERIFICATION',loadTexture:()=>Promise.resolve(new T.Texture())})).parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
+  const signature=uvSignature(gltf);if(signature!==uvSignature(original))throw Error('Deer animation derivative differs from the credited original UV topology');
+  upstreamProof={status:'PASS_IDENTICAL_UV_TRIANGLE_MULTISET',...pin,uvTopologySha256:signature};
+ }
  const skins=[];gltf.scene.traverse(o=>{if(o.isSkinnedMesh)skins.push(o);});
  const skin=skins.sort((a,b)=>b.geometry.attributes.position.count-a.geometry.attributes.position.count)[0];
  if(!skin)throw Error('Native source skin absent: '+cfg.species);
@@ -158,9 +172,10 @@ for(const cfg of configs){
  for(const m of doc.materials??[]){const p=m.pbrMetallicRoughness??={};p.metallicFactor=0;p.roughnessFactor=cfg.species==='FreshwaterFish'?.5:.88;
   if(cfg.species==='Deer'){const n=m.name?.toLowerCase()??'';p.baseColorFactor=n.includes('eyewai')?[.7,.62,.49,1]:n.includes('eye')||n.includes('yandi')?[.025,.018,.012,1]:n.includes('jiao')?[.25,.18,.11,1]:n.includes('kouqiang')?[.08,.035,.025,1]:[.24,.115,.047,1];}
  }
- const creator=receipt.author.displayName||receipt.author.username;
+ const creator=upstreamProof?`${upstreamProof.author} (mesh/rig); ${receipt.author.displayName||receipt.author.username} (animation derivative)`:receipt.author.displayName||receipt.author.username;
  const contract={version:1,species:cfg.species,tier:'near',units:'metres',forward:'+Z',up:'+Y',license:receipt.license,creator,source_sha256:cfg.sha,
   body:`LifeLens${cfg.species}Body`,bone_count:bones.length,status:'DRAFT_REQUIRES_RUNTIME_REVIEW',
+  ...(upstreamProof?{upstream_source_sha256:upstreamProof.sha256}:{}),
   clips:Object.fromEntries(baked.map(c=>[c.name,{name:`${cfg.slug}_${c.name}`,duration:c.duration,cycle_distance:c.distance,stance:c.stance,offsets:c.offsets}])),
   paws:legs.map(l=>({name:l.paw.name,upper:l.upper.name,sole_vertices:l.soles})),boundsHeight:cfg.height??size.y*unit};
  doc.asset.extras={...(doc.asset.extras??{}),lifelensWildlife:contract};doc.asset.copyright=`${receipt.name} by ${creator}, CC BY 4.0. LifeLens metric normalization, native-joint presentation clips and contact trajectories.`;
@@ -169,7 +184,7 @@ for(const cfg of configs){
  const header=Buffer.alloc(20);header.write('glTF');header.writeUInt32LE(2,4);header.writeUInt32LE(28+encoded.length+packed.length,8);header.writeUInt32LE(encoded.length,12);header.writeUInt32LE(0x4e4f534a,16);
  const bh=Buffer.alloc(8);bh.writeUInt32LE(packed.length);bh.writeUInt32LE(0x004e4942,4);
  const result=Buffer.concat([header,encoded,bh,packed]);mkdirSync(out,{recursive:true});writeFileSync(resolve(out,`${cfg.slug}-rigged.glb`),result);
- const report={species:cfg.species,sourceUid:cfg.uid,sourceSha256:cfg.sha,derivedSha256:hash(result),bytes:result.length,contract,metrics};reports.push(report);
+ const report={species:cfg.species,sourceUid:cfg.uid,sourceSha256:cfg.sha,upstreamProof,derivedSha256:hash(result),bytes:result.length,contract,metrics};reports.push(report);
  console.log('NATIVE_SOURCE_DERIVATIVE',cfg.species,result.length,JSON.stringify(metrics));
 }
 writeFileSync(resolve(out,'authoring.json'),JSON.stringify({status:'DRAFT_SOURCE_DERIVATIVES',runtimeAdmission:false,generatorSha256:hash(readFileSync(import.meta.filename)),reports},null,2)+'\n');

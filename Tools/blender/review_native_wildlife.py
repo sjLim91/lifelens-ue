@@ -7,7 +7,16 @@ import bpy
 from mathutils import Vector
 
 ROOT = Path('docs/asset-reviews/native-wildlife/derived').resolve()
+GENERATOR = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 for source in sorted(ROOT.glob('*-rigged.glb')):
+    slug = source.name.removesuffix('-rigged.glb')
+    prior = ROOT / slug / 'review.json'
+    source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    if prior.is_file():
+        saved = json.loads(prior.read_text())
+        if saved.get('sourceSha256') == source_hash and saved.get('generatorSha256') == GENERATOR and (ROOT / slug / (slug + '-authoring.blend')).is_file() and all((ROOT / slug / (v + '.png')).is_file() for v in saved.get('views', [])):
+            print('REUSE_IDENTICAL_NATIVE_REVIEW', slug)
+            continue
     for obj in list(bpy.data.objects):
         bpy.data.objects.remove(obj, do_unlink=True)
     bpy.ops.outliner.orphans_purge(do_recursive=True)
@@ -79,5 +88,5 @@ for source in sorted(ROOT.glob('*-rigged.glb')):
     bpy.ops.file.pack_all()
     bpy.ops.wm.save_as_mainfile(filepath=str(folder / (prefix + '-authoring.blend')))
     (folder / 'review.json').write_text(json.dumps({'status': 'REQUIRES_VISUAL_AND_RUNTIME_REVIEW',
-        'sourceSha256': hashlib.sha256(source.read_bytes()).hexdigest(), 'views': views,
+        'sourceSha256': source_hash, 'generatorSha256': GENERATOR, 'views': views,
         'bounds': [list(low), list(high)]}, indent=2) + '\n')

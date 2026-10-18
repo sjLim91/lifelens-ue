@@ -30,6 +30,13 @@ def main():
         receipt = json.loads((original / 'receipt.json').read_text())
         assert receipt['license'] == 'CC-BY-4.0' and receipt['sha256'] == pin['sha256']
         credits.append(f'- “{receipt["name"]}” by {pin["author"]}. [Original]({pin["original"]}), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source SHA-256: `{pin["sha256"]}`. Retrieved {receipt["retrievedAt"]}. Public redistribution: {receipt["downloadUrl"]}.')
+        if pin.get('upstream'):
+            upstream = pin['upstream']
+            assert digest(REVIEW / species / upstream['uid'] / 'source.glb') == upstream['sha256']
+            authoring = json.loads((REVIEW / 'derived/authoring.json').read_text())
+            proof = next(r for r in authoring['reports'] if r['species'] == species)['upstreamProof']
+            assert proof['status'] == 'PASS_IDENTICAL_UV_TRIANGLE_MULTISET' and proof['sha256'] == upstream['sha256']
+            credits.append(f'  Original deer mesh/rig: “Deer” by {upstream["author"]} (TyVtuber / TyDrawsAlot). [Original]({upstream["original"]}), CC BY 4.0. SHA-256: `{upstream["sha256"]}`. Exact original/derivative UV-triangle multiset verified: `{proof["uvTopologySha256"]}`.')
         for item in row['files']:
             source = REVIEW / 'derived' / item['file']
             assert digest(source) == item['sha256'] and source.stat().st_size == item['bytes']

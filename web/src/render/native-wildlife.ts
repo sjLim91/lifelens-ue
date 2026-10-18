@@ -18,7 +18,7 @@ export type NativeWildlifePose = { id: string; species: NativeWildlifeSpecies; s
   x: number; y: number; z: number; heading: number; scale: number; speed: number;
   phase: number; behavior: WildlifeAnimalObservation['behavior'] };
 export type NativeWildlifeLoader = (species: NativeWildlifeSpecies, tier: Tier) => Promise<GLTF>;
-type Actor = { tier: Tier; root: THREE.Group; frame: THREE.Group; model: THREE.Object3D;
+type Actor = { tier: Tier; species: NativeWildlifeSpecies; root: THREE.Group; frame: THREE.Group; model: THREE.Object3D;
   mixer: THREE.AnimationMixer; actions: Map<string, THREE.AnimationAction>; current: string;
   antlers: THREE.Object3D[]; contact: NativeWildlifeContact | null; blend: number; grounded: boolean };
 
@@ -164,8 +164,8 @@ export class NativeWildlifePool {
     }
     let actor = this.actors.get(pose.id);
     let phase = pose.phase / (Math.PI * 2);
-    if (actor && actor.tier !== tier) {
-      const action = actor.actions.get(actor.current); if (action) phase = action.time / action.getClip().duration;
+    if (actor && (actor.tier !== tier || actor.species !== pose.species)) {
+      const action = actor.actions.get(actor.current); if (action && actor.species === pose.species) phase = action.time / action.getClip().duration;
       this.remove(pose.id); actor = undefined;
     }
     if (!actor) {
@@ -185,7 +185,7 @@ export class NativeWildlifePool {
       let contact: NativeWildlifeContact | null;
       try { contact = pose.species === 'FreshwaterFish' ? null : new NativeWildlifeContact(root, frame, skin, asset.contract.paws); }
       catch { mixer.stopAllAction(); mixer.uncacheRoot(model); root.removeFromParent(); return false; }
-      actor = { tier, root, frame, model, mixer, actions, current: '', antlers, contact, blend: 0, grounded: false };
+      actor = { tier, species: pose.species, root, frame, model, mixer, actions, current: '', antlers, contact, blend: 0, grounded: false };
       root.rotation.y = pose.heading; this.actors.set(pose.id, actor);
     }
     actor.contact?.restore();

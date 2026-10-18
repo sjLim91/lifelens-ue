@@ -10,6 +10,7 @@ on:
       - 'web/tests/native-wildlife-observer/**'
       - 'Tools/blender/build_native_wildlife_lods.py'
       - 'Tools/blender/review_native_wildlife.py'
+      - 'Tools/blender/resize_native_wildlife_textures.py'
       - 'Tools/assets/native-wildlife-pins.json'
       - 'Tools/assets/stage_native_wildlife.py'
       - '.github/workflows/native-wildlife-integration.yml'
@@ -48,10 +49,14 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends blender python3-numpy
+      - name: Apply source-image texture LODs without changing geometry or animation
+        run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/resize_native_wildlife_textures.py
       - name: Bake static source-derived far poses
         run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/build_native_wildlife_lods.py -- --far-only
       - name: Stage only verified derivatives and preserve tiger attribution
         run: python3 Tools/assets/stage_native_wildlife.py
+      - name: Inspect all authored native states and preserve editable sources
+        run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/review_native_wildlife.py
       - name: Verify actual twelve assets and runtime binding
         run: |
           npm run typecheck --prefix web

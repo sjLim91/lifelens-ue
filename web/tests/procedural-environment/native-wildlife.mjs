@@ -16,7 +16,7 @@ async function load(species,tier='near'){
 }
 const settle=()=>new Promise(resolve=>setTimeout(resolve,0));
 const pose=(species,id=species)=>({id,species,sex:'Female',x:0,y:0,z:0,heading:0,scale:1,speed:0,phase:.31,behavior:'Roam'});
-const records=[];
+const records=[],contacts=[];
 // Inspect actual original/deformed geometry, rather than trusting generator receipts.
 for(const species of Object.keys(pins)){
  const gltf=await load(species),contract=gltf.parser.json.asset.extras.lifelensWildlife;
@@ -26,6 +26,10 @@ for(const species of Object.keys(pins)){
  const now=JSON.parse(nearRaw.subarray(20,20+nearRaw.readUInt32LE(12)));
  assert.deepEqual(now.meshes,old.meshes,'Original near topology/UV/skin accessor references must be retained');
  assert.deepEqual(now.skins,old.skins,'Original inverse binds and joint hierarchies must be retained');
+ const sourceBinary=original.subarray(28+original.readUInt32LE(12)),nearBinary=nearRaw.subarray(28+nearRaw.readUInt32LE(12));
+ const views=new Set(old.meshes.flatMap(m=>m.primitives.flatMap(p=>[p.indices,...Object.values(p.attributes)])).map(i=>old.accessors[i].bufferView));
+ old.skins.forEach(s=>views.add(old.accessors[s.inverseBindMatrices].bufferView));
+ for(const i of views){const a=old.bufferViews[i],b=now.bufferViews[i];assert.deepEqual(nearBinary.subarray(b.byteOffset??0,(b.byteOffset??0)+b.byteLength),sourceBinary.subarray(a.byteOffset??0,(a.byteOffset??0)+a.byteLength),'Texture resizing changed an original geometry/UV/weight/bind buffer');}
  assert.equal(contract.source_sha256,pins[species].sha256);
  const skins=[];gltf.scene.traverse(o=>{if(o.isSkinnedMesh)skins.push(o);});
  assert(skins.length&&skins.every(s=>s.geometry.attributes.skinWeight&&s.geometry.attributes.uv));
@@ -67,6 +71,22 @@ for(const tier of ['near','mid','far'])for(const species of Object.keys(pins)){
    assert(pool.draw(moved,tier,.05,(x,z)=>.03*x-.02*z));pool.end(parent);
    assert.deepEqual(actor.position.toArray(),[moved.x,0,moved.z],'Ground correction changed authoritative actor root');
   }
+  if(species!=='FreshwaterFish'){
+   const ground=(x,z)=>.03*x-.02*z;
+   pool.begin(1);assert(pool.draw({...p,behavior:'Rest'},tier,1,ground));pool.end(parent);
+   actor.updateMatrixWorld(true);
+   const c=gltf.parser.json.asset.extras.lifelensWildlife,body=actor.getObjectByName(c.body),used=new Set(body.geometry.index.array);
+   const errors=[];body.skeleton.update();
+   for(const paw of c.paws){
+    const family=new Set();body.skeleton.bones.find(b=>b.name===paw.name).traverse(b=>{if(b.isBone)family.add(body.skeleton.bones.indexOf(b));});
+    const indices=paw.sole_vertices??[...used].filter(i=>{let weight=0;for(let k=0;k<4;k++)if(family.has(body.geometry.attributes.skinIndex.getComponent(i,k)))weight+=body.geometry.attributes.skinWeight.getComponent(i,k);return weight>.3;});
+    assert(indices.length,'No rendered source foot vertices');
+    let low=Infinity;for(const i of indices){if(!used.has(i))continue;const v=new T.Vector3();body.getVertexPosition(i,v);v.applyMatrix4(body.matrixWorld);low=Math.min(low,v.y-ground(v.x,v.z));}
+    assert(Number.isFinite(low));errors.push(low);
+   }
+   const error=Math.max(...errors.map(Math.abs));contacts.push({species,tier,restSlopeSoleError:error,feet:errors});
+   assert(error<.005,species+' '+tier+' actual deformed resting feet missed sloped ground by '+error);
+  }
   if(species==='Deer'){
    const antlers=[];actor.traverse(o=>{if(o.isMesh&&(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.name.includes('jiao_tex')))antlers.push(o);});
    assert(antlers.length&&antlers.every(o=>!o.visible),'Female deer retained source antlers');
@@ -95,4 +115,16 @@ console.log('PASS twelve actual assets, source validation, LODs, motion, female 
  finish(gltf);await settle();assert(disposed>0,'Post-disposal asset leaked GPU geometry');
 }
 console.log('PASS bounded native skins, rejected source fallback and late-load disposal');
-writeFileSync(resolve(output,'contracts.json'),JSON.stringify({status:'PASS_SOURCE_SKIN_LOD_RUNTIME_CONTRACTS',records,physicalAndroid:'NOT_MEASURED'},null,2)+'\n');
+{
+ const parent=new T.Group(),pool=new NativeWildlifePool((s,t)=>load(s,t));
+ for(const species of ['Hare','Wolf']){
+  const p=pose(species,'same-observed-id');pool.begin(0);pool.draw(p,'near',0,()=>0);await settle();
+  // GLTF parsing is async; complete the actual source load before asserting.
+  let ok=false;for(let i=0;i<20;i++){pool.begin(0);ok=pool.draw(p,'near',0,()=>0);pool.end(parent);if(ok)break;await settle();}
+  assert(ok);const actor=pool.group.getObjectByName('LifeLensNativeAnimal:'+p.id);assert.equal(actor.userData.species,species);
+  const contractName=species==='Hare'?'LifeLensHareBody':'LifeLensWolfBody';assert(actor.getObjectByName(contractName),'Reused an actor from a different observed species');
+ }
+ pool.dispose();
+}
+console.log('PASS same-ID species replacement does not reuse a stale native body');
+writeFileSync(resolve(output,'contracts.json'),JSON.stringify({status:'PASS_SOURCE_SKIN_LOD_RUNTIME_CONTRACTS',records,contacts,physicalAndroid:'NOT_MEASURED'},null,2)+'\n');

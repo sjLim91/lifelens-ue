@@ -10,7 +10,7 @@ const server=spawn('python3',['-m','http.server',String(port),'--bind','127.0.0.
 const pause=ms=>new Promise(r=>setTimeout(r,ms)),errors=[],records=[];let browser;
 try{
  for(let i=0;i<50;i++){try{if((await fetch(base)).ok)break;}catch{}await pause(100);}
- browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH??chromium.executablePath(),headless:true,args:['--no-sandbox','--no-zygote','--disable-crashpad-for-testing','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH??chromium.executablePath(),headless:true,args:['--no-sandbox','--no-zygote','--single-process','--disable-crashpad-for-testing','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const page=await browser.newPage({viewport:{width:960,height:720},deviceScaleFactor:1});
  page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
  page.on('response',r=>{if(r.status()>=400)errors.push(`HTTP ${r.status()} ${r.url()}`);});
