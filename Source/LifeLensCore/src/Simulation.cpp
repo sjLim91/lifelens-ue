@@ -4,6 +4,7 @@
 #include "lifelens/AutonomousSocialGoalRouting.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/ResidentAICompletedPlanGuard.h"
+#include "lifelens/ResidentPredatorResponse.h"
 #include "lifelens/CoreNavigation.h"
 #include "lifelens/CultivationProgression.h"
 #include "lifelens/FamilyProgression.h"
@@ -3769,6 +3770,35 @@ void Simulation::step(){
         if(requiresDirectCare(c.lifeStage)){
             clearRuntimeActivity(r);
             continue;
+        }
+
+        // Real encounters interrupt ordinary goals before the resident can
+        // casually eat, sleep, gather, or socialize next to a wild tiger.
+        // This is physical navigation, not an invented attack or animation.
+        const auto predator=observeResidentPredatorThreat(world_,r.pos);
+        if(predator.detected){
+            const bool newSighting=!recentResidentPredatorSighting(
+                c,world_.minute,predator.animalId);
+            rememberResidentPredatorSighting(c,world_.minute,predator);
+            if(newSighting){
+                emit(c.name+(predator.species==WildlifeSpecies::Tiger
+                    ? " 야생 호랑이의 접근을 직접 목격하고 대피를 시도함"
+                    : " 야생 늑대의 접근을 직접 목격하고 대피를 시도함"));
+            }
+            GridPos escapeStep{};
+            if(chooseResidentPredatorEscapeStep(world_,r.pos,escapeStep)){
+                if(r.pendingContext.active() ||!r.plan.empty()
+                   ||r.socialActive){
+                    // A real threat supersedes lower-priority tasks; do not
+                    // count this voluntary interruption as a failed action.
+                    cancelRuntimeActivityForCriticalReplan(c,r);
+                }
+                clearNavigation(r);
+                // Honours terrain obstacles, climate and health movement
+                // speed. The new position changes ONLY after a valid step.
+                advanceNavigation(c.id,r,escapeStep,0);
+                continue;
+            }
         }
 
         const bool criticalPreempted=
