@@ -346,4 +346,48 @@ const provider = {
   f.controller.dispose();
 }
 
+{
+  // A matching seed alone is insufficient. Require the same clock window,
+  // confirmed Core approvals, observable Core belief data and no gaps.
+  const { compareResidentAISessionReports } =
+    await source('cognition/resident-ai-session-comparison.ts');
+  const { ResidentAISessionAudit } =
+    await source('cognition/resident-ai-session-audit.ts');
+  const audit = new ResidentAISessionAudit();
+  const world = { worldSeed:'81', populationSeed:'15', generationVersion:4, minute:480 };
+  audit.begin(world, 'baseline', null);
+  const residents = [{ id:'1', alive:true, beliefs:[] }];
+  audit.observe(world, residents, 'baseline');
+  audit.observe({ ...world, minute:510 }, residents, 'baseline');
+  const baseline = audit.snapshot();
+  const candidate = {
+    ...baseline, mode:'local-ai', modelName:'offline-local-model',
+    modelRequests:2, requestsWithFirsthandExperience:1,
+    decisions:{...baseline.decisions, recorded:1},
+    coreCivilizationSuccessEvidenceDelta:4,
+    coreCivilizationFailureEvidenceDelta:2,
+  };
+  const valid = compareResidentAISessionReports(baseline, candidate);
+  assert.equal(valid.comparable, true);
+  assert.equal(valid.civilizationSuccessDifference, 4);
+  assert.equal(valid.civilizationFailureDifference, 2);
+  assert.equal(valid.localModelRequests, 2);
+  assert.equal(valid.localCoreApprovals, 1);
+  const mismatched = compareResidentAISessionReports(baseline, {
+    ...candidate, startMinute:481,
+  });
+  assert.equal(mismatched.comparable, false);
+  assert(mismatched.issues.some(issue => issue.includes('시뮬레이션')));
+  const unobserved = compareResidentAISessionReports(baseline, {
+    ...candidate, readableEvidenceResidentSamples:0,
+    coverageGap:true,
+  });
+  assert.equal(unobserved.comparable, false);
+  assert(unobserved.issues.some(issue => issue.includes('연속성')));
+  assert.equal(compareResidentAISessionReports({}, candidate).comparable,false);
+  assert.equal(compareResidentAISessionReports(baseline, {
+    ...candidate, modelName:{toString(){ throw Error('unsafe input');}},
+  }).comparable, false, 'malformed imported data must never be trusted');
+}
+
 console.log('Live Resident AI: independent actor context, Core handoff, cancellation PASS');

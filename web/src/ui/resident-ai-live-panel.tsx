@@ -1,6 +1,7 @@
 import { useState, useSyncExternalStore } from 'react';
 import type { CognitiveIntent } from '../cognition/cognitive-contract';
 import { residentAI } from '../cognition/live-resident-ai';
+import { compareResidentAISessionReports, type ResidentAIAuditComparison } from '../cognition/resident-ai-session-comparison';
 import type { Resident } from '../runtime/core-types';
 import { formatCognitiveIntent } from '../localization/korean';
 
@@ -15,6 +16,8 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
   const [model, setModel] = useState(state.configuration?.model ?? '');
   const [error, setError] = useState('');
   const [auditMessage, setAuditMessage] = useState('');
+  const [baselineJson, setBaselineJson] = useState('');
+  const [comparison, setComparison] = useState<ResidentAIAuditComparison | null>(null);
   const auditReport = residentAI.getAuditReport();
   const decision = state.byResident[resident.id];
   return <section className="resident-ai-live-config">
@@ -93,6 +96,33 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
         {auditReport.comparableWithinObservedWindow ? '' : ' · 비교 주의: 측정 연속성 깨짐'}
       </p>}
       {auditMessage && <p role="status" className="hint">{auditMessage}</p>}
+      <details>
+        <summary>기본 Core / 로컬 AI 측정 결과 비교</summary>
+        <p className="hint">
+          먼저 기본 Core 측정 JSON을 복사한 뒤, 동일 세계 시드·인구 시드·시작 시점에서
+          로컬 AI 측정을 진행하세요. 시작·종료 시각이 정확히 같아야 비교할 수 있습니다.
+        </p>
+        <textarea aria-label="기본 Core 측정 JSON"
+          value={baselineJson} maxLength={16000} rows={3}
+          placeholder="기본 Core 측정 JSON 붙여넣기"
+          onChange={(event) => { setBaselineJson(event.target.value); setComparison(null); }} />
+        <button type="button" onClick={() => {
+          let previous: unknown;
+          try { previous = JSON.parse(baselineJson); }
+          catch { setAuditMessage('기본 Core 측정 JSON을 읽을 수 없습니다.'); return; }
+          const result = compareResidentAISessionReports(previous, residentAI.getAuditReport());
+          setComparison(result);
+          setAuditMessage(result.comparable
+            ? '두 관찰 구간의 기본 조건이 일치합니다.'
+            : '비교 조건이 일치하지 않습니다. 아래 사유를 확인하세요.');
+        }}>동일 조건 비교</button>
+        {comparison && <p className="hint">
+          {comparison.comparable
+            ? `문명 성공 경험 증거 차이(AI - 기본) ${comparison.civilizationSuccessDifference}회, 실패 증거 차이 ${comparison.civilizationFailureDifference}회`
+            : comparison.issues.join(' / ')}
+          {' '}{comparison.interpretation}
+        </p>}
+      </details>
       <p className="hint">
         측정 중 AI 모드 변경·새 게임·고속 진행 시 비교가 제한됩니다.
         Core 경험 증거는 실제 행동의 기록이지만, AI 때문에 발생했다고 자동 귀속하지 않습니다.
