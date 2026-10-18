@@ -3772,7 +3772,7 @@ void Simulation::step(){
         // Core hour boundary before anyone retreats. The health subsystem
         // owns severity, mobility cost, daily healing and accident mortality.
         if(applyResidentPredatorContactInjury(world_,c,r.pos)){
-            emit(c.name+" injured in real close contact with a wild predator");
+            emit(c.name+" 야생 포식자와 실제 근접 접촉 중 공격을 받아 부상");
         }
         if(requiresDirectCare(c.lifeStage)){
             clearRuntimeActivity(r);
