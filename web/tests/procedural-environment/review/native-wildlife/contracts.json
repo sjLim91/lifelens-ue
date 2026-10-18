@@ -1,0 +1,30 @@
+{
+  "status": "PASS_SOURCE_SKIN_LOD_RUNTIME_CONTRACTS",
+  "records": [
+    {
+      "species": "Hare",
+      "nativeBones": 29,
+      "loopError": 0,
+      "maxHeight": 0.7820404221521063
+    },
+    {
+      "species": "Deer",
+      "nativeBones": 50,
+      "loopError": 0,
+      "maxHeight": 2.037729952598381
+    },
+    {
+      "species": "Wolf",
+      "nativeBones": 90,
+      "loopError": 0,
+      "maxHeight": 1.1812827543759463
+    },
+    {
+      "species": "FreshwaterFish",
+      "nativeBones": 19,
+      "loopError": 0,
+      "maxHeight": 0.24822130261640196
+    }
+  ],
+  "physicalAndroid": "NOT_MEASURED"
+}
