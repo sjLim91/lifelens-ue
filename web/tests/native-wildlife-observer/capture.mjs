@@ -10,7 +10,15 @@ async function image(name){
  // completion before recording or comparing this actual application frame.
  let ready=false;
  for(let i=0;i<60;i++){
-  ready=await page.evaluate(async()=>{const q=window.__nativeWildlifeObserver;await q.still();return q.baseline||q.view==='far'||!!(q.sample().actor&&q.choices[q.view]);});
+  ready=await page.evaluate(async()=>{
+   const q=window.__nativeWildlifeObserver;
+   // Finish normal presentation interpolation toward the paused Core pose.
+   // This advances rendering only; WASM time and observations stay frozen.
+   if(!q.baseline&&q.view!=='far')for(let f=0;f<10;f++)q.world.update(.1);
+   await q.still();const s=q.sample();
+   return q.baseline||q.view==='far'||!!(s.actor&&q.choices[q.view]
+    &&Math.abs(s.actor.position[0]-s.expectedXZ[0])<1e-6&&Math.abs(s.actor.position[2]-s.expectedXZ[1])<1e-6);
+  });
   if(ready)break;await delay(50);
  }
  if(!ready)throw Error('Native subject/camera did not settle for '+name);
