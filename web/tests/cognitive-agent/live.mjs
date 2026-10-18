@@ -273,4 +273,77 @@ const provider = {
   f.controller.dispose();
 }
 
+
+{
+  // Browser audit is a truthful observation window, not a model's claim of
+  // action completion. Baseline already-known beliefs must never be reported
+  // as successes that occurred during the audited period.
+  const { ResidentAISessionAudit } =
+    await source('cognition/resident-ai-session-audit.ts');
+  const audit = new ResidentAISessionAudit();
+  const world = {
+    worldSeed: '42', populationSeed: '7', generationVersion: 4,
+    minute: 480, livingResidents: 1,
+  };
+  const civilian = 'experienced-action-outcome:Civilization:Gather:PlantFood';
+  const physical = 'experienced-action-outcome:Eat';
+  const base = [{ id: '1', alive: true, beliefs: [
+    { subject: '0', proposition: civilian, supportCount: 2, contradictionCount: 0 },
+  ] }];
+  assert.equal(audit.begin(world, 'baseline', null), true);
+  audit.observe(world, base, 'baseline');
+  assert.equal(audit.snapshot().coreCivilizationSuccessEvidenceDelta, 0);
+  const next = { ...world, minute: 487 };
+  audit.observe(next, [{ id: '1', alive: true, beliefs: [
+    { subject: '0', proposition: civilian, supportCount: 3, contradictionCount: 2 },
+    { subject: '0', proposition: physical, supportCount: 1, contradictionCount: 0 },
+  ] }], 'baseline');
+  const report = audit.snapshot();
+  assert.equal(report.coreCivilizationSuccessEvidenceDelta, 1);
+  assert.equal(report.coreCivilizationFailureEvidenceDelta, 2);
+  assert.equal(report.corePhysicalSuccessEvidenceDelta, 1);
+  assert.equal(report.modelRequests, 0);
+  assert.equal(report.mode, 'baseline');
+  assert.equal(JSON.stringify(report).includes('actor'), false,
+    'export must not include personal memory text, resident IDs, or model rationale');
+  audit.observe({ ...world, minute: 489 }, base, 'local-ai');
+  assert.equal(audit.snapshot().endedReason, 'mode-changed');
+  assert.equal(audit.snapshot().comparableWithinObservedWindow, false);
+
+  assert.equal(audit.begin(next, 'local-ai', 'test-model'), true);
+  audit.observe(next, base, 'local-ai');
+  audit.inference({ memories: [{
+    source: 'DirectWitness', witnessed: true,
+    tags: ['action_experience', 'Civilization:Gather:PlantFood', 'failure'],
+  }] });
+  audit.result('recorded');
+  assert.equal(audit.snapshot().requestsWithFirsthandExperience, 1);
+  assert.equal(audit.snapshot().decisions.recorded, 1);
+  audit.observe({ ...world, minute: 750 }, base, 'local-ai');
+  assert.equal(audit.snapshot().coverageGap, true);
+  assert.equal(audit.snapshot().comparableWithinObservedWindow, false);
+  audit.finish('fast-forward');
+  assert.equal(audit.snapshot().endedReason, 'fast-forward');
+}
+
+{
+  // The real live controller exposes explicit, mode-locked observation
+  // windows. Disabling AI closes the report without erasing the evidence.
+  const f = fixture(provider);
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.controller.beginAuditSession(), true);
+  f.advance();
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.controller.getAuditReport().mode, 'local-ai');
+  assert.equal(f.controller.getAuditReport().modelRequests, 1);
+  assert.equal(f.controller.getAuditReport().decisions.recorded, 1);
+  f.controller.setEnabled(false);
+  assert.equal(f.controller.getAuditReport().endedReason, 'stopped');
+  assert.equal(f.controller.getAuditReport().decisions.recorded, 1);
+  f.controller.dispose();
+}
+
 console.log('Live Resident AI: independent actor context, Core handoff, cancellation PASS');
