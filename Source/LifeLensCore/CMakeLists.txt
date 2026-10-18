@@ -219,6 +219,7 @@ lifelens_add_test(test_earth_natural_land_mask)
 lifelens_add_test(test_earth_solar_observation)
 lifelens_add_test(test_wildlife_ecology)
 lifelens_add_test(test_wildlife_world_observation)
+lifelens_add_test(test_wildlife_human_proximity)
 lifelens_add_test(test_wildlife_population_codec)
 lifelens_add_test(test_web_earth_scenario_handoff)
 
