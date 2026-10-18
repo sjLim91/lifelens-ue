@@ -1,0 +1,39 @@
+{
+  "status": "FAIL_ACTUAL_REACT_WASM_OBSERVER",
+  "error": "Error: Native actor did not bind the actual WASM ID",
+  "results": [],
+  "diagnostic": {
+    "minute": 496,
+    "worldSeed": "77",
+    "runtime": {
+      "status": "ready",
+      "errorMessage": null
+    },
+    "core": {
+      "id": "25:32:1704075738371588100",
+      "species": "Hare",
+      "sex": "Female",
+      "gridX": 803,
+      "gridY": 1043,
+      "behavior": "Flee"
+    },
+    "actor": null,
+    "farIds": [],
+    "cameraChoice": null,
+    "renderStats": {
+      "frame": 58,
+      "calls": 231,
+      "triangles": 2400340,
+      "points": 0,
+      "lines": 0
+    },
+    "canvas": {
+      "id": "threeWorldCanvas",
+      "width": 620,
+      "height": 662,
+      "contextLost": false
+    }
+  },
+  "errors": [],
+  "physicalAndroid": "NOT_MEASURED"
+}
