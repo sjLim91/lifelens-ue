@@ -1,0 +1,35 @@
+// Generated from Tools/assets/native-wildlife-pins.json.
+export const NATIVE_WILDLIFE_SOURCES = {
+  "Hare": {
+    "slug": "hare",
+    "uid": "073eef14ae3c4d06808498c3ba895e67",
+    "sha256": "2bb6f05bd3e58ccf437ddb05c77a97ddd8ff67b9841b6b69bce90ba275165538",
+    "license": "CC-BY-4.0",
+    "original": "https://sketchfab.com/3d-models/073eef14ae3c4d06808498c3ba895e67",
+    "author": "Dakota.Hinkle"
+  },
+  "Deer": {
+    "slug": "deer",
+    "uid": "347e5d4fbee14e53811c5df2221be8d0",
+    "sha256": "bf554a3c4a8b3684af8886427293e8def35ed2af7e21296eaf6903d77007bb5c",
+    "license": "CC-BY-4.0",
+    "original": "https://sketchfab.com/3d-models/347e5d4fbee14e53811c5df2221be8d0",
+    "author": "DarryleH"
+  },
+  "Wolf": {
+    "slug": "wolf",
+    "uid": "9e7aceacef0f4486b605abdf1f62e4ac",
+    "sha256": "8cf8c377a02ac417cda66737c82216c41a2ca329732c1ef7ef88024d7a9afe84",
+    "license": "CC-BY-4.0",
+    "original": "https://sketchfab.com/3d-models/9e7aceacef0f4486b605abdf1f62e4ac",
+    "author": "Hiago Tadeu"
+  },
+  "FreshwaterFish": {
+    "slug": "freshwater-fish",
+    "uid": "4fa0cb7afc004d65bd49f406bffd5b2b",
+    "sha256": "25a1a41d574f80f46d716d74bc2572dc573d00da82811fbfb7767bc54da23871",
+    "license": "CC-BY-4.0",
+    "original": "https://sketchfab.com/3d-models/4fa0cb7afc004d65bd49f406bffd5b2b",
+    "author": "Sba Stuff"
+  }
+} as const;

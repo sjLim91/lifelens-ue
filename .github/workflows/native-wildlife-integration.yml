@@ -1,0 +1,87 @@
+name: Native Wildlife Integration and Review
+on:
+  push:
+    branches: ['feat/native-wildlife-four-species-*']
+    paths:
+      - 'web/src/render/native-wildlife*'
+      - 'web/src/render/wildlife-layer.ts'
+      - 'web/tools/build-native-wildlife*'
+      - 'web/tests/procedural-environment/native-wildlife*'
+      - 'Tools/blender/build_native_wildlife_lods.py'
+      - 'Tools/blender/review_native_wildlife.py'
+      - 'Tools/assets/native-wildlife-pins.json'
+      - 'Tools/assets/stage_native_wildlife.py'
+      - '.github/workflows/native-wildlife-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: native-wildlife-integration-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install build and bounded source-reduction dependencies
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund --prefix web
+          npm install --no-save --ignore-scripts --no-audit --no-fund --prefix web meshoptimizer@0.25.0 playwright@1.56.1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wildlife-authoring-node-tools
+          path: |
+            web/node_modules/meshoptimizer/
+            web/node_modules/playwright/
+            web/node_modules/playwright-core/
+          retention-days: 3
+      - name: Verify source license and dependency failure policies
+        run: python3 -m unittest discover -s Tools/tests -p 'test_native_wildlife_source_policy.py' -v
+      - name: Author on pinned source surfaces and native joints
+        run: node web/tools/build-native-wildlife.mjs && node web/tools/build-native-wildlife-mid.mjs
+      - name: Install offline Blender
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
+      - name: Bake static source-derived far poses
+        run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/blender/build_native_wildlife_lods.py -- --far-only
+      - name: Stage only verified derivatives and preserve tiger attribution
+        run: python3 Tools/assets/stage_native_wildlife.py
+      - name: Verify actual twelve assets and runtime binding
+        run: |
+          npm run typecheck --prefix web
+          node web/tests/procedural-environment/native-wildlife.mjs
+          node web/tests/procedural-environment/grounding-wildlife.mjs
+          node web/tests/procedural-environment/imported-tiger.mjs
+      - name: Actual WebGL wildlife-layer review
+        if: hashFiles('web/tests/procedural-environment/native-wildlife-capture.mjs') != ''
+        run: |
+          cd web
+          npx playwright install --with-deps chromium
+          node tests/procedural-environment/native-wildlife-capture.mjs
+      - name: Preserve generated assets and evidence on this development branch
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/asset-reviews/native-wildlife/derived web/public/vendor/wildlife web/tests/procedural-environment/review/native-wildlife
+          if ! git diff --cached --quiet; then
+            git commit -m 'Preserve four-species source derivatives and measured runtime evidence [skip ci]'
+            for attempt in 1 2 3; do
+              git pull --rebase origin "$GITHUB_REF_NAME"
+              if git push origin "HEAD:$GITHUB_REF_NAME"; then break; fi
+              if [ "$attempt" = 3 ]; then exit 1; fi
+            done
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-wildlife-integration-review
+          path: |
+            docs/asset-reviews/native-wildlife/derived/
+            web/tests/procedural-environment/review/native-wildlife/
+          retention-days: 14
