@@ -138,12 +138,23 @@ int main()
     assert(resident.health.accidentEpisodes==0);
     assert(attackMemoryCount(resident,contactId)==0);
 
-    // Exact same-world-state snapshot codec preserves injury severity and
-    // source evidence, while a restored resident cannot magically recover.
+    // Keep the artificial one-cell predator fixture OUT of the production
+    // snapshot validator: its manually injected wildlife world is not a
+    // normally generated world. Check persistence in an intact NEW GAME,
+    // using the exact HealthState/MemoryState that real Core contact produced.
+    // This tests serialization of actual outcome data without weakening any
+    // wildlife population or Core snapshot validity contract.
+    Simulation persistence(77,0,4);
+    persistence.setupNewGame();
+    auto& persistedResident=persistence.world().characters.front();
+    assert(persistedResident.id==actor);
+    persistedResident.health=injured.health;
+    persistedResident.memory=injured.memory;
+    persistedResident.emotion=injured.emotion;
     std::vector<std::uint8_t> bytes;
     std::string error;
     assert(encodeSimulationSnapshot(
-        sim.captureSnapshot(),bytes,&error));
+        persistence.captureSnapshot(),bytes,&error));
     SimulationStateSnapshot state;
     assert(decodeSimulationSnapshot(bytes,state,&error));
     Simulation restored(77,0,4);
