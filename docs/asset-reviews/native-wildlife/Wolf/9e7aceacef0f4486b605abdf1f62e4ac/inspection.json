@@ -1,0 +1,377 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "Wolf",
+  "sourceSha256": "8cf8c377a02ac417cda66737c82216c41a2ca329732c1ef7ef88024d7a9afe84",
+  "bounds": [
+    [
+      -2801.001953125,
+      -10411.759765625,
+      -1.0
+    ],
+    [
+      2807.142578125,
+      11032.134765625,
+      9363.48046875
+    ]
+  ],
+  "triangles": 10636,
+  "meshes": [
+    {
+      "name": "0",
+      "vertices": 4149,
+      "uvLayers": 2,
+      "vertexGroups": 90
+    },
+    {
+      "name": "1",
+      "vertices": 298,
+      "uvLayers": 1,
+      "vertexGroups": 90
+    },
+    {
+      "name": "2",
+      "vertices": 98,
+      "uvLayers": 1,
+      "vertexGroups": 90
+    },
+    {
+      "name": "3",
+      "vertices": 130,
+      "uvLayers": 1,
+      "vertexGroups": 90
+    },
+    {
+      "name": "4",
+      "vertices": 638,
+      "uvLayers": 1,
+      "vertexGroups": 90
+    },
+    {
+      "name": "5",
+      "vertices": 1238,
+      "uvLayers": 1,
+      "vertexGroups": 90
+    },
+    {
+      "name": "Icosphere",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Icosphere.001",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Icosphere.002",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Icosphere.003",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Icosphere.004",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Icosphere.005",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    }
+  ],
+  "rigs": [
+    {
+      "name": "Object_5",
+      "bones": [
+        "_rootJoint",
+        "Root_01",
+        "Spine_06_02",
+        "Spine_05_03",
+        "Spine_04_04",
+        "Spine_03_05",
+        "Spine_02_06",
+        "Spine_01_07",
+        "Neck_08",
+        "Head_09",
+        "JawnUp_010",
+        "JawnUp_end_068",
+        "JawnDown_011",
+        "Toungle_01_012",
+        "Toungle_02_013",
+        "Toungle_03_014",
+        "Toungle_04_015",
+        "Toungle_05_016",
+        "Toungle_05_end_077",
+        "Ear_L_017",
+        "Ear_L_end_083",
+        "Ear_R_018",
+        "Ear_R_end_081",
+        "Eye_L_019",
+        "Eye_L_end_069",
+        "Eye_R_020",
+        "Eye_R_end_075",
+        "ShoulderFront_L_021",
+        "UperArmFront_L_022",
+        "LowerArmFront_L_023",
+        "WristFront_L_024",
+        "PawFront_L_025",
+        "Clawn_01_Front_L_026",
+        "Clawn_01_Front_L_end_084",
+        "Clawn_02_Front_L_027",
+        "Clawn_02_Front_L_end_080",
+        "Clawn_04_Front_L_028",
+        "Clawn_04_Front_L_end_085",
+        "Clawn_03_Front_L_029",
+        "Clawn_03_Front_L_end_066",
+        "ShoulderFront_R_030",
+        "UperArmFront_R_031",
+        "LowerArmFront_R_032",
+        "WristFront_R_033",
+        "PawFront_R_034",
+        "Clawn_01_Front_R_00",
+        "Clawn_01_Front_R_end_070",
+        "Clawn_02_Front_R_035",
+        "Clawn_02_Front_R_end_076",
+        "Clawn_04_Front_R_036",
+        "Clawn_04_Front_R_end_074",
+        "Clawn_03_Front_R_037",
+        "Clawn_03_Front_R_end_072",
+        "ShoulderBack_L_038",
+        "UperArmBack_L_039",
+        "LowerArmBack_L_040",
+        "WristBack_L_041",
+        "PawBack_L_042",
+        "Clawn_01_Back_L_043",
+        "Clawn_01_Back_L_end_086",
+        "Clawn_02_Back_L_044",
+        "Clawn_02_Back_L_end_087",
+        "Clawn_03_Back_L_045",
+        "Clawn_03_Back_L_end_079",
+        "Clawn_04_Back_L_046",
+        "Clawn_04_Back_L_end_078",
+        "ShoulderBack_R_047",
+        "UperArmBack_R_048",
+        "LowerArmBack_R_049",
+        "WristBack_R_050",
+        "PawBack_R_051",
+        "Clawn_01_Back_R_052",
+        "Clawn_01_Back_R_end_071",
+        "Clawn_02_Back_R_053",
+        "Clawn_02_Back_R_end_073",
+        "Clawn_03_Back_R_054",
+        "Clawn_03_Back_R_end_082",
+        "Clawn_04_Back_R_055",
+        "Clawn_04_Back_R_end_088",
+        "Tail_01_056",
+        "Tail_02_057",
+        "Tail_03_058",
+        "Tail_04_059",
+        "Tail_05_060",
+        "Tail_06_061",
+        "Tail_07_062",
+        "Tail_08_063",
+        "Tail_09_064",
+        "Tail_10_065",
+        "Tail_10_end_067"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "Armature|Base_0",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Base_1",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Base_2",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Base_3",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Base_4",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Armature|Base_5",
+      "frames": [
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Bigodes",
+      "textures": [
+        "Image_15",
+        "Image_16",
+        "Image_17"
+      ]
+    },
+    {
+      "name": "blinn1",
+      "textures": []
+    },
+    {
+      "name": "blinn2",
+      "textures": []
+    },
+    {
+      "name": "blinn3",
+      "textures": []
+    },
+    {
+      "name": "blinn4",
+      "textures": []
+    },
+    {
+      "name": "blinn5",
+      "textures": []
+    },
+    {
+      "name": "blinn6",
+      "textures": []
+    },
+    {
+      "name": "blinn7",
+      "textures": []
+    },
+    {
+      "name": "blinn8",
+      "textures": []
+    },
+    {
+      "name": "Boca_Interna",
+      "textures": [
+        "Image_3",
+        "Image_4",
+        "Image_5"
+      ]
+    },
+    {
+      "name": "Corpo",
+      "textures": [
+        "Image_0.004",
+        "Image_1",
+        "Image_2"
+      ]
+    },
+    {
+      "name": "Globo_Ocular",
+      "textures": [
+        "Image_6",
+        "Image_7",
+        "Image_8"
+      ]
+    },
+    {
+      "name": "Iris",
+      "textures": [
+        "Image_9",
+        "Image_10",
+        "Image_11"
+      ]
+    },
+    {
+      "name": "Lingua",
+      "textures": [
+        "Image_12",
+        "Image_13",
+        "Image_14"
+      ]
+    },
+    {
+      "name": "Material",
+      "textures": []
+    },
+    {
+      "name": "Material.001",
+      "textures": [
+        "Image_0.002"
+      ]
+    },
+    {
+      "name": "Material.002",
+      "textures": [
+        "Image_0.003"
+      ]
+    },
+    {
+      "name": "material_0",
+      "textures": []
+    },
+    {
+      "name": "polySurface2SG",
+      "textures": [
+        "Image_0",
+        "Image_0"
+      ]
+    },
+    {
+      "name": "t01.001",
+      "textures": [
+        "Image_0.001"
+      ]
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleeye_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_IdleinitialShadingGroup1",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlejiao_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
+      "textures": []
+    }
+  ]
+}

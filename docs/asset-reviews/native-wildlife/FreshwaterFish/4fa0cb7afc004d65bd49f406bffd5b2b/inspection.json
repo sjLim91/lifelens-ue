@@ -1,0 +1,184 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "FreshwaterFish",
+  "sourceSha256": "25a1a41d574f80f46d716d74bc2572dc573d00da82811fbfb7767bc54da23871",
+  "bounds": [
+    [
+      -0.9510578513145447,
+      -0.9999999403953552,
+      -1.0
+    ],
+    [
+      0.9510578513145447,
+      0.9999999403953552,
+      1.0
+    ]
+  ],
+  "triangles": 3384,
+  "meshes": [
+    {
+      "name": "Retopo_myfishmodel_0",
+      "vertices": 9666,
+      "uvLayers": 1,
+      "vertexGroups": 19
+    },
+    {
+      "name": "Icosphere",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Icosphere.001",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    }
+  ],
+  "rigs": [
+    {
+      "name": "Armature",
+      "bones": [
+        "Armature_rootJoint",
+        "Bone_Armature",
+        "Bone.001_Armature",
+        "Bone.002_Armature",
+        "Bone.003_Armature",
+        "Bone.004_Armature",
+        "Bone.005_Armature",
+        "Bone.006_Armature",
+        "Bone.007_Armature",
+        "Bone.008_Armature",
+        "Bone.009_Armature",
+        "Bone.016_Armature",
+        "Bone.017_Armature",
+        "Bone.010_Armature",
+        "Bone.011_Armature",
+        "Bone.014_Armature",
+        "Bone.015_Armature",
+        "Bone.012_Armature",
+        "Bone.013_Armature"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "Swim_Armature",
+      "frames": [
+        0.7999200224876404,
+        24.0
+      ]
+    },
+    {
+      "name": "Swim_Bone.008_end",
+      "frames": [
+        0.7999200224876404,
+        24.0
+      ]
+    },
+    {
+      "name": "Swim_Bone.009_end",
+      "frames": [
+        0.7999200224876404,
+        0.7999200224876404
+      ]
+    },
+    {
+      "name": "Swim_Bone.011_end",
+      "frames": [
+        0.7999200224876404,
+        0.7999200224876404
+      ]
+    },
+    {
+      "name": "Swim_Bone.013_end",
+      "frames": [
+        0.7999200224876404,
+        0.7999200224876404
+      ]
+    },
+    {
+      "name": "Swim_Bone.015_end",
+      "frames": [
+        0.7999200224876404,
+        0.7999200224876404
+      ]
+    },
+    {
+      "name": "Swim_Bone.017_end",
+      "frames": [
+        0.7999200224876404,
+        0.7999200224876404
+      ]
+    },
+    {
+      "name": "Swim_Camera.001",
+      "frames": [
+        0.7999200224876404,
+        0.7999200224876404
+      ]
+    },
+    {
+      "name": "Swim_Light",
+      "frames": [
+        0.7999200224876404,
+        0.7999200224876404
+      ]
+    },
+    {
+      "name": "Swim_Retopo_myfishmodel",
+      "frames": [
+        0.7999200224876404,
+        0.7999200224876404
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Material",
+      "textures": []
+    },
+    {
+      "name": "polySurface2SG",
+      "textures": [
+        "Image_0",
+        "Image_0"
+      ]
+    },
+    {
+      "name": "t01.001",
+      "textures": [
+        "Image_0.001"
+      ]
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleeye_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_IdleinitialShadingGroup1",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlejiao_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
+      "textures": []
+    }
+  ]
+}

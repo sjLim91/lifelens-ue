@@ -1,0 +1,265 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "Wolf",
+  "sourceSha256": "6fb344d1d1895a8003ddb01ea84ba030a461bcd17609b9aa97b6e83e1913fb89",
+  "bounds": [
+    [
+      -4.784677982330322,
+      -0.9999999403953552,
+      -1.2087420225143433
+    ],
+    [
+      3.34234619140625,
+      0.9999999403953552,
+      4.837590217590332
+    ]
+  ],
+  "triangles": 10348,
+  "meshes": [
+    {
+      "name": "Object_9",
+      "vertices": 2766,
+      "uvLayers": 1,
+      "vertexGroups": 64
+    },
+    {
+      "name": "Object_74",
+      "vertices": 6128,
+      "uvLayers": 1,
+      "vertexGroups": 64
+    },
+    {
+      "name": "Object_76",
+      "vertices": 2002,
+      "uvLayers": 1,
+      "vertexGroups": 64
+    },
+    {
+      "name": "Icosphere",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Icosphere.001",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Icosphere.002",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Icosphere.003",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Icosphere.004",
+      "vertices": 42,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    }
+  ],
+  "rigs": [
+    {
+      "name": "Object_6",
+      "bones": [
+        "_rootJoint",
+        "spine.004_01",
+        "spine.003_02",
+        "spine.002_03",
+        "spine.001_04",
+        "spine_05",
+        "spine_end_049",
+        "spine.005_06",
+        "spine.006_07",
+        "spine.007_08",
+        "spine.008_09",
+        "spine.009_010",
+        "spine.010_011",
+        "spine.011_012",
+        "nose_013",
+        "nose.001_014",
+        "nose.002_015",
+        "nose.003_016",
+        "nose.004_017",
+        "nose.004_end_050",
+        "lip.T.L_018",
+        "lip.T.L_end_051",
+        "jaw_019",
+        "chin_020",
+        "chin.001_021",
+        "chin.001_end_052",
+        "lip.T.R_022",
+        "lip.T.R_end_053",
+        "nose.L_023",
+        "nose.L.001_024",
+        "nose.L.001_end_054",
+        "nose.R_025",
+        "nose.R.001_026",
+        "nose.R.001_end_055",
+        "shoulder.L_027",
+        "front_thigh.L_028",
+        "front_shin.L_029",
+        "front_foot.L_030",
+        "front_toe.L_031",
+        "front_toe.L_end_056",
+        "shoulder.R_032",
+        "front_thigh.R_033",
+        "front_shin.R_034",
+        "front_foot.R_035",
+        "front_toe.R_036",
+        "front_toe.R_end_057",
+        "breast.L_037",
+        "breast.L_end_058",
+        "breast.R_038",
+        "breast.R_end_00",
+        "pelvis.L_039",
+        "pelvis.L_end_059",
+        "pelvis.R_040",
+        "pelvis.R_end_060",
+        "thigh.L_041",
+        "shin.L_042",
+        "foot.L_043",
+        "toe.L_044",
+        "toe.L_end_061",
+        "thigh.R_045",
+        "shin.R_046",
+        "foot.R_047",
+        "toe.R_048",
+        "toe.R_end_062"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "metarig.002|eating_Object_6",
+      "frames": [
+        0.0,
+        61.0
+      ]
+    },
+    {
+      "name": "metarig.002|IDLE_Object_6",
+      "frames": [
+        0.0,
+        63.0
+      ]
+    },
+    {
+      "name": "metarig.002|RRAR_Object_6",
+      "frames": [
+        0.0,
+        60.0
+      ]
+    },
+    {
+      "name": "metarig.002|SLEEP_Object_6",
+      "frames": [
+        0.0,
+        60.0
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "blinn1",
+      "textures": []
+    },
+    {
+      "name": "blinn2",
+      "textures": []
+    },
+    {
+      "name": "blinn3",
+      "textures": []
+    },
+    {
+      "name": "blinn4",
+      "textures": []
+    },
+    {
+      "name": "blinn5",
+      "textures": []
+    },
+    {
+      "name": "blinn6",
+      "textures": []
+    },
+    {
+      "name": "blinn7",
+      "textures": []
+    },
+    {
+      "name": "blinn8",
+      "textures": []
+    },
+    {
+      "name": "Material",
+      "textures": []
+    },
+    {
+      "name": "Material.001",
+      "textures": [
+        "Image_0.002"
+      ]
+    },
+    {
+      "name": "Material.002",
+      "textures": [
+        "Image_0.003"
+      ]
+    },
+    {
+      "name": "material_0",
+      "textures": []
+    },
+    {
+      "name": "polySurface2SG",
+      "textures": [
+        "Image_0",
+        "Image_0"
+      ]
+    },
+    {
+      "name": "t01.001",
+      "textures": [
+        "Image_0.001"
+      ]
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleeye_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_IdleinitialShadingGroup1",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlejiao_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
+      "textures": []
+    }
+  ]
+}

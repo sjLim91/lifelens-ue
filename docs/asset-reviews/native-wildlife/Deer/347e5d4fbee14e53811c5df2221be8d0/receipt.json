@@ -48,7 +48,7 @@
   "allowedForReview": true,
   "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
   "runtimeAdmission": false,
-  "retrievedAt": "2026-10-18T07:29:50.920646+00:00",
+  "retrievedAt": "2026-10-18T07:42:17.080416+00:00",
   "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
   "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-095/347e5d4fbee14e53811c5df2221be8d0.glb",
   "sha256": "bf554a3c4a8b3684af8886427293e8def35ed2af7e21296eaf6903d77007bb5c",
