@@ -77,6 +77,23 @@ int main()
         "18446744073709551615","Reflection")=="null");
     assert(bridge.cognitiveRequestJson("not-an-id","Reflection")=="null");
 
+    // The browser's attention label is validated by current Core facts.
+    // A fresh NEW GAME has no first-person verified depleted source; callers
+    // may not forge scarcity, leadership or unrelated event authority.
+    const auto unchangedBeforeTrigger=bridge.worldOverviewJson();
+    assert(!bridge.submitLocalCognitiveProposal(
+        actor,480,"8421901","ImproveFoodSecurity",0.9,"",
+        "audit-scarcity-unverified","ResourceScarcity"));
+    assert(!bridge.submitLocalCognitiveProposal(
+        actor,480,"8421901","ImproveFoodSecurity",0.9,"",
+        "audit-trigger-forged","LeadershipDecision"));
+    assert(bridge.worldOverviewJson()==unchangedBeforeTrigger);
+    // Legacy callers can still pass only the original seven arguments.
+    const bool legacyReflection=bridge.submitLocalCognitiveProposal(
+        actor,480,"8421901","ImproveFoodSecurity",0.9,"",
+        "legacy-reflection");
+    (void)legacyReflection;
+
     WebClientBridge empty;
     assert(empty.cognitiveRequestJson(actor,"Reflection")=="null");
 
