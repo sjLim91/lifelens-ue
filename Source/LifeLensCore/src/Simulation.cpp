@@ -387,6 +387,15 @@ void Simulation::setupNewGame(){
         }
     }
 
+    // Spawn predators and wildlife at an initial refuge distance from the
+    // four founders. This runs exactly once at NEW GAME creation: no random
+    // repositioning when cameras move or while a saved world is loaded.
+    const auto founders=livingResidentPositions();
+    for(auto& population:world_.wildlifePopulations){
+        for(auto& animal:population.animals)
+            wildlifeRetreatFromResidents(population,animal,founders,20);
+    }
+
     emit("new game start seed="+std::to_string(world_.seed)+" populationSeed="+std::to_string(world_.populationSeed)+" founders=4 startChunk=("+std::to_string(startRegion.region.coord.x)+","+std::to_string(startRegion.region.coord.y)+")");
 }
 
@@ -3866,13 +3875,17 @@ void Simulation::step(){
         world_,settlementPopulationAfterMovement);
     advancePrimitiveFireOneMinute(world_);
     world_.environmentalResidues.advanceToMinute(world_.minute);
-    if(world_.minute%60==0 && world_.minute%(24*60)!=0){
-        for(auto& population:world_.wildlifePopulations)
-            stepWildlifeHour(population,world_.minute/60);
+    if(world_.minute%60==0){
+        const auto humans=livingResidentPositions();
+        if(world_.minute%(24*60)!=0){
+            for(auto& population:world_.wildlifePopulations)
+                stepWildlifeHour(population,world_.minute/60,humans);
+        }else{
+            for(auto& population:world_.wildlifePopulations)
+                stepWildlifeDay(population,world_.minute/(24*60),humans);
+        }
     }
     if(world_.minute%(24*60)==0){
-        for(auto& population:world_.wildlifePopulations)
-            stepWildlifeDay(population,world_.minute/(24*60));
         regenerateCivilizationEnvironment(world_);
         advanceCultivationOneDay(world_);
         advanceFoodSpoilageOneDay(world_);
