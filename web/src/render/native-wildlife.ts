@@ -20,7 +20,7 @@ export type NativeWildlifePose = { id: string; species: NativeWildlifeSpecies; s
 export type NativeWildlifeLoader = (species: NativeWildlifeSpecies, tier: Tier) => Promise<GLTF>;
 type Actor = { tier: Tier; root: THREE.Group; frame: THREE.Group; model: THREE.Object3D;
   mixer: THREE.AnimationMixer; actions: Map<string, THREE.AnimationAction>; current: string;
-  antlers: THREE.Object3D[]; contact: NativeWildlifeContact | null; blend: number };
+  antlers: THREE.Object3D[]; contact: NativeWildlifeContact | null; blend: number; grounded: boolean };
 
 function inspect(gltf: GLTF, species: NativeWildlifeSpecies, tier: Tier): Asset {
   const c = gltf.parser.json.asset?.extras?.lifelensWildlife as Contract | undefined;
@@ -78,7 +78,10 @@ class NativeFar {
   private readonly batches: { pose: string; antlers: boolean; mesh: THREE.InstancedMesh; count: number }[] = [];
   private readonly transform = new THREE.Object3D();
   private count = 0;
+  private readonly ids: string[] = [];
   constructor(asset: Asset) {
+    this.group.name = 'LifeLensNativeFar:' + asset.contract.species;
+    this.group.userData.coreIds = this.ids;
     for (const pose of ['Idle', 'Rest', 'Forage']) for (const part of ['Body', 'Antlers']) {
       const source = asset.gltf.scene.getObjectByName('LifeLensNativeFar' + pose + part);
       if (!(source instanceof THREE.Mesh)) continue;
@@ -102,7 +105,7 @@ ${asset.contract.species === 'FreshwaterFish'
       this.group.add(mesh); this.batches.push({ pose, antlers: part === 'Antlers', mesh, count: 0 });
     }
   }
-  begin(): void { this.count = 0; for (const b of this.batches) b.count = 0; }
+  begin(): void { this.count = 0; this.ids.length = 0; for (const b of this.batches) b.count = 0; }
   draw(pose: NativeWildlifePose, time: number): boolean {
     if (this.count >= 128) return false;
     const key = pose.behavior === 'Rest' ? 'Rest' : pose.behavior === 'Forage' || pose.behavior === 'Drink' ? 'Forage' : 'Idle';
@@ -114,7 +117,7 @@ ${asset.contract.species === 'FreshwaterFish'
       (b.mesh.geometry.getAttribute('llNativeMotion') as THREE.InstancedBufferAttribute).setX(b.count, pose.speed > .005 || pose.behavior === 'Swim' ? 1 : 0);
       b.count++;
     }
-    this.count++; return true;
+    this.ids.push(pose.id); this.count++; return true;
   }
   end(): void { for (const b of this.batches) {
     b.mesh.count = b.count; b.mesh.instanceMatrix.needsUpdate = true;
@@ -138,6 +141,10 @@ export class NativeWildlifePool {
   private mid = 0;
   private disposed = false;
   private time = 0;
+  private readonly normal = new THREE.Vector3();
+  private readonly up = new THREE.Vector3(0, 1, 0);
+  private readonly headingInverse = new THREE.Quaternion();
+  private readonly groundRotation = new THREE.Quaternion();
   constructor(private readonly load: NativeWildlifeLoader | null = typeof document === 'undefined' ? null : (species, tier) => {
     const slug = NATIVE_WILDLIFE_SOURCES[species].slug;
     const file = tier === 'near' ? slug + '-rigged.glb' : slug + '-' + tier + '.glb';
@@ -178,7 +185,7 @@ export class NativeWildlifePool {
       let contact: NativeWildlifeContact | null;
       try { contact = pose.species === 'FreshwaterFish' ? null : new NativeWildlifeContact(root, frame, skin, asset.contract.paws); }
       catch { mixer.stopAllAction(); mixer.uncacheRoot(model); root.removeFromParent(); return false; }
-      actor = { tier, root, frame, model, mixer, actions, current: '', antlers, contact, blend: 0 };
+      actor = { tier, root, frame, model, mixer, actions, current: '', antlers, contact, blend: 0, grounded: false };
       root.rotation.y = pose.heading; this.actors.set(pose.id, actor);
     }
     actor.contact?.restore();
@@ -202,7 +209,20 @@ export class NativeWildlifePool {
     actor.root.rotation.y += delta * (1 - Math.exp(-Math.max(0, dt) * 10));
     if (ground && pose.species !== 'FreshwaterFish') {
       const h = ground(pose.x, pose.z);
-      if (h !== null) actor.frame.position.y = (h - pose.y) / pose.scale;
+      if (h !== null) {
+        actor.frame.position.y = (h - pose.y) / pose.scale;
+        const span = .35 * pose.scale, left = ground(pose.x - span, pose.z), right = ground(pose.x + span, pose.z);
+        const back = ground(pose.x, pose.z - span), front = ground(pose.x, pose.z + span);
+        let sx = left !== null && right !== null ? (right - left) / (2 * span) : 0;
+        let sz = back !== null && front !== null ? (front - back) / (2 * span) : 0;
+        const limit = Math.min(1, Math.tan(25 * Math.PI / 180) / Math.max(1e-6, Math.hypot(sx, sz)));
+        sx *= limit; sz *= limit;
+        this.headingInverse.setFromAxisAngle(this.up, -actor.root.rotation.y);
+        this.normal.set(-sx, 1, -sz).normalize().applyQuaternion(this.headingInverse);
+        this.groundRotation.setFromUnitVectors(this.up, this.normal);
+        actor.frame.quaternion.slerp(this.groundRotation, actor.grounded ? 1 - Math.exp(-Math.max(0, dt) * 12) : 1);
+        actor.grounded = true;
+      }
       actor.contact?.apply(name, action.time / action.getClip().duration, clip, actor.blend > 0, pose.scale, ground);
     }
     for (const antler of actor.antlers) antler.visible = pose.sex === 'Male';

@@ -7,6 +7,7 @@ on:
       - 'web/src/render/wildlife-layer.ts'
       - 'web/tools/build-native-wildlife*'
       - 'web/tests/procedural-environment/native-wildlife*'
+      - 'web/tests/native-wildlife-observer/**'
       - 'Tools/blender/build_native_wildlife_lods.py'
       - 'Tools/blender/review_native_wildlife.py'
       - 'Tools/assets/native-wildlife-pins.json'
@@ -57,6 +58,11 @@ jobs:
           node web/tests/procedural-environment/native-wildlife.mjs
           node web/tests/procedural-environment/grounding-wildlife.mjs
           node web/tests/procedural-environment/imported-tiger.mjs
+      - name: Export authoritative ecology observations from this exact Core
+        run: |
+          cmake -S Source/LifeLensCore -B /tmp/native-wildlife-core -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/native-wildlife-core --target ll_ecology_fixture -j2
+          /tmp/native-wildlife-core/ll_ecology_fixture web/tests/procedural-environment/review/core-fixture.json
       - name: Actual WebGL wildlife-layer review
         if: hashFiles('web/tests/procedural-environment/native-wildlife-capture.mjs') != ''
         run: |
@@ -68,7 +74,8 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/asset-reviews/native-wildlife/derived web/public/vendor/wildlife web/tests/procedural-environment/review/native-wildlife
+          git add docs/asset-reviews/native-wildlife/derived web/public/vendor/wildlife
+          git add -f web/tests/procedural-environment/review/native-wildlife
           if ! git diff --cached --quiet; then
             git commit -m 'Preserve four-species source derivatives and measured runtime evidence [skip ci]'
             for attempt in 1 2 3; do
@@ -84,4 +91,65 @@ jobs:
           path: |
             docs/asset-reviews/native-wildlife/derived/
             web/tests/procedural-environment/review/native-wildlife/
+          retention-days: 14
+
+  actual-observer:
+    needs: integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Restore unchanged simulation WASM
+        id: wasm
+        uses: actions/cache/restore@v4
+        with:
+          path: web/public/runtime
+          key: resident-wasm-v1-${{ runner.os }}-${{ hashFiles('Source/LifeLensCore/**', 'Tools/build_web_client.py') }}
+      - name: Compile authoritative Core when not cached
+        if: steps.wasm.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends emscripten
+          emcmake cmake -S Source/LifeLensCore -B /tmp/native-wildlife-wasm -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/native-wildlife-wasm --target lifelens_web_core -j2
+          mkdir -p web/public/runtime
+          cp /tmp/native-wildlife-wasm/web/lifelens_core.js /tmp/native-wildlife-wasm/web/lifelens_core.wasm web/public/runtime/
+      - uses: actions/cache/save@v4
+        if: steps.wasm.outputs.cache-hit != 'true'
+        with:
+          path: web/public/runtime
+          key: ${{ steps.wasm.outputs.cache-primary-key }}
+      - name: Build actual React Observer and browser
+        run: |
+          npm install --prefix web --ignore-scripts --no-audit --no-fund
+          npm install --prefix web --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          cd web
+          npx playwright install --with-deps chromium
+          npm run build -- --config tests/native-wildlife-observer/vite.config.mjs
+      - name: Verify four species in the real React and WASM application
+        working-directory: web
+        run: node tests/native-wildlife-observer/capture.mjs
+      - name: Preserve actual Observer evidence
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ -d web/tests/native-wildlife-observer/review ]; then
+            git add -f web/tests/native-wildlife-observer/review
+            if ! git diff --cached --quiet; then
+              git commit -m 'Preserve actual four-species React WASM Observer evidence [skip ci]'
+              git pull --rebase origin "$GITHUB_REF_NAME"
+              git push origin "HEAD:$GITHUB_REF_NAME"
+            fi
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-wildlife-actual-observer
+          path: web/tests/native-wildlife-observer/review/
           retention-days: 14

@@ -11,15 +11,20 @@ bpy.context.preferences.filepaths.save_version = 0
 for source in sorted(ROOT.glob('*/*/source.glb')):
     receipt = json.loads((source.parent / 'receipt.json').read_text())
     assert hashlib.sha256(source.read_bytes()).hexdigest() == receipt['sha256']
-    bpy.ops.object.select_all(action='SELECT')
-    bpy.ops.object.delete(use_global=False)
+    # Blender's importer creates hidden bone-shape meshes. Select-all cannot
+    # remove those; retaining them contaminates the next source's bounds.
+    for obj in list(bpy.data.objects):
+        bpy.data.objects.remove(obj, do_unlink=True)
+    bpy.ops.outliner.orphans_purge(do_recursive=True)
     for action in list(bpy.data.actions):
         bpy.data.actions.remove(action)
     bpy.ops.import_scene.gltf(filepath=str(source))
     scene = bpy.context.scene
     rigs = [obj for obj in scene.objects if obj.type == 'ARMATURE']
     controls = {bone.custom_shape for rig in rigs for bone in rig.pose.bones if bone.custom_shape}
-    meshes = [obj for obj in scene.objects if obj.type == 'MESH' and obj not in controls]
+    meshes = [obj for obj in scene.objects if obj.type == 'MESH' and obj not in controls
+              and not obj.hide_render
+              and not any(c.name.startswith('glTF_not_exported') for c in obj.users_collection)]
     assert meshes, 'No source mesh'
     scene.frame_set(1)
     bpy.context.view_layer.update()
@@ -40,7 +45,8 @@ for source in sorted(ROOT.glob('*/*/source.glb')):
         'rigs': [{'name': rig.name, 'bones': [b.name for b in rig.data.bones]} for rig in rigs],
         'actions': [{'name': a.name, 'frames': list(a.frame_range)} for a in bpy.data.actions],
         'materials': [{'name': m.name, 'textures': [n.image.name for n in m.node_tree.nodes
-                        if n.type == 'TEX_IMAGE' and n.image]} for m in bpy.data.materials if m.use_nodes],
+                        if n.type == 'TEX_IMAGE' and n.image]}
+                      for m in {m for o in meshes for m in o.data.materials if m and m.use_nodes}],
     }
     scene.render.engine = 'CYCLES'
     scene.cycles.samples = 6

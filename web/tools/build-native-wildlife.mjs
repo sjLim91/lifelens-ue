@@ -102,14 +102,15 @@ for(const cfg of configs){
   const count=Math.round(duration*40)+1,samples=[];
   for(let f=0;f<count-1;f++){
    const phase=f/(count-1);mixer.stopAllAction();restore();
-   const usedNative=native(name==='hunt'?'walk':name==='idle'&&cfg.species==='FreshwaterFish'?'swim':name,phase);
+   const usedNative=native(name==='hunt'?'walk':name==='rest'?'idle':name==='idle'&&cfg.species==='FreshwaterFish'?'swim':name,phase);
    const currentRoot=wp(referenceJoint);motionFrame.position.set(referencePosition.x-currentRoot.x,0,referencePosition.z-currentRoot.z);motionFrame.updateMatrixWorld(true);
    if(cfg.species!=='FreshwaterFish'){
     const hip=find(cfg.hip),chest=find(cfg.chest),head=find(cfg.head),neck=find(cfg.neck);
     if(name==='rest'){
-     // Lower the whole visual model, including separately bound source eyes.
-     // Some native rigs attach the front and rear torso to sibling roots.
-     motionFrame.position.y=-(hare?.13:cfg.species==='Deer'?.67:.43);motionFrame.updateMatrixWorld(true);rotate(neck,axisX,.25);rotate(head,axisX,.12);
+     // Core Rest is stationary rest, not an instruction to lie down. Retain
+     // the source's supported seated/standing anatomy and relax the head.
+     rotate(neck,axisX,.035);rotate(head,axisX,.025+.008*Math.sin(phase*Math.PI*2));
+     if(!usedNative)move(chest,new T.Vector3(0,.0015*Math.sin(phase*Math.PI*2),0));
     }else if(name==='drink'||name==='forage'){
      motionFrame.position.y=-(hare?.055:.13);motionFrame.updateMatrixWorld(true);rotate(chest,axisX,hare?.10:.18);rotate(neck,axisX,hare?.36:.75);rotate(head,axisX,hare?.18:.4);
     }else if(!usedNative){
@@ -118,7 +119,6 @@ for(const cfg of configs){
     for(let i=0;i<legs.length;i++){
      const leg=legs[i],p=(phase+offsets[i])%1,goal=leg.position.clone();goal.y-=leg.soleHeight;
      if(moving){const swing=(p-stance)/(1-stance);goal.z+=p<stance?stride*(.5-p/stance):stride*(-.5+swing);if(p>=stance)goal.y+=(run?.13:hare?.075:.07)*Math.sin(Math.PI*swing);}
-     if(name==='rest'){goal.z+=(i<2?(hare?.10:.24):.06);goal.x+=Math.sign(goal.x)*(hare?.008:.02);}
      solve(leg,goal);
     }
    }

@@ -20,12 +20,37 @@ for(const slug of slugs){
   const indices=await gltf.parser.getDependency('accessor',primitive.indices),position=await gltf.parser.getDependency('accessor',primitive.attributes.POSITION);
   const positions=Float32Array.from({length:position.count*3},(_,i)=>position.getComponent(Math.floor(i/3),i%3));
   const old=Uint32Array.from({length:indices.count},(_,i)=>indices.getX(i));
+  // This trout stores a separate vertex for every face corner. Weld only
+  // corners with identical positions, UVs and skin data; keep the source
+  // position/UV/weight streams and smooth the reduced surface's normals.
+  let welded=false;
+  if(slug==='freshwater-fish'){
+   const attributes=await Promise.all(Object.entries(primitive.attributes).filter(([key])=>!['NORMAL','TANGENT'].includes(key)).map(async([key,id])=>[key,await gltf.parser.getDependency('accessor',id)]));
+   const first=new Map(),mapping=new Uint32Array(position.count);
+   for(let i=0;i<position.count;i++){
+    const key=attributes.map(([name,a])=>name+':'+Array.from({length:a.itemSize},(_,k)=>a.getComponent(i,k).toFixed(6)).join(',')).join('|');
+    if(!first.has(key))first.set(key,i);mapping[i]=first.get(key);
+   }
+   for(let i=0;i<old.length;i++)old[i]=mapping[old[i]];welded=true;
+  }
   const wanted=Math.min(old.length,Math.max(60,Math.floor(old.length*ratio/3)*3));
-  const [reduced,error]=MeshoptSimplifier.simplify(old,positions,3,wanted,.04,[]);
+  let workingIndices=old,workingPositions=positions,restoreIndices=null;
+  if(welded){
+   restoreIndices=[...new Set(old)];const compact=new Map(restoreIndices.map((v,i)=>[v,i]));
+   workingIndices=Uint32Array.from(old,i=>compact.get(i));
+   workingPositions=Float32Array.from(restoreIndices.flatMap(i=>[positions[i*3],positions[i*3+1],positions[i*3+2]]));
+  }
+  const [simplified,error]=MeshoptSimplifier.simplify(workingIndices,workingPositions,3,wanted,.04,[]);
+  const reduced=restoreIndices?Uint32Array.from(simplified,i=>restoreIndices[i]):simplified;
   triangles+=reduced.length/3;maxError=Math.max(maxError,error);
   const padding=(-length)&3;if(padding){chunks.push(Buffer.alloc(padding));length+=padding;}
   const data=Buffer.from(new Uint32Array(reduced).buffer),view=doc.bufferViews.length;doc.bufferViews.push({buffer:0,byteOffset:length,byteLength:data.length});chunks.push(data);length+=data.length;
   const accessor=doc.accessors.length;doc.accessors.push({bufferView:view,componentType:5125,type:'SCALAR',count:reduced.length,min:[Math.min(...reduced)],max:[Math.max(...reduced)]});primitive.indices=accessor;
+  if(welded){
+   const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.BufferAttribute(positions,3));geometry.setIndex(new T.BufferAttribute(new Uint32Array(reduced),1));geometry.computeVertexNormals();
+   const normal=Buffer.from(geometry.attributes.normal.array.buffer),v=doc.bufferViews.length;doc.bufferViews.push({buffer:0,byteOffset:length,byteLength:normal.length});chunks.push(normal);length+=normal.length;
+   primitive.attributes.NORMAL=doc.accessors.length;doc.accessors.push({bufferView:v,componentType:5126,type:'VEC3',count:position.count});delete primitive.attributes.TANGENT;geometry.dispose();
+  }
  }
  const c=doc.asset.extras.lifelensWildlife;c.tier='mid';c.paws=c.paws.map(({sole_vertices,...paw})=>paw);c.triangles=triangles;
  doc.buffers[0].byteLength=length;

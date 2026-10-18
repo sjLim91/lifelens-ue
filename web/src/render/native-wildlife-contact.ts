@@ -4,7 +4,8 @@ export type WildlifePaw = { name: string; upper: string; sole_vertices?: number[
 export type WildlifeContactClip = { stance: number; offsets: number[] };
 type Ground = (x: number, z: number) => number | null;
 type Foot = { paw: THREE.Bone; chain: THREE.Bone[]; indices: number[];
-  anchor: THREE.Vector3; planted: boolean; key: string };
+  anchor: THREE.Vector3; planted: boolean; key: string; points: THREE.Vector3[];
+  position: THREE.Vector3; goal: THREE.Vector3; orientation: THREE.Quaternion };
 
 /** Correct only the source skin's visual joints. Core transforms stay immutable. */
 export class NativeWildlifeContact {
@@ -60,7 +61,9 @@ export class NativeWildlifeContact {
         indices.add(points.reduce((a, b) => a.p[axis] > b.p[axis] ? a : b).index);
       }
       for (const bone of [...chain, paw]) this.authored.set(bone, bone.quaternion.clone());
-      this.feet.push({ paw, chain, indices: [...indices], anchor: new THREE.Vector3(), planted: false, key: '' });
+      this.feet.push({ paw, chain, indices: [...indices], anchor: new THREE.Vector3(), planted: false, key: '',
+        points: [...indices].map(() => new THREE.Vector3()), position: new THREE.Vector3(),
+        goal: new THREE.Vector3(), orientation: new THREE.Quaternion() });
     }
   }
   restore(): void {
@@ -89,16 +92,19 @@ export class NativeWildlifeContact {
     for (let i = 0; i < this.feet.length; i++) {
       const foot = this.feet[i]!;
       const contact = !moving || (phase + clip.offsets[i]!) % 1 < clip.stance;
-      const points = foot.indices.map(index => {
-        const p = new THREE.Vector3(); this.skin.getVertexPosition(index, p); return p.applyMatrix4(this.skin.matrixWorld);
-      });
-      const lift = contact && !blending ? 0 : Math.max(0, Math.min(...points.map(p => p.clone().applyMatrix4(this.inverse).y))) * scale;
-      const authoredPosition = foot.paw.getWorldPosition(new THREE.Vector3());
-      const orientation = foot.paw.getWorldQuaternion(new THREE.Quaternion());
+      const points = foot.points;
+      let low = Infinity;
+      for (let k = 0; k < points.length; k++) {
+        const p = points[k]!; this.skin.getVertexPosition(foot.indices[k]!, p); p.applyMatrix4(this.skin.matrixWorld);
+        low = Math.min(low, this.p.copy(p).applyMatrix4(this.inverse).y);
+      }
+      const lift = contact && !blending ? 0 : Math.max(0, low) * scale;
+      const authoredPosition = foot.paw.getWorldPosition(foot.position);
+      const orientation = foot.paw.getWorldQuaternion(foot.orientation);
       if (reset || foot.key !== key || blending || !contact) foot.planted = false;
       foot.key = key;
       if (contact && !blending && !foot.planted) { foot.anchor.copy(authoredPosition); foot.planted = true; }
-      const goal = authoredPosition.clone();
+      const goal = foot.goal.copy(authoredPosition);
       if (foot.planted && foot.anchor.distanceTo(authoredPosition) < .22 * scale) {
         goal.x = foot.anchor.x; goal.z = foot.anchor.z;
       } else foot.planted = false;
