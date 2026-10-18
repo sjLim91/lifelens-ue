@@ -289,10 +289,14 @@ export class ResidentAIController {
       || !this.source || this.state.pendingActor
       || this.now() - this.lastCall < LIVE_AI_BUDGET.wallCadenceMs) return;
 
-    // Rotate across the entire living population. The model concurrency
-    // remains 1 and displayed history is bounded separately to 32 actors.
-    const candidates = residents
-      .filter((resident) => resident.alive === true);
+    // Rotate across every living resident who can independently decide.
+    // Core refuses suggestions from Babies and Toddlers (requiresDirectCare);
+    // do not spend scarce local-model inference on guaranteed rejections.
+    // Missing lifeStage remains eligible for older save/observer contracts;
+    // Core still performs the final authoritative age and intent checks.
+    const candidates = residents.filter((resident) => resident.alive === true
+      && resident.lifeStage !== 'Baby'
+      && resident.lifeStage !== 'Toddler');
     if (candidates.length === 0) return;
     const resident = candidates[this.cursor % candidates.length];
     this.cursor += 1;
