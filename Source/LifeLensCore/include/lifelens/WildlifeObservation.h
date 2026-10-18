@@ -27,7 +27,9 @@ inline const char* wildlifeBehaviorName(WildlifeBehavior behavior){
 }
 // Read-only observation of materialized Core populations. Camera movement does
 // not create populations, advance ecology or consume the resident RNG.
-inline void appendWildlifeObservation(std::ostringstream& out,const World& world,ChunkCoord center,int radius){
+inline void appendWildlifeObservation(
+    std::ostringstream& out,const World& world,ChunkCoord center,int radius,
+    const std::vector<GridPos>& residentPositions={}){
     out << "{\"available\":" << (world.wildlifeEnabled ? "true" : "false")
         << ",\"geographicallyConditioned\":false,\"regionalWeatherApplied\":false,\"animals\":[";
     bool first=true;
@@ -44,7 +46,7 @@ inline void appendWildlifeObservation(std::ostringstream& out,const World& world
                 << "\",\"sex\":\"" << (animal.sex==WildlifeSex::Male ? "Male" : "Female")
                 << "\",\"gridX\":" << animal.position.x << ",\"gridY\":" << animal.position.y
                 << ",\"ageDays\":" << animal.ageDays
-                << ",\"behavior\":\"" << wildlifeBehaviorName(wildlifeBehavior(p,animal))
+                << ",\"behavior\":\"" << wildlifeBehaviorName(wildlifeBehavior(p,animal,residentPositions))
                 << "\"}";
         }
     }

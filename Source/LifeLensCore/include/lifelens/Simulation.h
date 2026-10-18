@@ -62,6 +62,19 @@ public:
         outPosition=it->second.pos;
         return true;
     }
+    // Exact living human positions owned by Core runtime. Wildlife must not
+    // infer people from observer camera, buildings or random coordinates.
+    std::vector<GridPos> livingResidentPositions() const {
+        std::vector<GridPos> positions;
+        positions.reserve(world_.characters.size());
+        for(const auto& resident:world_.characters){
+            if(!resident.alive) continue;
+            GridPos position{};
+            if(runtimePosition(resident.id,position))
+                positions.push_back(position);
+        }
+        return positions;
+    }
     bool recommendedOutdoorReliefPosition(CharacterId id,GridPos& outPosition) const;
     bool sanitationUseTarget(CharacterId id,SanitationUseTarget& outTarget) const;
     bool settlementSleepTarget(

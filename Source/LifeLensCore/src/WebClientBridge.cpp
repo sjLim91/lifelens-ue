@@ -2240,7 +2240,8 @@ std::string WebClientBridge::humanTracesWindowJson(
     appendHumanTraces(out, buildHumanTraceWindowObservation(
         simulation_->world(), {centerChunkX, centerChunkY}, radius));
     out << ",\"wildlife\":";
-    appendWildlifeObservation(out,simulation_->world(),{centerChunkX,centerChunkY},radius);
+    appendWildlifeObservation(out,simulation_->world(),{centerChunkX,centerChunkY},radius,
+                              simulation_->livingResidentPositions());
     out << "}";
     return out.str();
 }
@@ -2329,7 +2330,8 @@ std::string WebClientBridge::terrainWindowJson(
     appendHumanTraces(out, buildHumanTraceWindowObservation(
         simulation_->world(), {centerChunkX, centerChunkY}, radius));
     out << ",\"wildlife\":";
-    appendWildlifeObservation(out,simulation_->world(),{centerChunkX,centerChunkY},radius);
+    appendWildlifeObservation(out,simulation_->world(),{centerChunkX,centerChunkY},radius,
+                              simulation_->livingResidentPositions());
     out << "}";
     return out.str();
 }
