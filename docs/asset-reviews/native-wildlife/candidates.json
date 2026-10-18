@@ -1183,55 +1183,6 @@
         "allowedForReview": true
       },
       {
-        "uid": "619f8da783b34797871a5b1b2f1f697d",
-        "name": "Rabbit",
-        "author": {
-          "uid": "885bc78ca8ad4d58a90aa6d26b2113ba",
-          "username": "davegaldody",
-          "displayName": "davegaldody",
-          "profileUrl": "https://sketchfab.com/davegaldody",
-          "account": "basic",
-          "avatar": {
-            "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
-            "images": [
-              {
-                "size": 680,
-                "width": 32,
-                "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
-                "height": 32
-              },
-              {
-                "size": 1253,
-                "width": 48,
-                "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
-                "height": 48
-              },
-              {
-                "size": 2797,
-                "width": 90,
-                "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
-                "height": 90
-              },
-              {
-                "size": 3215,
-                "width": 100,
-                "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
-                "height": 100
-              }
-            ]
-          },
-          "uri": "https://api.sketchfab.com/v3/users/885bc78ca8ad4d58a90aa6d26b2113ba"
-        },
-        "license": "CC-BY-4.0",
-        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
-        "original": "https://sketchfab.com/3d-models/619f8da783b34797871a5b1b2f1f697d",
-        "description": "test rabbit 2",
-        "faceCount": 60160,
-        "vertexCount": 30070,
-        "animationCount": 0,
-        "allowedForReview": true
-      },
-      {
         "uid": "073eef14ae3c4d06808498c3ba895e67",
         "name": "Rabbit",
         "author": {
@@ -1277,6 +1228,55 @@
         "description": "**Blender** **Fbx** **Rabbit**\nRabbit model fully rigged and ready for animation. Ready to be used for games or other 3D projects.",
         "faceCount": 8896,
         "vertexCount": 4455,
+        "animationCount": 0,
+        "allowedForReview": true
+      },
+      {
+        "uid": "619f8da783b34797871a5b1b2f1f697d",
+        "name": "Rabbit",
+        "author": {
+          "uid": "885bc78ca8ad4d58a90aa6d26b2113ba",
+          "username": "davegaldody",
+          "displayName": "davegaldody",
+          "profileUrl": "https://sketchfab.com/davegaldody",
+          "account": "basic",
+          "avatar": {
+            "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+            "images": [
+              {
+                "size": 680,
+                "width": 32,
+                "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+                "height": 32
+              },
+              {
+                "size": 1253,
+                "width": 48,
+                "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+                "height": 48
+              },
+              {
+                "size": 2797,
+                "width": 90,
+                "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+                "height": 90
+              },
+              {
+                "size": 3215,
+                "width": 100,
+                "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+                "height": 100
+              }
+            ]
+          },
+          "uri": "https://api.sketchfab.com/v3/users/885bc78ca8ad4d58a90aa6d26b2113ba"
+        },
+        "license": "CC-BY-4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "original": "https://sketchfab.com/3d-models/619f8da783b34797871a5b1b2f1f697d",
+        "description": "test rabbit 2",
+        "faceCount": 60160,
+        "vertexCount": 30070,
         "animationCount": 0,
         "allowedForReview": true
       },
@@ -9423,5 +9423,5 @@
     ]
   },
   "selectedUnavailable": [],
-  "selectedSourceCount": 7
+  "selectedSourceCount": 10
 }

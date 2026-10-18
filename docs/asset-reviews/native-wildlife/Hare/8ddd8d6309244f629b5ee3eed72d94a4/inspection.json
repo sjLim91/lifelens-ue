@@ -143,8 +143,23 @@
     {
       "name": "Material.001",
       "textures": [
-        "Image_0.002"
+        "Image_0.002",
+        "Image_1"
       ]
+    },
+    {
+      "name": "Material.002",
+      "textures": []
+    },
+    {
+      "name": "Material.003",
+      "textures": [
+        "Image_0.003"
+      ]
+    },
+    {
+      "name": "material_0",
+      "textures": []
     },
     {
       "name": "polySurface2SG",

@@ -283,8 +283,8 @@
     {
       "name": "Corpo",
       "textures": [
-        "Image_0.004",
-        "Image_1",
+        "Image_0.005",
+        "Image_1.001",
         "Image_2"
       ]
     },
@@ -319,17 +319,32 @@
     {
       "name": "Material.001",
       "textures": [
-        "Image_0.002"
+        "Image_0.002",
+        "Image_1"
       ]
     },
     {
       "name": "Material.002",
+      "textures": []
+    },
+    {
+      "name": "Material.003",
       "textures": [
         "Image_0.003"
       ]
     },
     {
+      "name": "Material.004",
+      "textures": [
+        "Image_0.004"
+      ]
+    },
+    {
       "name": "material_0",
+      "textures": []
+    },
+    {
+      "name": "material_0.001",
       "textures": []
     },
     {

@@ -15,7 +15,7 @@
       1.0
     ]
   ],
-  "triangles": 3384,
+  "triangles": 3304,
   "meshes": [
     {
       "name": "Retopo_myfishmodel_0",
@@ -25,12 +25,6 @@
     },
     {
       "name": "Icosphere",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
-    },
-    {
-      "name": "Icosphere.001",
       "vertices": 42,
       "uvLayers": 1,
       "vertexGroups": 0

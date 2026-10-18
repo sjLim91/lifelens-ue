@@ -1,0 +1,228 @@
+{
+  "uid": "073eef14ae3c4d06808498c3ba895e67",
+  "name": "Rabbit",
+  "author": {
+    "uid": "fba2cbd803ae4696a674ed3313bfc423",
+    "username": "Dakota.Hinkle",
+    "displayName": "Dakota.Hinkle",
+    "profileUrl": "https://sketchfab.com/Dakota.Hinkle",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/c2ba36099d024bd8bc8dea9fdc3bbe92",
+      "images": [
+        {
+          "size": 721,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/c2ba36099d024bd8bc8dea9fdc3bbe92/a99004e7f56b49009e406cd6a6da3258.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1096,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/c2ba36099d024bd8bc8dea9fdc3bbe92/58728ce1ce5b49e5ad74012f2c62ce18.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2663,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/c2ba36099d024bd8bc8dea9fdc3bbe92/30204a5053d541bfb10ff89869b25544.jpeg",
+          "height": 90
+        },
+        {
+          "size": 3091,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/c2ba36099d024bd8bc8dea9fdc3bbe92/44e07c8f582a423797950a4caf3444f6.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/fba2cbd803ae4696a674ed3313bfc423"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/073eef14ae3c4d06808498c3ba895e67",
+  "description": "**Blender** **Fbx** **Rabbit**\nRabbit model fully rigged and ready for animation. Ready to be used for games or other 3D projects.",
+  "faceCount": 8896,
+  "vertexCount": 4455,
+  "animationCount": 0,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T07:45:13.174373+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-081/073eef14ae3c4d06808498c3ba895e67.glb",
+  "sha256": "2bb6f05bd3e58ccf437ddb05c77a97ddd8ff67b9841b6b69bce90ba275165538",
+  "bytes": 2257988,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/073eef14ae3c4d06808498c3ba895e67",
+    "uid": "073eef14ae3c4d06808498c3ba895e67",
+    "name": "Rabbit",
+    "staffpickedAt": null,
+    "viewCount": 856,
+    "likeCount": 17,
+    "animationCount": 0,
+    "viewerUrl": "https://sketchfab.com/3d-models/073eef14ae3c4d06808498c3ba895e67",
+    "embedUrl": "https://sketchfab.com/models/073eef14ae3c4d06808498c3ba895e67/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2022-05-24T15:08:18.043096",
+    "tags": [
+      {
+        "name": "rabbit",
+        "slug": "rabbit",
+        "uri": "https://api.sketchfab.com/v3/tags/rabbit"
+      },
+      {
+        "name": "bunny",
+        "slug": "bunny",
+        "uri": "https://api.sketchfab.com/v3/tags/bunny"
+      },
+      {
+        "name": "rigged-character",
+        "slug": "rigged-character",
+        "uri": "https://api.sketchfab.com/v3/tags/rigged-character"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      },
+      {
+        "name": "characters-creatures"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "063215f59796478485731ec7d08ac4dd",
+          "size": 93862,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/073eef14ae3c4d06808498c3ba895e67/thumbnails/9ed6722a41ed409cadc85e2f760506d5/5f3452bbcc6a497180e03f57d720c74c.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "a97e75c3770c4d90bc299f19f0b222ef",
+          "size": 29911,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/073eef14ae3c4d06808498c3ba895e67/thumbnails/9ed6722a41ed409cadc85e2f760506d5/2d7561adbf6d4490b250bb1a1abf2371.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "ce03ed60c56a4102b82fb42f2d7d885c",
+          "size": 17060,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/073eef14ae3c4d06808498c3ba895e67/thumbnails/9ed6722a41ed409cadc85e2f760506d5/37d5edc404794224bb6e641e7c61183d.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "540c53a740ff46d38a1621cd13c06794",
+          "size": 3805,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/073eef14ae3c4d06808498c3ba895e67/thumbnails/9ed6722a41ed409cadc85e2f760506d5/cd499183e156440e94667a97d6352e7d.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "96130695b57c4ff3aa45cd294c835e07",
+          "size": 1113,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/073eef14ae3c4d06808498c3ba895e67/thumbnails/9ed6722a41ed409cadc85e2f760506d5/bb2e1057d9c54c5c94f477ac53c15fc8.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "fba2cbd803ae4696a674ed3313bfc423",
+      "username": "Dakota.Hinkle",
+      "displayName": "Dakota.Hinkle",
+      "profileUrl": "https://sketchfab.com/Dakota.Hinkle",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/c2ba36099d024bd8bc8dea9fdc3bbe92",
+        "images": [
+          {
+            "size": 721,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/c2ba36099d024bd8bc8dea9fdc3bbe92/a99004e7f56b49009e406cd6a6da3258.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1096,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/c2ba36099d024bd8bc8dea9fdc3bbe92/58728ce1ce5b49e5ad74012f2c62ce18.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2663,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/c2ba36099d024bd8bc8dea9fdc3bbe92/30204a5053d541bfb10ff89869b25544.jpeg",
+            "height": 90
+          },
+          {
+            "size": 3091,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/c2ba36099d024bd8bc8dea9fdc3bbe92/44e07c8f582a423797950a4caf3444f6.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/fba2cbd803ae4696a674ed3313bfc423"
+    },
+    "description": "**Blender** **Fbx** **Rabbit**\nRabbit model fully rigged and ready for animation. Ready to be used for games or other 3D projects.",
+    "faceCount": 8896,
+    "createdAt": "2022-05-24T14:53:18.097710",
+    "vertexCount": 4455,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 2,
+        "size": 6911084,
+        "type": "glb",
+        "textureMaxResolution": 2048,
+        "faceCount": 8896,
+        "vertexCount": 5233
+      },
+      "gltf": {
+        "textureCount": 2,
+        "size": 6623559,
+        "type": "gltf",
+        "textureMaxResolution": 2048,
+        "faceCount": 8896,
+        "vertexCount": 5233
+      },
+      "source": {
+        "textureCount": null,
+        "size": 12729084,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 1879200,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "Dakota.Hinkle (https://sketchfab.com/Dakota.Hinkle)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/rabbit-073eef14ae3c4d06808498c3ba895e67",
+      "title": "Rabbit"
+    },
+    "generator": "Sketchfab-13.31.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 29
+    }
+  ],
+  "animations": []
+}
