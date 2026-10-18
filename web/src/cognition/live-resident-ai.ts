@@ -162,6 +162,7 @@ export class ResidentAIController {
   private scheduler: CognitionScheduler | null = null;
   private epoch = 0;
   private cursor = 0;
+  private lastSelectedActor: string | null = null;
   private lastCall = -Infinity;
   private identity: string | null = null;
   private lastMinute = -1;
@@ -256,6 +257,7 @@ export class ResidentAIController {
     this.identity = null;
     this.lastMinute = -1;
     this.cursor = 0;
+    this.lastSelectedActor = null;
     this.residentHistory.clear();
     this.update({
       pendingActor: null, accepted: 0, rejected: 0,
@@ -298,9 +300,20 @@ export class ResidentAIController {
       && resident.lifeStage !== 'Baby'
       && resident.lifeStage !== 'Toddler');
     if (candidates.length === 0) return;
-    const resident = candidates[this.cursor % candidates.length];
+    // Anchor the next turn to the previous ACTOR, not the index of a
+    // changing eligible subset. When infants mature or residents die, an
+    // index-only cursor can select the same resident twice in succession.
+    const previousIndex = candidates.findIndex(
+      (candidate) => candidate.id === this.lastSelectedActor);
+    const nextIndex = previousIndex >= 0
+      ? (previousIndex + 1) % candidates.length
+      : this.cursor % candidates.length;
+    const resident = candidates[nextIndex];
     this.cursor += 1;
-    if (resident) void this.sample(resident.id);
+    if (resident) {
+      this.lastSelectedActor = resident.id;
+      void this.sample(resident.id);
+    }
   }
   async sample(actor: string): Promise<void> {
     if (!this.state.enabled || this.state.suspended
