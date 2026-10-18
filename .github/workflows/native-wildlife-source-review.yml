@@ -24,7 +24,7 @@ jobs:
       - name: Install free Blender for original surface and motion inspection
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends blender
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
       - name: Render licensed originals and their native motion
         run: blender --background --factory-startup --disable-autoexec --python-exit-code 1 --threads 2 --python Tools/research/render_native_wildlife_sources.py
       - name: Preserve source review receipts on this development branch
