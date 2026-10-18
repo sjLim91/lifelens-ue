@@ -321,7 +321,14 @@ inline CognitiveRequest buildCognitiveRequest(
            ||currentMinute-m.minute>1440 ||m.tags.empty()) return false;
         return m.tags.front()=="action_experience"
             ||m.tags.front()=="goal_action_feedback"
-            ||m.tags.front()=="social_self_outcome";
+            ||m.tags.front()=="social_self_outcome"
+            // Current Core physical threat and contact injury outcomes are
+            // personally witnessed experiences too, not background rumours.
+            // Keep the most recent event visible to local reasoning without
+            // increasing its bounded eight-memory budget or claiming that
+            // a witnessed encounter proves an attack occurred.
+            ||m.tags.front()=="predator_encounter"
+            ||m.tags.front()=="predator_contact_injury";
     };
     if(memoryLimit>0 &&memories.size()>memoryLimit){
         const std::size_t selected=memoryLimit;
