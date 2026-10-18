@@ -197,6 +197,40 @@ const provider = {
 }
 
 {
+  // Core cannot authorize free-local cognitive proposals for residents who
+  // require direct care. Such residents must not consume the shared GPU/CPU
+  // inference budget while new generations are being born.
+  const f = fixture(provider);
+  f.residents[0].lifeStage = 'Baby';
+  f.residents[1].lifeStage = 'Toddler';
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.contexts.length, 0,
+    'two dependent residents must not trigger expensive model requests');
+  assert.equal(f.submitted.length, 0);
+  assert.equal(f.controller.getSnapshot().rejected, 0,
+    'ineligible residents are not failed strategic attempts');
+
+  // Newly autonomous residents become eligible without a game reset.
+  f.residents[1].lifeStage = 'Child';
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.submitted.length, 1);
+  assert.equal(f.submitted[0].request.actor, '2',
+    'child must get the first available cognitive slot');
+  f.advance();
+  f.residents[0].lifeStage = 'YoungAdult';
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.submitted.length, 2);
+  assert.equal(f.submitted[1].request.actor, '1',
+    'resident joining the autonomous pool receives its next fair slot');
+  assert.equal(f.controller.getSnapshot().accepted, 2);
+  f.controller.dispose();
+}
+
+{
   const f = fixture();
   const original = f.runtime.cognitiveRequest('1');
   original.allowedIntents = [
