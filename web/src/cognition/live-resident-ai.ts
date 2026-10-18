@@ -4,6 +4,7 @@ import type {
 import { CognitionScheduler } from './cognition-scheduler';
 import type { CognitiveProvider } from './cognitive-provider';
 import { LocalCognitionProvider, isLoopbackCognitionUrl } from './local-cognition-provider';
+import { ResidentAISessionAudit } from './resident-ai-session-audit';
 import type { Resident, WorldOverview } from '../runtime/core-types';
 
 // One shared free-local model. Each resident gets a separate, bounded
@@ -118,6 +119,9 @@ export class ResidentAIController {
   // Keep only a bounded visible history; inference fairness covers ALL living
   // residents, not permanently the first N founders.
   private readonly residentHistory = new Map<string, ResidentAIDecision>();
+  private readonly sessionAudit = new ResidentAISessionAudit();
+  private observedWorld: WorldOverview | null = null;
+  private observedResidents: readonly Resident[] = [];
   private state: ResidentAIState = {
     enabled: false, suspended: false, pendingActor: null,
     configuration: null, accepted: 0, rejected: 0,
@@ -134,6 +138,16 @@ export class ResidentAIController {
 
   constructor(private readonly now: () => number = () => Date.now()) {}
   getSnapshot = (): ResidentAIState => this.state;
+  getAuditReport = () => this.sessionAudit.snapshot();
+  beginAuditSession(): boolean {
+    if (this.disposed || this.state.suspended || !this.observedWorld) return false;
+    const mode = this.state.enabled ? 'local-ai' : 'baseline';
+    if (!this.sessionAudit.begin(this.observedWorld, mode,
+      this.state.configuration?.model ?? null)) return false;
+    this.sessionAudit.observe(this.observedWorld, this.observedResidents, mode);
+    this.update({});
+    return true;
+  }
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -188,15 +202,24 @@ export class ResidentAIController {
   }
   setEnabled(enabled: boolean): boolean {
     if (enabled && (!this.scheduler || !this.source || this.disposed)) return false;
+    if (enabled !== this.state.enabled) {
+      this.sessionAudit.finish(enabled ? 'mode-changed' : 'stopped');
+    }
     if (!enabled) this.resetWorld();
     this.update({ enabled });
     return true;
   }
   suspend(suspended: boolean): void {
-    if (suspended) this.resetWorld();
+    if (suspended) {
+      this.sessionAudit.finish('fast-forward');
+      this.resetWorld();
+    }
     this.update({ suspended });
   }
   resetWorld(): void {
+    this.sessionAudit.finish('world-changed');
+    this.observedWorld = null;
+    this.observedResidents = [];
     this.epoch += 1;
     this.scheduler?.reset();
     this.identity = null;
@@ -227,6 +250,10 @@ export class ResidentAIController {
     }
     this.identity = identity;
     this.lastMinute = minute;
+    this.observedWorld = world;
+    this.observedResidents = residents;
+    this.sessionAudit.observe(world, residents,
+      this.state.enabled ? 'local-ai' : 'baseline');
     if (!this.state.enabled || this.state.suspended || !this.scheduler
       || !this.source || this.state.pendingActor
       || this.now() - this.lastCall < LIVE_AI_BUDGET.wallCadenceMs) return;
@@ -260,6 +287,7 @@ export class ResidentAIController {
       const lastDecision: ResidentAIDecision = {
         actor, minute: -1, status: 'error', intent: null, target: null,
       };
+      this.sessionAudit.result('error');
       this.update({
         pendingActor: null, rejected: this.state.rejected + 1,
         lastDecision,
@@ -274,6 +302,7 @@ export class ResidentAIController {
       || request.allowedIntents.length === 0) return;
 
     const epoch = this.epoch;
+    this.sessionAudit.inference(request);
     this.update({ pendingActor: actor });
     const result = await this.scheduler.submitObserved(request);
     if (this.disposed || epoch !== this.epoch || this.source !== source) return;
@@ -311,6 +340,7 @@ export class ResidentAIController {
       target: result.proposal?.targetResident ?? null,
       latestPersonalExperience: latestFirsthandAIExperience(request),
     };
+    this.sessionAudit.result(status);
     this.update({
       pendingActor: null,
       accepted: this.state.accepted + (status === 'recorded' ? 1 : 0),
