@@ -1018,7 +1018,7 @@ export interface RuntimeClient {
   submitLocalCognitiveProposal?: (
     actor: string, observedMinute: number, worldSeed: string,
     intent: string, priority: number, targetResident: string,
-    rationaleDigest: string,
+    rationaleDigest: string, observedTrigger: string,
   ) => boolean;
   autonomousGoalCandidatesJson?: (residentId: string, trigger: string) => string;
   dynamicEnvironmentJson?: (x: number, y: number) => string;
