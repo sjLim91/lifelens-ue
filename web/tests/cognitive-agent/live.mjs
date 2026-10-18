@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { source } from './compile.mjs';
 
-const { ResidentAIController, LIVE_AI_BUDGET, liveActionableCognitiveRequest } =
+const { ResidentAIController, LIVE_AI_BUDGET, liveActionableCognitiveRequest,
+  residentAIObservedTrigger } =
   await source('cognition/live-resident-ai.ts');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -388,6 +389,78 @@ const provider = {
   assert.equal(compareResidentAISessionReports(baseline, {
     ...candidate, modelName:{toString(){ throw Error('unsafe input');}},
   }).comparable, false, 'malformed imported data must never be trusted');
+}
+
+
+{
+  // Only the actor's firsthand Core-written source-loss memory can switch
+  // the model to a ResourceScarcity context; Core still re-observes authority.
+  const newFailure = {
+    who: '1', source: 'DirectWitness', witnessed: true,
+    minute: 479, recallScore: .2, confidence: 1,
+    importance: .2, emotionValence: -.3, emotionIntensity: .2,
+    what: '실제 문명 행동 Civilization:Gather:PlantFood 수행을 시도했지만 실패했다 (직접 확인한 원인: source-exhausted)',
+    where: '내가 직접 시도한 행동',
+    tags: ['action_experience','Civilization:Gather:PlantFood','failure'],
+  };
+  const base = {
+    actor:'1', minute:480, trigger:'Reflection',
+    allowedIntents:['ImproveFoodSecurity','ExploreOpportunity'],
+    memories:[newFailure],
+  };
+  assert.equal(residentAIObservedTrigger(base), 'ResourceScarcity');
+  assert.equal(residentAIObservedTrigger({
+    ...base, memories:[{...newFailure, source:'ToldByOther', witnessed:false}],
+  }), 'Reflection');
+  assert.equal(residentAIObservedTrigger({
+    ...base, memories:[{...newFailure, what:'source-exhausted'}],
+  }), 'Reflection', 'local model text cannot forge source-loss provenance');
+  assert.equal(residentAIObservedTrigger({
+    ...base, minute:2000,
+  }), 'Reflection', 'expired direct experience cannot trigger scarcity');
+  assert.equal(residentAIObservedTrigger({
+    ...base, memories:[newFailure, {
+      ...newFailure, minute:480, tags:[
+        'action_experience','Civilization:Gather:PlantFood','success',
+      ], what:'실제 문명 행동 Civilization:Gather:PlantFood 수행에 성공했다',
+    }],
+  }), 'Reflection', 'new firsthand success supersedes older resource loss');
+  assert.equal(residentAIObservedTrigger({
+    ...base, memories:[{
+      ...newFailure, tags:['action_experience','Civilization:Gather:Water','failure'],
+      what:'실제 문명 행동 Civilization:Gather:Water 수행을 시도했지만 실패했다 (직접 확인한 원인: container-missing)',
+    }],
+  }), 'Reflection', 'missing vessel is not depleted water');
+
+  const observedTriggers=[];
+  const f=fixture({
+    name:'evidence-grounded-local',
+    reason: async (request)=>{
+      observedTriggers.push(request.trigger);
+      return {
+        actor:request.actor, intent:'ExploreOpportunity',
+        priority:.9, targetResident:null, rationale:'새로운 자원 탐색',
+      };
+    },
+  });
+  const read=f.runtime.cognitiveRequest;
+  f.runtime.cognitiveRequest=(actor,trigger)=>{
+    const request=read(actor);
+    request.trigger=trigger;
+    request.allowedIntents=['ImproveFoodSecurity','ExploreOpportunity'];
+    request.memories=[{...newFailure}];
+    return request;
+  };
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world,f.residents);
+  await tick();
+  assert.deepEqual(observedTriggers,['ResourceScarcity']);
+  assert.equal(f.contexts.length,2, 'Core is re-read with verified event trigger');
+  assert.equal(f.submitted.length,1);
+  assert.equal(f.submitted[0].request.trigger,'ResourceScarcity');
+  assert.equal(f.submitted[0].proposal.intent,'ExploreOpportunity');
+  assert.equal(f.controller.getSnapshot().accepted,1);
+  f.controller.dispose();
 }
 
 console.log('Live Resident AI: independent actor context, Core handoff, cancellation PASS');

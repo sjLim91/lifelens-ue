@@ -57,7 +57,8 @@ public:
         const std::string& intentText,
         double priority,
         const std::string& targetResidentText,
-        const std::string& rationaleDigest);
+        const std::string& rationaleDigest,
+        const std::string& observedTriggerText = "Reflection");
     // Observational only. These locally composed goals never execute or
     // authorize behavior; all data derives from bounded Core cognition.
     std::string autonomousGoalCandidatesJson(
