@@ -151,4 +151,24 @@ console.log('PASS same-ID species replacement does not reuse a stale native body
  water.geometry.dispose();water.material.dispose();layer.dispose();
  console.log('PASS native fish fits the unchanged shallow Core river between bed and water surface');
 }
+// A visible subject must not lose its native skin to nearby offscreen animals.
+{
+ const {WildlifeLayer}=await source('render/wildlife-layer.ts');
+ const {ResidentGroundSurface}=await source('render/resident-grounding.ts');
+ const {WORLD_GRID_CONTRACT:grid}=await source('runtime/lifelens-contract.ts');
+ const terrain=JSON.parse(readFileSync(resolve(import.meta.dirname,'review/core-fixture.json'),'utf8')).terrain;
+ const before=JSON.stringify(terrain),layer=new WildlifeLayer(undefined,(s,t)=>load(s,t));layer.setTerrain(terrain);
+ const candidates=new Set(layer.candidateCoreIds),subject=terrain.wildlife.animals.find(a=>a.species==='Deer'&&a.sex==='Male'&&candidates.has(a.id));assert(subject);
+ const ground=new ResidentGroundSurface();ground.setTerrain(terrain,terrain.centerChunkX,terrain.centerChunkY);
+ const x=(subject.gridX/grid.gridCellsPerChunk-terrain.centerChunkX-.5)*grid.worldUnitsPerChunk,z=(subject.gridY/grid.gridCellsPerChunk-terrain.centerChunkY-.5)*grid.worldUnitsPerChunk;
+ const y=ground.height(x,z),camera=new T.PerspectiveCamera(38,960/720,.02,300);
+ for(const [name,dx,dz] of [['quarter',.65,1],['front',0,1],['side',1,0],['back',0,-1]]){
+  camera.position.set(x+dx*5.25,y+1.68,z+dz*5.25);camera.lookAt(x,y+.798,z);
+  let actor;for(let i=0;i<80;i++){layer.update(.02,camera);actor=layer.group.getObjectByName('LifeLensNativeAnimal:'+subject.id);if(actor)break;await settle();}
+  assert(actor,'Visible deer starved by other skins in '+name+' view');assert.equal(actor.userData.tier,'near');
+  const near=[];layer.group.traverse(o=>{if(o.name.startsWith('LifeLensNativeAnimal:')&&o.userData.tier==='near')near.push(o);});assert(near.length<=4);
+ }
+ assert.equal(JSON.stringify(terrain),before);layer.dispose();
+ console.log('PASS visible Core deer keeps a bounded native skin in all four camera views');
+}
 writeFileSync(resolve(output,'contracts.json'),JSON.stringify({status:'PASS_SOURCE_SKIN_LOD_RUNTIME_CONTRACTS',records,contacts,physicalAndroid:'NOT_MEASURED'},null,2)+'\n');

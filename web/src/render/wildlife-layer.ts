@@ -54,6 +54,9 @@ export class WildlifeLayer {
   private readonly scratch=new Map<string,number>();
   private readonly cameraPosition=new THREE.Vector3();
   private readonly cameraAbsolute=new THREE.Vector3();
+  private readonly screenPosition=new THREE.Vector3();
+  private readonly viewProjection=new THREE.Matrix4();
+  private readonly renderPriority=new Map<string,number>();
   private hasCamera=false;
   private readonly tigers:ImportedTigerPool;
   private readonly native:NativeWildlifePool;
@@ -257,11 +260,22 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
     }
     this.cameraPosition.copy(this.cameraAbsolute);
     this.cameraPosition.x-=offsetX;this.cameraPosition.z-=offsetZ;
-    // Spend the bounded skinned-model budget on the animals nearest the observer.
+    // Spend bounded skins on the current view. Close animals behind the camera
+    // must not exhaust the budget before the animal being observed.
     const visible=[...this.animals.values()];
-    if(this.hasCamera)visible.sort((a,b)=>
-      Math.hypot(a.x-offsetX-this.cameraPosition.x,a.z-offsetZ-this.cameraPosition.z)
-      -Math.hypot(b.x-offsetX-this.cameraPosition.x,b.z-offsetZ-this.cameraPosition.z));
+    if(camera){
+      this.viewProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+      this.renderPriority.clear();
+      for(const pose of visible){
+        const x=pose.x-offsetX,z=pose.z-offsetZ;
+        const y=(this.ground.height(x,z)??0)+(pose.fish?.02:.6*pose.scale);
+        this.screenPosition.set(x,y,z).applyMatrix4(this.viewProjection);
+        const p=this.screenPosition,distance=Math.hypot(x-this.cameraPosition.x,z-this.cameraPosition.z);
+        const inView=p.z>=-1&&p.z<=1&&Math.abs(p.x)<=1.15&&Math.abs(p.y)<=1.15;
+        this.renderPriority.set(pose.id,inView?distance*(1+2*Math.hypot(p.x,p.y)):1e6+distance);
+      }
+      visible.sort((a,b)=>this.renderPriority.get(a.id)!-this.renderPriority.get(b.id)!||a.id.localeCompare(b.id));
+    }
     for(const pose of visible){
       const x=pose.x-offsetX,z=pose.z-offsetZ;
       let y=this.ground.height(x,z);
