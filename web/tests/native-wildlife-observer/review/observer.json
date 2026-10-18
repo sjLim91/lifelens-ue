@@ -1,29 +1,293 @@
 {
   "status": "FAIL_ACTUAL_REACT_WASM_OBSERVER",
   "error": "Error: Native actor did not bind the actual WASM ID",
-  "results": [],
+  "results": [
+    {
+      "species": "Hare",
+      "pair": [
+        {
+          "baseline": false,
+          "sample": {
+            "minute": 502,
+            "worldSeed": "77",
+            "runtime": {
+              "status": "ready",
+              "errorMessage": null
+            },
+            "core": {
+              "id": "25:32:1704075738371588100",
+              "species": "Hare",
+              "sex": "Female",
+              "gridX": 803,
+              "gridY": 1043,
+              "behavior": "Flee"
+            },
+            "expectedXZ": [
+              -3.25,
+              0.75
+            ],
+            "actor": {
+              "id": "25:32:1704075738371588100",
+              "position": [
+                -3.25,
+                23.07613248,
+                0.75
+              ],
+              "behavior": "Flee",
+              "clip": "idle",
+              "tier": "mid"
+            },
+            "farIds": [
+              "27:32:16424469176338350081",
+              "27:32:16424469176338350084",
+              "27:32:16424469176338350082",
+              "27:32:16424469176338350085",
+              "27:32:16424469176338350083"
+            ],
+            "cameraChoice": {
+              "score": 4.971400000000001,
+              "clear": 5,
+              "total": 9,
+              "position": [
+                -0.8709763581476757,
+                0.6519374979345542,
+                -3.411019835609827
+              ],
+              "target": [
+                -0.059515816279112066,
+                0.25255023019058953,
+                0.04969411106807997
+              ]
+            },
+            "cameraDiagnostic": {
+              "status": "SELECTED",
+              "bounds": [
+                [
+                  -3.563079100626179,
+                  22.963647361146755,
+                  0.3227482483197589
+                ],
+                [
+                  -3.0559525319320455,
+                  23.69371805923442,
+                  1.2766399738164012
+                ]
+              ],
+              "extent": 1.303874995869105,
+              "aspect": 0.9365558912386707
+            },
+            "renderStats": {
+              "frame": 64,
+              "calls": 154,
+              "triangles": 2185996,
+              "points": 0,
+              "lines": 0
+            },
+            "canvas": {
+              "id": "threeWorldCanvas",
+              "width": 620,
+              "height": 662,
+              "contextLost": false
+            }
+          }
+        },
+        {
+          "baseline": true,
+          "sample": {
+            "minute": 502,
+            "worldSeed": "77",
+            "runtime": {
+              "status": "ready",
+              "errorMessage": null
+            },
+            "core": {
+              "id": "25:32:1704075738371588100",
+              "species": "Hare",
+              "sex": "Female",
+              "gridX": 803,
+              "gridY": 1043,
+              "behavior": "Flee"
+            },
+            "expectedXZ": [
+              -3.25,
+              0.75
+            ],
+            "actor": null,
+            "farIds": [],
+            "cameraChoice": {
+              "score": 4.971400000000001,
+              "clear": 5,
+              "total": 9,
+              "position": [
+                -0.8709763581476757,
+                0.6519374979345542,
+                -3.411019835609827
+              ],
+              "target": [
+                -0.059515816279112066,
+                0.25255023019058953,
+                0.04969411106807997
+              ]
+            },
+            "cameraDiagnostic": {
+              "status": "SELECTED",
+              "bounds": [
+                [
+                  -3.563079100626179,
+                  22.963647361146755,
+                  0.3227482483197589
+                ],
+                [
+                  -3.0559525319320455,
+                  23.69371805923442,
+                  1.2766399738164012
+                ]
+              ],
+              "extent": 1.303874995869105,
+              "aspect": 0.9365558912386707
+            },
+            "renderStats": {
+              "frame": 72,
+              "calls": 102,
+              "triangles": 2560562,
+              "points": 0,
+              "lines": 0
+            },
+            "canvas": {
+              "id": "threeWorldCanvas",
+              "width": 620,
+              "height": 662,
+              "contextLost": false
+            }
+          }
+        }
+      ],
+      "far": {
+        "minute": 502,
+        "worldSeed": "77",
+        "runtime": {
+          "status": "ready",
+          "errorMessage": null
+        },
+        "core": {
+          "id": "25:32:1704075738371588100",
+          "species": "Hare",
+          "sex": "Female",
+          "gridX": 803,
+          "gridY": 1043,
+          "behavior": "Flee"
+        },
+        "expectedXZ": [
+          -3.25,
+          0.75
+        ],
+        "actor": null,
+        "farIds": [
+          "25:32:1704075738371588098",
+          "25:32:1704075738371588100",
+          "25:32:1704075738371588097",
+          "25:32:1704075738371588099",
+          "27:32:16424469176338350081",
+          "27:32:16424469176338350084",
+          "27:32:16424469176338350082",
+          "27:32:16424469176338350085",
+          "27:32:16424469176338350083"
+        ],
+        "cameraChoice": null,
+        "cameraDiagnostic": {
+          "status": "SELECTED",
+          "bounds": [
+            [
+              -3.563079100626179,
+              22.963647361146755,
+              0.3227482483197589
+            ],
+            [
+              -3.0559525319320455,
+              23.69371805923442,
+              1.2766399738164012
+            ]
+          ],
+          "extent": 1.303874995869105,
+          "aspect": 0.9365558912386707
+        },
+        "renderStats": {
+          "frame": 74,
+          "calls": 159,
+          "triangles": 2142257,
+          "points": 0,
+          "lines": 0
+        },
+        "canvas": {
+          "id": "threeWorldCanvas",
+          "width": 620,
+          "height": 662,
+          "contextLost": false
+        }
+      }
+    }
+  ],
   "diagnostic": {
-    "minute": 496,
+    "minute": 502,
     "worldSeed": "77",
     "runtime": {
       "status": "ready",
       "errorMessage": null
     },
     "core": {
-      "id": "25:32:1704075738371588100",
-      "species": "Hare",
-      "sex": "Female",
-      "gridX": 803,
-      "gridY": 1043,
-      "behavior": "Flee"
+      "id": "27:32:16424469176338350087",
+      "species": "Deer",
+      "sex": "Male",
+      "gridX": 892,
+      "gridY": 1029,
+      "behavior": "Rest"
     },
+    "expectedXZ": [
+      19,
+      -2.75
+    ],
     "actor": null,
-    "farIds": [],
-    "cameraChoice": null,
+    "farIds": [
+      "25:32:1704075738371588101",
+      "27:32:16424469176338350087",
+      "27:32:16424469176338350086"
+    ],
+    "cameraChoice": {
+      "score": 8.995299999999999,
+      "clear": 9,
+      "total": 9,
+      "position": [
+        0,
+        1.6831711897145496,
+        -4.712879331200743
+      ],
+      "target": [
+        -0.3221902375065504,
+        0.8002373594123746,
+        0.32583484194219636
+      ]
+    },
+    "cameraDiagnostic": {
+      "status": "SELECTED",
+      "bounds": [
+        [
+          17.894647587780746,
+          25.52276392618661,
+          -3.5244947310226116
+        ],
+        [
+          19.460971937206153,
+          27.53174087263816,
+          -1.3238355850929957
+        ]
+      ],
+      "extent": 3.3663423794291023,
+      "aspect": 0.9365558912386707
+    },
     "renderStats": {
-      "frame": 58,
-      "calls": 231,
-      "triangles": 2400340,
+      "frame": 104,
+      "calls": 238,
+      "triangles": 2323285,
       "points": 0,
       "lines": 0
     },
