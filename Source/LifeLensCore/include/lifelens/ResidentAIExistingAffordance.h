@@ -50,6 +50,53 @@ inline bool residentAIHasRecentRepeatedGatherFailure(
     return latestFailed &&minute-latest<=1440;
 }
 
+// A verified *single* firsthand failure can already prove one known
+// resource source was lost. Unlike generic gathering difficulty, exhaustion
+// or removal does not require three failed attempts before exploring.
+// Compare Core-written action memory text exactly: hearsay, inferred claims,
+// arbitrary model rationale, and water container/access failures cannot
+// masquerade as a lost source. The latest firsthand SUCCESS overrides it.
+inline bool residentAIHasConfirmedLostGatherSource(
+    const Character& actor,MaterialKind material,int minute)
+{
+    if(!actor.alive ||actor.id==0 ||minute<0
+       ||material==MaterialKind::Unknown) return false;
+    CivilizationUtilityDecision decision;
+    decision.intent=CivilizationIntent::Gather;
+    decision.material=material;
+    const std::string key=civilizationActionExperienceKey(decision);
+    const BeliefRecord* belief=actor.beliefs.find(
+        0,actionExperienceProposition(key.c_str()));
+    if(belief==nullptr ||belief->contradictionCount==0
+       ||belief->lastUpdatedMinute>minute) return false;
+
+    const std::string prefix="실제 문명 행동 "+key
+        +" 수행을 시도했지만 실패했다 (직접 확인한 원인: ";
+    const std::string exhausted=prefix+"source-exhausted)";
+    const std::string removed=prefix+"source-removed)";
+    int latest=-1;
+    bool confirmed=false;
+    for(const MemoryRecord& memory:actor.memory.entries){
+        if(memory.source!=MemorySource::DirectWitness
+           ||!memory.witnessed ||memory.sourceCharacter!=actor.id
+           ||memory.minute<0 ||memory.minute>minute
+           ||memory.tags.size()!=3
+           ||memory.tags[0]!="action_experience"
+           ||memory.tags[1]!=key
+           ||(memory.tags[2]!="failure" &&memory.tags[2]!="success"))
+            continue;
+        // A same-minute success is decisive even if memories are reordered.
+        if(memory.minute>latest){
+            latest=memory.minute;
+            confirmed=memory.tags[2]=="failure"
+                &&(memory.what==exhausted ||memory.what==removed);
+        }else if(memory.minute==latest &&memory.tags[2]=="success"){
+            confirmed=false;
+        }
+    }
+    return confirmed &&latest>=0 &&minute-latest<=1440;
+}
+
 // A Core recipe can explain the next prerequisite for an AI resident.
 // This only chooses an existing legal raw-material Gather affordance;
 // it never manufactures ingredients, knowledge, water, or new actions.
@@ -234,8 +281,11 @@ chooseResidentAIExistingCivilizationAffordance(
         retriedMaterial=MaterialKind::Water;
     }
     if(retriedMaterial!=MaterialKind::Unknown
-       &&residentAIHasRecentRepeatedGatherFailure(
-           actor,retriedMaterial,world.minute)){
+       &&(residentAIHasRecentRepeatedGatherFailure(
+              actor,retriedMaterial,world.minute)
+          ||(candidate.intent!=CivilizationIntent::Gather
+             &&residentAIHasConfirmedLostGatherSource(
+                 actor,retriedMaterial,world.minute)))){
         const auto alternate=bestResourceExplorationDecisionAtPosition(
             world,actor,actorPosition,settlementPopulation,retriedMaterial);
         if(alternate.intent==CivilizationIntent::Explore
