@@ -2,6 +2,7 @@
 #include "lifelens/WildlifeObservation.h"
 #include "lifelens/WebClientBridge.h"
 #include "lifelens/AutonomousGoalComposer.h"
+#include "lifelens/ResidentAIExistingAffordance.h"
 
 #include <algorithm>
 #include <charconv>
@@ -1894,7 +1895,8 @@ bool WebClientBridge::submitLocalCognitiveProposal(
     const std::string& intentText,
     double priority,
     const std::string& targetResidentText,
-    const std::string& rationaleDigest)
+    const std::string& rationaleDigest,
+    const std::string& observedTriggerText)
 {
     if(!simulation_ || observedMinute<0
        || observedWorldSeed!=std::to_string(simulation_->world().seed)
@@ -1921,11 +1923,28 @@ bool WebClientBridge::submitLocalCognitiveProposal(
     }
     if(intent==CognitiveIntentKind::None) return false;
 
-    // A local model cannot submit an old browser-side picture as world truth.
-    // Reconstruct the actor's bounded request from current authoritative Core
-    // state. An aged inference is discarded when it exceeds the local window.
+    // Local event labels are never accepted from arbitrary browser text.
+    // Scarcity is permitted only when the actor has a Core-written firsthand
+    // record of a real depleted/removed FOOD or WATER source, not hearsay,
+    // inaccessible paths, or lack of a container. Legacy C++ callers use
+    // the default Reflection trigger.
+    CognitiveTriggerKind trigger=CognitiveTriggerKind::Reflection;
+    if(observedTriggerText=="ResourceScarcity"){
+        const Character* resident=cognitiveCharacter(simulation_->world(),actor);
+        if(resident==nullptr
+           ||(!residentAIHasConfirmedLostGatherSource(
+                   *resident,MaterialKind::PlantFood,simulation_->world().minute)
+              &&!residentAIHasConfirmedLostGatherSource(
+                   *resident,MaterialKind::Water,simulation_->world().minute)))
+            return false;
+        trigger=CognitiveTriggerKind::ResourceScarcity;
+    }else if(observedTriggerText!="Reflection"){
+        return false;
+    }
+    // The Core still reconstructs current bounded authoritative cognition.
+    // The browser supplies only a checked event label, never a memory or fact.
     const CognitiveRequest current=simulation_->observeCognitiveRequest(
-        actor,CognitiveTriggerKind::Reflection);
+        actor,trigger);
     if(current.actor!=actor) return false;
 
     CognitiveProposal proposal;
