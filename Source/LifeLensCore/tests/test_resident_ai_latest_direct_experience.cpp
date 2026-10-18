@@ -38,9 +38,11 @@ int main()
         vivid.who=19;
         vivid.minute=1199;
         vivid.what="vivid-unrelated-"+std::to_string(i);
-        vivid.importance=1.0;
-        vivid.confidence=1.0;
-        vivid.emotionIntensity=1.0;
+        // Salient enough to dominate the new low-salience failure, but
+        // not so strong that it displaces the older maximal-recall success.
+        vivid.importance=0.85;
+        vivid.confidence=0.90;
+        vivid.emotionIntensity=0.85;
         vivid.tags={"ordinary"};
         actor.memory.add(vivid);
     }
