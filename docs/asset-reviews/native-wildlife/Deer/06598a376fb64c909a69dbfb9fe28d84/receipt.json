@@ -1,0 +1,243 @@
+{
+  "uid": "06598a376fb64c909a69dbfb9fe28d84",
+  "name": "Deer",
+  "author": {
+    "uid": "c350f79289894cf7a6856d82607d29f3",
+    "username": "TyVtuber",
+    "displayName": "Tyriese Miller",
+    "profileUrl": "https://sketchfab.com/TyVtuber",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/66c5adf831bd41cd96258fbc07cb3529",
+      "images": [
+        {
+          "size": 1011,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/96252dbf88824d5ca3ec00c90a34809c.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1387,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/99b9f8b50f00437fa28eb1922700cde2.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2526,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/3ed9bd7397d4480aa12b006aea1d3e5d.jpeg",
+          "height": 90
+        },
+        {
+          "size": 2841,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/1efce240a2924cc682eb0a854d2860df.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/c350f79289894cf7a6856d82607d29f3"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/06598a376fb64c909a69dbfb9fe28d84",
+  "description": "",
+  "faceCount": 74206,
+  "vertexCount": 37562,
+  "animationCount": 3,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T08:22:49.828032+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-040/06598a376fb64c909a69dbfb9fe28d84.glb",
+  "sha256": "139ca8c5c8b1e55bfaddf460fb6c0352ceab5321fb39ec26eac5175bc9b4a92b",
+  "bytes": 3214528,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/06598a376fb64c909a69dbfb9fe28d84",
+    "uid": "06598a376fb64c909a69dbfb9fe28d84",
+    "name": "Deer",
+    "staffpickedAt": null,
+    "viewCount": 1340,
+    "likeCount": 30,
+    "animationCount": 3,
+    "viewerUrl": "https://sketchfab.com/3d-models/06598a376fb64c909a69dbfb9fe28d84",
+    "embedUrl": "https://sketchfab.com/models/06598a376fb64c909a69dbfb9fe28d84/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2020-09-23T23:40:55.475959",
+    "tags": [
+      {
+        "name": "deer",
+        "slug": "deer",
+        "uri": "https://api.sketchfab.com/v3/tags/deer"
+      },
+      {
+        "name": "animal",
+        "slug": "animal",
+        "uri": "https://api.sketchfab.com/v3/tags/animal"
+      },
+      {
+        "name": "animation",
+        "slug": "animation",
+        "uri": "https://api.sketchfab.com/v3/tags/animation"
+      },
+      {
+        "name": "cycles",
+        "slug": "cycles",
+        "uri": "https://api.sketchfab.com/v3/tags/cycles"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "7d6b77fb32114452aa8d4a99764aca41",
+          "size": 48840,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/06598a376fb64c909a69dbfb9fe28d84/thumbnails/4d528bae25a84e6d9a803b890b3b4fc7/3dd44b817cdb44a6bdee27149e023421.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "23c74f5ab3d742fa8f59475aa02e5e36",
+          "size": 18518,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/06598a376fb64c909a69dbfb9fe28d84/thumbnails/4d528bae25a84e6d9a803b890b3b4fc7/d502fecef99148288115f16c9675bca5.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "ebb648c5e5834f66996af5e4136be4e1",
+          "size": 11471,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/06598a376fb64c909a69dbfb9fe28d84/thumbnails/4d528bae25a84e6d9a803b890b3b4fc7/40d3ce3afb2b46559465d49272780ca8.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "245c0da9e8df4a5b9cf0054168f576df",
+          "size": 2726,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/06598a376fb64c909a69dbfb9fe28d84/thumbnails/4d528bae25a84e6d9a803b890b3b4fc7/3447c92bfba143e592320126c7f43b6a.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "bc8547a3246540f7becc2f1baa9a2186",
+          "size": 587,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/06598a376fb64c909a69dbfb9fe28d84/thumbnails/4d528bae25a84e6d9a803b890b3b4fc7/935c01db55ae4b1faa4eaa4b04297569.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "c350f79289894cf7a6856d82607d29f3",
+      "username": "TyVtuber",
+      "displayName": "Tyriese Miller",
+      "profileUrl": "https://sketchfab.com/TyVtuber",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/66c5adf831bd41cd96258fbc07cb3529",
+        "images": [
+          {
+            "size": 1011,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/96252dbf88824d5ca3ec00c90a34809c.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1387,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/99b9f8b50f00437fa28eb1922700cde2.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2526,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/3ed9bd7397d4480aa12b006aea1d3e5d.jpeg",
+            "height": 90
+          },
+          {
+            "size": 2841,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/1efce240a2924cc682eb0a854d2860df.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/c350f79289894cf7a6856d82607d29f3"
+    },
+    "description": "",
+    "faceCount": 74206,
+    "createdAt": "2020-09-23T23:33:58.722471",
+    "vertexCount": 37562,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 0,
+        "size": 3214528,
+        "type": "glb",
+        "textureMaxResolution": 0,
+        "faceCount": 74206,
+        "vertexCount": 39880
+      },
+      "gltf": {
+        "textureCount": 0,
+        "size": 1515041,
+        "type": "gltf",
+        "textureMaxResolution": 0,
+        "faceCount": 74206,
+        "vertexCount": 39880
+      },
+      "source": {
+        "textureCount": null,
+        "size": 3971344,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 1363261,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "Tyriese Miller (https://sketchfab.com/tyriese508)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/deer-06598a376fb64c909a69dbfb9fe28d84",
+      "title": "Deer"
+    },
+    "generator": "Sketchfab-12.68.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 50
+    }
+  ],
+  "animations": [
+    {
+      "name": "Idle",
+      "channels": 77
+    },
+    {
+      "name": "Walk",
+      "channels": 82
+    },
+    {
+      "name": "Run",
+      "channels": 83
+    }
+  ]
+}

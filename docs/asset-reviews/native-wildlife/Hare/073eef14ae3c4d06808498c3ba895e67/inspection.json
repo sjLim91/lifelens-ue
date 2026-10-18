@@ -5,17 +5,17 @@
   "sourceSha256": "2bb6f05bd3e58ccf437ddb05c77a97ddd8ff67b9841b6b69bce90ba275165538",
   "bounds": [
     [
-      -0.9510578513145447,
+      -0.850487470626831,
       -2.195908546447754,
-      -1.0
+      -0.09313765168190002
     ],
     [
-      0.9510578513145447,
+      0.7896976470947266,
       1.477756381034851,
       3.0432326793670654
     ]
   ],
-  "triangles": 9056,
+  "triangles": 8896,
   "meshes": [
     {
       "name": "Object_7",
@@ -28,18 +28,6 @@
       "vertices": 1118,
       "uvLayers": 1,
       "vertexGroups": 29
-    },
-    {
-      "name": "Icosphere",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
-    },
-    {
-      "name": "Icosphere.001",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
     }
   ],
   "rigs": [
@@ -82,58 +70,13 @@
   "materials": [
     {
       "name": "Material",
-      "textures": []
-    },
-    {
-      "name": "Material.001",
       "textures": [
-        "Image_0.002",
+        "Image_0",
         "Image_1"
       ]
     },
     {
-      "name": "Material.002",
-      "textures": []
-    },
-    {
-      "name": "polySurface2SG",
-      "textures": [
-        "Image_0",
-        "Image_0"
-      ]
-    },
-    {
-      "name": "t01.001",
-      "textures": [
-        "Image_0.001"
-      ]
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleeye_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_IdleinitialShadingGroup1",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlejiao_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
+      "name": "Material.001",
       "textures": []
     }
   ]

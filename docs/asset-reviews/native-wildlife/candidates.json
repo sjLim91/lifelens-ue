@@ -2361,6 +2361,55 @@
     ],
     "Deer": [
       {
+        "uid": "06598a376fb64c909a69dbfb9fe28d84",
+        "name": "Deer",
+        "author": {
+          "uid": "c350f79289894cf7a6856d82607d29f3",
+          "username": "TyVtuber",
+          "displayName": "Tyriese Miller",
+          "profileUrl": "https://sketchfab.com/TyVtuber",
+          "account": "basic",
+          "avatar": {
+            "uri": "https://api.sketchfab.com/v3/avatars/66c5adf831bd41cd96258fbc07cb3529",
+            "images": [
+              {
+                "size": 1011,
+                "width": 32,
+                "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/96252dbf88824d5ca3ec00c90a34809c.jpeg",
+                "height": 32
+              },
+              {
+                "size": 1387,
+                "width": 48,
+                "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/99b9f8b50f00437fa28eb1922700cde2.jpeg",
+                "height": 48
+              },
+              {
+                "size": 2526,
+                "width": 90,
+                "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/3ed9bd7397d4480aa12b006aea1d3e5d.jpeg",
+                "height": 90
+              },
+              {
+                "size": 2841,
+                "width": 100,
+                "url": "https://media.sketchfab.com/avatars/66c5adf831bd41cd96258fbc07cb3529/1efce240a2924cc682eb0a854d2860df.jpeg",
+                "height": 100
+              }
+            ]
+          },
+          "uri": "https://api.sketchfab.com/v3/users/c350f79289894cf7a6856d82607d29f3"
+        },
+        "license": "CC-BY-4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+        "original": "https://sketchfab.com/3d-models/06598a376fb64c909a69dbfb9fe28d84",
+        "description": "",
+        "faceCount": 74206,
+        "vertexCount": 37562,
+        "animationCount": 3,
+        "allowedForReview": true
+      },
+      {
         "uid": "347e5d4fbee14e53811c5df2221be8d0",
         "name": "Deer Animation",
         "author": {
@@ -4366,55 +4415,6 @@
         "description": "thedog that freezes!",
         "faceCount": 1570,
         "vertexCount": 832,
-        "animationCount": 0,
-        "allowedForReview": true
-      },
-      {
-        "uid": "7c8451376a7a42e79cfcef5c0d7836f5",
-        "name": "low-poly-deer-on-wall-scene",
-        "author": {
-          "uid": "11d8cba19f174a35a47ca739e9841bd3",
-          "username": "adityasan3105",
-          "displayName": "adityasan3105",
-          "profileUrl": "https://sketchfab.com/adityasan3105",
-          "account": "basic",
-          "avatar": {
-            "uri": "https://api.sketchfab.com/v3/avatars/2133d36fcf34433eb1b5ccc4d665bfc8",
-            "images": [
-              {
-                "size": 931,
-                "width": 32,
-                "url": "https://media.sketchfab.com/avatars/2133d36fcf34433eb1b5ccc4d665bfc8/29479e57419347b4886037e79aa06a30.jpeg",
-                "height": 32
-              },
-              {
-                "size": 1626,
-                "width": 48,
-                "url": "https://media.sketchfab.com/avatars/2133d36fcf34433eb1b5ccc4d665bfc8/8ced3022d0984df684b445a77e419f89.jpeg",
-                "height": 48
-              },
-              {
-                "size": 3990,
-                "width": 90,
-                "url": "https://media.sketchfab.com/avatars/2133d36fcf34433eb1b5ccc4d665bfc8/f6fed2bd8c5e42668ddbb0fc9504cead.jpeg",
-                "height": 90
-              },
-              {
-                "size": 4990,
-                "width": 100,
-                "url": "https://media.sketchfab.com/avatars/2133d36fcf34433eb1b5ccc4d665bfc8/bd1b7fb04bf94d5dac3efcc072e7c970.jpeg",
-                "height": 100
-              }
-            ]
-          },
-          "uri": "https://api.sketchfab.com/v3/users/11d8cba19f174a35a47ca739e9841bd3"
-        },
-        "license": "CC-BY-4.0",
-        "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
-        "original": "https://sketchfab.com/3d-models/7c8451376a7a42e79cfcef5c0d7836f5",
-        "description": "",
-        "faceCount": 273564,
-        "vertexCount": 140999,
         "animationCount": 0,
         "allowedForReview": true
       },
@@ -9423,5 +9423,5 @@
     ]
   },
   "selectedUnavailable": [],
-  "selectedSourceCount": 10
+  "selectedSourceCount": 11
 }

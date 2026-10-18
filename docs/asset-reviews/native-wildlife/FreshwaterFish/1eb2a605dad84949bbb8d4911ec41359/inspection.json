@@ -15,17 +15,11 @@
       663.9197998046875
     ]
   ],
-  "triangles": 4132,
+  "triangles": 4052,
   "meshes": [
     {
       "name": "Object_2",
       "vertices": 2162,
-      "uvLayers": 1,
-      "vertexGroups": 0
-    },
-    {
-      "name": "Icosphere",
-      "vertices": 42,
       "uvLayers": 1,
       "vertexGroups": 0
     }
@@ -34,43 +28,11 @@
   "actions": [],
   "materials": [
     {
-      "name": "Material",
-      "textures": []
-    },
-    {
       "name": "polySurface2SG",
       "textures": [
         "Image_0",
         "Image_0"
       ]
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleeye_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_IdleinitialShadingGroup1",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlejiao_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
-      "textures": []
     }
   ]
 }

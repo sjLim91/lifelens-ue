@@ -5,17 +5,17 @@
   "sourceSha256": "711c9bfa20d42d589c0d559b618a7d3113ac77b369a981fceaae6f046bcc5667",
   "bounds": [
     [
-      -0.9510578513145447,
-      -0.9999999403953552,
+      -0.810433030128479,
+      -0.9444488883018494,
       -3.5300328731536865
     ],
     [
-      0.9510578513145447,
+      0.810433030128479,
       3.402787923812866,
       1.8724957704544067
     ]
   ],
-  "triangles": 30162,
+  "triangles": 29922,
   "meshes": [
     {
       "name": "Object_2",
@@ -28,87 +28,13 @@
       "vertices": 3237,
       "uvLayers": 0,
       "vertexGroups": 0
-    },
-    {
-      "name": "Icosphere",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
-    },
-    {
-      "name": "Icosphere.001",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
-    },
-    {
-      "name": "Icosphere.002",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
     }
   ],
   "rigs": [],
   "actions": [],
   "materials": [
     {
-      "name": "Material",
-      "textures": []
-    },
-    {
-      "name": "Material.001",
-      "textures": [
-        "Image_0.002",
-        "Image_1"
-      ]
-    },
-    {
-      "name": "Material.002",
-      "textures": []
-    },
-    {
       "name": "material_0",
-      "textures": []
-    },
-    {
-      "name": "polySurface2SG",
-      "textures": [
-        "Image_0",
-        "Image_0"
-      ]
-    },
-    {
-      "name": "t01.001",
-      "textures": [
-        "Image_0.001"
-      ]
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleeye_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_IdleinitialShadingGroup1",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlejiao_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
       "textures": []
     }
   ]

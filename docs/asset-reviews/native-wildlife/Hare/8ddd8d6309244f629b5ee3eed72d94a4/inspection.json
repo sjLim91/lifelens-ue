@@ -5,47 +5,23 @@
   "sourceSha256": "fa214a3aff27909fd60f4bea05c51494eba2faae137460bd2f589d464138bb1b",
   "bounds": [
     [
-      -0.9510578513145447,
+      -0.9174319505691528,
       -1.1931111812591553,
-      -1.0
+      0.030101990327239037
     ],
     [
       1.4859917163848877,
-      0.9999999403953552,
+      0.7853888869285583,
       4.452986240386963
     ]
   ],
-  "triangles": 8968,
+  "triangles": 8648,
   "meshes": [
     {
       "name": "Object_11",
       "vertices": 6577,
       "uvLayers": 1,
       "vertexGroups": 39
-    },
-    {
-      "name": "Icosphere",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
-    },
-    {
-      "name": "Icosphere.001",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
-    },
-    {
-      "name": "Icosphere.002",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
-    },
-    {
-      "name": "Icosphere.003",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
     }
   ],
   "rigs": [
@@ -105,102 +81,10 @@
   ],
   "materials": [
     {
-      "name": "blinn1",
-      "textures": []
-    },
-    {
-      "name": "blinn2",
-      "textures": []
-    },
-    {
-      "name": "blinn3",
-      "textures": []
-    },
-    {
-      "name": "blinn4",
-      "textures": []
-    },
-    {
-      "name": "blinn5",
-      "textures": []
-    },
-    {
-      "name": "blinn6",
-      "textures": []
-    },
-    {
-      "name": "blinn7",
-      "textures": []
-    },
-    {
-      "name": "blinn8",
-      "textures": []
-    },
-    {
-      "name": "Material",
-      "textures": []
-    },
-    {
       "name": "Material.001",
       "textures": [
-        "Image_0.002",
-        "Image_1"
-      ]
-    },
-    {
-      "name": "Material.002",
-      "textures": []
-    },
-    {
-      "name": "Material.003",
-      "textures": [
-        "Image_0.003"
-      ]
-    },
-    {
-      "name": "material_0",
-      "textures": []
-    },
-    {
-      "name": "polySurface2SG",
-      "textures": [
-        "Image_0",
         "Image_0"
       ]
-    },
-    {
-      "name": "t01.001",
-      "textures": [
-        "Image_0.001"
-      ]
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleeye_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_IdleinitialShadingGroup1",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlejiao_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
-      "textures": []
     }
   ]
 }

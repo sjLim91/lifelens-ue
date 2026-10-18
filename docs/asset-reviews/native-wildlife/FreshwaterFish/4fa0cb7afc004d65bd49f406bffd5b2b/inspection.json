@@ -5,29 +5,23 @@
   "sourceSha256": "25a1a41d574f80f46d716d74bc2572dc573d00da82811fbfb7767bc54da23871",
   "bounds": [
     [
-      -0.9510578513145447,
-      -0.9999999403953552,
-      -1.0
+      -0.14094729721546173,
+      -0.01630663312971592,
+      -0.0019110626308247447
     ],
     [
-      0.9510578513145447,
-      0.9999999403953552,
-      1.0
+      0.1413402110338211,
+      0.01682380586862564,
+      0.11028813570737839
     ]
   ],
-  "triangles": 3304,
+  "triangles": 3224,
   "meshes": [
     {
       "name": "Retopo_myfishmodel_0",
       "vertices": 9666,
       "uvLayers": 1,
       "vertexGroups": 19
-    },
-    {
-      "name": "Icosphere",
-      "vertices": 42,
-      "uvLayers": 1,
-      "vertexGroups": 0
     }
   ],
   "rigs": [
@@ -130,49 +124,10 @@
   ],
   "materials": [
     {
-      "name": "Material",
-      "textures": []
-    },
-    {
-      "name": "polySurface2SG",
-      "textures": [
-        "Image_0",
-        "Image_0"
-      ]
-    },
-    {
       "name": "t01.001",
       "textures": [
-        "Image_0.001"
+        "Image_0"
       ]
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleeye_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_IdleinitialShadingGroup1",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlejiao_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
-      "textures": []
     }
   ]
 }

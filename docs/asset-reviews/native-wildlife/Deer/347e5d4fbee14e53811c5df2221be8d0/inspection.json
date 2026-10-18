@@ -2337,11 +2337,7 @@
   ],
   "materials": [
     {
-      "name": "Material",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
+      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
       "textures": []
     },
     {
@@ -2349,7 +2345,15 @@
       "textures": []
     },
     {
-      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
+      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
       "textures": []
     },
     {
@@ -2358,14 +2362,6 @@
     },
     {
       "name": "Tyriese_Miller_C_Deer_Idlejiao_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
-      "textures": []
-    },
-    {
-      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
       "textures": []
     }
   ]
