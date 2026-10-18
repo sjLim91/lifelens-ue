@@ -22,7 +22,7 @@ const configs=[
  {species:'Deer',slug:'deer',uid:'347e5d4fbee14e53811c5df2221be8d0',sha:'',height:2.05,head:'head_024',hip:'pelvis_01',chest:'chest_021',neck:'neck_022',
   native:{idle:'IdleDeer',walk:'Walkdeer',run:'Rundeer'},
   legs:[['toe_front_l_041','leg_front_l_038'],['toe_front_r_047','leg_front_r_044'],['toe_back_l_010','leg_back__07'],['toe_back_r_017','leg_back__014']]},
- {species:'FreshwaterFish',slug:'freshwater-fish',uid:'4fa0cb7afc004d65bd49f406bffd5b2b',sha:'25a1a41d574f80f46d716d74bc2572dc573d00da82811fbfb7767bc54da23871',length:.65,yaw:-Math.PI/2,native:{swim:'Swim'},legs:[]},
+ {species:'FreshwaterFish',slug:'freshwater-fish',uid:'4fa0cb7afc004d65bd49f406bffd5b2b',sha:'25a1a41d574f80f46d716d74bc2572dc573d00da82811fbfb7767bc54da23871',length:.10,yaw:-Math.PI/2,native:{swim:'Swim'},legs:[]},
 ];
 // Deer bytes are pinned in the explicit source manifest beside this generator.
 const pins=JSON.parse(readFileSync(resolve(root,'Tools/assets/native-wildlife-pins.json'),'utf8'));
@@ -105,7 +105,7 @@ for(const cfg of configs){
  if(bodyNode===undefined)bodyNode=doc.nodes.findIndex(n=>n.skin!==undefined&&n.mesh===bodyAssociation?.meshes);
  if(bodyNode<0)throw Error('Original body node association missing');
  const clipNames=cfg.species==='FreshwaterFish'?['idle','swim']:['idle','walk','run','hunt','forage','drink','rest'];
- const baked=[],metrics={};
+ const baked=[],metrics={};let fishEnvelope=0;
  const axisX=new T.Vector3(1,0,0),axisY=new T.Vector3(0,1,0);
  for(const name of clipNames){
   const moving=['walk','run','hunt'].includes(name),run=name==='run',hare=cfg.species==='Hare';
@@ -139,6 +139,11 @@ for(const cfg of configs){
    frame.updateMatrixWorld(true);skins.forEach(s=>s.skeleton.update());
    const feet=legs.map(l=>{const points=l.soles.map(i=>{const p=new T.Vector3();skin.getVertexPosition(i,p);return p.applyMatrix4(skin.matrixWorld);});return {y:Math.min(...points.map(p=>p.y)),x:points.reduce((s,p)=>s+p.x,0)/points.length,z:points.reduce((s,p)=>s+p.z,0)/points.length};});
    let floor=feet.length?-Math.min(0,...feet.map(v=>v.y)):0;
+   if(cfg.species==='FreshwaterFish'){
+    let low=Infinity,high=-Infinity;const p=new T.Vector3();
+    for(const s of skins)for(let i=0;i<s.geometry.attributes.position.count;i++){s.getVertexPosition(i,p);p.applyMatrix4(s.matrixWorld);low=Math.min(low,p.y);high=Math.max(high,p.y);}
+    floor=-low;fishEnvelope=Math.max(fishEnvelope,high-low+.004);
+   }
    if(name==='rest'){
     let low=Infinity;for(const s of skins){const p=new T.Vector3();for(let i=0;i<s.geometry.attributes.position.count;i++){s.getVertexPosition(i,p);low=Math.min(low,p.applyMatrix4(s.matrixWorld).y);}}floor=Math.max(floor,-low);
    }
@@ -177,7 +182,7 @@ for(const cfg of configs){
   body:`LifeLens${cfg.species}Body`,bone_count:bones.length,status:'DRAFT_REQUIRES_RUNTIME_REVIEW',
   ...(upstreamProof?{upstream_source_sha256:upstreamProof.sha256}:{}),
   clips:Object.fromEntries(baked.map(c=>[c.name,{name:`${cfg.slug}_${c.name}`,duration:c.duration,cycle_distance:c.distance,stance:c.stance,offsets:c.offsets}])),
-  paws:legs.map(l=>({name:l.paw.name,upper:l.upper.name,sole_vertices:l.soles})),boundsHeight:cfg.height??size.y*unit};
+  paws:legs.map(l=>({name:l.paw.name,upper:l.upper.name,sole_vertices:l.soles})),boundsHeight:cfg.height??fishEnvelope};
  doc.asset.extras={...(doc.asset.extras??{}),lifelensWildlife:contract};doc.asset.copyright=`${receipt.name} by ${creator}, CC BY 4.0. LifeLens metric normalization, native-joint presentation clips and contact trajectories.`;
  doc.buffers[0].byteLength=length;let packed=Buffer.concat(chunks);packed=Buffer.concat([packed,Buffer.alloc((4-packed.length%4)%4)]);
  let encoded=Buffer.from(JSON.stringify(doc));encoded=Buffer.concat([encoded,Buffer.alloc((4-encoded.length%4)%4,32)]);

@@ -127,4 +127,28 @@ console.log('PASS bounded native skins, rejected source fallback and late-load d
  pool.dispose();
 }
 console.log('PASS same-ID species replacement does not reuse a stale native body');
+// Reproduce the seeded shallow river with production visibility and native dimensions.
+{
+ const {WildlifeLayer}=await source('render/wildlife-layer.ts');
+ const {ResidentGroundSurface}=await source('render/resident-grounding.ts');
+ const {buildFlowWaterSurfaceGeometry}=await source('render/water-geometry.ts');
+ const {WORLD_GRID_CONTRACT:grid}=await source('runtime/lifelens-contract.ts');
+ const terrain=JSON.parse(readFileSync(resolve(import.meta.dirname,'review/core-fixture.json'),'utf8')).terrain;
+ const before=JSON.stringify(terrain),ground=new ResidentGroundSurface();ground.setTerrain(terrain,terrain.centerChunkX,terrain.centerChunkY);
+ const layer=new WildlifeLayer(undefined,(s,t)=>load(s,t));layer.setTerrain(terrain);
+ const eligible=new Set(layer.candidateCoreIds),fish=terrain.wildlife.animals.find(a=>a.species==='FreshwaterFish'&&eligible.has(a.id));assert(fish);
+ const x=(fish.gridX/grid.gridCellsPerChunk-terrain.centerChunkX-.5)*grid.worldUnitsPerChunk;
+ const z=(fish.gridY/grid.gridCellsPerChunk-terrain.centerChunkY-.5)*grid.worldUnitsPerChunk;
+ const camera=new T.PerspectiveCamera(38,1,.01,100);camera.position.set(x,ground.height(x,z)+.2,z+.2);camera.lookAt(x,ground.height(x,z),z);
+ let actor;for(let i=0;i<80;i++){layer.update(.02,camera);actor=layer.group.getObjectByName('LifeLensNativeAnimal:'+fish.id);if(actor)break;await settle();}
+ assert(actor,'Native fish incorrectly hidden by oversized procedural fallback bounds');assert(layer.renderedCoreIds.has(fish.id));
+ const water=new T.Mesh(buildFlowWaterSurfaceGeometry(terrain),new T.MeshBasicMaterial({side:T.DoubleSide}));water.updateMatrixWorld();
+ const ray=new T.Raycaster(new T.Vector3(x,1000,z),new T.Vector3(0,-1,0)),surface=ray.intersectObject(water)[0]?.point.y;assert(Number.isFinite(surface));
+ let low=Infinity,high=-Infinity;
+ actor.updateMatrixWorld(true);actor.traverse(o=>{if(!o.isSkinnedMesh)return;o.skeleton.update();for(let i=0;i<o.geometry.attributes.position.count;i++){const p=new T.Vector3();o.getVertexPosition(i,p);p.applyMatrix4(o.matrixWorld);low=Math.min(low,p.y);high=Math.max(high,p.y);}});
+ assert(low>ground.height(x,z)+.015,'Fish intersects the real river bed');assert(high<surface-.015,'Fish intersects the real water surface');
+ assert.equal(JSON.stringify(terrain),before,'Visibility changed authoritative observations');
+ water.geometry.dispose();water.material.dispose();layer.dispose();
+ console.log('PASS native fish fits the unchanged shallow Core river between bed and water surface');
+}
 writeFileSync(resolve(output,'contracts.json'),JSON.stringify({status:'PASS_SOURCE_SKIN_LOD_RUNTIME_CONTRACTS',records,contacts,physicalAndroid:'NOT_MEASURED'},null,2)+'\n');

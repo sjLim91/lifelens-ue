@@ -94,7 +94,7 @@ class NativeFar {
         shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
 float lowLeg = 1.0 - smoothstep(0.12, ${Math.max(.18, asset.contract.boundsHeight * .44).toFixed(5)}, position.y);
 ${asset.contract.species === 'FreshwaterFish'
-  ? 'transformed.x += llNativeMotion * 0.025 * sin(llNativePhase + position.z * 12.0) * smoothstep(0.0, 0.30, -position.z);'
+  ? `transformed.x += llNativeMotion * ${Math.min(.025, asset.contract.boundsHeight * .2).toFixed(5)} * sin(llNativePhase + position.z * 12.0) * smoothstep(0.0, ${Math.max(.02, asset.contract.boundsHeight * 1.2).toFixed(5)}, -position.z);`
   : 'transformed.z += llNativeMotion * lowLeg * 0.04 * sin(llNativePhase + sign(position.x * position.z) * 1.5708);'}
 `);
       };
@@ -152,6 +152,12 @@ export class NativeWildlifePool {
   }) { this.group.name = 'LifeLensNativeWildlife'; }
   begin(dt: number): void {
     this.time += Math.max(0, dt); this.near = this.mid = 0; this.used.clear(); this.far.forEach(f => f.begin());
+  }
+  heightFor(species: NativeWildlifeSpecies, tier: Tier): number | null {
+    if (this.disposed) return null;
+    const asset = this.assets.get(species + ':' + tier);
+    if (!asset) { this.request(species, tier); return null; }
+    return asset.contract.boundsHeight;
   }
   draw(pose: NativeWildlifePose, tier: Tier, dt: number, ground?: Ground): boolean {
     if (this.disposed || tier === 'near' && this.near >= 4 || tier === 'mid' && this.mid >= 8) return false;

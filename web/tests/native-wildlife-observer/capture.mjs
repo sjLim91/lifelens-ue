@@ -24,7 +24,7 @@ try{
  await page.evaluate(()=>window.__nativeWildlifeObserver.renderer.stop());
  for(const species of ['Hare','Deer','Wolf','FreshwaterFish']){
   await page.evaluate(species=>{const q=window.__nativeWildlifeObserver,animals=q.store.getSnapshot().terrain.wildlife.animals;
-   const a=animals.filter(a=>a.species===species).sort((a,b)=>b.ageDays-a.ageDays)[0];q.id=a.id;q.baseline=false;q.choices={};q.view='quarter';},species);
+   const a=animals.filter(a=>a.species===species&&q.candidateIds.includes(a.id)).sort((a,b)=>b.ageDays-a.ageDays)[0];if(!a)throw Error('No observable Core '+species);q.id=a.id;q.baseline=false;q.choices={};q.view='quarter';},species);
   let ready=false;for(let i=0;i<60;i++){ready=await page.evaluate(()=>{const q=window.__nativeWildlifeObserver;q.world.update(.016);return !!q.sample().actor;});if(ready)break;await delay(100);}
   if(!ready)throw Error(species+' did not load in the actual React/WASM Observer');
   const frozen=await page.evaluate(()=>JSON.stringify(window.__nativeWildlifeObserver.store.getSnapshot().terrain));

@@ -9,8 +9,6 @@ import {NATIVE_WILDLIFE_SOURCES as sources} from './review/src/render/native-wil
 const query=new URLSearchParams(location.search),species=query.get('species')??'Hare',baseline=query.get('baseline')==='1';
 const fixture=await fetch('./review/core-fixture.json').then(r=>{if(!r.ok)throw Error('Actual Core fixture missing');return r.json();});
 const terrain=fixture.terrain,before=JSON.stringify(terrain);
-const subject=terrain.wildlife.animals.find(a=>a.species===species&&(species!=='Deer'||a.sex==='Male'));
-if(!subject)throw Error('No observed subject for '+species+'; do not fabricate an animal');
 const scene=new THREE.Scene();scene.background=new THREE.Color('#dbe2e3');
 scene.add(new THREE.HemisphereLight(0xf3f7ff,0x746550,2.1));
 const sun=new THREE.DirectionalLight(0xfff1de,3);sun.position.set(4,9,5);scene.add(sun);
@@ -24,6 +22,10 @@ if(species==='FreshwaterFish')scene.add(new THREE.Mesh(buildFlowWaterSurfaceGeom
 const loader=new GLTFLoader();
 const layer=new WildlifeLayer(async()=>{throw Error('Independent tiger path is outside this subsystem comparison');},baseline?null:(s,t)=>loader.loadAsync(`/public/vendor/wildlife/${sources[s].slug}${t==='near'?'-rigged':'-'+t}.glb`));
 scene.add(layer.group);layer.setTerrain(terrain);
+const candidates=new Set(layer.candidateCoreIds);
+const eligible=terrain.wildlife.animals.filter(a=>a.species===species&&candidates.has(a.id));
+const subject=(species==='Deer'?eligible.find(a=>a.sex==='Male'):null)??eligible[0];
+if(!subject)throw Error('No physically observable Core subject for '+species);
 const x=(subject.gridX/grid.gridCellsPerChunk-terrain.centerChunkX-.5)*grid.worldUnitsPerChunk;
 const z=(subject.gridY/grid.gridCellsPerChunk-terrain.centerChunkY-.5)*grid.worldUnitsPerChunk;
 const ground=new ResidentGroundSurface();ground.setTerrain(terrain,terrain.centerChunkX,terrain.centerChunkY);
@@ -32,7 +34,7 @@ const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.02,300);
 const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(1);renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1;document.body.append(renderer.domElement);
 let currentView='quarter',frames=0,last=performance.now();
-const size=species==='Deer'?2.1:species==='Wolf'?1.3:species==='Hare'?.8:.6;
+const size=species==='Deer'?2.1:species==='Wolf'?1.3:species==='Hare'?.8:.14;
 function view(name){
  currentView=name;
  const actor=layer.group.getObjectByName('LifeLensNativeAnimal:'+subject.id);

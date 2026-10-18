@@ -57,7 +57,10 @@ export class WildlifeLayer {
   private hasCamera=false;
   private readonly tigers:ImportedTigerPool;
   private readonly native:NativeWildlifePool;
+  private readonly renderedIds=new Set<string>();
   instanceCount=0;
+  get candidateCoreIds():IterableIterator<string>{return this.animals.keys();}
+  get renderedCoreIds():ReadonlySet<string>{return this.renderedIds;}
   constructor(tigerLoader?:TigerAssetLoader,nativeLoader?:NativeWildlifeLoader|null){
     this.tigers=new ImportedTigerPool(tigerLoader);
     this.native=new NativeWildlifePool(nativeLoader);
@@ -243,7 +246,7 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
     this.render(camera,dt);
   }
   private render(camera?:THREE.Camera,dt=0):void {
-    this.scratch.clear();this.instanceCount=0;
+    this.scratch.clear();this.instanceCount=0;this.renderedIds.clear();
     this.tigers.begin();
     this.native.begin(dt);
     const offsetX=(this.centerChunkX+.5)*grid.worldUnitsPerChunk;
@@ -270,14 +273,21 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
       const mesh=this.batches.get(`${pose.key}:${lod}`)!;
       const i=this.scratch.get(mesh.name)??0;
       if(i>=LIMIT)continue;
+      let nativeFishY:number|null=null,fallbackFits=true;
       if(pose.fish){
         if(!this.water)continue;
         this.rayOrigin.set(x,1000,z);
         this.ray.set(this.rayOrigin,this.down);
         const hit=this.ray.intersectObject(this.water)[0];
         const h=mesh.geometry.boundingBox!.max.y*pose.scale;
-        if(!hit||hit.point.y-y<h+.04)continue;
-        y=hit.point.y-h-.02;
+        if(!hit)continue;
+        const depth=hit.point.y-y;
+        const nativeHeight=this.native.heightFor('FreshwaterFish',lod);
+        if(nativeHeight!==null&&depth>=nativeHeight*pose.scale+.04)
+          nativeFishY=hit.point.y-nativeHeight*pose.scale-.02;
+        fallbackFits=depth>=h+.04;
+        if(!fallbackFits&&nativeFishY===null)continue;
+        if(fallbackFits)y=hit.point.y-h-.02;
       }else{
         const width=pose.species==='Hare'?.16:pose.species==='Deer'?.21:.25;
         const length=pose.species==='Hare'?.3:pose.species==='Deer'?.6:.52;
@@ -287,12 +297,13 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
       if(pose.species==='Tiger'&&this.tigers.draw({
         id:pose.id,x,y,z,heading:pose.heading,scale:pose.scale,speed:pose.speed,
         phase:pose.phase,behavior:pose.behavior,
-      },lod,dt,this.groundHeight)){this.instanceCount++;continue;}
-      if(pose.species!=='Tiger'&&this.native.draw({
+      },lod,dt,this.groundHeight)){this.renderedIds.add(pose.id);this.instanceCount++;continue;}
+      if(pose.species!=='Tiger'&&(!pose.fish||nativeFishY!==null)&&this.native.draw({
         id:pose.id,species:pose.species,sex:pose.sex,
-        x,y,z,heading:pose.heading,scale:pose.scale,speed:pose.speed,
+        x,y:pose.fish?nativeFishY!:y,z,heading:pose.heading,scale:pose.scale,speed:pose.speed,
         phase:pose.phase,behavior:pose.behavior,
-      },lod,dt,this.groundHeight)){this.instanceCount++;continue;}
+      },lod,dt,this.groundHeight)){this.renderedIds.add(pose.id);this.instanceCount++;continue;}
+      if(!fallbackFits)continue;
       this.transform.position.set(x,y,z);
       this.transform.rotation.set(0,pose.heading,0);
       this.transform.scale.setScalar(pose.scale);
@@ -304,7 +315,7 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
         pose.fish?.45:pose.motion);
       (geometry.getAttribute('wildlifeBehavior') as THREE.InstancedBufferAttribute).setX(i,
         behaviorCode(pose.behavior));
-      this.scratch.set(mesh.name,i+1);this.instanceCount++;
+      this.scratch.set(mesh.name,i+1);this.renderedIds.add(pose.id);this.instanceCount++;
     }
     this.tigers.end(this.group);
     this.native.end(this.group);
@@ -319,7 +330,7 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
     this.tigers.dispose();
     this.native.dispose();
     for(const mesh of this.batches.values()){mesh.geometry.dispose();mesh.dispose();}
-    this.batches.clear();this.animals.clear();
+    this.batches.clear();this.animals.clear();this.renderedIds.clear();
     this.water?.geometry.dispose();this.waterMaterial.dispose();this.material.dispose();
     this.group.clear();
   }
