@@ -26,6 +26,7 @@ function isAuditReport(raw: unknown): raw is ResidentAISessionReport {
     ||r.kind !== 'lifelens-live-ai-observational-session'
     ||(r.mode !== 'baseline' && r.mode !== 'local-ai')
     ||typeof r.worldSeed !== 'string' ||typeof r.populationSeed !== 'string'
+    ||(r.modelName !== null && typeof r.modelName !== 'string')
     ||(r.generationVersion !== null && typeof r.generationVersion !== 'number')
     ||typeof r.comparableWithinObservedWindow !== 'boolean'
     ||typeof r.coverageGap !== 'boolean'
