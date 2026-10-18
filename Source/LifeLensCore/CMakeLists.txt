@@ -223,6 +223,7 @@ lifelens_add_test(test_wildlife_world_observation)
 lifelens_add_test(test_wildlife_human_proximity)
 lifelens_add_test(test_resident_predator_avoidance)
 lifelens_add_test(test_predator_contact_injury)
+lifelens_add_test(test_injury_recovery_needs)
 lifelens_add_test(test_wildlife_population_codec)
 lifelens_add_test(test_web_earth_scenario_handoff)
 
