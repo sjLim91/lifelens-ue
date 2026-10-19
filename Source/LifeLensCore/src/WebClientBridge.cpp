@@ -3,6 +3,7 @@
 #include "lifelens/WebClientBridge.h"
 #include "lifelens/AutonomousGoalComposer.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
+#include "lifelens/SimulationSnapshotCodec.h"
 
 #include <algorithm>
 #include <charconv>
@@ -49,6 +50,68 @@ std::string escapeJson(const std::string& value)
         }
     }
     return out.str();
+}
+
+// Binary data must never be passed through UTF-8 string decoding at the
+// Emscripten binding. Base64 is intentionally used for exact byte transport.
+std::string encodeBase64(const std::vector<std::uint8_t>& bytes)
+{
+    static constexpr char alphabet[]=
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string result;
+    result.reserve(((bytes.size()+2)/3)*4);
+    for(std::size_t i=0;i<bytes.size();i+=3){
+        const std::uint32_t word=
+            (static_cast<std::uint32_t>(bytes[i])<<16)
+            |(i+1<bytes.size()?static_cast<std::uint32_t>(bytes[i+1])<<8:0)
+            |(i+2<bytes.size()?static_cast<std::uint32_t>(bytes[i+2]):0);
+        result.push_back(alphabet[(word>>18)&63]);
+        result.push_back(alphabet[(word>>12)&63]);
+        result.push_back(i+1<bytes.size()?alphabet[(word>>6)&63]:'=');
+        result.push_back(i+2<bytes.size()?alphabet[word&63]:'=');
+    }
+    return result;
+}
+
+bool decodeBase64(const std::string& input,std::vector<std::uint8_t>& output)
+{
+    // Reject corrupt/oversized snapshots before allocating state. Mobile
+    // storage is not a trusted Core serialization authority.
+    constexpr std::size_t MaxEncodedSnapshotBytes=64U*1024U*1024U;
+    if(input.empty() ||input.size()%4!=0
+       ||input.size()>MaxEncodedSnapshotBytes) return false;
+    std::vector<std::uint8_t> bytes;
+    bytes.reserve((input.size()/4)*3);
+    const auto digit=[](char c)->int{
+        if(c>='A'&&c<='Z') return c-'A';
+        if(c>='a'&&c<='z') return c-'a'+26;
+        if(c>='0'&&c<='9') return c-'0'+52;
+        if(c=='+') return 62;
+        if(c=='/') return 63;
+        return -1;
+    };
+    for(std::size_t i=0;i<input.size();i+=4){
+        const bool last=i+4==input.size();
+        const bool pad2=input[i+2]=='=';
+        const bool pad3=input[i+3]=='=';
+        if((pad2&&!pad3)||((pad2||pad3)&&!last)) return false;
+        const int a=digit(input[i]),b=digit(input[i+1]);
+        const int c=pad2?0:digit(input[i+2]);
+        const int d=pad3?0:digit(input[i+3]);
+        if(a<0||b<0||c<0||d<0) return false;
+        if((pad2&&(b&15)!=0)||(pad3&&!pad2&&(c&3)!=0))
+            return false;
+        const std::uint32_t word=
+            (static_cast<std::uint32_t>(a)<<18)
+            |(static_cast<std::uint32_t>(b)<<12)
+            |(static_cast<std::uint32_t>(c)<<6)
+            |static_cast<std::uint32_t>(d);
+        bytes.push_back(static_cast<std::uint8_t>(word>>16));
+        if(!pad2) bytes.push_back(static_cast<std::uint8_t>(word>>8));
+        if(!pad3) bytes.push_back(static_cast<std::uint8_t>(word));
+    }
+    output=std::move(bytes);
+    return true;
 }
 
 std::uint64_t parseUnsigned64(
@@ -1094,6 +1157,41 @@ void WebClientBridge::runMinutes(int minutes)
 {
     if (!simulation_ || minutes <= 0) return;
     simulation_->runMinutes(minutes);
+}
+
+std::string WebClientBridge::saveSnapshotBase64() const
+{
+    if(!simulation_) return {};
+    std::vector<std::uint8_t> bytes;
+    if(!encodeSimulationSnapshot(simulation_->captureSnapshot(),bytes))
+        return {};
+    return encodeBase64(bytes);
+}
+
+bool WebClientBridge::restoreSnapshotBase64(const std::string& encoded)
+{
+    std::vector<std::uint8_t> bytes;
+    if(!decodeBase64(encoded,bytes)) return false;
+    SimulationStateSnapshot snapshot;
+    if(!decodeSimulationSnapshot(bytes,snapshot)) return false;
+    auto candidate=std::make_unique<Simulation>(
+        snapshot.world.seed,snapshot.world.populationSeed,
+        snapshot.world.generationVersion,snapshot.ruleset);
+    if(!candidate->restoreSnapshot(snapshot)) return false;
+
+    // Only commit after the entire candidate Core has validated. A damaged
+    // save must never replace a living world or change its current minute.
+    if(worldSeed_!=snapshot.world.seed
+       ||generationVersion_!=snapshot.world.generationVersion){
+        earthScenario_.reset();
+        activeEarthOriginRegionId_=0;
+    }
+    worldSeed_=snapshot.world.seed;
+    populationSeed_=snapshot.world.populationSeed;
+    generationVersion_=snapshot.world.generationVersion;
+    simulation_=std::move(candidate);
+    elevationSampleCache_.clear();
+    return true;
 }
 
 std::string WebClientBridge::worldOverviewJson() const
