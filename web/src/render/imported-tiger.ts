@@ -4,6 +4,7 @@ import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import { ImportedTigerFar, nativeTigerFarMesh } from './imported-tiger-far';
 import { NativeTigerGrounding, type NativeTigerPaw } from './native-tiger-grounding';
 import type { WildlifeAnimalObservation } from '../runtime/core-types';
+import { wildlifeRigClip } from './wildlife-motion';
 
 type Tier = 'near' | 'mid' | 'far';
 type Clip = { name: string; duration: number; cycle_distance: number };
@@ -155,9 +156,7 @@ export class ImportedTigerPool {
     }
     actor.feet.restore();
     const moving = pose.speed > .005;
-    const key = moving ? pose.speed / pose.scale > 1.5 ? 'run' : pose.behavior === 'Hunt' ? 'hunt' : 'walk'
-      : pose.behavior === 'Rest' ? 'rest' : pose.behavior === 'Forage' ? 'forage'
-        : pose.behavior === 'Drink' ? 'drink' : 'idle';
+    const key = wildlifeRigClip('Tiger', pose.behavior, pose.speed, pose.scale);
     const action = actor.actions.get(key)!;
     if (actor.current !== key) {
       // No invented attack/feeding result; these clips only illustrate the Core state.

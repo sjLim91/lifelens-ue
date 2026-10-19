@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import type { WildlifeAnimalObservation } from '../runtime/core-types';
+import { wildlifeRigClip } from './wildlife-motion';
 import { NativeWildlifeContact, type WildlifePaw, type WildlifeContactClip } from './native-wildlife-contact';
 import { NATIVE_WILDLIFE_SOURCES } from './native-wildlife-manifest';
 
@@ -200,9 +201,7 @@ export class NativeWildlifePool {
     }
     actor.contact?.restore();
     const moving = pose.speed > .005;
-    const name = pose.species === 'FreshwaterFish' ? moving || pose.behavior === 'Swim' ? 'swim' : 'idle'
-      : moving ? pose.speed / pose.scale > 1.5 ? 'run' : pose.behavior === 'Hunt' ? 'hunt' : 'walk'
-      : pose.behavior === 'Rest' ? 'rest' : pose.behavior === 'Forage' ? 'forage' : pose.behavior === 'Drink' ? 'drink' : 'idle';
+    const name = wildlifeRigClip(pose.species, pose.behavior, pose.speed, pose.scale);
     const action = actor.actions.get(name)!, clip = asset.contract.clips[name]!;
     if (actor.current !== name) {
       const previous = actor.actions.get(actor.current);
