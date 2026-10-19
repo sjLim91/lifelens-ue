@@ -1,0 +1,46 @@
+name: Wildlife Realism Authoring
+on:
+  push:
+    branches: ['work/wildlife-realism-*']
+    paths:
+      - '.github/workflows/wildlife-realism-authoring.yml'
+      - 'Tools/blender/author_wildlife_realism.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wildlife-realism-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  author:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare per-species source bundles
+        run: |
+          mkdir -p /tmp/wildlife-realism
+          for species in hare deer wolf freshwater-fish; do
+            mkdir -p /tmp/wildlife-realism/$species
+            cp web/public/vendor/wildlife/$species-*.glb /tmp/wildlife-realism/$species/
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: realism-source-hare
+          path: /tmp/wildlife-realism/hare/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: realism-source-deer
+          path: /tmp/wildlife-realism/deer/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: realism-source-wolf
+          path: /tmp/wildlife-realism/wolf/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: realism-source-fish
+          path: /tmp/wildlife-realism/freshwater-fish/
+          retention-days: 7
