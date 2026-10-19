@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import type { WildlifeAnimalObservation } from '../runtime/core-types';
+import { wildlifeRigClip } from './wildlife-motion';
 import { NativeWildlifeContact, type WildlifePaw, type WildlifeContactClip } from './native-wildlife-contact';
 import { NATIVE_WILDLIFE_SOURCES } from './native-wildlife-manifest';
 
