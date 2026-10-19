@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cmath>
 #include "lifelens/ResidentAIExistingAffordance.h"
+#include "lifelens/ResidentUnifiedAgency.h"
 
 using namespace lifelens;
 
@@ -281,5 +282,69 @@ int main()
         survivor,thought,*newSource,shifted.minute));
     assert(shifted.resourceNodes[0].quantity==0);
     assert(shifted.resourceNodes[1].quantity==7);
+    // A recipe needs THREE clay, but low-skill harvesting yields just ONE
+    // physical unit per trip. The single resident must finish all genuine
+    // gathers under its same original one-day personal thought: successful
+    // partial prerequisites cannot be mistaken for replaying a completed goal.
+    World slow(4466);
+    slow.minute=480;
+    slow.resourceNodes.clear();
+    ResourceNode clay=wood;
+    clay.id=515;
+    clay.material=MaterialKind::Clay;
+    clay.quantity=12;
+    clay.maxQuantity=12;
+    slow.resourceNodes.push_back(clay);
+    Character potter=makeResident();
+    potter.civilization.gatheringSkill=0.0;
+    potter.civilization.knowledge.learn(
+        TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible,1.0);
+    RelationshipBook relations;
+    UnifiedUtilityDecision fallback;
+    fallback.kind=UnifiedDecisionKind::Civilization;
+    fallback.civilization.intent=CivilizationIntent::Explore;
+    fallback.utility=0.3;
+    for(int step=0;step<3;++step){
+        const auto selected=chooseSingleResidentAgencyDecision(
+            slow,potter,{0,0},relations,fallback,&thought,
+            nullptr,std::nullopt,false);
+        assert(selected.authority==ResidentAgencyAuthority::ResidentCognition);
+        assert(selected.decision.kind==UnifiedDecisionKind::Civilization);
+        const auto& gather=selected.decision.civilization;
+        assert(gather.intent==CivilizationIntent::Gather);
+        assert(gather.material==MaterialKind::Clay);
+        assert(gather.resourceNode==515);
+        const auto executed=executeCivilizationDecisionAtPosition(
+            slow,potter,gather,{0,0});
+        assert(executed.executed &&executed.success);
+        assert(executed.event.quantity==1);
+        slow.minute+=15;
+        rememberCivilizationAttemptOutcome(potter,gather,slow.minute,true);
+        assert(potter.civilization.inventory.count(
+            ItemKind::RawMaterial,MaterialKind::Clay)==step+1);
+    }
+    const auto completedInputs=chooseSingleResidentAgencyDecision(
+        slow,potter,{0,0},relations,fallback,&thought,
+        nullptr,std::nullopt,false);
+    assert(completedInputs.authority==ResidentAgencyAuthority::ResidentCognition);
+    assert(completedInputs.decision.civilization.intent==CivilizationIntent::Craft);
+    assert(completedInputs.decision.civilization.technique
+        ==TechniqueId::SimpleContainer);
+    assert(slow.resourceNodes.front().quantity==9);
+
+    // Explicit failure after a partial success is NEVER whitelisted.
+    Character failedPotter=potter;
+    failedPotter.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Clay,2);
+    CivilizationUtilityDecision failedClay;
+    failedClay.intent=CivilizationIntent::Gather;
+    failedClay.material=MaterialKind::Clay;
+    failedClay.resourceNode=515;
+    rememberCivilizationAttemptOutcome(
+        failedPotter,failedClay,slow.minute+1,false,
+        ResidentGatherFailureCause::ResourceAccessUnavailable);
+    assert(residentAIPlanAlreadyAttempted(
+        failedPotter,thought,failedClay,slow.minute+2,true));
+
     return 0;
 }

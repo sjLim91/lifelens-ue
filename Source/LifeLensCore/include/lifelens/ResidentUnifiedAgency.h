@@ -104,7 +104,9 @@ inline ResidentAgencyChoice chooseSingleResidentAgencyDecision(
         world,actor,actorPosition,thought,population);
     if(!candidate
        ||residentAIPlanAlreadyAttempted(
-           actor,thought,*candidate,world.minute))
+           actor,thought,*candidate,world.minute,
+           thought.intent==CognitiveIntentKind::CraftUsefulTools
+               &&candidate->intent==CivilizationIntent::Gather))
         return answer;
     UnifiedUtilityDecision next=fallback;
     next.kind=UnifiedDecisionKind::Civilization;

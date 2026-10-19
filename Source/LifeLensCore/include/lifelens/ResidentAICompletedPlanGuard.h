@@ -18,7 +18,8 @@ inline bool residentAIPlanAlreadyAttempted(
     const Character& actor,
     const AcceptedCognitiveDecision& thought,
     const CivilizationUtilityDecision& candidate,
-    int nowMinute)
+    int nowMinute,
+    bool verifiedMissingRecipeIngredient=false)
 {
     if(actor.id==0 ||thought.actor!=actor.id
        ||thought.minute<0 ||nowMinute<thought.minute
@@ -47,6 +48,15 @@ inline bool residentAIPlanAlreadyAttempted(
                &&entry.where!=source)
                 continue;
         }
+        // This exception applies ONLY to a real successful partial
+        // prerequisite gather selected again from a still-unsatisfied Core
+        // recipe. A failed attempt or a generic resource goal is NEVER
+        // repeatedly retried under an old model thought.
+        if(verifiedMissingRecipeIngredient
+           &&thought.intent==CognitiveIntentKind::CraftUsefulTools
+           &&candidate.intent==CivilizationIntent::Gather
+           &&entry.tags[2]=="success")
+            continue;
         return true;
     }
     return false;
