@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "Parenting.h"
+#include "ResidentCognitivePreference.h"
 #include "SettlementNetwork.h"
 #include "SocietyEconomy.h"
 
@@ -275,9 +276,11 @@ inline InterSettlementTradeMission bestInterSettlementTradeMission(
     const SettlementPopulation& population,
     const RelationshipBook& relationships,
     const SocialKnowledgeBook& knowledge,
-    const std::set<CharacterId>* eligibleResidents=nullptr)
+    const std::set<CharacterId>* eligibleResidents=nullptr,
+    const std::vector<AcceptedCognitiveDecision>* journal=nullptr)
 {
     InterSettlementTradeMission best;
+    double bestRank=-1.0;
     if(network.activeSettlementCount<2) return best;
 
     const auto assignments=
@@ -357,9 +360,17 @@ inline InterSettlementTradeMission bestInterSettlementTradeMission(
                 settlementTradeMobility01(first,knowledge);
             const double secondMobility=
                 settlementTradeMobility01(second,knowledge);
+            const double firstPreference=journal==nullptr ? 0.0
+                : residentCognitiveIntentPreference(world,*journal,
+                    first.id,CognitiveIntentKind::TradeWithResident,second.id);
+            const double secondPreference=journal==nullptr ? 0.0
+                : residentCognitiveIntentPreference(world,*journal,
+                    second.id,CognitiveIntentKind::TradeWithResident,first.id);
+            const double firstTravelRank=firstMobility+firstPreference;
+            const double secondTravelRank=secondMobility+secondPreference;
             const bool secondTravels=
-                secondMobility>firstMobility+1e-12
-                || (std::abs(secondMobility-firstMobility)<=1e-12
+                secondTravelRank>firstTravelRank+1e-12
+                || (std::abs(secondTravelRank-firstTravelRank)<=1e-12
                     && second.id<first.id);
 
             const SocietyExchangePlan travelPlan=
@@ -389,7 +400,12 @@ inline InterSettlementTradeMission bestInterSettlementTradeMission(
                 +(partnership ? 0.08 : 0.0)
                 +(bothNetworkMembers ? 0.05 : 0.0)
                 -0.10*distance01);
-            if(score<=best.score+1e-12) continue;
+            // Rank only real barter opportunities; economic feasibility and
+            // the later group-relation threshold still use the unaltered score.
+            const double rank=score+(score>=InterSettlementTradeMissionThreshold
+                ? std::max(firstPreference,secondPreference) : 0.0);
+            if(rank<=bestRank+1e-12) continue;
+            bestRank=rank;
 
             best.available=true;
             best.traveler=travelPlan.first;

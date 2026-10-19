@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Facility.h"
+#include "ResidentCognitivePreference.h"
 #include "Household.h"
 #include "Parenting.h"
 #include "MigrationPressure.h"
@@ -79,7 +80,8 @@ inline const Character* householdMigrationCharacter(
 inline HouseholdMigrationPlan chooseHouseholdMigrationPlan(
     const World& world,
     const HouseholdBook& households,
-    const SettlementPopulation& population)
+    const SettlementPopulation& population,
+    const std::vector<AcceptedCognitiveDecision>* journal=nullptr)
 {
     HouseholdMigrationPlan best;
     double bestScore=-1.0;
@@ -126,26 +128,34 @@ inline HouseholdMigrationPlan chooseHouseholdMigrationPlan(
         double totalPressure=0.0;
         int pressureCount=0;
         MigrationPressureObservation leaderPressure;
+        double leaderRank=-1.0;
+        double householdPreference=0.0;
         for(const Character* character:autonomous){
             const auto positionIt=population.find(character->id);
             if(positionIt==population.end()) continue;
             const MigrationPressureObservation pressure=
                 observeMigrationPressure(
                     world,*character,positionIt->second,&population);
+            const double preference=journal==nullptr ? 0.0
+                : residentCognitiveIntentPreference(world,*journal,
+                    character->id,CognitiveIntentKind::MigrateHousehold);
+            householdPreference=std::max(householdPreference,preference);
+            const double rank=pressure.pressure01+preference;
             totalPressure+=pressure.pressure01;
             ++pressureCount;
             if(pressure.candidate
                && pressure.hasFrontierTarget
                && (
                     !leaderPressure.candidate
-                    || pressure.pressure01>leaderPressure.pressure01+1e-12
+                    || rank>leaderRank+1e-12
                     || (
-                        std::abs(pressure.pressure01-leaderPressure.pressure01)
+                        std::abs(rank-leaderRank)
                             <=1e-12
                         && character->id<leaderPressure.residentId
                     )
                )){
                 leaderPressure=pressure;
+                leaderRank=rank;
             }
         }
 
@@ -161,7 +171,8 @@ inline HouseholdMigrationPlan chooseHouseholdMigrationPlan(
         if(consensus<HouseholdMigrationConsensusThreshold) continue;
 
         const double score=
-            0.62*leaderPressure.pressure01+0.38*consensus;
+            0.62*leaderPressure.pressure01+0.38*consensus
+            +householdPreference;
         if(best.available && score<bestScore-1e-12) continue;
         if(best.available
            && std::abs(score-bestScore)<=1e-12

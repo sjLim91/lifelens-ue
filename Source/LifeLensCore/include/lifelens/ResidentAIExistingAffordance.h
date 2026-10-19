@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "CognitiveDecisionJournal.h"
+#include "ResidentCognitivePreference.h"
 #include "CivilizationDecision.h"
 #include "ResidentCivilizationOutcomeLearning.h"
 #include "ResidentAICompletedPlanGuard.h"
@@ -12,7 +13,6 @@ namespace lifelens {
 // One personally chosen strategy may outlive a short inference interval.
 // Subsequent Core steps must still satisfy the live world, prerequisites,
 // personal outcome evidence and normal bodily survival at every tick.
-inline constexpr int ResidentAgencyGoalHorizonMinutes=1440;
 
 // A model's proposed strategy is not evidence. Require at least three
 // firsthand failed Core attempts, a worse-than-neutral accumulated belief,

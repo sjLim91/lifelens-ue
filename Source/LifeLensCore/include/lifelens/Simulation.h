@@ -132,7 +132,8 @@ public:
         return acceptedCognitiveDecisions_;
     }
     // Validates a typed local-model proposal against the *current* Core view.
-    // Acceptance only records an input; it does not execute or bias goals yet.
+    // Acceptance records an input, never an immediate action or outcome.
+    // The latest eligible intent can rank existing Core action opportunities.
     bool acceptCognitiveProposal(
         const CognitiveRequest& request,
         const CognitiveProposal& proposal,
@@ -208,7 +209,7 @@ public:
     HouseholdMigrationPlan observeHouseholdMigrationPlan() const {
         const SettlementPopulation population=settlementPopulation();
         return lifelens::chooseHouseholdMigrationPlan(
-            world_,households_,population);
+            world_,households_,population,&acceptedCognitiveDecisions_);
     }
     SettlementKnowledgeNetworkObservation observeSettlementKnowledgeNetwork() const {
         const SettlementPopulation population=settlementPopulation();

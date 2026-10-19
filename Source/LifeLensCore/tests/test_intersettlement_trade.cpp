@@ -212,6 +212,51 @@ int main()
             ItemKind::RawMaterial,MaterialKind::Stone)
         ==stoneBefore);
 
+    // The same real stock may support two legal partners. A thought ranks a
+    // partner; it cannot change barter's economic score or create inventory.
+    {
+        World competing=modelWorld;
+        competing.minute=1;
+        competing.characters.push_back(
+            makeTrader(3,"OtherStoneTrader",MaterialKind::Stone,8,0.15));
+        SettlementPopulation positions=modelPopulation;
+        positions.emplace(3,secondPos);
+        RelationshipBook relations=modelRelationships;
+        relations.getOrCreate(1,3).trust=0.95;
+        relations.getOrCreate(3,1).trust=0.95;
+        const auto network=observeSettlementNetwork(competing,&positions);
+        const auto baseline=bestInterSettlementTradeMission(
+            competing,network,positions,relations,modelKnowledge);
+        CHECK(baseline.available &&baseline.partner==2);
+
+        AcceptedCognitiveDecision thought;
+        thought.actor=1;
+        thought.target=3;
+        thought.minute=1;
+        thought.trigger=CognitiveTriggerKind::Reflection;
+        thought.contextFingerprint=790103;
+        thought.backendIdentity="local-test";
+        thought.intent=CognitiveIntentKind::TradeWithResident;
+        thought.priority=1.0;
+        thought.rationaleDigest="choose-real-partner";
+        std::vector<AcceptedCognitiveDecision> journal;
+        CHECK(appendAcceptedCognitiveDecision(journal,thought,competing));
+        const auto selected=bestInterSettlementTradeMission(
+            competing,network,positions,relations,modelKnowledge,
+            nullptr,&journal);
+        CHECK(selected.available);
+        CHECK(selected.traveler==1 &&selected.partner==3);
+        CHECK(selected.score==baseline.score);
+        CHECK(competing.characters[0].civilization.inventory.count(
+            ItemKind::RawMaterial,MaterialKind::Wood)==woodBefore);
+        // Eligibility still outranks the model's preference.
+        const std::set<CharacterId> eligible{1,2};
+        const auto blocked=bestInterSettlementTradeMission(
+            competing,network,positions,relations,modelKnowledge,
+            &eligible,&journal);
+        CHECK(blocked.partner==2);
+    }
+
     // Trade-route evidence belongs to the settlement pair, not to whichever
     // settlement the traveler happens to be standing inside after the trip.
     CHECK(registerInterSettlementTradeFact(
@@ -385,6 +430,16 @@ int main()
         simulation.world().characters[0]
             .civilization.inventory.count(
                 ItemKind::RawMaterial,MaterialKind::Stone);
+
+    const auto tradeRequest=simulation.observeCognitiveRequest(
+        firstId,CognitiveTriggerKind::Reflection);
+    CognitiveProposal tradeThought;
+    tradeThought.actor=firstId;
+    tradeThought.intent=CognitiveIntentKind::TradeWithResident;
+    tradeThought.targetResident=secondId;
+    tradeThought.priority=1.0;
+    CHECK(simulation.acceptCognitiveProposal(
+        tradeRequest,tradeThought,"local-test","real-trade-journey"));
 
     simulation.step(); // 59 -> 60, hourly economy schedules the trip.
 
