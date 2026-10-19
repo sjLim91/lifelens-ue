@@ -473,13 +473,6 @@ chooseResidentAIExistingCivilizationAffordance(
         &&!residentAIRecentGatherSourceFailed(
             actor,retriedMaterial,candidate.resourceNode,
             thought.minute,world.minute);
-    const bool freshRealSource=candidate.intent==CivilizationIntent::Gather
-        &&candidate.resourceNode!=0
-        &&residentAIHasRecentSourcedGatherFailure(
-            actor,retriedMaterial,thought.minute,world.minute)
-        &&!residentAIRecentGatherSourceFailed(
-            actor,retriedMaterial,candidate.resourceNode,
-            thought.minute,world.minute);
     if(retriedMaterial!=MaterialKind::Unknown &&!freshRealSource
        &&(residentAIHasRecentRepeatedGatherFailure(
               actor,retriedMaterial,world.minute)
