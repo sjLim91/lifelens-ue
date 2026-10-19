@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <map>
 #include <sstream>
@@ -14,6 +15,24 @@ namespace lifelens {
 
 // Read-only measurements of real Core outcomes. The intervention is a
 // deterministic, hand-written proxy, NOT an LLM nor an assertion of learning.
+enum class ResidentAIPairedPolicy {
+    OriginalFour,
+    CoreOpportunityFour
+};
+inline constexpr std::size_t CognitiveOpportunityIntentCount=4;
+inline constexpr const char* CognitiveOpportunityIntentNames[]={
+    "TeachKnowledge","CareForDependent","TradeWithResident","MigrateHousehold"
+};
+inline std::size_t cognitiveOpportunityIndex(CognitiveIntentKind intent)
+{
+    switch(intent){
+        case CognitiveIntentKind::TeachKnowledge: return 0;
+        case CognitiveIntentKind::CareForDependent: return 1;
+        case CognitiveIntentKind::TradeWithResident: return 2;
+        case CognitiveIntentKind::MigrateHousehold: return 3;
+        default: return CognitiveOpportunityIntentCount;
+    }
+}
 struct ResidentAIPairedMetrics {
     std::uint64_t proposalsAttempted=0;
     std::uint64_t proposalsAccepted=0;
@@ -22,6 +41,17 @@ struct ResidentAIPairedMetrics {
     std::uint64_t observedCivilizationPendingStarts=0;
     std::uint64_t observedSocialPendingStarts=0;
     std::uint64_t observedOtherPendingStarts=0;
+    std::uint64_t observedKnowledgeTeachingPendingStarts=0;
+    std::uint64_t observedTradePendingStarts=0;
+    std::uint64_t observedParentingPendingStarts=0;
+    // Proposals are not actions. These counts show input acceptances only,
+    // never credit successful instruction, childcare, exchange or migration.
+    std::array<std::uint64_t,CognitiveOpportunityIntentCount>
+        opportunityProposalsAttempted{};
+    std::array<std::uint64_t,CognitiveOpportunityIntentCount>
+        opportunityProposalsAccepted{};
+    std::array<std::uint64_t,CognitiveOpportunityIntentCount>
+        opportunityNoEligibleTarget{};
     std::uint64_t civilizationSuccessEvidence=0;
     std::uint64_t civilizationFailureEvidence=0;
     std::uint64_t firsthandCivilizationMemories=0;
@@ -35,6 +65,7 @@ struct ResidentAIPairedReport {
     WorldSeed seed=0;
     int days=0;
     bool matchedInitialResidents=false;
+    ResidentAIPairedPolicy policy=ResidentAIPairedPolicy::OriginalFour;
     ResidentAIPairedMetrics baseline;
     ResidentAIPairedMetrics proxy;
 };
@@ -69,6 +100,18 @@ inline void observeResidentAIPendingStarts(
             default:
                 ++totals.observedOtherPendingStarts;
                 break;
+        }
+        switch(pending.kind){
+            case ContextActionKind::KnowledgeTeaching:
+                ++totals.observedKnowledgeTeachingPendingStarts;
+                break;
+            case ContextActionKind::Trade:
+                ++totals.observedTradePendingStarts;
+                break;
+            case ContextActionKind::Parenting:
+                ++totals.observedParentingPendingStarts;
+                break;
+            default: break;
         }
     }
 }
@@ -105,7 +148,8 @@ inline void collectResidentAIPairedEvidence(
 inline bool residentAIProxyProposal(
     Simulation& sim,
     ResidentAIPairedMetrics& stats,
-    std::uint64_t slot)
+    std::uint64_t slot,
+    ResidentAIPairedPolicy policy=ResidentAIPairedPolicy::OriginalFour)
 {
     std::vector<CharacterId> eligible;
     for(const Character& actor:sim.world().characters){
@@ -121,21 +165,47 @@ inline bool residentAIProxyProposal(
     proposal.actor=actor;
     proposal.priority=0.9;
 
-    // Fixed policy intentionally ignores learned beliefs. This audit tests
-    // Core's causal handoff and observability, NOT adaptive model quality.
-    switch(slot%4){
-        case 0: proposal.intent=CognitiveIntentKind::ImproveFoodSecurity; break;
-        case 1: proposal.intent=CognitiveIntentKind::ImproveWaterSecurity; break;
-        case 2: proposal.intent=CognitiveIntentKind::ExploreOpportunity; break;
-        default: {
-            proposal.intent=CognitiveIntentKind::CooperateWithResident;
-            for(const CharacterId candidate:eligible){
-                if(candidate!=actor){proposal.targetResident=candidate;break;}
-            }
-            if(proposal.targetResident==0)
-                proposal.intent=CognitiveIntentKind::ImproveFoodSecurity;
-            break;
+    // Fixed policies intentionally ignore learned beliefs. Each input is a
+    // controlled preference, never a command to issue or complete an action.
+    if(policy==ResidentAIPairedPolicy::CoreOpportunityFour){
+        switch(slot%4){
+            case 0: proposal.intent=CognitiveIntentKind::TeachKnowledge; break;
+            case 1: proposal.intent=CognitiveIntentKind::CareForDependent; break;
+            case 2: proposal.intent=CognitiveIntentKind::TradeWithResident; break;
+            default: proposal.intent=CognitiveIntentKind::MigrateHousehold; break;
         }
+        if(cognitiveIntentTargetsResident(proposal.intent)){
+            for(const auto& candidate:sim.world().characters){
+                if(!candidate.alive ||candidate.id==actor) continue;
+                if(proposal.intent==CognitiveIntentKind::CareForDependent
+                   &&!isDependentStage(candidate.lifeStage)) continue;
+                proposal.targetResident=candidate.id;
+                break;
+            }
+        }
+    }else{
+        switch(slot%4){
+            case 0: proposal.intent=CognitiveIntentKind::ImproveFoodSecurity; break;
+            case 1: proposal.intent=CognitiveIntentKind::ImproveWaterSecurity; break;
+            case 2: proposal.intent=CognitiveIntentKind::ExploreOpportunity; break;
+            default: {
+                proposal.intent=CognitiveIntentKind::CooperateWithResident;
+                for(const CharacterId candidate:eligible){
+                    if(candidate!=actor){proposal.targetResident=candidate;break;}
+                }
+                if(proposal.targetResident==0)
+                    proposal.intent=CognitiveIntentKind::ImproveFoodSecurity;
+                break;
+            }
+        }
+    }
+    const std::size_t chosenOpportunity=
+        cognitiveOpportunityIndex(proposal.intent);
+    if(cognitiveIntentTargetsResident(proposal.intent)
+       &&proposal.targetResident==0){
+        if(chosenOpportunity<CognitiveOpportunityIntentCount)
+            ++stats.opportunityNoEligibleTarget[chosenOpportunity];
+        return false;
     }
     if(!residentAIHasAllowedIntent(request,proposal.intent)) return false;
     for(const auto& memory:request.memories){
@@ -145,18 +215,26 @@ inline bool residentAIProxyProposal(
             ++stats.firsthandOutcomesVisibleToProxy;
     }
     ++stats.proposalsAttempted;
+    const std::size_t opportunity=cognitiveOpportunityIndex(proposal.intent);
+    if(opportunity<CognitiveOpportunityIntentCount)
+        ++stats.opportunityProposalsAttempted[opportunity];
     // Never supply resources, move a resident, change Needs or forge a memory.
     const bool accepted=sim.acceptCognitiveProposal(
         request,proposal,"deterministic-audit-proxy","audit-proxy-v1");
-    if(accepted) ++stats.proposalsAccepted;
-    else ++stats.proposalsRejected;
+    if(accepted){
+        ++stats.proposalsAccepted;
+        if(opportunity<CognitiveOpportunityIntentCount)
+            ++stats.opportunityProposalsAccepted[opportunity];
+    }else ++stats.proposalsRejected;
     return accepted;
 }
 
 // Two truly separate New Games with identical initial seeds. The only
 // intervention is accepted model-like preference events in the proxy branch.
 // Core still owns all movement, survival, real execution and outcomes.
-inline ResidentAIPairedReport runResidentAIPairedAudit(WorldSeed seed,int days)
+inline ResidentAIPairedReport runResidentAIPairedAudit(
+    WorldSeed seed,int days,
+    ResidentAIPairedPolicy policy=ResidentAIPairedPolicy::OriginalFour)
 {
     if(seed==0 ||days<1 ||days>1000)
         throw std::invalid_argument("seed must be positive and days in 1..1000");
@@ -168,6 +246,7 @@ inline ResidentAIPairedReport runResidentAIPairedAudit(WorldSeed seed,int days)
     ResidentAIPairedReport report;
     report.seed=seed;
     report.days=days;
+    report.policy=policy;
     const auto& initialBase=baseline.world().characters;
     const auto& initialProxy=scripted.world().characters;
     report.matchedInitialResidents=
@@ -190,7 +269,7 @@ inline ResidentAIPairedReport runResidentAIPairedAudit(WorldSeed seed,int days)
     std::uint64_t slot=0;
     for(int i=0;i<totalMinutes;++i){
         if(scripted.world().minute%15==0)
-            residentAIProxyProposal(scripted,report.proxy,slot++);
+            residentAIProxyProposal(scripted,report.proxy,slot++,policy);
         baseline.step();
         scripted.step();
         observeResidentAIPendingStarts(
@@ -217,6 +296,9 @@ inline void appendResidentAIPairedMetricsJson(
        <<m.observedCivilizationPendingStarts
        <<",\"observedSocialPendingStarts\":"<<m.observedSocialPendingStarts
        <<",\"observedOtherPendingStarts\":"<<m.observedOtherPendingStarts
+       <<",\"observedKnowledgeTeachingPendingStarts\":"<<m.observedKnowledgeTeachingPendingStarts
+       <<",\"observedTradePendingStarts\":"<<m.observedTradePendingStarts
+       <<",\"observedParentingPendingStarts\":"<<m.observedParentingPendingStarts
        <<",\"civilizationSuccessEvidence\":"
        <<m.civilizationSuccessEvidence
        <<",\"civilizationFailureEvidence\":"
@@ -226,7 +308,17 @@ inline void appendResidentAIPairedMetricsJson(
        <<",\"socialFacts\":"<<m.socialFacts
        <<",\"knownTechniqueRecords\":"<<m.knownTechniqueRecords
        <<",\"endMinute\":"<<m.endMinute
-       <<",\"livingResidents\":"<<m.livingResidents<<"}";
+       <<",\"livingResidents\":"<<m.livingResidents
+       <<",\"opportunityProposalInputs\":{";
+    for(std::size_t i=0;i<CognitiveOpportunityIntentCount;++i){
+        if(i) out<<",";
+        out<<"\""<<CognitiveOpportunityIntentNames[i]<<"\":{"
+           <<"\"attempted\":"<<m.opportunityProposalsAttempted[i]
+           <<",\"accepted\":"<<m.opportunityProposalsAccepted[i]
+           <<",\"noEligibleTarget\":"<<m.opportunityNoEligibleTarget[i]
+           <<"}";
+    }
+    out<<"}}";
 }
 
 inline std::string residentAIPairedReportJson(
@@ -235,6 +327,9 @@ inline std::string residentAIPairedReportJson(
     std::ostringstream out;
     out<<"{\"seed\":"<<report.seed<<",\"days\":"<<report.days
        <<",\"policy\":\"fixed-deterministic-proxy-not-llm\""
+       <<",\"proxySelection\":\""
+       <<(report.policy==ResidentAIPairedPolicy::CoreOpportunityFour
+             ?"four-core-opportunities":"original-four")<<"\""
        <<",\"matchedInitialResidents\":"
        <<(report.matchedInitialResidents?"true":"false")
        <<",\"baseline\":";

@@ -38,6 +38,41 @@ int main()
     assert(another.proxy.proposalsAccepted>0);
     assert(another.seed!=first.seed);
 
+    // The additional intervention tests ONLY the four newly connected
+    // cognition intents. Accepted intents are not completed actions.
+    const auto focused=runResidentAIPairedAudit(
+        4242001,1,ResidentAIPairedPolicy::CoreOpportunityFour);
+    assert(focused.matchedInitialResidents);
+    assert(focused.policy==ResidentAIPairedPolicy::CoreOpportunityFour);
+    assert(focused.baseline.proposalsAttempted==0);
+    assert(focused.proxy.proposalsAttempted>0);
+    assert(focused.proxy.proposalsAccepted>0);
+    assert(focused.proxy.proposalsAttempted==
+           focused.proxy.proposalsAccepted+focused.proxy.proposalsRejected);
+    const auto focusedJson=residentAIPairedReportJson(focused);
+    assert(focusedJson.find("\"proxySelection\":\"four-core-opportunities\"")
+        !=std::string::npos);
+    for(const char* intent:CognitiveOpportunityIntentNames){
+        assert(focusedJson.find(intent)!=std::string::npos);
+    }
+    assert(focusedJson.find("\"noEligibleTarget\":")!=std::string::npos);
+    assert(focused.proxy.opportunityProposalsAttempted[0]>0);
+    assert(focused.proxy.opportunityProposalsAttempted[2]>0);
+    assert(focused.proxy.opportunityProposalsAttempted[3]>0);
+    assert(focusedJson.find("\"observedTradePendingStarts\":")
+        !=std::string::npos);
+    assert(focusedJson.find("\"observedParentingPendingStarts\":")
+        !=std::string::npos);
+    assert(focusedJson.find("\"observedKnowledgeTeachingPendingStarts\":")
+        !=std::string::npos);
+    assert(residentAIPairedReportJson(runResidentAIPairedAudit(
+        4242001,1,ResidentAIPairedPolicy::CoreOpportunityFour))
+        ==focusedJson);
+    const auto focusedOther=runResidentAIPairedAudit(
+        874213954,1,ResidentAIPairedPolicy::CoreOpportunityFour);
+    assert(focusedOther.seed!=focused.seed);
+    assert(focusedOther.matchedInitialResidents);
+
     bool invalidRejected=false;
     try{ (void)runResidentAIPairedAudit(0,1); }
     catch(const std::invalid_argument&){invalidRejected=true;}
