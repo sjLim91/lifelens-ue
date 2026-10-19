@@ -30,9 +30,12 @@ function choose(scene,actor,view,camera){
  scene.traverse(o=>{if(!o.isInstancedMesh||!o.geometry.getAttribute('llLeafRank'))return;
   for(let i=0;i<o.count;i++){o.getMatrixAt(i,matrix);matrix.premultiply(o.matrixWorld);const point=new Vector3().setFromMatrixPosition(matrix);
    if(Math.hypot(point.x-origin.x,point.z-origin.z)>10)continue;const copy=new Mesh(o.geometry,o.material);copy.matrixAutoUpdate=false;copy.matrixWorld.copy(matrix);colliders.push(copy);}});
+ // Production water is intentionally opaque from above. Inspect the real
+ // fish from below its surface without hiding water or changing Core poses.
+ const fish=actor.userData.species==='FreshwaterFish';
  const yaw=actor.rotation.y+({front:0,side:-Math.PI/2,quarter:-Math.PI/4,back:Math.PI}[view]??0),probe=camera.clone(),ray=new Raycaster();let best=null;
- for(const d of [0,-.25,.25,-.5,.5])for(const r of [1.1,1.4,2,2.7,3.5])for(const h of [.3,.5,.9,1.3]){
-  const radius=Math.max(.20,extent)*r,position=origin.clone().add(new Vector3(Math.sin(yaw+d)*radius,Math.max(.12,extent*h),Math.cos(yaw+d)*radius));
+ for(const d of [0,-.25,.25,-.5,.5])for(const r of [1.1,1.4,2,2.7,3.5])for(const h of (fish?[.08,.15,.25]:[.3,.5,.9,1.3])){
+  const radius=Math.max(.20,extent)*r,position=origin.clone().add(new Vector3(Math.sin(yaw+d)*radius,Math.max(fish?.005:.12,extent*h),Math.cos(yaw+d)*radius));
   probe.position.copy(position);probe.lookAt(target);probe.updateMatrixWorld(true);
   if(points.some(v=>{const n=v.clone().project(probe);return Math.abs(n.x)>.9||Math.abs(n.y)>.9||n.z< -1||n.z>1;}))continue;
   let clear=0;for(const point of points){const dir=point.clone().sub(position);ray.set(position,dir.clone().normalize());ray.near=.02;ray.far=dir.length()-.08;if(!ray.intersectObjects(colliders,false).length)clear++;}
