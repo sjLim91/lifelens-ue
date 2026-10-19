@@ -64,7 +64,7 @@ int main()
     assert(binding.find("\"worldSeed\":\"4242001\"")!=std::string::npos);
     assert(binding.find("\"terrainGeographicallyConditioned\":false")
            !=std::string::npos);
-    assert(binding.find("\"snapshotPersistence\":false")
+    assert(binding.find("\"snapshotPersistence\":true")
            !=std::string::npos);
     // Explicit Earth observation must NOT change the ordinary LifeLens
     // founder roster, procedural terrain, climate, RNG or daily actions.
@@ -81,6 +81,32 @@ int main()
     assert(progressedMinute==jsonSimulationMinute(legacy.worldOverviewJson()));
     assert(earth.worldOverviewJson()==legacy.worldOverviewJson());
     assert(earth.residentsJson()==legacy.residentsJson());
+
+    // A completely new bridge restores geographic identity from Core binary,
+    // not from an old browser object's cached marker.
+    const auto saved=earth.saveSnapshotBase64();
+    assert(!saved.empty());
+    WebClientBridge restored;
+    assert(restored.restoreSnapshotBase64(saved));
+    assert(restored.earthScenarioJson()==earth.earthScenarioJson());
+    assert(restored.earthSolarJson()==earth.earthSolarJson());
+    assert(restored.residentsJson()==earth.residentsJson());
+    restored.runMinutes(17);
+    earth.runMinutes(17);
+    assert(restored.saveSnapshotBase64()==earth.saveSnapshotBase64());
+
+    const auto retained=restored.worldOverviewJson();
+    const auto retainedBinding=restored.earthScenarioJson();
+    assert(!restored.restoreSnapshotBase64(saved.substr(0,saved.size()-8)));
+    assert(restored.worldOverviewJson()==retained);
+    assert(restored.earthScenarioJson()==retainedBinding);
+
+    // Even the SAME seed must explicitly remove an old mapping when the save
+    // being loaded was an ordinary unbound world.
+    const auto ordinarySave=legacy.saveSnapshotBase64();
+    assert(restored.restoreSnapshotBase64(ordinarySave));
+    assert(restored.earthScenarioJson()=="{\"available\":false}");
+    assert(restored.earthSolarJson()=="{\"available\":false}");
 
     // New ordinary world unlinks previous mapped coordinate atomically.
     assert(earth.newGame("874213954","",3));

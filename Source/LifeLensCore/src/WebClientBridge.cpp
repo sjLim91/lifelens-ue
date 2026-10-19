@@ -1084,6 +1084,16 @@ bool WebClientBridge::newEarthGame(
         PrototypeMetersPerGridCell,EarthLandMaskVersion,"natural-earth");
     if(catalog->add(binding)!=EarthScenarioBindingStatus::Accepted)
         return false;
+    EarthScenarioState state;
+    state.available=true;
+    state.worldSeed=identity.worldSeed;
+    state.generationVersion=identity.generationVersion;
+    state.geographicOrigin=origin;
+    state.localGridOrigin=foundingGrid;
+    state.metersPerGridCell=PrototypeMetersPerGridCell;
+    state.earthDataVersion=EarthLandMaskVersion;
+    state.geographySource="natural-earth";
+    simulation_->world().earthScenario=std::move(state);
     activeEarthOriginRegionId_=binding.regionId;
     earthScenario_=std::move(catalog);
     return true;
@@ -1113,7 +1123,7 @@ std::string WebClientBridge::earthScenarioJson() const
     out<<"\"singleOrigin\":true,";
     out<<"\"terrainGeographicallyConditioned\":false,";
     out<<"\"metricScaleProvisional\":true,";
-    out<<"\"snapshotPersistence\":false";
+    out<<"\"snapshotPersistence\":true";
     out<<"}";
     return out.str();
 }
@@ -1179,13 +1189,27 @@ bool WebClientBridge::restoreSnapshotBase64(const std::string& encoded)
         snapshot.world.generationVersion,snapshot.ruleset);
     if(!candidate->restoreSnapshot(snapshot)) return false;
 
-    // Only commit after the entire candidate Core has validated. A damaged
-    // save must never replace a living world or change its current minute.
-    if(worldSeed_!=snapshot.world.seed
-       ||generationVersion_!=snapshot.world.generationVersion){
-        earthScenario_.reset();
-        activeEarthOriginRegionId_=0;
+    // Rebuild the observer mapping from saved Core authority, including when
+    // the same seed loads a different binding or an explicitly unbound save.
+    std::unique_ptr<EarthScenarioGeoCatalog> restoredEarth;
+    SurfaceRegionId restoredOrigin=0;
+    const auto& earth=snapshot.world.earthScenario;
+    if(earth.available){
+        const auto identity=snapshot.world.genesisIdentity();
+        const auto region=surfaceRegionCoordForChunk(
+            chunkCoordForGrid(earth.localGridOrigin));
+        restoredEarth=std::make_unique<EarthScenarioGeoCatalog>(
+            identity,earth.earthDataVersion,earth.geographySource);
+        const auto binding=makeEarthRegionScenarioBinding(
+            identity,region,earth.geographicOrigin,earth.localGridOrigin,
+            earth.metersPerGridCell,earth.earthDataVersion,earth.geographySource);
+        if(restoredEarth->add(binding)!=EarthScenarioBindingStatus::Accepted)
+            return false;
+        restoredOrigin=binding.regionId;
     }
+    // Commit only after both simulation and geographic binding validate.
+    earthScenario_=std::move(restoredEarth);
+    activeEarthOriginRegionId_=restoredOrigin;
     worldSeed_=snapshot.world.seed;
     populationSeed_=snapshot.world.populationSeed;
     generationVersion_=snapshot.world.generationVersion;

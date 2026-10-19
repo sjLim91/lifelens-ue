@@ -11,6 +11,7 @@
 #include "lifelens/HealthSnapshotCodec.h"
 #include "lifelens/TradeJourneySnapshotCodec.h"
 #include "lifelens/CognitiveJournalSnapshotCodec.h"
+#include "lifelens/EarthScenarioSnapshotCodec.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -246,6 +247,16 @@ bool encodeSimulationSnapshot(
             return false;
         }
     }
+    if(!validEarthScenarioState(snapshot.world.earthScenario,snapshot.world.genesisIdentity())){
+        setError(error,"invalid Earth scenario binding");
+        return false;
+    }
+    // No extension for unbound worlds: old/ordinary saves stay byte-exact.
+    if(snapshot.world.earthScenario.available){
+        Writer earthExtension;
+        writeEarthScenarioSnapshot(earthExtension,snapshot.world);
+        body.insert(body.end(),earthExtension.bytes.begin(),earthExtension.bytes.end());
+    }
     Writer ecologyExtension;
     writeNaturalEcology(ecologyExtension,snapshot.world);
     body.insert(body.end(),ecologyExtension.bytes.begin(),ecologyExtension.bytes.end());
@@ -369,7 +380,13 @@ bool decodeSimulationSnapshot(
         goalMarker!=bytes.end()
         &&ecologyMarker!=bytes.end()
         &&goalMarker>ecologyMarker;
-    const auto extensionEnd=ecologyMarker!=bytes.end() ? ecologyMarker : bytes.end();
+    const auto preEcologyEnd=ecologyMarker!=bytes.end() ? ecologyMarker : bytes.end();
+    const auto earthMarker=std::find_end(
+        rulesetMarker,preEcologyEnd,
+        EarthScenarioSnapshotMagic,
+        EarthScenarioSnapshotMagic+sizeof(EarthScenarioSnapshotMagic));
+    const bool hasEarthExtension=earthMarker!=preEcologyEnd;
+    const auto extensionEnd=hasEarthExtension ? earthMarker : preEcologyEnd;
     const auto cognitionMarker=std::find_end(
         tradeJourneyMarker!=bytes.end() ? tradeJourneyMarker : rulesetMarker,
         extensionEnd,CognitiveJournalSnapshotExtensionMagic,
@@ -479,6 +496,16 @@ bool decodeSimulationSnapshot(
         if(!readCognitiveJournalSnapshotExtension(cognitionReader,decoded)
            || !cognitionReader.done()){
             setError(error,"invalid accepted cognition snapshot extension");
+            return false;
+        }
+    }
+
+    if(hasEarthExtension){
+        const std::vector<std::uint8_t> earthBytes(earthMarker,preEcologyEnd);
+        Reader earthReader(earthBytes);
+        if(!readEarthScenarioSnapshot(earthReader,decoded.world)
+           ||!earthReader.done()){
+            setError(error,"invalid Earth scenario snapshot extension");
             return false;
         }
     }
