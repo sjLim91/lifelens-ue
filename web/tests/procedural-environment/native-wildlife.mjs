@@ -85,6 +85,14 @@ for(const tier of ['near','mid','far'])for(const species of Object.keys(pins)){
    assert.deepEqual(actor.position.toArray(),[moved.x,0,moved.z],'Ground correction changed authoritative actor root');
   }
   if(species!=='FreshwaterFish'){
+   pool.begin(.05);
+   assert(pool.draw({...p,speed:.15,behavior:'Flee'},tier,.05,()=>0));
+   pool.end(parent);
+   assert.equal(actor.userData.clip,'run',species+' animation did not sprint');
+   pool.begin(.05);
+   assert(pool.draw({...p,speed:.15,behavior:'Hunt'},tier,.05,()=>0));
+   pool.end(parent);
+   assert.equal(actor.userData.clip,'hunt',species+' animation did not chase');
    const ground=(x,z)=>.03*x-.02*z;
    pool.begin(1);assert(pool.draw({...p,behavior:'Rest'},tier,1,ground));pool.end(parent);
    actor.updateMatrixWorld(true);
