@@ -70,6 +70,42 @@ int main()
         }
     }
     assert(directFailures==2);
+
+    // Even among many emotionally vivid unrelated memories, the REAL
+    // two-attempt history must reach the local resident's eight-slot mind.
+    Character crowded=resident;
+    for(int i=0;i<12;++i){
+        MemoryRecord vivid;
+        vivid.who=crowded.id;
+        vivid.minute=482;
+        vivid.what="unrelated vivid event "+std::to_string(i);
+        vivid.importance=1.0;
+        vivid.confidence=1.0;
+        vivid.emotionIntensity=1.0;
+        vivid.tags={"unrelated_event"};
+        crowded.memory.add(vivid);
+    }
+    RelationshipBook relationships;
+    auto context=buildCognitiveRequest(
+        crowded,relationships,482,CognitiveTriggerKind::Reflection,
+        {CognitiveIntentKind::ImproveFoodSecurity},8,8,8);
+    assert(context.memories.size()==8);
+    int visibleFailures=0;
+    for(const auto& memory:context.memories){
+        if(memory.tags.size()==3 &&memory.tags[1]==key
+           &&memory.tags[2]=="failure"){
+            ++visibleFailures;
+            assert(memory.who==resident.id);
+        }
+    }
+    assert(visibleFailures==2);
+    const auto originalFingerprint=cognitiveRequestFingerprint(context);
+    std::reverse(crowded.memory.entries.begin(),crowded.memory.entries.end());
+    context=buildCognitiveRequest(
+        crowded,relationships,482,CognitiveTriggerKind::Reflection,
+        {CognitiveIntentKind::ImproveFoodSecurity},8,8,8);
+    assert(cognitiveRequestFingerprint(context)==originalFingerprint);
+
     world.minute=482;
     thought.minute=482;
     assert(!residentAIHasRecentRepeatedGatherFailure(
