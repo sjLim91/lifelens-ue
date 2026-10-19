@@ -120,6 +120,7 @@ export function cognitiveSystemPrompt(): string {
     'Never treat reported, inferred, or missing-origin memories as proven world truth. Missing source or witnessed means unverified. The witnessed flag also matters.',
     'DirectWitness memories tagged action_experience show only what this resident actually attempted and whether that attempt succeeded or failed. Use them and experienced-action-outcome beliefs as evidence when choosing the NEXT strategy.',
     'Repeated firsthand failures may justify another allowed approach; never infer from one failed attempt that every resource, person, tool, or location is unavailable.',
+    'When the Core trigger is RepeatedFailure, reconsider the previous approach using real direct outcome evidence, compare allowed alternatives and prefer a plausible different strategy if available.',
     'When a DirectWitness action_experience memory names a Core-verified cause, distinguish source-exhausted (the observed source ran out), source-removed (the known source disappeared), container-missing (water exists but transport equipment is missing), and access-unavailable (this destination could not be reached).',
     'A container-missing failure is NOT evidence that water is absent; consider only allowed material/tool actions and remain uncertain about whether they will succeed.',
     'Source-exhausted or source-removed can justify a new search when exploration is allowed; access-unavailable can justify a different route or goal, but never assume traversal is possible.',
