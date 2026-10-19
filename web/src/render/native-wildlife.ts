@@ -201,9 +201,7 @@ export class NativeWildlifePool {
     }
     actor.contact?.restore();
     const moving = pose.speed > .005;
-    const name = pose.species === 'FreshwaterFish' ? moving || pose.behavior === 'Swim' ? 'swim' : 'idle'
-      : moving ? pose.speed / pose.scale > 1.5 ? 'run' : pose.behavior === 'Hunt' ? 'hunt' : 'walk'
-      : pose.behavior === 'Rest' ? 'rest' : pose.behavior === 'Forage' ? 'forage' : pose.behavior === 'Drink' ? 'drink' : 'idle';
+    const name = wildlifeRigClip(pose.species, pose.behavior, pose.speed, pose.scale);
     const action = actor.actions.get(name)!, clip = asset.contract.clips[name]!;
     if (actor.current !== name) {
       const previous = actor.actions.get(actor.current);
