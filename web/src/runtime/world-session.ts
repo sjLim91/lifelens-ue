@@ -69,6 +69,17 @@ export class WorldSession {
     this.resetObservation();
   }
 
+  restoreWorld(snapshotBase64: string): boolean {
+    if (!this.core.restoreSnapshotBase64(snapshotBase64)) return false;
+    this.resetObservation();
+    return true;
+  }
+
+  saveWorld(): string {
+    return this.core.saveSnapshotBase64();
+  }
+
+
   createEarthWorld(seed: string, latitude: number, longitude: number): boolean {
     if (!this.core.createEarthWorld(seed, latitude, longitude, 4)) return false;
     this.resetObservation();
