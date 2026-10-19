@@ -119,12 +119,23 @@ int main()
 
     // Stale/implausible/foreign proposals have no authority. A "model"
     // never acquires food or moves a body without real Core execution.
-    thought.minute=100;
+    thought.minute=0;
+    world.minute=ResidentAgencyGoalHorizonMinutes+1;
     assert(chooseSingleResidentAgencyDecision(
         world,world.characters.front(),{0,0},relations,baseline,
         &thought,nullptr,GridPos{1,0},false).authority
         ==ResidentAgencyAuthority::EmbodiedFallback);
+    world.minute=480;
     thought.minute=480;
+    // A single approved goal can still select a real social action hours
+    // after cognition, without a second social/civilization decision engine.
+    world.minute=1200;
+    const auto continued=chooseSingleResidentAgencyDecision(
+        world,world.characters.front(),{0,0},relations,baseline,
+        &thought,nullptr,GridPos{1,0},false);
+    assert(continued.authority==ResidentAgencyAuthority::ResidentCognition);
+    assert(continued.decision.kind==UnifiedDecisionKind::Social);
+    world.minute=480;
     thought.actor=100;
     assert(chooseSingleResidentAgencyDecision(
         world,world.characters.front(),{0,0},relations,baseline,
