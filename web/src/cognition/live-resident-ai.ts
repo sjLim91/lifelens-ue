@@ -11,6 +11,9 @@ import type { Resident, WorldOverview } from '../runtime/core-types';
 // One shared free-local model. Each resident gets a separate, bounded
 // Core-authored personality/Need/memory/belief/relationship context.
 export const BROWSER_MODEL_RETRY_MS = 5 * 60 * 1000;
+// A single transient inference failure must not restart a heavyweight model.
+// Three provider failures in a row indicate a broken free-local connection.
+export const INFERENCE_RECOVERY_FAILURE_THRESHOLD = 3;
 
 export const LIVE_AI_BUDGET = Object.freeze({
   maxConcurrent: 1,
@@ -212,6 +215,8 @@ export class ResidentAIController {
   private automaticallyRunning = false;
   private lastBrowserModelAttempt = -Infinity;
   private browserModelLoading = false;
+  private activeProviderName: string | null = null;
+  private consecutiveInferenceFailures = 0;
   private lastAutoDiscovery = -Infinity;
   private autoDiscoveryAbort: AbortController | null = null;
   private autoDiscoveryGeneration = 0;
@@ -356,6 +361,8 @@ export class ResidentAIController {
         () => this.source?.worldOverview().minute ?? NaN,
         residentAIExecutionBudget(provider))
       : null;
+    this.activeProviderName = this.scheduler ? provider.name : null;
+    this.consecutiveInferenceFailures = 0;
   }
   private rebuildScheduler(): void {
     this.scheduler?.dispose();
@@ -367,6 +374,8 @@ export class ResidentAIController {
     // that path only accepts real 127.0.0.1/localhost URLs and throws.
     if(config?.baseUrl === 'browser-webgpu'){
       this.scheduler = null;
+      this.activeProviderName = null;
+      this.consecutiveInferenceFailures = 0;
       this.update({ configuration: null });
       return;
     }
@@ -377,6 +386,8 @@ export class ResidentAIController {
         LIVE_AI_BUDGET,
       )
       : null;
+    this.activeProviderName = this.scheduler ? 'local-openai-compatible' : null;
+    this.consecutiveInferenceFailures = 0;
   }
   setEnabled(enabled: boolean): boolean {
     if (enabled && (!this.scheduler || !this.source || this.disposed)) return false;
@@ -399,6 +410,7 @@ export class ResidentAIController {
     this.observedWorld = null;
     this.observedResidents = [];
     this.epoch += 1;
+    this.consecutiveInferenceFailures = 0;
     this.scheduler?.reset();
     this.identity = null;
     this.lastMinute = -1;
@@ -420,6 +432,8 @@ export class ResidentAIController {
     this.resetWorld();
     this.scheduler?.dispose();
     this.scheduler = null;
+    this.activeProviderName = null;
+    this.consecutiveInferenceFailures = 0;
     this.source = null;
     this.update({ enabled: false, automatic: false, discovering: false, configuration: null });
   }
@@ -548,6 +562,22 @@ export class ResidentAIController {
       status = 'error';
     }
 
+    // Recovery is about the ONE inference provider, never about creating a
+    // second agent or invalidating the Core resident's goals and memories.
+    // A physically rejected Core plan, a stale world, and a deliberately
+    // empty model response are not evidence of provider malfunction.
+    const providerFailure = result.status === 'timeout'
+      || result.status === 'error'
+      || (result.status === 'rejected'
+        && (result.reason === 'invalid_json' || result.reason === 'invalid_schema'));
+    if (result.status === 'validated' || result.status === 'unavailable') {
+      this.consecutiveInferenceFailures = 0;
+    } else if (providerFailure) {
+      this.consecutiveInferenceFailures++;
+    }
+    const recycleProvider = this.automaticallyRunning && providerFailure
+      && this.consecutiveInferenceFailures >= INFERENCE_RECOVERY_FAILURE_THRESHOLD;
+
     const lastDecision: ResidentAIDecision = {
       actor, minute: request.minute, status,
       intent: result.proposal?.intent ?? null,
@@ -562,6 +592,21 @@ export class ResidentAIController {
       lastDecision,
       byResident: this.latestResidentDecisions(lastDecision),
     });
+    if (recycleProvider) {
+      const failedProvider = this.activeProviderName;
+      // Scheduler disposal cancels late completions. The existing resident
+      // keeps behaving through Core while discovery resumes automatically.
+      this.scheduler?.dispose();
+      this.scheduler = null;
+      this.activeProviderName = null;
+      this.consecutiveInferenceFailures = 0;
+      this.lastAutoDiscovery = -Infinity;
+      // WebGPU needs a bounded retry interval after a runtime failure too:
+      // otherwise the same damaged GPU/model is reloaded on every refresh.
+      if (failedProvider === 'resident-browser-webgpu')
+        this.lastBrowserModelAttempt = this.now();
+      this.update({ configuration: null });
+    }
   }
 }
 
