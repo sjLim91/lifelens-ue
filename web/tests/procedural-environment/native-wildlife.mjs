@@ -5,6 +5,8 @@ import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {source} from './compile.mjs';
 const {NativeWildlifePool}=await source('render/native-wildlife.ts');
+const {wildlifeRigClip,wildlifeVisualTravelMultiplier}=await source('render/wildlife-motion.ts');
+
 const {NATIVE_WILDLIFE_SOURCES:pins}=await source('render/native-wildlife-manifest.ts');
 const root=resolve(import.meta.dirname,'../../..');
 const output=resolve(import.meta.dirname,'review/native-wildlife');mkdirSync(output,{recursive:true});
