@@ -15,8 +15,8 @@ const rendererCode = ts.transpileModule(
 
 let lastRenderer = null;
 class TestGPU {
-  constructor(canvas) {
-    this.domElement = canvas;
+  constructor(options) {
+    this.domElement = options.canvas;
     this.contextLost = false;
     this.failNextRender = false;
     this.disposed = false;
