@@ -19,7 +19,19 @@ try{
   for(const baseline of [true,false]){
    await page.goto(`${base}/tests/procedural-environment/native-wildlife.html?species=${species}&baseline=${baseline?1:0}`);
    await page.waitForFunction(()=>!!window.nativeWildlifeReview,{},{timeout:30000});
-   if(!baseline)await page.waitForFunction(()=>window.nativeWildlifeReview.metrics().importedActor,{},{timeout:30000});
+   // CI software WebGL decodes the signed, original skinned assets under
+   // shared CPU contention. A 30s threshold produced an intermittent false
+   // negative even though the fixture and local GLBs were unchanged. Allow
+   // bounded import time without relaxing the required real-model assertion.
+   if(!baseline){
+    try{
+     await page.waitForFunction(()=>window.nativeWildlifeReview.metrics().importedActor,{},{timeout:90000});
+    }catch(error){
+     const metrics=await page.evaluate(()=>window.nativeWildlifeReview?.metrics()).catch(()=>null);
+     throw Error('Native '+species+' model did not materialize within 90s; '
+       +JSON.stringify({metrics,errors})+'; '+String(error));
+    }
+   }
    for(const view of ['front','side','quarter','back']){
     await page.evaluate(name=>window.nativeWildlifeReview.view(name),view);await pause(150);
     await page.screenshot({path:resolve(out,`${species}-${baseline?'baseline':'native'}-${view}.png`)});
