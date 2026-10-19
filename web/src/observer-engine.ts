@@ -462,25 +462,27 @@ export function startObserverEngine(): () => void {
   }
   
   function createWorld(seed: string): void {
-    if (!worldSession || fastForwardRunning) return;
+    if (!worldSession || fastForwardRunning || catchupRunning) return;
     const requestedSeed = seed.trim();
     const effectiveSeed = requestedSeed || generateWorldSeed();
     worldSession.createWorld(effectiveSeed);
+    activeEarthOrigin = null;
     resetAfterWorldCreated();
   }
 
   function createEarthWorld(latitude: number, longitude: number): boolean {
-    if (!worldSession || fastForwardRunning
+    if (!worldSession || fastForwardRunning || catchupRunning
       || !Number.isFinite(latitude) || !Number.isFinite(longitude))
       return false;
     const seed = generateWorldSeed();
     if (!worldSession.createEarthWorld(seed, latitude, longitude))
       return false;
+    activeEarthOrigin = { latitudeDeg: latitude, longitudeDeg: longitude };
     resetAfterWorldCreated();
     return true;
   }
 
-  function resetAfterWorldCreated(): void {
+  function resetAfterWorldCreated(persist = true): void {
     shadowObserver.resetWorld();
     residentAI.resetWorld();
     centerX = 0;
@@ -504,6 +506,10 @@ export function startObserverEngine(): () => void {
     // Building the initial terrain is presentation work, not elapsed life.
     // Start the new world's wall-clock baseline after that synchronous work.
     simulationClock?.resetAccumulator();
+    if (persist) {
+      timelineAnchorMs = Date.now();
+      void saveCheckpoint(timelineAnchorMs);
+    }
   }
 
   function selectResident(residentId: string | null): void {
@@ -622,7 +628,7 @@ export function startObserverEngine(): () => void {
   }
 
   async function fastForwardDays(days: number): Promise<void> {
-    if (!worldSession || fastForwardRunning) return;
+    if (!worldSession || fastForwardRunning || catchupRunning) return;
 
     const requestedDays = Math.floor(Number(days));
     if (
@@ -696,7 +702,11 @@ export function startObserverEngine(): () => void {
       } else ownedCore?.dispose();
       threeWorldRenderer?.breakFootTrafficContinuity();
       simulationClock?.resetAccumulator();
-      if (!stopped) simulationClock?.start();
+      if (!stopped) {
+        timelineAnchorMs = Date.now();
+        void saveCheckpoint(timelineAnchorMs);
+        simulationClock?.start();
+      }
     }
   }
   
@@ -759,9 +769,32 @@ export function startObserverEngine(): () => void {
       // inference engine automatically; no user-toggle or network cloud key.
       residentAI.startAutomatically();
       worldSession = new WorldSession(core, residentContinuity);
+      // Never overwrite a corrupted or newer Core save with a fresh world.
+      const saved = await readPersistedWorld();
+      if (stopped) return;
+      if (saved) {
+        if (saved.earthOrigin && !core.createEarthWorld(
+          saved.worldSeed,
+          saved.earthOrigin.latitudeDeg,
+          saved.earthOrigin.longitudeDeg,
+        )) throw Error('저장된 지구 월드의 지리 정보를 복원할 수 없습니다.');
+        if (!worldSession.restoreWorld(saved.snapshotBase64)) {
+          throw Error('저장된 월드의 Core 스냅샷이 손상되었습니다. 저장본을 덮어쓰지 않습니다.');
+        }
+        const overview = core.worldOverview();
+        if (overview.worldSeed !== saved.worldSeed
+          || Number(overview.minute) !== saved.minute) {
+          throw Error('복원된 세계의 식별자나 시간이 저장된 기록과 다릅니다.');
+        }
+        timelineAnchorMs = saved.savedAtWallMs;
+        activeEarthOrigin = saved.earthOrigin;
+        resetAfterWorldCreated(false);
+      } else {
+        createWorld('');
+      }
       observerStore.setRuntime('ready');
-      createWorld('');
       startSimulationClock();
+      if (saved) await resumeOfflineWorld();
     } catch (error) {
       if (stopped) return;
       const message = error instanceof Error ? error.message : String(error);
@@ -771,8 +804,21 @@ export function startObserverEngine(): () => void {
     }
   }
   
+  document.addEventListener('visibilitychange', onWorldVisibility);
+  window.addEventListener('pagehide', onWorldPageHide);
+  const checkpointTimer = window.setInterval(() => {
+    if (!catchupRunning && !fastForwardRunning
+      && document.visibilityState === 'visible' && worldSession) {
+      timelineAnchorMs = Date.now();
+      void saveCheckpoint(timelineAnchorMs);
+    }
+  }, 15000);
+
   void boot();
   return () => {
+    window.clearInterval(checkpointTimer);
+    document.removeEventListener('visibilitychange', onWorldVisibility);
+    window.removeEventListener('pagehide', onWorldPageHide);
     stopped = true;
     shadowObserver.dispose();
     residentAI.dispose();
@@ -782,6 +828,7 @@ export function startObserverEngine(): () => void {
     cameraInput.dispose();
     threeWorldRenderer?.dispose();
     renderFailureBanner?.remove();
+    offlineBanner?.remove();
     // Yielded fast-forward work retains its Core until it finishes.
     if (!fastForwardRunning) ownedCore?.dispose();
     worldSession = null;
