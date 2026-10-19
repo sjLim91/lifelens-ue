@@ -115,7 +115,7 @@ inline void rememberCivilizationAttemptOutcome(
     const BeliefRecord* prior=actor.beliefs.find(0,proposition);
     const std::size_t priorCount=prior
         ? prior->supportCount+prior->contradictionCount : 0;
-    rememberActionOutcome(actor,key.c_str(),minute,succeeded);
+    rememberActionOutcome(actor,key.c_str(),minute,succeeded,true);
     const BeliefRecord* recorded=actor.beliefs.find(0,proposition);
     if(recorded==nullptr
        ||recorded->supportCount+recorded->contradictionCount==priorCount)
