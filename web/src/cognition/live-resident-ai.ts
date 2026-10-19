@@ -5,6 +5,7 @@ import { CognitionScheduler } from './cognition-scheduler';
 import type { CognitiveProvider } from './cognitive-provider';
 import { LocalCognitionProvider, isLoopbackCognitionUrl, discoverAutomaticLocalCognition } from './local-cognition-provider';
 import { ResidentAISessionAudit } from './resident-ai-session-audit';
+import { createBrowserResidentCognition, BUILTIN_RESIDENT_MODEL } from './browser-cognition-provider';
 import type { Resident, WorldOverview } from '../runtime/core-types';
 
 // One shared free-local model. Each resident gets a separate, bounded
@@ -171,6 +172,8 @@ export class ResidentAIController {
   private lastMinute = -1;
   private disposed = false;
   private automaticallyRunning = false;
+  private browserModelAttempted = false;
+  private browserModelLoading = false;
   private lastAutoDiscovery = -Infinity;
   private autoDiscoveryAbort: AbortController | null = null;
   private autoDiscoveryGeneration = 0;
@@ -210,6 +213,8 @@ export class ResidentAIController {
     this.autoDiscoveryAbort?.abort();
     this.autoDiscoveryAbort = null;
     this.autoDiscoveryGeneration += 1;
+    this.browserModelAttempted = false;
+    this.browserModelLoading = false;
     this.resetWorld();
     this.source = source;
     this.rebuildScheduler();
@@ -250,7 +255,35 @@ export class ResidentAIController {
       if (this.autoDiscoveryAbort === controller) {
         this.autoDiscoveryAbort = null;
         this.update({ discovering: false });
+        // No native model server? Load the free language engine IN the
+        // browser itself when hardware supports WebGPU. One resident agency
+        // owns the resulting single provider; no user click or toggle.
+        if (!this.scheduler) void this.prepareBrowserReasoning();
       }
+    }
+  }
+  private async prepareBrowserReasoning(): Promise<void> {
+    if (!this.automaticallyRunning || this.disposed || !this.source
+      || this.scheduler || this.browserModelAttempted) return;
+    this.browserModelAttempted = true;
+    this.browserModelLoading = true;
+    const source = this.source;
+    this.update({ discovering: true });
+    try {
+      const provider = await createBrowserResidentCognition();
+      if (provider && !this.disposed && this.automaticallyRunning
+        && this.source === source && !this.scheduler) {
+        this.setProvider(provider);
+        this.update({ configuration: {
+          baseUrl: 'browser-webgpu', model: BUILTIN_RESIDENT_MODEL,
+        } });
+      }
+    } catch {
+      // Hardware/weight failures cannot stop physical resident agency.
+    } finally {
+      this.browserModelLoading = false;
+      if (!this.autoDiscoveryAbort)
+        this.update({ discovering: false });
     }
   }
   configure(baseUrl: string, model: string): boolean {
@@ -316,6 +349,7 @@ export class ResidentAIController {
   dispose(): void {
     this.disposed = true;
     this.automaticallyRunning = false;
+    this.browserModelAttempted = false;
     this.autoDiscoveryAbort?.abort();
     this.autoDiscoveryAbort = null;
     this.autoDiscoveryGeneration += 1;
@@ -341,6 +375,7 @@ export class ResidentAIController {
     this.sessionAudit.observe(world, residents,
       this.state.enabled && this.scheduler ? 'local-ai' : 'baseline');
     if (this.automaticallyRunning && !this.scheduler && !this.autoDiscoveryAbort
+      && !this.browserModelLoading
       && this.now() - this.lastAutoDiscovery >= 60000)
       void this.discoverAutomatically();
     if (!this.state.enabled || this.state.suspended || !this.scheduler
