@@ -697,4 +697,40 @@ const provider = {
   }
 }
 
+{
+  // A successful in-browser model is NOT an HTTP localhost configuration.
+  // Reattaching Core after a world/server refresh previously threw when
+  // rebuildScheduler tried LocalCognitionProvider('browser-webgpu').
+  const previousFetch=globalThis.fetch;
+  globalThis.fetch=async () => { throw Error('no local model server'); };
+  try {
+    let loaded=0;
+    const f=fixture(undefined,async () => {
+      loaded++;
+      return provider;
+    });
+    f.controller.startAutomatically();
+    await tick();
+    await tick();
+    assert.equal(loaded,1);
+    assert.equal(f.controller.getSnapshot().configuration?.baseUrl,
+      'browser-webgpu');
+    assert.doesNotThrow(() => f.controller.attach(f.runtime),
+      'reattach must not mistake in-process GPU engine for localhost URL');
+    await tick();
+    await tick();
+    assert.equal(loaded,2,'reattach should automatically restore browser AI');
+    assert.equal(f.controller.getSnapshot().configuration?.baseUrl,
+      'browser-webgpu');
+    assert.equal(f.controller.getSnapshot().automatic,true);
+    f.controller.observe(f.world,f.residents);
+    await tick();
+    assert.equal(f.submitted.length,1,
+      'reconnected resident must regain local language reasoning');
+    f.controller.dispose();
+  } finally {
+    globalThis.fetch=previousFetch;
+  }
+}
+
 console.log('Live Resident AI: independent actor context, Core handoff, cancellation PASS');
