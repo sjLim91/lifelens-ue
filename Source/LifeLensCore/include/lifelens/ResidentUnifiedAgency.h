@@ -44,7 +44,8 @@ inline ResidentAgencyChoice chooseSingleResidentAgencyDecision(
        ||newestThought==nullptr) return answer;
     const AcceptedCognitiveDecision& thought=*newestThought;
     if(thought.actor!=actor.id || thought.minute<0
-       ||thought.minute>world.minute ||world.minute-thought.minute>96
+       ||thought.minute>world.minute
+       ||world.minute-thought.minute>ResidentAgencyGoalHorizonMinutes
        ||!std::isfinite(thought.priority)
        ||thought.priority<0.50) return answer;
 
