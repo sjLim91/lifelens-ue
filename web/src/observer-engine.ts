@@ -54,22 +54,65 @@ export function startObserverEngine(): () => void {
   let effectiveRenderMode = requestedRenderMode;
   let threeWorldRenderer: WorldRenderer | null = null;
   let characterLayer: CharacterLayer | null = null;
+  let legacyRenderer: LegacyCanvasWorldRenderer | null = null;
+  let renderFailureBanner: HTMLElement | null = null;
+  let startupRenderFailure: string | null = null;
+
+  // A mobile WebGL context can be lost after a successful boot while the
+  // WASM simulation continues. Preserve the active WorldSession and render
+  // the SAME authoritative Core observations on a pure 2D canvas instead.
+  function enterCanvasFailover(reason: string, error?: unknown): void {
+    if (stopped || effectiveRenderMode === 'legacy-canvas') return;
+    effectiveRenderMode = 'legacy-canvas';
+    console.warn('LifeLens 3D rendering unavailable; using 2D Core observer', reason, error);
+    const failedRenderer = threeWorldRenderer;
+    threeWorldRenderer = null;
+    try { failedRenderer?.dispose(); } catch (disposeError) {
+      console.warn('Failed to dispose unavailable WebGL renderer', disposeError);
+    }
+    try {
+      legacyRenderer = new LegacyCanvasWorldRenderer(
+        canvas, { ready: false, setResidents: () => {} }, residentContinuity,
+      );
+      canvas.style.opacity = '1';
+      threeWorldCanvas.style.opacity = '0';
+      threeWorldCanvas.style.visibility = 'hidden';
+      characterCanvas.style.opacity = '0';
+      if (!renderFailureBanner) {
+        renderFailureBanner = document.createElement('div');
+        renderFailureBanner.className = 'render-fallback-banner';
+        renderFailureBanner.setAttribute('role', 'status');
+        canvas.parentElement?.appendChild(renderFailureBanner);
+      }
+      renderFailureBanner.textContent =
+        '3D 그래픽 오류 · 2D 비상 관찰 모드로 전환했습니다. 주민과 시뮬레이션은 계속 진행됩니다.';
+      resizeCanvas();
+    } catch (fallbackError) {
+      console.error('LifeLens 2D failover unavailable', fallbackError);
+    }
+  }
 
   if (requestedRenderMode === 'three-world') {
     try {
-      threeWorldRenderer = new WorldRenderer(threeWorldCanvas);
+      threeWorldRenderer = new WorldRenderer(
+        threeWorldCanvas, enterCanvasFailover,
+      );
       threeWorldRenderer.start();
     } catch (error) {
       effectiveRenderMode = 'legacy-canvas';
-      console.warn(
-        'LifeLens Three World unavailable; falling back to Legacy renderer',
-        error,
-      );
+      startupRenderFailure = error instanceof Error ? error.message : String(error);
+      console.warn('LifeLens Three World unavailable; using 2D fallback', error);
     }
   }
 
   if (effectiveRenderMode === 'legacy-canvas') {
-    characterLayer = new CharacterLayer(characterCanvas, () => drawWorld());
+    try {
+      characterLayer = new CharacterLayer(characterCanvas, () => drawWorld());
+    } catch (error) {
+      // A broken GPU cannot be the prerequisite for a Canvas 2D rescue.
+      startupRenderFailure ??= error instanceof Error ? error.message : String(error);
+      console.warn('Legacy WebGL avatars unavailable; using 2D resident markers', error);
+    }
   }
 
   canvas.style.opacity = effectiveRenderMode === 'legacy-canvas' ? '1' : '0';
@@ -84,13 +127,20 @@ export function startObserverEngine(): () => void {
   const residentContinuity = new ResidentContinuity(
     OBSERVER_RUNTIME_CONTRACT.residentContinuityGraceMs,
   );
-  const legacyRenderer = characterLayer
-    ? new LegacyCanvasWorldRenderer(
-      canvas,
-      characterLayer,
+  if (effectiveRenderMode === 'legacy-canvas') {
+    legacyRenderer = new LegacyCanvasWorldRenderer(
+      canvas, characterLayer ?? { ready: false, setResidents: () => {} },
       residentContinuity,
-    )
-    : null;
+    );
+    if (startupRenderFailure) {
+      renderFailureBanner = document.createElement('div');
+      renderFailureBanner.className = 'render-fallback-banner';
+      renderFailureBanner.setAttribute('role', 'status');
+      renderFailureBanner.textContent =
+        '3D 그래픽 장치를 사용할 수 없어 2D 관찰 모드로 실행합니다.';
+      canvas.parentElement?.appendChild(renderFailureBanner);
+    }
+  }
   let followResidents = false;
   let simulationClock: SimulationClock | null = null;
   let fastForwardRunning = false;
@@ -191,7 +241,11 @@ export function startObserverEngine(): () => void {
     canvas.width = Math.max(1, Math.round(rect.width * dpr));
     canvas.height = Math.max(1, Math.round(rect.height * dpr));
     characterLayer?.resize(rect.width, rect.height, dpr);
-    threeWorldRenderer?.resize(rect.width, rect.height);
+    try {
+      threeWorldRenderer?.resize(rect.width, rect.height);
+    } catch (error) {
+      enterCanvasFailover('3D 화면 크기 조정에 실패했습니다.', error);
+    }
     drawWorld();
   }
   
@@ -244,6 +298,7 @@ export function startObserverEngine(): () => void {
     const selectedResidentId = observerStore.getSnapshot().selectedResidentId;
     shadowObserver.observe(snapshot.overview, residentSnapshot, selectedResidentId);
     residentAI.observe(snapshot.overview, residentSnapshot);
+    try {
     threeWorldRenderer?.setSelectedResident(selectedResidentId);
     if (snapshot.terrainStaticChanged) {
       threeWorldRenderer?.setTerrain(terrain);
@@ -280,6 +335,9 @@ export function startObserverEngine(): () => void {
       panX: localPanX,
       panZ: localPanZ,
     });
+    } catch (error) {
+      enterCanvasFailover('3D 세계 갱신에 실패했습니다.', error);
+    }
     drawWorld();
     return snapshot;
   }
@@ -558,6 +616,7 @@ export function startObserverEngine(): () => void {
     clearFastForwardResult: () => observerStore.clearFastForwardResult(),
     moveObserver: move,
     recenterObserver,
+    recoverRendering: () => enterCanvasFailover('화면이 보이지 않아 수동 복구를 요청했습니다.'),
     selectResident,
     selectHumanTrace,
     selectSettlement,
@@ -603,6 +662,7 @@ export function startObserverEngine(): () => void {
     resizeObserver.disconnect();
     cameraInput.dispose();
     threeWorldRenderer?.dispose();
+    renderFailureBanner?.remove();
     // Yielded fast-forward work retains its Core until it finishes.
     if (!fastForwardRunning) ownedCore?.dispose();
     worldSession = null;

@@ -1,4 +1,4 @@
-import { CharacterLayer, type ResidentPlacement } from '../character-layer';
+import type { ResidentPlacement } from '../character-layer';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import type {
   Resident,
@@ -24,12 +24,19 @@ export interface LegacyCanvasWorldDrawOptions {
   angle: number;
 }
 
+// The emergency observer must work when WebGL is entirely unavailable.
+// A Canvas 2D marker overlay is valid without allocating another GPU context.
+export interface LegacyResidentOverlay {
+  readonly ready: boolean;
+  setResidents(placements: ResidentPlacement[]): void;
+}
+
 export class LegacyCanvasWorldRenderer {
   private readonly ctx: CanvasRenderingContext2D;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
-    private readonly characterLayer: CharacterLayer,
+    private readonly characterLayer: LegacyResidentOverlay,
     private readonly residentContinuity: ResidentContinuity,
   ) {
     const context = canvas.getContext('2d');
