@@ -1,0 +1,241 @@
+{
+  "uid": "347e5d4fbee14e53811c5df2221be8d0",
+  "name": "Deer Animation",
+  "author": {
+    "uid": "df3af9d26c7d44ed82ad5e8c07466009",
+    "username": "DarryleH",
+    "displayName": "DarryleH",
+    "profileUrl": "https://sketchfab.com/DarryleH",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+      "images": [
+        {
+          "size": 680,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1253,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2797,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+          "height": 90
+        },
+        {
+          "size": 3215,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/df3af9d26c7d44ed82ad5e8c07466009"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/347e5d4fbee14e53811c5df2221be8d0",
+  "description": "Idle, Walk, and Run animation cycle",
+  "faceCount": 74206,
+  "vertexCount": 37562,
+  "animationCount": 3,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T07:42:17.080416+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-095/347e5d4fbee14e53811c5df2221be8d0.glb",
+  "sha256": "bf554a3c4a8b3684af8886427293e8def35ed2af7e21296eaf6903d77007bb5c",
+  "bytes": 3357672,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/347e5d4fbee14e53811c5df2221be8d0",
+    "uid": "347e5d4fbee14e53811c5df2221be8d0",
+    "name": "Deer Animation",
+    "staffpickedAt": null,
+    "viewCount": 711,
+    "likeCount": 11,
+    "animationCount": 3,
+    "viewerUrl": "https://sketchfab.com/3d-models/347e5d4fbee14e53811c5df2221be8d0",
+    "embedUrl": "https://sketchfab.com/models/347e5d4fbee14e53811c5df2221be8d0/embed",
+    "commentCount": 1,
+    "isDownloadable": true,
+    "publishedAt": "2021-04-29T03:02:58.266816",
+    "tags": [
+      {
+        "name": "deer",
+        "slug": "deer",
+        "uri": "https://api.sketchfab.com/v3/tags/deer"
+      },
+      {
+        "name": "run",
+        "slug": "run",
+        "uri": "https://api.sketchfab.com/v3/tags/run"
+      },
+      {
+        "name": "animation",
+        "slug": "animation",
+        "uri": "https://api.sketchfab.com/v3/tags/animation"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      },
+      {
+        "name": "nature-plants"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "ae8bb770c8444fb78f2d85b448026eb9",
+          "size": 40745,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/347e5d4fbee14e53811c5df2221be8d0/thumbnails/ea59a39e060c4bdb92c8c536a05b28b0/016a7b69472e44e6a3ac4c7293df23ff.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "4e48063391b44421b17152071bca524b",
+          "size": 15192,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/347e5d4fbee14e53811c5df2221be8d0/thumbnails/ea59a39e060c4bdb92c8c536a05b28b0/b26b767cefa44f469e87d2524da578eb.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "c30732a870de4e0daf3c9f51310e7d1e",
+          "size": 9316,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/347e5d4fbee14e53811c5df2221be8d0/thumbnails/ea59a39e060c4bdb92c8c536a05b28b0/2275efa440494ba5bc7ac8035639e12e.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "dde7739e6779476b9bdc38dac3d55194",
+          "size": 2353,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/347e5d4fbee14e53811c5df2221be8d0/thumbnails/ea59a39e060c4bdb92c8c536a05b28b0/2df01a03c2dd4eba993c8d5a5f1d7494.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "c8b2818beebc4a88a4d83123a3b568e8",
+          "size": 585,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/347e5d4fbee14e53811c5df2221be8d0/thumbnails/ea59a39e060c4bdb92c8c536a05b28b0/7462b45a9a3d4317911a153cb05d8794.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "df3af9d26c7d44ed82ad5e8c07466009",
+      "username": "DarryleH",
+      "displayName": "DarryleH",
+      "profileUrl": "https://sketchfab.com/DarryleH",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+        "images": [
+          {
+            "size": 680,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1253,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2797,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+            "height": 90
+          },
+          {
+            "size": 3215,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/df3af9d26c7d44ed82ad5e8c07466009"
+    },
+    "description": "Idle, Walk, and Run animation cycle",
+    "faceCount": 74206,
+    "createdAt": "2021-04-29T02:59:37.854240",
+    "vertexCount": 37562,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 0,
+        "size": 3357672,
+        "type": "glb",
+        "textureMaxResolution": 0,
+        "faceCount": 74206,
+        "vertexCount": 39880
+      },
+      "gltf": {
+        "textureCount": 0,
+        "size": 1509336,
+        "type": "gltf",
+        "textureMaxResolution": 0,
+        "faceCount": 74206,
+        "vertexCount": 39880
+      },
+      "source": {
+        "textureCount": null,
+        "size": 6383970,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 1418107,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "DarryleH (https://sketchfab.com/DarryleH)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/deer-animation-347e5d4fbee14e53811c5df2221be8d0",
+      "title": "Deer Animation"
+    },
+    "generator": "Sketchfab-12.65.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 50
+    }
+  ],
+  "animations": [
+    {
+      "name": "IdleDeer",
+      "channels": 166
+    },
+    {
+      "name": "Walkdeer",
+      "channels": 184
+    },
+    {
+      "name": "Rundeer",
+      "channels": 177
+    }
+  ]
+}

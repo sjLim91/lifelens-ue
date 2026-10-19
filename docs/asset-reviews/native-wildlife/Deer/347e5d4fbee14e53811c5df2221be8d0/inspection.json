@@ -1,0 +1,2368 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "Deer",
+  "sourceSha256": "bf554a3c4a8b3684af8886427293e8def35ed2af7e21296eaf6903d77007bb5c",
+  "bounds": [
+    [
+      -1.6290521621704102,
+      -1.9986536502838135,
+      -0.010560314171016216
+    ],
+    [
+      1.6284489631652832,
+      1.0769381523132324,
+      3.672646999359131
+    ]
+  ],
+  "triangles": 74194,
+  "meshes": [
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:polySurface17_Tyriese_Miller_C_Deer_",
+      "vertices": 141,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:polySurface19_Tyriese_Miller_C_Deer_",
+      "vertices": 281,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:polySurface18_Tyriese_Miller_C_Deer_",
+      "vertices": 6441,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:polySurface17_Tyriese_Miller_C_D",
+      "vertices": 141,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:polySurface19_Tyriese_Miller_C_D",
+      "vertices": 281,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:polySurface18_Tyriese_Miller_C_D",
+      "vertices": 6441,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube17_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube16_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube15_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube14_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube20_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube19_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube18_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube37_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube36_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube35_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube34_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube33_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube21_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube22_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube38_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube13_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube39_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube40_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube41_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube42_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:polySurface20_Tyriese_Miller_C_Deer_",
+      "vertices": 492,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube2_Tyriese_Miller_C_Deer_Idle:ko",
+      "vertices": 114,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube3_Tyriese_Miller_C_Deer_Idle:ko",
+      "vertices": 114,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube4_Tyriese_Miller_C_Deer_Idle:ko",
+      "vertices": 128,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube5_Tyriese_Miller_C_Deer_Idle:ko",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube6_Tyriese_Miller_C_Deer_Idle:ko",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube7_Tyriese_Miller_C_Deer_Idle:ko",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube8_Tyriese_Miller_C_Deer_Idle:ko",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube9_Tyriese_Miller_C_Deer_Idle:ko",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube10_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube11_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube12_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube23_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube24_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube25_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube26_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube27_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube28_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube29_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube30_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 114,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube31_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 114,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:pCube32_Tyriese_Miller_C_Deer_Idle:k",
+      "vertices": 114,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idle:polySurface21_Tyriese_Miller_C_Deer_",
+      "vertices": 396,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Object_119",
+      "vertices": 10732,
+      "uvLayers": 3,
+      "vertexGroups": 50
+    },
+    {
+      "name": "Object_120",
+      "vertices": 8772,
+      "uvLayers": 3,
+      "vertexGroups": 50
+    },
+    {
+      "name": "Object_122",
+      "vertices": 479,
+      "uvLayers": 1,
+      "vertexGroups": 50
+    }
+  ],
+  "rigs": [
+    {
+      "name": "Object_116",
+      "bones": [
+        "_rootJoint",
+        "Tyriese_Miller_C_Deer_Idle:pelvis_01",
+        "Tyriese_Miller_C_Deer_Idle:tail_top_02",
+        "Tyriese_Miller_C_Deer_Idle:tail_A_03",
+        "Tyriese_Miller_C_Deer_Idle:tail_B_04",
+        "Tyriese_Miller_C_Deer_Idle:tail_Tip_05",
+        "Tyriese_Miller_C_Deer_Idle:co_back_l_06",
+        "Tyriese_Miller_C_Deer_Idle:leg_back__07",
+        "Tyriese_Miller_C_Deer_Idle:knee_back_l_08",
+        "Tyriese_Miller_C_Deer_Idle:ankle_back_l_09",
+        "Tyriese_Miller_C_Deer_Idle:toe_back_l_010",
+        "Tyriese_Miller_C_Deer_Idle:toeTip_back_l_011",
+        "Tyriese_Miller_C_Deer_Idle:co_back_r_013",
+        "Tyriese_Miller_C_Deer_Idle:leg_back__014",
+        "Tyriese_Miller_C_Deer_Idle:knee_back_r_015",
+        "Tyriese_Miller_C_Deer_Idle:ankle_back_r_016",
+        "Tyriese_Miller_C_Deer_Idle:toe_back_r_017",
+        "Tyriese_Miller_C_Deer_Idle:toeTip_back_r_018",
+        "Tyriese_Miller_C_Deer_Idle:root1_019",
+        "Tyriese_Miller_C_Deer_Idle:back_020",
+        "Tyriese_Miller_C_Deer_Idle:chest_021",
+        "Tyriese_Miller_C_Deer_Idle:neck_022",
+        "Tyriese_Miller_C_Deer_Idle:neckTip_023",
+        "Tyriese_Miller_C_Deer_Idle:head_024",
+        "Tyriese_Miller_C_Deer_Idle:headTip_025",
+        "Tyriese_Miller_C_Deer_Idle:ear_l_026",
+        "Tyriese_Miller_C_Deer_Idle:earMid_l_027",
+        "Tyriese_Miller_C_Deer_Idle:earTip_l_028",
+        "Tyriese_Miller_C_Deer_Idle:ear_r_029",
+        "Tyriese_Miller_C_Deer_Idle:earMid_r_030",
+        "Tyriese_Miller_C_Deer_Idle:earTip_r_031",
+        "Tyriese_Miller_C_Deer_Idle:jaw_00",
+        "Tyriese_Miller_C_Deer_Idle:jawTip_012",
+        "Tyriese_Miller_C_Deer_Idle:tough_032",
+        "Tyriese_Miller_C_Deer_Idle:tough_A_033",
+        "Tyriese_Miller_C_Deer_Idle:tough_B_034",
+        "Tyriese_Miller_C_Deer_Idle:tough_C_035",
+        "Tyriese_Miller_C_Deer_Idle:tough_tip_036",
+        "Tyriese_Miller_C_Deer_Idle:co_front_l_037",
+        "Tyriese_Miller_C_Deer_Idle:leg_front_l_038",
+        "Tyriese_Miller_C_Deer_Idle:knee_front_l_039",
+        "Tyriese_Miller_C_Deer_Idle:ankle_front_l_040",
+        "Tyriese_Miller_C_Deer_Idle:toe_front_l_041",
+        "Tyriese_Miller_C_Deer_Idle:toeTip_front_l_042",
+        "Tyriese_Miller_C_Deer_Idle:co_front_r_043",
+        "Tyriese_Miller_C_Deer_Idle:leg_front_r_044",
+        "Tyriese_Miller_C_Deer_Idle:knee_front_r_045",
+        "Tyriese_Miller_C_Deer_Idle:ankle_front_r_046",
+        "Tyriese_Miller_C_Deer_Idle:toe_front_r_047",
+        "Tyriese_Miller_C_Deer_Idle:toeTip_front_r_048"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "IdleDeer_Object_116",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:backRot",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:chestRot",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:chi_down",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:chi_up",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:co_bk_PV_l",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:co_bk_PV_r",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:curve16",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:curve8",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:curve9",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:eye",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:eye_L",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:eye_R",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:eyeRot_l.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:eyeRot_r.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:footCon_bk_r",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:footCon_ft_l",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:footCon_ft_r",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:neck_rot.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:neckTip_rot.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle1",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2.002",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2.003",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube10",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube11",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube12",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube13",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube14",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube15",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube16",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube17",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube18",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube19",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube2",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube20",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube21",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube22",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube23",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube24",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube25",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube26",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube27",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube28",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube29",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube3",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube30",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube31",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube32",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube33",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube34",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube35",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube36",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube37",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube38",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube39",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube4",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube40",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube41",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube42",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube5",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube6",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube7",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube8",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pCube9",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:pelvis_rot",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:polySurface17",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:polySurface17.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:polySurface18",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:polySurface18.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:polySurface19",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:polySurface19.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:polySurface20",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:polySurface21",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:tail.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:tailMid.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:tailTip.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:tip.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:tip.002",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:toe.001",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:toe.002",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:tough",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:tough_a",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:tough_b",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "IdleDeer_Tyriese_Miller_C_Deer_Idle:tough_tip",
+      "frames": [
+        0.0,
+        64.0
+      ]
+    },
+    {
+      "name": "Rundeer_Object_116",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:backRot",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:chestRot",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:chi_down",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:chi_up",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:co_bk_PV_l",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:co_bk_PV_r",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:curve16",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:curve8",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:curve9",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:eye",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:eye_L",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:eye_R",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:eyeRot_l.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:eyeRot_r.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:footCon_bk_l",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:footCon_bk_r",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:footCon_ft_l",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:footCon_ft_r",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:leg_bk_PV_l",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:leg_bk_PV_r",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:leg_ft_PV_l",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:leg_ft_PV_r",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:neck_rot.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:neckTip_rot.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle1",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2.002",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2.003",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube10",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube11",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube12",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube13",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube14",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube15",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube16",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube17",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube18",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube19",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube2",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube20",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube21",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube22",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube23",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube24",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube25",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube26",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube27",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube28",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube29",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube3",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube30",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube31",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube32",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube33",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube34",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube35",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube36",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube37",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube38",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube39",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube4",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube40",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube41",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube42",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube5",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube6",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube7",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube8",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pCube9",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:pelvis_rot",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:polySurface17",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:polySurface17.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:polySurface18",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:polySurface18.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:polySurface19",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:polySurface19.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:polySurface20",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:polySurface21",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:root",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tail.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tailMid.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tailTip.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tip",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tip.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tip.002",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tip.003",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:toe",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:toe.001",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:toe.002",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:toe.003",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tough",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tough_a",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tough_b",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Rundeer_Tyriese_Miller_C_Deer_Idle:tough_tip",
+      "frames": [
+        112.0,
+        126.40000915527344
+      ]
+    },
+    {
+      "name": "Walkdeer_Object_116",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:backRot",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:chestRot",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:chi_down",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:chi_up",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:co_bk_PV_l",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:co_bk_PV_r",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:curve16",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:curve8",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:curve9",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:eye",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:eye_L",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:eye_R",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:eyeRot_l.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:eyeRot_r.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:footCon_bk_l",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:footCon_bk_r",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:footCon_ft_l",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:footCon_ft_r",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:leg_bk_PV_l",
+      "frames": [
+        80.0,
+        80.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:leg_bk_PV_r",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:leg_ft_PV_l",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:leg_ft_PV_r",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:neck_rot.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:neckTip_rot.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle1",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2.002",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:nurbsCircle2.003",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube10",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube11",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube12",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube13",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube14",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube15",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube16",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube17",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube18",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube19",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube2",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube20",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube21",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube22",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube23",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube24",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube25",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube26",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube27",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube28",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube29",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube3",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube30",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube31",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube32",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube33",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube34",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube35",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube36",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube37",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube38",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube39",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube4",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube40",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube41",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube42",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube5",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube6",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube7",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube8",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pCube9",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:pelvis_rot",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:polySurface17",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:polySurface17.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:polySurface18",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:polySurface18.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:polySurface19",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:polySurface19.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:polySurface20",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:polySurface21",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:root",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tail.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tailMid.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tailTip.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tip",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tip.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tip.002",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tip.003",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:toe",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:toe.001",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:toe.002",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:toe.003",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tough",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tough_a",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tough_b",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    },
+    {
+      "name": "Walkdeer_Tyriese_Miller_C_Deer_Idle:tough_tip",
+      "frames": [
+        80.0,
+        104.0
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleeyewai_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleeye_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idleyandi_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlekouqiang_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlebody_tex",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_IdleinitialShadingGroup1",
+      "textures": []
+    },
+    {
+      "name": "Tyriese_Miller_C_Deer_Idlejiao_tex",
+      "textures": []
+    }
+  ]
+}

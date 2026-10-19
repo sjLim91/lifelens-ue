@@ -1,0 +1,30 @@
+[
+  {
+    "species": "Hare",
+    "originalTriangles": 8896,
+    "midTriangles": 3498,
+    "error": 0.007989112287759781,
+    "sha256": "8379b256e4150f2d252a38e33fe45727eb7673f2bdcaff383bf54371c6613652"
+  },
+  {
+    "species": "Deer",
+    "originalTriangles": 74206,
+    "midTriangles": 8437,
+    "error": 0.039990250021219254,
+    "sha256": "fc1d960d87717bafe84c2a473141245662f537c8883305c01d18822c643104d8"
+  },
+  {
+    "species": "Wolf",
+    "originalTriangles": 10156,
+    "midTriangles": 3482,
+    "error": 0.011979866772890091,
+    "sha256": "faef9ba385ad5dbcda6c0b2a0a41d7dbf3e33e9fd0fcc11458314c617cd1cd4d"
+  },
+  {
+    "species": "FreshwaterFish",
+    "originalTriangles": 3224,
+    "midTriangles": 1499,
+    "error": 0.0014221344608813524,
+    "sha256": "aa452d4c7e33832a0bcc246cb9d8db08d2d4f27153f14587d2e3292497cf9367"
+  }
+]

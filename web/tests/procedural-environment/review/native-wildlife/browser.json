@@ -1,0 +1,427 @@
+{
+  "status": "PASS_PRODUCTION_WILDLIFE_LAYER",
+  "scope": "SUBSYSTEM_NOT_FULL_REACT_OBSERVER",
+  "physicalAndroid": "NOT_MEASURED",
+  "records": [
+    {
+      "species": "Hare",
+      "id": "25:32:1704075738371588097",
+      "behavior": "Rest",
+      "sex": "Female",
+      "gridX": 824,
+      "gridY": 1028,
+      "baseline": true,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [],
+      "view": "back",
+      "frames": 21,
+      "visibleAnimals": 18,
+      "renderer": {
+        "frame": 21,
+        "calls": 16,
+        "triangles": 551904,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Hare",
+      "id": "25:32:1704075738371588097",
+      "behavior": "Rest",
+      "sex": "Female",
+      "gridX": 824,
+      "gridY": 1028,
+      "baseline": false,
+      "coreUnchanged": true,
+      "importedActor": true,
+      "clip": "rest",
+      "tier": "near",
+      "farIds": [
+        "25:32:1704075738371588100",
+        "27:32:16424469176338350081",
+        "27:32:16424469176338350082",
+        "27:32:16424469176338350084",
+        "27:32:16424469176338350085",
+        "27:32:16424469176338350083"
+      ],
+      "view": "back",
+      "frames": 26,
+      "visibleAnimals": 25,
+      "renderer": {
+        "frame": 26,
+        "calls": 39,
+        "triangles": 154980,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Hare",
+      "id": "25:32:1704075738371588097",
+      "behavior": "Rest",
+      "sex": "Female",
+      "gridX": 824,
+      "gridY": 1028,
+      "baseline": false,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [
+        "25:32:1704075738371588097",
+        "25:32:1704075738371588099",
+        "25:32:1704075738371588098",
+        "27:32:16424469176338350081",
+        "25:32:1704075738371588100",
+        "27:32:16424469176338350084",
+        "27:32:16424469176338350083",
+        "27:32:16424469176338350082",
+        "27:32:16424469176338350085"
+      ],
+      "view": "far",
+      "frames": 27,
+      "visibleAnimals": 18,
+      "renderer": {
+        "frame": 27,
+        "calls": 26,
+        "triangles": 34145,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Deer",
+      "id": "27:32:16424469176338350087",
+      "behavior": "Rest",
+      "sex": "Male",
+      "gridX": 892,
+      "gridY": 1029,
+      "baseline": true,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [],
+      "view": "back",
+      "frames": 22,
+      "visibleAnimals": 18,
+      "renderer": {
+        "frame": 22,
+        "calls": 20,
+        "triangles": 488880,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Deer",
+      "id": "27:32:16424469176338350087",
+      "behavior": "Rest",
+      "sex": "Male",
+      "gridX": 892,
+      "gridY": 1029,
+      "baseline": false,
+      "coreUnchanged": true,
+      "importedActor": true,
+      "clip": "rest",
+      "tier": "near",
+      "farIds": [
+        "25:32:1704075738371588101"
+      ],
+      "view": "back",
+      "frames": 26,
+      "visibleAnimals": 25,
+      "renderer": {
+        "frame": 26,
+        "calls": 152,
+        "triangles": 226243,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Deer",
+      "id": "27:32:16424469176338350087",
+      "behavior": "Rest",
+      "sex": "Male",
+      "gridX": 892,
+      "gridY": 1029,
+      "baseline": false,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [
+        "27:32:16424469176338350087",
+        "27:32:16424469176338350086",
+        "25:32:1704075738371588101"
+      ],
+      "view": "far",
+      "frames": 27,
+      "visibleAnimals": 25,
+      "renderer": {
+        "frame": 27,
+        "calls": 32,
+        "triangles": 39855,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Wolf",
+      "id": "25:32:1704075738371588103",
+      "behavior": "Hunt",
+      "sex": "Female",
+      "gridX": 826,
+      "gridY": 1051,
+      "baseline": true,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [],
+      "view": "back",
+      "frames": 21,
+      "visibleAnimals": 18,
+      "renderer": {
+        "frame": 21,
+        "calls": 15,
+        "triangles": 581636,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Wolf",
+      "id": "25:32:1704075738371588103",
+      "behavior": "Hunt",
+      "sex": "Female",
+      "gridX": 826,
+      "gridY": 1051,
+      "baseline": false,
+      "coreUnchanged": true,
+      "importedActor": true,
+      "clip": "idle",
+      "tier": "near",
+      "farIds": [
+        "27:32:16424469176338350089",
+        "27:32:16424469176338350088"
+      ],
+      "view": "back",
+      "frames": 22,
+      "visibleAnimals": 25,
+      "renderer": {
+        "frame": 22,
+        "calls": 38,
+        "triangles": 155744,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "Wolf",
+      "id": "25:32:1704075738371588103",
+      "behavior": "Hunt",
+      "sex": "Female",
+      "gridX": 826,
+      "gridY": 1051,
+      "baseline": false,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [
+        "25:32:1704075738371588103",
+        "25:32:1704075738371588104",
+        "27:32:16424469176338350088",
+        "27:32:16424469176338350089"
+      ],
+      "view": "far",
+      "frames": 23,
+      "visibleAnimals": 18,
+      "renderer": {
+        "frame": 23,
+        "calls": 26,
+        "triangles": 34145,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "FreshwaterFish",
+      "id": "25:32:1704075738371588105",
+      "behavior": "Swim",
+      "sex": "Female",
+      "gridX": 816,
+      "gridY": 1040,
+      "baseline": true,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [],
+      "view": "back",
+      "frames": 20,
+      "visibleAnimals": 18,
+      "renderer": {
+        "frame": 20,
+        "calls": 15,
+        "triangles": 550596,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "FreshwaterFish",
+      "id": "25:32:1704075738371588105",
+      "behavior": "Swim",
+      "sex": "Female",
+      "gridX": 816,
+      "gridY": 1040,
+      "baseline": false,
+      "coreUnchanged": true,
+      "importedActor": true,
+      "clip": "swim",
+      "tier": "near",
+      "farIds": [],
+      "view": "back",
+      "frames": 22,
+      "visibleAnimals": 25,
+      "renderer": {
+        "frame": 22,
+        "calls": 34,
+        "triangles": 137719,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    },
+    {
+      "species": "FreshwaterFish",
+      "id": "25:32:1704075738371588105",
+      "behavior": "Swim",
+      "sex": "Female",
+      "gridX": 816,
+      "gridY": 1040,
+      "baseline": false,
+      "coreUnchanged": true,
+      "importedActor": false,
+      "farIds": [
+        "25:32:1704075738371588105",
+        "25:32:1704075738371588106",
+        "25:32:1704075738371588107",
+        "25:32:1704075738371588108",
+        "25:32:1704075738371588109",
+        "25:32:1704075738371588110",
+        "25:32:1704075738371588111"
+      ],
+      "view": "far",
+      "frames": 25,
+      "visibleAnimals": 25,
+      "renderer": {
+        "frame": 25,
+        "calls": 29,
+        "triangles": 37523,
+        "points": 0,
+        "lines": 0
+      },
+      "canvas": {
+        "width": 960,
+        "height": 720,
+        "contextLost": false
+      },
+      "source": "UNMODIFIED_NATIVE_CORE_FIXTURE",
+      "scope": "PRODUCTION_WILDLIFE_LAYER_SUBSYSTEM",
+      "fullObserver": "NOT_RUN",
+      "physicalAndroid": "NOT_MEASURED"
+    }
+  ],
+  "errors": []
+}

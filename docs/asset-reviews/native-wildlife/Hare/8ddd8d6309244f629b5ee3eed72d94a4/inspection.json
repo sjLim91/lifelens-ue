@@ -1,0 +1,90 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "Hare",
+  "sourceSha256": "fa214a3aff27909fd60f4bea05c51494eba2faae137460bd2f589d464138bb1b",
+  "bounds": [
+    [
+      -0.9174319505691528,
+      -1.1931111812591553,
+      0.030101990327239037
+    ],
+    [
+      1.4859917163848877,
+      0.7853888869285583,
+      4.452986240386963
+    ]
+  ],
+  "triangles": 8648,
+  "meshes": [
+    {
+      "name": "Object_11",
+      "vertices": 6577,
+      "uvLayers": 1,
+      "vertexGroups": 39
+    }
+  ],
+  "rigs": [
+    {
+      "name": "Object_8",
+      "bones": [
+        "_rootJoint",
+        "Root_01",
+        "Root.001_02",
+        "Root.001_R_03",
+        "Root.001_R.001_04",
+        "Root.001_R.002_05",
+        "Root.001_R.003_06",
+        "Root.001_R.003_end_029",
+        "Root.002_07",
+        "Root.003_08",
+        "Root.004_09",
+        "Root.005_010",
+        "Root.005_end_030",
+        "Root.006_011",
+        "Root.007_012",
+        "Root.014_013",
+        "Root.015_014",
+        "Root.016_015",
+        "Root.017_016",
+        "Root.017_end_031",
+        "Root.018_017",
+        "Root.019_00",
+        "Root.020_018",
+        "Root.021_019",
+        "Root.021_end_032",
+        "Root.008_020",
+        "Root.009_021",
+        "Root.010_022",
+        "Root.010_end_033",
+        "Root.011_023",
+        "Root.012_024",
+        "Root.013_025",
+        "Root.013_end_034",
+        "Hilfsknochen_Arm_L_026",
+        "Hilfsknochen_Arm_L_end_035",
+        "Hilfsknochen_Arm_R_027",
+        "Hilfsknochen_Arm_R_end_036",
+        "Root.022_028",
+        "Root.022_end_037"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "Scene_Object_8",
+      "frames": [
+        1.0,
+        10.0
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Material.001",
+      "textures": [
+        "Image_0"
+      ]
+    }
+  ]
+}

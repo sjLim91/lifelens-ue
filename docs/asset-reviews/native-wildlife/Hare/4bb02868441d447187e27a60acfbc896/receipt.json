@@ -1,0 +1,207 @@
+{
+  "uid": "4bb02868441d447187e27a60acfbc896",
+  "name": "Hare",
+  "author": {
+    "uid": "6811c34bdb7b40d9a7ee93d84201fdbf",
+    "username": "Polifeya",
+    "displayName": "Polifeya",
+    "profileUrl": "https://sketchfab.com/Polifeya",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/920db0b0ea4447ecbfc2848d7bf96a32",
+      "images": [
+        {
+          "size": 827,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/920db0b0ea4447ecbfc2848d7bf96a32/cfb9b6495cc9478ba1361b1eda1d7a6a.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1182,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/920db0b0ea4447ecbfc2848d7bf96a32/93ed736fe65446ba83d319944707eb1f.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2386,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/920db0b0ea4447ecbfc2848d7bf96a32/4517ec7d302843fb9a7a83a7a6238846.jpeg",
+          "height": 90
+        },
+        {
+          "size": 2669,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/920db0b0ea4447ecbfc2848d7bf96a32/9c215a2db4f64b1b87378648a45a97bf.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/6811c34bdb7b40d9a7ee93d84201fdbf"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/4bb02868441d447187e27a60acfbc896",
+  "description": "",
+  "faceCount": 29922,
+  "vertexCount": 14967,
+  "animationCount": 0,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T07:45:13.967182+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-055/4bb02868441d447187e27a60acfbc896.glb",
+  "sha256": "711c9bfa20d42d589c0d559b618a7d3113ac77b369a981fceaae6f046bcc5667",
+  "bytes": 723184,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/4bb02868441d447187e27a60acfbc896",
+    "uid": "4bb02868441d447187e27a60acfbc896",
+    "name": "Hare",
+    "staffpickedAt": null,
+    "viewCount": 65,
+    "likeCount": 1,
+    "animationCount": 0,
+    "viewerUrl": "https://sketchfab.com/3d-models/4bb02868441d447187e27a60acfbc896",
+    "embedUrl": "https://sketchfab.com/models/4bb02868441d447187e27a60acfbc896/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2021-08-25T14:21:58.391593",
+    "tags": [],
+    "categories": [
+      {
+        "name": "animals-pets"
+      },
+      {
+        "name": "characters-creatures"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "d43840759715489ca0c4a74f6cfa17d4",
+          "size": 44048,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/4bb02868441d447187e27a60acfbc896/thumbnails/8a4658333e47450eb725cb217be13c30/fafd3ef32f4a4088876fb0e4386c9d09.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "a107b47808234d16a02232e79543819e",
+          "size": 14335,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/4bb02868441d447187e27a60acfbc896/thumbnails/8a4658333e47450eb725cb217be13c30/3030b50c67a94ea99624781341565570.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "604975c57f3243888b0759f3dd64805e",
+          "size": 8315,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/4bb02868441d447187e27a60acfbc896/thumbnails/8a4658333e47450eb725cb217be13c30/a9f28df25b1b42f483dfdc11cc312c7b.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "d638d53e03814a719e67fb8b1d7b2e58",
+          "size": 2004,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/4bb02868441d447187e27a60acfbc896/thumbnails/8a4658333e47450eb725cb217be13c30/2e62f6f2183e471082182f3dbf6dfd28.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "94a9a7611c234264b563fa11a07b8071",
+          "size": 804,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/4bb02868441d447187e27a60acfbc896/thumbnails/8a4658333e47450eb725cb217be13c30/fde5c1096c08402d911778dddd2efec8.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "6811c34bdb7b40d9a7ee93d84201fdbf",
+      "username": "Polifeya",
+      "displayName": "Polifeya",
+      "profileUrl": "https://sketchfab.com/Polifeya",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/920db0b0ea4447ecbfc2848d7bf96a32",
+        "images": [
+          {
+            "size": 827,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/920db0b0ea4447ecbfc2848d7bf96a32/cfb9b6495cc9478ba1361b1eda1d7a6a.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1182,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/920db0b0ea4447ecbfc2848d7bf96a32/93ed736fe65446ba83d319944707eb1f.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2386,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/920db0b0ea4447ecbfc2848d7bf96a32/4517ec7d302843fb9a7a83a7a6238846.jpeg",
+            "height": 90
+          },
+          {
+            "size": 2669,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/920db0b0ea4447ecbfc2848d7bf96a32/9c215a2db4f64b1b87378648a45a97bf.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/6811c34bdb7b40d9a7ee93d84201fdbf"
+    },
+    "description": "",
+    "faceCount": 29922,
+    "createdAt": "2021-08-25T14:20:54.160616",
+    "vertexCount": 14967,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 0,
+        "size": 723184,
+        "type": "glb",
+        "textureMaxResolution": 0,
+        "faceCount": 29922,
+        "vertexCount": 15076
+      },
+      "gltf": {
+        "textureCount": 0,
+        "size": 426122,
+        "type": "gltf",
+        "textureMaxResolution": 0,
+        "faceCount": 29922,
+        "vertexCount": 15076
+      },
+      "source": {
+        "textureCount": null,
+        "size": 888840,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 427397,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "Polifeya (https://sketchfab.com/Polifeya)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/hare-4bb02868441d447187e27a60acfbc896",
+      "title": "Hare"
+    },
+    "generator": "Sketchfab-12.67.0",
+    "version": "2.0"
+  },
+  "skins": [],
+  "animations": []
+}

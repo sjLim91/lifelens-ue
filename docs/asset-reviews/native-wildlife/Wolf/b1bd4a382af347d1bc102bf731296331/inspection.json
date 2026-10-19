@@ -1,0 +1,67 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "Wolf",
+  "sourceSha256": "f92749f1cbe0f3b172eaa6bf342caf974aba7c41083b7f24c1b831c4ae948c1a",
+  "bounds": [
+    [
+      -18.239538192749023,
+      -5.798521041870117,
+      1.810442328453064
+    ],
+    [
+      35.83856964111328,
+      5.565316200256348,
+      40.16477966308594
+    ]
+  ],
+  "triangles": 4442,
+  "meshes": [
+    {
+      "name": "Object_7",
+      "vertices": 2989,
+      "uvLayers": 1,
+      "vertexGroups": 6
+    }
+  ],
+  "rigs": [
+    {
+      "name": "Object_4",
+      "bones": [
+        "_rootJoint",
+        "Bone001_00",
+        "Bone002_01",
+        "Bone003_02",
+        "Bone004_03",
+        "Bone005_04"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "volkhigh01_IK Chain001",
+      "frames": [
+        0.0,
+        80.0
+      ]
+    },
+    {
+      "name": "volkhigh01_Object_4",
+      "frames": [
+        0.0,
+        80.0
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Material_27",
+      "textures": [
+        "Image_0",
+        "Image_1",
+        "Image_2",
+        "Image_1"
+      ]
+    }
+  ]
+}

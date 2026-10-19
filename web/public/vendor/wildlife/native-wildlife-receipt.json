@@ -1,0 +1,115 @@
+{
+  "status": "SOURCE_DERIVED_RUNTIME_CANDIDATES",
+  "sourcePins": {
+    "Hare": {
+      "uid": "073eef14ae3c4d06808498c3ba895e67",
+      "sha256": "2bb6f05bd3e58ccf437ddb05c77a97ddd8ff67b9841b6b69bce90ba275165538",
+      "license": "CC-BY-4.0",
+      "original": "https://sketchfab.com/3d-models/073eef14ae3c4d06808498c3ba895e67",
+      "author": "Dakota.Hinkle"
+    },
+    "Deer": {
+      "uid": "347e5d4fbee14e53811c5df2221be8d0",
+      "sha256": "bf554a3c4a8b3684af8886427293e8def35ed2af7e21296eaf6903d77007bb5c",
+      "license": "CC-BY-4.0",
+      "original": "https://sketchfab.com/3d-models/347e5d4fbee14e53811c5df2221be8d0",
+      "author": "DarryleH",
+      "upstream": {
+        "uid": "06598a376fb64c909a69dbfb9fe28d84",
+        "sha256": "139ca8c5c8b1e55bfaddf460fb6c0352ceab5321fb39ec26eac5175bc9b4a92b",
+        "license": "CC-BY-4.0",
+        "original": "https://sketchfab.com/3d-models/06598a376fb64c909a69dbfb9fe28d84",
+        "author": "Tyriese Miller"
+      }
+    },
+    "Wolf": {
+      "uid": "9e7aceacef0f4486b605abdf1f62e4ac",
+      "sha256": "8cf8c377a02ac417cda66737c82216c41a2ca329732c1ef7ef88024d7a9afe84",
+      "license": "CC-BY-4.0",
+      "original": "https://sketchfab.com/3d-models/9e7aceacef0f4486b605abdf1f62e4ac",
+      "author": "Hiago Tadeu"
+    },
+    "FreshwaterFish": {
+      "uid": "4fa0cb7afc004d65bd49f406bffd5b2b",
+      "sha256": "25a1a41d574f80f46d716d74bc2572dc573d00da82811fbfb7767bc54da23871",
+      "license": "CC-BY-4.0",
+      "original": "https://sketchfab.com/3d-models/4fa0cb7afc004d65bd49f406bffd5b2b",
+      "author": "Sba Stuff"
+    }
+  },
+  "files": [
+    {
+      "species": "Deer",
+      "file": "deer-rigged.glb",
+      "bytes": 5658684,
+      "sha256": "fdf8e48b709094c726ba90fefa1dcaadd47486dff4f12e4fc4525d837d93bda6"
+    },
+    {
+      "species": "Deer",
+      "file": "deer-mid.glb",
+      "bytes": 5765572,
+      "sha256": "3013d613bf9fc501de11d855ad8ee95d5b96cf10511d5013bf06db6934d54bb1"
+    },
+    {
+      "species": "Deer",
+      "file": "deer-far.glb",
+      "bytes": 182332,
+      "sha256": "919aa7fbfce70c470d8fd8c06c6df51d8c34e45588f7dba5ed3d9ed4c791a199"
+    },
+    {
+      "species": "FreshwaterFish",
+      "file": "freshwater-fish-rigged.glb",
+      "bytes": 873556,
+      "sha256": "08b2d72f2e78f1b02e8d0dab1661d02b562cca579770465852dd4c66dc074a9a"
+    },
+    {
+      "species": "FreshwaterFish",
+      "file": "freshwater-fish-mid.glb",
+      "bytes": 903380,
+      "sha256": "ddd104c528fc364c15c309d4f60ba7e11e681f8ab32f3f348af97cf1fb9fcb89"
+    },
+    {
+      "species": "FreshwaterFish",
+      "file": "freshwater-fish-far.glb",
+      "bytes": 201228,
+      "sha256": "b55e60e7d0fac9743dff7fa978a89dd3383bf1e2095639f14c77ac2583fbf28b"
+    },
+    {
+      "species": "Hare",
+      "file": "hare-rigged.glb",
+      "bytes": 2629568,
+      "sha256": "cbe2586fc855df95d07f9bcb52f0d3d43c5b26081f14078941bfb88e1704beda"
+    },
+    {
+      "species": "Hare",
+      "file": "hare-mid.glb",
+      "bytes": 1388820,
+      "sha256": "66bf90d843e4037815ec39d4a4cebda66ea76c6622f600a4cfb22352822c0a8e"
+    },
+    {
+      "species": "Hare",
+      "file": "hare-far.glb",
+      "bytes": 114252,
+      "sha256": "66c505f11227a4e74c086ef43026732766991e326f6a13bb82f95dee284bd360"
+    },
+    {
+      "species": "Wolf",
+      "file": "wolf-rigged.glb",
+      "bytes": 3761612,
+      "sha256": "802ae9ad995038fbb24dda46b64bbb4172b5bcc74c0f8896e058269baa92c08b"
+    },
+    {
+      "species": "Wolf",
+      "file": "wolf-mid.glb",
+      "bytes": 2662296,
+      "sha256": "838c2c60a7641563764425514b866029de0d37eb28457dbb03a8dac0f4d75230"
+    },
+    {
+      "species": "Wolf",
+      "file": "wolf-far.glb",
+      "bytes": 144376,
+      "sha256": "aeeb4ad3c9a7910e7faea1b7a355a6e488ce13cea53b610252c707bb93d11fa8"
+    }
+  ],
+  "android": "NOT_MEASURED"
+}

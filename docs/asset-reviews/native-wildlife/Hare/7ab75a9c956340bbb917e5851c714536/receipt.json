@@ -1,0 +1,210 @@
+{
+  "uid": "7ab75a9c956340bbb917e5851c714536",
+  "name": "rabbit_run",
+  "author": {
+    "uid": "ca3313be8fa547408073e3f9099d09fa",
+    "username": "James.Chen1",
+    "displayName": "CGboy333",
+    "profileUrl": "https://sketchfab.com/James.Chen1",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/fa6fadfa30424d919c406aab376ef355",
+      "images": [
+        {
+          "size": 2164,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/fa6fadfa30424d919c406aab376ef355/374babb9333348b294e258a6a2e300ea.png",
+          "height": 32
+        },
+        {
+          "size": 4204,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/fa6fadfa30424d919c406aab376ef355/eaf8b73e6bd24ee78cf68322c778f7dd.png",
+          "height": 48
+        },
+        {
+          "size": 12140,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/fa6fadfa30424d919c406aab376ef355/7b821b6bddd84489a3e53ae9f4a537f0.png",
+          "height": 90
+        },
+        {
+          "size": 14280,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/fa6fadfa30424d919c406aab376ef355/19c232fe01864b84a71c8daa7e711432.png",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/ca3313be8fa547408073e3f9099d09fa"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/7ab75a9c956340bbb917e5851c714536",
+  "description": "",
+  "faceCount": 11588,
+  "vertexCount": 6014,
+  "animationCount": 1,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T07:42:15.950451+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-097/7ab75a9c956340bbb917e5851c714536.glb",
+  "sha256": "8d79589b9f7c2c113149ffe8a6f2e0f6823f82d90f41f37be9be67e6e13c4d50",
+  "bytes": 658576,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/7ab75a9c956340bbb917e5851c714536",
+    "uid": "7ab75a9c956340bbb917e5851c714536",
+    "name": "rabbit_run",
+    "staffpickedAt": null,
+    "viewCount": 827,
+    "likeCount": 15,
+    "animationCount": 1,
+    "viewerUrl": "https://sketchfab.com/3d-models/7ab75a9c956340bbb917e5851c714536",
+    "embedUrl": "https://sketchfab.com/models/7ab75a9c956340bbb917e5851c714536/embed",
+    "commentCount": 1,
+    "isDownloadable": true,
+    "publishedAt": "2021-01-14T07:01:20.371623",
+    "tags": [],
+    "categories": [],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "3aa1407e8e9d4c419ead42c535e2324a",
+          "size": 384417,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/7ab75a9c956340bbb917e5851c714536/thumbnails/9daa8f1968884d89a5266b354d1d5026/a71dd945e2af431ab483849c2ad5bfdc.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "57dda6bb5f014471805cc5cedcfaf1ce",
+          "size": 45980,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/7ab75a9c956340bbb917e5851c714536/thumbnails/9daa8f1968884d89a5266b354d1d5026/fd14cb74923a44a69f84ec698605dba1.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "97b8b87bea7843bfafc60cb87699b4e9",
+          "size": 21092,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/7ab75a9c956340bbb917e5851c714536/thumbnails/9daa8f1968884d89a5266b354d1d5026/a5f4b8382fe7496bbad3fd23abac1a9a.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "bbddec5e28ab4549afd40adac3a34a75",
+          "size": 3707,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/7ab75a9c956340bbb917e5851c714536/thumbnails/9daa8f1968884d89a5266b354d1d5026/1b706f32ffbf4ce295d7778a9085f507.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "ecb10171f3ad4a69a269581a593b1ead",
+          "size": 792,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/7ab75a9c956340bbb917e5851c714536/thumbnails/9daa8f1968884d89a5266b354d1d5026/2c51b3d95ed844fb99feb3f9735ddad3.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "ca3313be8fa547408073e3f9099d09fa",
+      "username": "James.Chen1",
+      "displayName": "CGboy333",
+      "profileUrl": "https://sketchfab.com/James.Chen1",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/fa6fadfa30424d919c406aab376ef355",
+        "images": [
+          {
+            "size": 2164,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/fa6fadfa30424d919c406aab376ef355/374babb9333348b294e258a6a2e300ea.png",
+            "height": 32
+          },
+          {
+            "size": 4204,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/fa6fadfa30424d919c406aab376ef355/eaf8b73e6bd24ee78cf68322c778f7dd.png",
+            "height": 48
+          },
+          {
+            "size": 12140,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/fa6fadfa30424d919c406aab376ef355/7b821b6bddd84489a3e53ae9f4a537f0.png",
+            "height": 90
+          },
+          {
+            "size": 14280,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/fa6fadfa30424d919c406aab376ef355/19c232fe01864b84a71c8daa7e711432.png",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/ca3313be8fa547408073e3f9099d09fa"
+    },
+    "description": "",
+    "faceCount": 11588,
+    "createdAt": "2021-01-14T03:32:01.242864",
+    "vertexCount": 6014,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 0,
+        "size": 658576,
+        "type": "glb",
+        "textureMaxResolution": 0,
+        "faceCount": 11588,
+        "vertexCount": 7309
+      },
+      "gltf": {
+        "textureCount": 0,
+        "size": 242944,
+        "type": "gltf",
+        "textureMaxResolution": 0,
+        "faceCount": 11588,
+        "vertexCount": 7309
+      },
+      "source": {
+        "textureCount": null,
+        "size": 1174156,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 298240,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "CGboy333 (https://sketchfab.com/James.Chen1)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/rabbit-run-7ab75a9c956340bbb917e5851c714536",
+      "title": "rabbit_run"
+    },
+    "generator": "Sketchfab-12.64.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 55
+    }
+  ],
+  "animations": [
+    {
+      "name": "Take 001",
+      "channels": 86
+    }
+  ]
+}

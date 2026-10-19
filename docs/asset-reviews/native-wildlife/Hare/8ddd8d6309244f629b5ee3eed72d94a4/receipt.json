@@ -1,0 +1,230 @@
+{
+  "uid": "8ddd8d6309244f629b5ee3eed72d94a4",
+  "name": "Bunny",
+  "author": {
+    "uid": "ff7d8f7c10ec45ae8111d635c0a77f81",
+    "username": "nina.t",
+    "displayName": "nina.t",
+    "profileUrl": "https://sketchfab.com/nina.t",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/aa6495bf4b0349f9b9a6020ee84aca19",
+      "images": [
+        {
+          "size": 1093,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/aa6495bf4b0349f9b9a6020ee84aca19/7af1bad7bb764940812ff3e98803c5a2.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1621,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/aa6495bf4b0349f9b9a6020ee84aca19/004379113f5240c894c86b42ccdf37fb.jpeg",
+          "height": 48
+        },
+        {
+          "size": 3815,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/aa6495bf4b0349f9b9a6020ee84aca19/a8287f3b8cf846799faabc01c68092f1.jpeg",
+          "height": 90
+        },
+        {
+          "size": 4415,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/aa6495bf4b0349f9b9a6020ee84aca19/6dfb313e008a4521ac0821ebb68406a2.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/ff7d8f7c10ec45ae8111d635c0a77f81"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/8ddd8d6309244f629b5ee3eed72d94a4",
+  "description": "",
+  "faceCount": 8648,
+  "vertexCount": 4334,
+  "animationCount": 1,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T07:42:16.488714+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-100/8ddd8d6309244f629b5ee3eed72d94a4.glb",
+  "sha256": "fa214a3aff27909fd60f4bea05c51494eba2faae137460bd2f589d464138bb1b",
+  "bytes": 594792,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/8ddd8d6309244f629b5ee3eed72d94a4",
+    "uid": "8ddd8d6309244f629b5ee3eed72d94a4",
+    "name": "Bunny",
+    "staffpickedAt": null,
+    "viewCount": 91,
+    "likeCount": 2,
+    "animationCount": 1,
+    "viewerUrl": "https://sketchfab.com/3d-models/8ddd8d6309244f629b5ee3eed72d94a4",
+    "embedUrl": "https://sketchfab.com/models/8ddd8d6309244f629b5ee3eed72d94a4/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2022-04-15T08:44:54.322276",
+    "tags": [
+      {
+        "name": "bunny",
+        "slug": "bunny",
+        "uri": "https://api.sketchfab.com/v3/tags/bunny"
+      },
+      {
+        "name": "cute",
+        "slug": "cute",
+        "uri": "https://api.sketchfab.com/v3/tags/cute"
+      },
+      {
+        "name": "pink",
+        "slug": "pink",
+        "uri": "https://api.sketchfab.com/v3/tags/pink"
+      }
+    ],
+    "categories": [
+      {
+        "name": "characters-creatures"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "454645c5df1c447c97d08a4547c01f75",
+          "size": 122300,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/8ddd8d6309244f629b5ee3eed72d94a4/thumbnails/c3cd72c1202a4dd792efa6eb81fc5baa/b444909ecc524839b6d69cfee98b5e6b.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "028504d88dc3433b84607974557e1236",
+          "size": 26009,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/8ddd8d6309244f629b5ee3eed72d94a4/thumbnails/c3cd72c1202a4dd792efa6eb81fc5baa/b72749ccdf934244afe304d94a423c27.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "cf69f0c1307d4264b2ac6800c2f8ba3b",
+          "size": 13129,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/8ddd8d6309244f629b5ee3eed72d94a4/thumbnails/c3cd72c1202a4dd792efa6eb81fc5baa/66da3cdbcd8e4613a1a0f99b45a1b355.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "c51e56264a2f4fde86b82297b213c850",
+          "size": 2997,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/8ddd8d6309244f629b5ee3eed72d94a4/thumbnails/c3cd72c1202a4dd792efa6eb81fc5baa/2952b05a21df449c834949851c5a255e.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "26d21fa4b1f24b2bafec53b3f48f3b0f",
+          "size": 976,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/8ddd8d6309244f629b5ee3eed72d94a4/thumbnails/c3cd72c1202a4dd792efa6eb81fc5baa/460e15bd27cf4ba48f8f48b8954187f8.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "ff7d8f7c10ec45ae8111d635c0a77f81",
+      "username": "nina.t",
+      "displayName": "nina.t",
+      "profileUrl": "https://sketchfab.com/nina.t",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/aa6495bf4b0349f9b9a6020ee84aca19",
+        "images": [
+          {
+            "size": 1093,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/aa6495bf4b0349f9b9a6020ee84aca19/7af1bad7bb764940812ff3e98803c5a2.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1621,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/aa6495bf4b0349f9b9a6020ee84aca19/004379113f5240c894c86b42ccdf37fb.jpeg",
+            "height": 48
+          },
+          {
+            "size": 3815,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/aa6495bf4b0349f9b9a6020ee84aca19/a8287f3b8cf846799faabc01c68092f1.jpeg",
+            "height": 90
+          },
+          {
+            "size": 4415,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/aa6495bf4b0349f9b9a6020ee84aca19/6dfb313e008a4521ac0821ebb68406a2.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/ff7d8f7c10ec45ae8111d635c0a77f81"
+    },
+    "description": "",
+    "faceCount": 8648,
+    "createdAt": "2022-04-10T17:48:04.500345",
+    "vertexCount": 4334,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 1,
+        "size": 546352,
+        "type": "glb",
+        "textureMaxResolution": 2048,
+        "faceCount": 8648,
+        "vertexCount": 6577
+      },
+      "gltf": {
+        "textureCount": 1,
+        "size": 242541,
+        "type": "gltf",
+        "textureMaxResolution": 2048,
+        "faceCount": 8648,
+        "vertexCount": 6577
+      },
+      "source": {
+        "textureCount": null,
+        "size": 686657,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 560386,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "nina.t (https://sketchfab.com/nina.t)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/bunny-8ddd8d6309244f629b5ee3eed72d94a4",
+      "title": "Bunny"
+    },
+    "generator": "Sketchfab-12.97.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 39
+    }
+  ],
+  "animations": [
+    {
+      "name": "Scene",
+      "channels": 61
+    }
+  ]
+}

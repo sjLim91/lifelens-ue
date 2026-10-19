@@ -1,0 +1,879 @@
+{
+  "status": "PASS_ACTUAL_REACT_WASM_OBSERVER_FOUR_SPECIES",
+  "seed": "77",
+  "results": [
+    {
+      "species": "Hare",
+      "pair": [
+        {
+          "baseline": false,
+          "sample": {
+            "minute": 500,
+            "worldSeed": "77",
+            "runtime": {
+              "status": "ready",
+              "errorMessage": null
+            },
+            "core": {
+              "id": "25:32:1704075738371588100",
+              "species": "Hare",
+              "sex": "Female",
+              "gridX": 803,
+              "gridY": 1043,
+              "behavior": "Flee"
+            },
+            "expectedXZ": [
+              -3.25,
+              0.75
+            ],
+            "actor": {
+              "id": "25:32:1704075738371588100",
+              "position": [
+                -3.25,
+                23.07613248,
+                0.75
+              ],
+              "behavior": "Flee",
+              "clip": "idle",
+              "tier": "near"
+            },
+            "farIds": [
+              "27:32:16424469176338350081",
+              "27:32:16424469176338350084",
+              "27:32:16424469176338350082",
+              "27:32:16424469176338350085",
+              "27:32:16424469176338350083"
+            ],
+            "cameraChoice": {
+              "score": 7.9536999999999995,
+              "clear": 8,
+              "total": 9,
+              "position": [
+                1.25454652057177,
+                0.3925155481571494,
+                -2.2964320022237024
+              ],
+              "target": [
+                -0.059515816279112954,
+                0.2566180077673579,
+                0.049694111068080526
+              ]
+            },
+            "cameraDiagnostic": {
+              "status": "SELECTED",
+              "bounds": [
+                [
+                  -3.5630791006261795,
+                  22.963702744368035,
+                  0.3227482483197599
+                ],
+                [
+                  -3.055952531932046,
+                  23.70179823116668,
+                  1.2766399738164012
+                ]
+              ],
+              "extent": 1.3083851605238324,
+              "aspect": 0.9365558912386707
+            },
+            "renderStats": {
+              "frame": 66,
+              "calls": 163,
+              "triangles": 2140671,
+              "points": 0,
+              "lines": 0
+            },
+            "canvas": {
+              "id": "threeWorldCanvas",
+              "width": 620,
+              "height": 662,
+              "contextLost": false
+            }
+          }
+        },
+        {
+          "baseline": true,
+          "sample": {
+            "minute": 500,
+            "worldSeed": "77",
+            "runtime": {
+              "status": "ready",
+              "errorMessage": null
+            },
+            "core": {
+              "id": "25:32:1704075738371588100",
+              "species": "Hare",
+              "sex": "Female",
+              "gridX": 803,
+              "gridY": 1043,
+              "behavior": "Flee"
+            },
+            "expectedXZ": [
+              -3.25,
+              0.75
+            ],
+            "actor": null,
+            "farIds": [],
+            "cameraChoice": {
+              "score": 7.9536999999999995,
+              "clear": 8,
+              "total": 9,
+              "position": [
+                1.25454652057177,
+                0.3925155481571494,
+                -2.2964320022237024
+              ],
+              "target": [
+                -0.059515816279112954,
+                0.2566180077673579,
+                0.049694111068080526
+              ]
+            },
+            "cameraDiagnostic": {
+              "status": "SELECTED",
+              "bounds": [
+                [
+                  -3.5630791006261795,
+                  22.963702744368035,
+                  0.3227482483197599
+                ],
+                [
+                  -3.055952531932046,
+                  23.70179823116668,
+                  1.2766399738164012
+                ]
+              ],
+              "extent": 1.3083851605238324,
+              "aspect": 0.9365558912386707
+            },
+            "renderStats": {
+              "frame": 74,
+              "calls": 111,
+              "triangles": 2602286,
+              "points": 0,
+              "lines": 0
+            },
+            "canvas": {
+              "id": "threeWorldCanvas",
+              "width": 620,
+              "height": 662,
+              "contextLost": false
+            }
+          }
+        }
+      ],
+      "far": {
+        "minute": 500,
+        "worldSeed": "77",
+        "runtime": {
+          "status": "ready",
+          "errorMessage": null
+        },
+        "core": {
+          "id": "25:32:1704075738371588100",
+          "species": "Hare",
+          "sex": "Female",
+          "gridX": 803,
+          "gridY": 1043,
+          "behavior": "Flee"
+        },
+        "expectedXZ": [
+          -3.25,
+          0.75
+        ],
+        "actor": null,
+        "farIds": [
+          "25:32:1704075738371588100",
+          "25:32:1704075738371588098",
+          "25:32:1704075738371588097",
+          "25:32:1704075738371588099",
+          "27:32:16424469176338350081",
+          "27:32:16424469176338350083",
+          "27:32:16424469176338350084",
+          "27:32:16424469176338350085",
+          "27:32:16424469176338350082"
+        ],
+        "cameraChoice": null,
+        "cameraDiagnostic": {
+          "status": "SELECTED",
+          "bounds": [
+            [
+              -3.5630791006261795,
+              22.963702744368035,
+              0.3227482483197599
+            ],
+            [
+              -3.055952531932046,
+              23.70179823116668,
+              1.2766399738164012
+            ]
+          ],
+          "extent": 1.3083851605238324,
+          "aspect": 0.9365558912386707
+        },
+        "renderStats": {
+          "frame": 76,
+          "calls": 159,
+          "triangles": 2142257,
+          "points": 0,
+          "lines": 0
+        },
+        "canvas": {
+          "id": "threeWorldCanvas",
+          "width": 620,
+          "height": 662,
+          "contextLost": false
+        }
+      }
+    },
+    {
+      "species": "Deer",
+      "pair": [
+        {
+          "baseline": false,
+          "sample": {
+            "minute": 500,
+            "worldSeed": "77",
+            "runtime": {
+              "status": "ready",
+              "errorMessage": null
+            },
+            "core": {
+              "id": "27:32:16424469176338350087",
+              "species": "Deer",
+              "sex": "Male",
+              "gridX": 892,
+              "gridY": 1029,
+              "behavior": "Rest"
+            },
+            "expectedXZ": [
+              19,
+              -2.75
+            ],
+            "actor": {
+              "id": "27:32:16424469176338350087",
+              "position": [
+                19,
+                25.72701504000001,
+                -2.75
+              ],
+              "behavior": "Rest",
+              "clip": "rest",
+              "tier": "near"
+            },
+            "farIds": [
+              "25:32:1704075738371588101"
+            ],
+            "cameraChoice": {
+              "score": 8.9955,
+              "clear": 9,
+              "total": 9,
+              "position": [
+                0,
+                0.9574063286921586,
+                -4.467896200563403
+              ],
+              "target": [
+                -0.1132637185420009,
+                0.6897329549682141,
+                0.28560103257964586
+              ]
+            },
+            "cameraDiagnostic": {
+              "status": "SELECTED",
+              "bounds": [
+                [
+                  18.016083646848685,
+                  25.5312430543418,
+                  -3.4664123220253833
+                ],
+                [
+                  19.757388916067313,
+                  27.302252935594645,
+                  -1.462385612815325
+                ]
+              ],
+              "extent": 3.1913544289738596,
+              "aspect": 0.9365558912386707
+            },
+            "renderStats": {
+              "frame": 84,
+              "calls": 237,
+              "triangles": 2323141,
+              "points": 0,
+              "lines": 0
+            },
+            "canvas": {
+              "id": "threeWorldCanvas",
+              "width": 620,
+              "height": 662,
+              "contextLost": false
+            }
+          }
+        },
+        {
+          "baseline": true,
+          "sample": {
+            "minute": 500,
+            "worldSeed": "77",
+            "runtime": {
+              "status": "ready",
+              "errorMessage": null
+            },
+            "core": {
+              "id": "27:32:16424469176338350087",
+              "species": "Deer",
+              "sex": "Male",
+              "gridX": 892,
+              "gridY": 1029,
+              "behavior": "Rest"
+            },
+            "expectedXZ": [
+              19,
+              -2.75
+            ],
+            "actor": null,
+            "farIds": [],
+            "cameraChoice": {
+              "score": 8.9955,
+              "clear": 9,
+              "total": 9,
+              "position": [
+                0,
+                0.9574063286921586,
+                -4.467896200563403
+              ],
+              "target": [
+                -0.1132637185420009,
+                0.6897329549682141,
+                0.28560103257964586
+              ]
+            },
+            "cameraDiagnostic": {
+              "status": "SELECTED",
+              "bounds": [
+                [
+                  18.016083646848685,
+                  25.5312430543418,
+                  -3.4664123220253833
+                ],
+                [
+                  19.757388916067313,
+                  27.302252935594645,
+                  -1.462385612815325
+                ]
+              ],
+              "extent": 3.1913544289738596,
+              "aspect": 0.9365558912386707
+            },
+            "renderStats": {
+              "frame": 92,
+              "calls": 105,
+              "triangles": 2585778,
+              "points": 0,
+              "lines": 0
+            },
+            "canvas": {
+              "id": "threeWorldCanvas",
+              "width": 620,
+              "height": 662,
+              "contextLost": false
+            }
+          }
+        }
+      ],
+      "far": {
+        "minute": 500,
+        "worldSeed": "77",
+        "runtime": {
+          "status": "ready",
+          "errorMessage": null
+        },
+        "core": {
+          "id": "27:32:16424469176338350087",
+          "species": "Deer",
+          "sex": "Male",
+          "gridX": 892,
+          "gridY": 1029,
+          "behavior": "Rest"
+        },
+        "expectedXZ": [
+          19,
+          -2.75
+        ],
+        "actor": null,
+        "farIds": [
+          "27:32:16424469176338350087",
+          "27:32:16424469176338350086",
+          "25:32:1704075738371588101"
+        ],
+        "cameraChoice": null,
+        "cameraDiagnostic": {
+          "status": "SELECTED",
+          "bounds": [
+            [
+              18.016083646848685,
+              25.5312430543418,
+              -3.4664123220253833
+            ],
+            [
+              19.757388916067313,
+              27.302252935594645,
+              -1.462385612815325
+            ]
+          ],
+          "extent": 3.1913544289738596,
+          "aspect": 0.9365558912386707
+        },
+        "renderStats": {
+          "frame": 94,
+          "calls": 179,
+          "triangles": 2151725,
+          "points": 0,
+          "lines": 0
+        },
+        "canvas": {
+          "id": "threeWorldCanvas",
+          "width": 620,
+          "height": 662,
+          "contextLost": false
+        }
+      }
+    },
+    {
+      "species": "Wolf",
+      "pair": [
+        {
+          "baseline": false,
+          "sample": {
+            "minute": 500,
+            "worldSeed": "77",
+            "runtime": {
+              "status": "ready",
+              "errorMessage": null
+            },
+            "core": {
+              "id": "27:32:16424469176338350089",
+              "species": "Wolf",
+              "sex": "Male",
+              "gridX": 883,
+              "gridY": 1034,
+              "behavior": "Hunt"
+            },
+            "expectedXZ": [
+              16.75,
+              -1.5
+            ],
+            "actor": {
+              "id": "27:32:16424469176338350089",
+              "position": [
+                16.75,
+                25.184010239999996,
+                -1.5
+              ],
+              "behavior": "Hunt",
+              "clip": "idle",
+              "tier": "near"
+            },
+            "farIds": [
+              "25:32:1704075738371588103"
+            ],
+            "cameraChoice": {
+              "score": 8.9755,
+              "clear": 9,
+              "total": 9,
+              "position": [
+                -1.0681799429273777,
+                0.925190133357507,
+                -4.183331659053003
+              ],
+              "target": [
+                -0.013846425861657963,
+                0.2762485919463735,
+                0.19716802517607412
+              ]
+            },
+            "cameraDiagnostic": {
+              "status": "SELECTED",
+              "bounds": [
+                [
+                  16.419651944008173,
+                  24.766346509406727,
+                  -2.642990805888579
+                ],
+                [
+                  17.052655204268515,
+                  26.154171154486015,
+                  0.0373268562407274
+                ]
+              ],
+              "extent": 3.0839671111916847,
+              "aspect": 0.9365558912386707
+            },
+            "renderStats": {
+              "frame": 102,
+              "calls": 239,
+              "triangles": 2294948,
+              "points": 0,
+              "lines": 0
+            },
+            "canvas": {
+              "id": "threeWorldCanvas",
+              "width": 620,
+              "height": 662,
+              "contextLost": false
+            }
+          }
+        },
+        {
+          "baseline": true,
+          "sample": {
+            "minute": 500,
+            "worldSeed": "77",
+            "runtime": {
+              "status": "ready",
+              "errorMessage": null
+            },
+            "core": {
+              "id": "27:32:16424469176338350089",
+              "species": "Wolf",
+              "sex": "Male",
+              "gridX": 883,
+              "gridY": 1034,
+              "behavior": "Hunt"
+            },
+            "expectedXZ": [
+              16.75,
+              -1.5
+            ],
+            "actor": null,
+            "farIds": [],
+            "cameraChoice": {
+              "score": 8.9755,
+              "clear": 9,
+              "total": 9,
+              "position": [
+                -1.0681799429273777,
+                0.925190133357507,
+                -4.183331659053003
+              ],
+              "target": [
+                -0.013846425861657963,
+                0.2762485919463735,
+                0.19716802517607412
+              ]
+            },
+            "cameraDiagnostic": {
+              "status": "SELECTED",
+              "bounds": [
+                [
+                  16.419651944008173,
+                  24.766346509406727,
+                  -2.642990805888579
+                ],
+                [
+                  17.052655204268515,
+                  26.154171154486015,
+                  0.0373268562407274
+                ]
+              ],
+              "extent": 3.0839671111916847,
+              "aspect": 0.9365558912386707
+            },
+            "renderStats": {
+              "frame": 110,
+              "calls": 107,
+              "triangles": 2723428,
+              "points": 0,
+              "lines": 0
+            },
+            "canvas": {
+              "id": "threeWorldCanvas",
+              "width": 620,
+              "height": 662,
+              "contextLost": false
+            }
+          }
+        }
+      ],
+      "far": {
+        "minute": 500,
+        "worldSeed": "77",
+        "runtime": {
+          "status": "ready",
+          "errorMessage": null
+        },
+        "core": {
+          "id": "27:32:16424469176338350089",
+          "species": "Wolf",
+          "sex": "Male",
+          "gridX": 883,
+          "gridY": 1034,
+          "behavior": "Hunt"
+        },
+        "expectedXZ": [
+          16.75,
+          -1.5
+        ],
+        "actor": null,
+        "farIds": [
+          "27:32:16424469176338350089",
+          "27:32:16424469176338350088",
+          "25:32:1704075738371588104",
+          "25:32:1704075738371588103"
+        ],
+        "cameraChoice": null,
+        "cameraDiagnostic": {
+          "status": "SELECTED",
+          "bounds": [
+            [
+              16.419651944008173,
+              24.766346509406727,
+              -2.642990805888579
+            ],
+            [
+              17.052655204268515,
+              26.154171154486015,
+              0.0373268562407274
+            ]
+          ],
+          "extent": 3.0839671111916847,
+          "aspect": 0.9365558912386707
+        },
+        "renderStats": {
+          "frame": 112,
+          "calls": 184,
+          "triangles": 2154285,
+          "points": 0,
+          "lines": 0
+        },
+        "canvas": {
+          "id": "threeWorldCanvas",
+          "width": 620,
+          "height": 662,
+          "contextLost": false
+        }
+      }
+    },
+    {
+      "species": "FreshwaterFish",
+      "pair": [
+        {
+          "baseline": false,
+          "sample": {
+            "minute": 500,
+            "worldSeed": "77",
+            "runtime": {
+              "status": "ready",
+              "errorMessage": null
+            },
+            "core": {
+              "id": "25:32:1704075738371588106",
+              "species": "FreshwaterFish",
+              "sex": "Male",
+              "gridX": 816,
+              "gridY": 1040,
+              "behavior": "Swim"
+            },
+            "expectedXZ": [
+              0,
+              0
+            ],
+            "actor": {
+              "id": "25:32:1704075738371588106",
+              "position": [
+                0,
+                23.83322032788492,
+                0
+              ],
+              "behavior": "Swim",
+              "clip": "swim",
+              "tier": "near"
+            },
+            "farIds": [],
+            "cameraChoice": {
+              "score": 8.99662,
+              "clear": 9,
+              "total": 9,
+              "position": [
+                2.6942229581241776e-17,
+                0.00831061598517735,
+                -0.22000000000000003
+              ],
+              "target": [
+                -0.00915115183176278,
+                0.018910062821426266,
+                0.0028458085449205896
+              ]
+            },
+            "cameraDiagnostic": {
+              "status": "SELECTED",
+              "bounds": [
+                [
+                  -0.022094012007294033,
+                  23.833617293835477,
+                  -0.043926527776088284
+                ],
+                [
+                  0.003791708343768475,
+                  23.870643487577215,
+                  0.04961814486592946
+                ]
+              ],
+              "extent": 0.10388269981472568,
+              "aspect": 0.9365558912386707
+            },
+            "renderStats": {
+              "frame": 120,
+              "calls": 116,
+              "triangles": 2182241,
+              "points": 0,
+              "lines": 0
+            },
+            "canvas": {
+              "id": "threeWorldCanvas",
+              "width": 620,
+              "height": 662,
+              "contextLost": false
+            }
+          }
+        },
+        {
+          "baseline": true,
+          "sample": {
+            "minute": 500,
+            "worldSeed": "77",
+            "runtime": {
+              "status": "ready",
+              "errorMessage": null
+            },
+            "core": {
+              "id": "25:32:1704075738371588106",
+              "species": "FreshwaterFish",
+              "sex": "Male",
+              "gridX": 816,
+              "gridY": 1040,
+              "behavior": "Swim"
+            },
+            "expectedXZ": [
+              0,
+              0
+            ],
+            "actor": null,
+            "farIds": [],
+            "cameraChoice": {
+              "score": 8.99662,
+              "clear": 9,
+              "total": 9,
+              "position": [
+                2.6942229581241776e-17,
+                0.00831061598517735,
+                -0.22000000000000003
+              ],
+              "target": [
+                -0.00915115183176278,
+                0.018910062821426266,
+                0.0028458085449205896
+              ]
+            },
+            "cameraDiagnostic": {
+              "status": "SELECTED",
+              "bounds": [
+                [
+                  -0.022094012007294033,
+                  23.833617293835477,
+                  -0.043926527776088284
+                ],
+                [
+                  0.003791708343768475,
+                  23.870643487577215,
+                  0.04961814486592946
+                ]
+              ],
+              "extent": 0.10388269981472568,
+              "aspect": 0.9365558912386707
+            },
+            "renderStats": {
+              "frame": 128,
+              "calls": 97,
+              "triangles": 2595118,
+              "points": 0,
+              "lines": 0
+            },
+            "canvas": {
+              "id": "threeWorldCanvas",
+              "width": 620,
+              "height": 662,
+              "contextLost": false
+            }
+          }
+        }
+      ],
+      "far": {
+        "minute": 500,
+        "worldSeed": "77",
+        "runtime": {
+          "status": "ready",
+          "errorMessage": null
+        },
+        "core": {
+          "id": "25:32:1704075738371588106",
+          "species": "FreshwaterFish",
+          "sex": "Male",
+          "gridX": 816,
+          "gridY": 1040,
+          "behavior": "Swim"
+        },
+        "expectedXZ": [
+          0,
+          0
+        ],
+        "actor": null,
+        "farIds": [
+          "25:32:1704075738371588105",
+          "25:32:1704075738371588106",
+          "25:32:1704075738371588107",
+          "25:32:1704075738371588108",
+          "25:32:1704075738371588109",
+          "25:32:1704075738371588110",
+          "25:32:1704075738371588111"
+        ],
+        "cameraChoice": null,
+        "cameraDiagnostic": {
+          "status": "SELECTED",
+          "bounds": [
+            [
+              -0.022094012007294033,
+              23.833617293835477,
+              -0.043926527776088284
+            ],
+            [
+              0.003791708343768475,
+              23.870643487577215,
+              0.04961814486592946
+            ]
+          ],
+          "extent": 0.10388269981472568,
+          "aspect": 0.9365558912386707
+        },
+        "renderStats": {
+          "frame": 130,
+          "calls": 162,
+          "triangles": 2143021,
+          "points": 0,
+          "lines": 0
+        },
+        "canvas": {
+          "id": "threeWorldCanvas",
+          "width": 620,
+          "height": 662,
+          "contextLost": false
+        }
+      }
+    }
+  ],
+  "coreTimeAdvanced": true,
+  "errors": [],
+  "physicalAndroid": "NOT_MEASURED",
+  "visualQuality": "REQUIRES_RETAINED_IMAGE_REVIEW"
+}

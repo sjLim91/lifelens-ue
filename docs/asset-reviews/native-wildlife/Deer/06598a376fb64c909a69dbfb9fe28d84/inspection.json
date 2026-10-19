@@ -1,0 +1,674 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "Deer",
+  "sourceSha256": "139ca8c5c8b1e55bfaddf460fb6c0352ceab5321fb39ec26eac5175bc9b4a92b",
+  "bounds": [
+    [
+      -1.742586612701416,
+      -1.8974640369415283,
+      -0.010564575903117657
+    ],
+    [
+      1.3636791706085205,
+      1.0783665180206299,
+      3.741675615310669
+    ]
+  ],
+  "triangles": 74194,
+  "meshes": [
+    {
+      "name": "polySurface17_eyewai_tex_0",
+      "vertices": 141,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "polySurface19_yandi_tex_0",
+      "vertices": 281,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "polySurface18_eye_tex_0",
+      "vertices": 6441,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "polySurface17_eyewai_tex_0.001",
+      "vertices": 141,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "polySurface19_yandi_tex_0.001",
+      "vertices": 281,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "polySurface18_eye_tex_0.001",
+      "vertices": 6441,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube17_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube16_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube15_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube14_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube20_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube19_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube18_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube37_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube36_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube35_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube34_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube33_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube21_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube22_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube38_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube13_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube39_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube40_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube41_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube42_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "polySurface20_kouqiang_tex_0",
+      "vertices": 492,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube2_kouqiang_tex_0",
+      "vertices": 114,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube3_kouqiang_tex_0",
+      "vertices": 114,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube4_kouqiang_tex_0",
+      "vertices": 128,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube5_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube6_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube7_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube8_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube9_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube10_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube11_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube12_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube23_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube24_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube25_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube26_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube27_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube28_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube29_kouqiang_tex_0",
+      "vertices": 131,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube30_kouqiang_tex_0",
+      "vertices": 114,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube31_kouqiang_tex_0",
+      "vertices": 114,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "pCube32_kouqiang_tex_0",
+      "vertices": 114,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "polySurface21_kouqiang_tex_0",
+      "vertices": 396,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Object_119",
+      "vertices": 10732,
+      "uvLayers": 3,
+      "vertexGroups": 50
+    },
+    {
+      "name": "Object_120",
+      "vertices": 8772,
+      "uvLayers": 3,
+      "vertexGroups": 50
+    },
+    {
+      "name": "Object_122",
+      "vertices": 479,
+      "uvLayers": 1,
+      "vertexGroups": 50
+    }
+  ],
+  "rigs": [
+    {
+      "name": "Object_116",
+      "bones": [
+        "_rootJoint",
+        "pelvis_01",
+        "tail_top_02",
+        "tail_A_03",
+        "tail_B_00",
+        "tail_Tip_04",
+        "co_back_l_05",
+        "leg_back__06",
+        "knee_back_l_07",
+        "ankle_back_l_08",
+        "toe_back_l_09",
+        "toeTip_back_l_010",
+        "co_back_r_011",
+        "leg_back__012",
+        "knee_back_r_013",
+        "ankle_back_r_014",
+        "toe_back_r_015",
+        "toeTip_back_r_016",
+        "root1_017",
+        "back_018",
+        "chest_019",
+        "neck_020",
+        "neckTip_021",
+        "head_022",
+        "headTip_023",
+        "ear_l_024",
+        "earMid_l_025",
+        "earTip_l_026",
+        "ear_r_027",
+        "earMid_r_028",
+        "earTip_r_029",
+        "jaw_030",
+        "jawTip_031",
+        "tough_032",
+        "tough_A_033",
+        "tough_B_034",
+        "tough_C_035",
+        "tough_tip_036",
+        "co_front_l_037",
+        "leg_front_l_038",
+        "knee_front_l_039",
+        "ankle_front_l_040",
+        "toe_front_l_041",
+        "toeTip_front_l_042",
+        "co_front_r_043",
+        "leg_front_r_044",
+        "knee_front_r_045",
+        "ankle_front_r_046",
+        "toe_front_r_047",
+        "toeTip_front_r_048"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "Idle_chi_down",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_chi_up",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_eye",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_eye_L",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_eye_R",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_Object_116",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_polySurface17",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_polySurface17.001",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_polySurface18",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_polySurface18.001",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_polySurface19",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Idle_polySurface19.001",
+      "frames": [
+        0.0,
+        89.0
+      ]
+    },
+    {
+      "name": "Run_chi_down",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_chi_up",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_eye",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_eye_L",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_eye_R",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_Object_116",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_polySurface17",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_polySurface17.001",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_polySurface18",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_polySurface18.001",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_polySurface19",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Run_polySurface19.001",
+      "frames": [
+        200.0,
+        212.0
+      ]
+    },
+    {
+      "name": "Walk_chi_down",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_chi_up",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_eye",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_eye_L",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_eye_R",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_Object_116",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_polySurface17",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_polySurface17.001",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_polySurface18",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_polySurface18.001",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_polySurface19",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    },
+    {
+      "name": "Walk_polySurface19.001",
+      "frames": [
+        100.0,
+        139.0
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "yandi_tex",
+      "textures": []
+    },
+    {
+      "name": "eyewai_tex",
+      "textures": []
+    },
+    {
+      "name": "eye_tex",
+      "textures": []
+    },
+    {
+      "name": "body_tex",
+      "textures": []
+    },
+    {
+      "name": "kouqiang_tex",
+      "textures": []
+    },
+    {
+      "name": "initialShadingGroup1",
+      "textures": []
+    },
+    {
+      "name": "jiao_tex",
+      "textures": []
+    }
+  ]
+}

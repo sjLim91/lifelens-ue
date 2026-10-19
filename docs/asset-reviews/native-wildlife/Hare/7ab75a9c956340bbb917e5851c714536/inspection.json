@@ -1,0 +1,240 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "Hare",
+  "sourceSha256": "8d79589b9f7c2c113149ffe8a6f2e0f6823f82d90f41f37be9be67e6e13c4d50",
+  "bounds": [
+    [
+      -0.21694162487983704,
+      -0.45486101508140564,
+      -0.0018187311943620443
+    ],
+    [
+      0.21693721413612366,
+      0.32172080874443054,
+      0.7915520668029785
+    ]
+  ],
+  "triangles": 11588,
+  "meshes": [
+    {
+      "name": "Object_31",
+      "vertices": 76,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_33",
+      "vertices": 76,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_34",
+      "vertices": 243,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_35",
+      "vertices": 706,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_36",
+      "vertices": 243,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_37",
+      "vertices": 706,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_38",
+      "vertices": 51,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_39",
+      "vertices": 878,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_40",
+      "vertices": 39,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_41",
+      "vertices": 398,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_42",
+      "vertices": 62,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_43",
+      "vertices": 439,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_44",
+      "vertices": 398,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_45",
+      "vertices": 62,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_46",
+      "vertices": 439,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_47",
+      "vertices": 2110,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_48",
+      "vertices": 285,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_50",
+      "vertices": 50,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    },
+    {
+      "name": "Object_52",
+      "vertices": 48,
+      "uvLayers": 1,
+      "vertexGroups": 55
+    }
+  ],
+  "rigs": [
+    {
+      "name": "Object_28",
+      "bones": [
+        "_rootJoint",
+        "joint22_bone_00",
+        "joint15_bone_01",
+        "joint16_bone_02",
+        "joint17_bone_03",
+        "joint18_bone_04",
+        "joint19_bone_05",
+        "joint20_bone_06",
+        "joint10_bone_07",
+        "joint1_bone_08",
+        "joint2_bone_09",
+        "joint3_bone_010",
+        "joint4_bone_011",
+        "joint5_bone_012",
+        "joint11_bone_013",
+        "joint12_bone_014",
+        "joint13_bone_015",
+        "joint14_bone_016",
+        "joint21_bone_017",
+        "joint21_bone_017_0",
+        "joint21_bone_017_1",
+        "joint21_bone_017_2",
+        "joint21_bone_017_3",
+        "joint21_bone_017_4",
+        "joint21_bone_017_5",
+        "joint21_bone_017_6",
+        "joint21_bone_017_7",
+        "joint21_bone_017_8",
+        "joint21_bone_017_9",
+        "joint21_bone_017_10",
+        "joint6_bone_018",
+        "joint7_bone_019",
+        "joint8_bone_020",
+        "joint9_bone_021",
+        "joint23_bone_022",
+        "joint24_bone_023",
+        "joint25_bone_024",
+        "joint26_bone_025",
+        "joint27_bone_026",
+        "joint28_bone_027",
+        "joint29_bone_028",
+        "joint30_bone_029",
+        "joint31_bone_030",
+        "joint33_bone_031",
+        "joint34_bone_032",
+        "joint39_bone_033",
+        "joint40_bone_034",
+        "joint41_bone_035",
+        "joint35_bone_036",
+        "joint36_bone_037",
+        "joint37_bone_038",
+        "joint38_bone_039",
+        "joint42_bone_040",
+        "joint43_bone_041",
+        "joint44_bone_042"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "Take 001_Object_28",
+      "frames": [
+        0.0,
+        16.0
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "blinn7",
+      "textures": []
+    },
+    {
+      "name": "blinn5",
+      "textures": []
+    },
+    {
+      "name": "blinn8",
+      "textures": []
+    },
+    {
+      "name": "blinn3",
+      "textures": []
+    },
+    {
+      "name": "blinn1",
+      "textures": []
+    },
+    {
+      "name": "blinn6",
+      "textures": []
+    },
+    {
+      "name": "blinn4",
+      "textures": []
+    },
+    {
+      "name": "blinn2",
+      "textures": []
+    }
+  ]
+}

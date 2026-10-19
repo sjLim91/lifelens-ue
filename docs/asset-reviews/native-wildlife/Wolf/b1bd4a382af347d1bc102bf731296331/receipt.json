@@ -1,0 +1,255 @@
+{
+  "uid": "b1bd4a382af347d1bc102bf731296331",
+  "name": "volf (free animals)",
+  "author": {
+    "uid": "7f7cd86bbf534d4da6e184f35ce33ce6",
+    "username": "FrodaJan",
+    "displayName": "FrodaJan",
+    "profileUrl": "https://sketchfab.com/FrodaJan",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/b600134fddb944689c2989862607a3f6",
+      "images": [
+        {
+          "size": 844,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/b600134fddb944689c2989862607a3f6/63eb63af48b1476bbf36a61e9d873aaf.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1359,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/b600134fddb944689c2989862607a3f6/e150bb3ab5a445ecadff835f7032a5f1.jpeg",
+          "height": 48
+        },
+        {
+          "size": 3373,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/b600134fddb944689c2989862607a3f6/d7ace36cd2964629a3576f38f79585c2.jpeg",
+          "height": 90
+        },
+        {
+          "size": 4015,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/b600134fddb944689c2989862607a3f6/269969a4c0364be2a93cbfb831c8b893.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/7f7cd86bbf534d4da6e184f35ce33ce6"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/b1bd4a382af347d1bc102bf731296331",
+  "description": "**Volf (2291 polys) (3ds max,substance painter)\n(pbr materials)**",
+  "faceCount": 4442,
+  "vertexCount": 2349,
+  "animationCount": 1,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T07:45:14.951658+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-079/b1bd4a382af347d1bc102bf731296331.glb",
+  "sha256": "f92749f1cbe0f3b172eaa6bf342caf974aba7c41083b7f24c1b831c4ae948c1a",
+  "bytes": 4635708,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/b1bd4a382af347d1bc102bf731296331",
+    "uid": "b1bd4a382af347d1bc102bf731296331",
+    "name": "volf (free animals)",
+    "staffpickedAt": null,
+    "viewCount": 690,
+    "likeCount": 7,
+    "animationCount": 1,
+    "viewerUrl": "https://sketchfab.com/3d-models/b1bd4a382af347d1bc102bf731296331",
+    "embedUrl": "https://sketchfab.com/models/b1bd4a382af347d1bc102bf731296331/embed",
+    "commentCount": 1,
+    "isDownloadable": true,
+    "publishedAt": "2018-04-21T23:35:52.961955",
+    "tags": [
+      {
+        "name": "animals",
+        "slug": "animals",
+        "uri": "https://api.sketchfab.com/v3/tags/animals"
+      },
+      {
+        "name": "fbx",
+        "slug": "fbx",
+        "uri": "https://api.sketchfab.com/v3/tags/fbx"
+      },
+      {
+        "name": "volf",
+        "slug": "volf",
+        "uri": "https://api.sketchfab.com/v3/tags/volf"
+      },
+      {
+        "name": "fre",
+        "slug": "fre",
+        "uri": "https://api.sketchfab.com/v3/tags/fre"
+      },
+      {
+        "name": "moes",
+        "slug": "moes",
+        "uri": "https://api.sketchfab.com/v3/tags/moes"
+      },
+      {
+        "name": "3d",
+        "slug": "3d",
+        "uri": "https://api.sketchfab.com/v3/tags/3d"
+      },
+      {
+        "name": "model",
+        "slug": "model",
+        "uri": "https://api.sketchfab.com/v3/tags/model"
+      },
+      {
+        "name": "free",
+        "slug": "free",
+        "uri": "https://api.sketchfab.com/v3/tags/free"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "b01e2e013b6f4aa9a70145e063ce1cae",
+          "size": 207312,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/b1bd4a382af347d1bc102bf731296331/thumbnails/eef02498f012452695836b7b9d2a057b/ac952e97ccdf437d906193b657d8e0dd.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "8a66b48b772642208ed18f93183e5548",
+          "size": 51524,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/b1bd4a382af347d1bc102bf731296331/thumbnails/eef02498f012452695836b7b9d2a057b/fa1af9a24ba64f8481b7acd70a68f878.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "c728587de77b426ab97277d58239cb5f",
+          "size": 25850,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/b1bd4a382af347d1bc102bf731296331/thumbnails/eef02498f012452695836b7b9d2a057b/89851d4d420a4c3684ca49c789e71a40.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "d191d5213b964d6e91260b49b5ae76d8",
+          "size": 3954,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/b1bd4a382af347d1bc102bf731296331/thumbnails/eef02498f012452695836b7b9d2a057b/50556fcf8a684d738b1b3b055f147edd.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "91d4aab818fd40d5bf2ac1e667578029",
+          "size": 782,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/b1bd4a382af347d1bc102bf731296331/thumbnails/eef02498f012452695836b7b9d2a057b/7ca57e7ee0ea4b06b93779128084c070.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "7f7cd86bbf534d4da6e184f35ce33ce6",
+      "username": "FrodaJan",
+      "displayName": "FrodaJan",
+      "profileUrl": "https://sketchfab.com/FrodaJan",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/b600134fddb944689c2989862607a3f6",
+        "images": [
+          {
+            "size": 844,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/b600134fddb944689c2989862607a3f6/63eb63af48b1476bbf36a61e9d873aaf.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1359,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/b600134fddb944689c2989862607a3f6/e150bb3ab5a445ecadff835f7032a5f1.jpeg",
+            "height": 48
+          },
+          {
+            "size": 3373,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/b600134fddb944689c2989862607a3f6/d7ace36cd2964629a3576f38f79585c2.jpeg",
+            "height": 90
+          },
+          {
+            "size": 4015,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/b600134fddb944689c2989862607a3f6/269969a4c0364be2a93cbfb831c8b893.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/7f7cd86bbf534d4da6e184f35ce33ce6"
+    },
+    "description": "**Volf (2291 polys) (3ds max,substance painter)\n(pbr materials)**",
+    "faceCount": 4442,
+    "createdAt": "2018-04-21T23:23:21.976820",
+    "vertexCount": 2349,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 3,
+        "size": 15367216,
+        "type": "glb",
+        "textureMaxResolution": 2048,
+        "faceCount": 4442,
+        "vertexCount": 2989
+      },
+      "gltf": {
+        "textureCount": 3,
+        "size": 15199490,
+        "type": "gltf",
+        "textureMaxResolution": 2048,
+        "faceCount": 4442,
+        "vertexCount": 2989
+      },
+      "source": {
+        "textureCount": null,
+        "size": 15488262,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 7861084,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "FrodaJan (https://sketchfab.com/FrodaJan)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/volf-free-animals-b1bd4a382af347d1bc102bf731296331",
+      "title": "volf (free animals)"
+    },
+    "generator": "Sketchfab-12.68.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 6
+    }
+  ],
+  "animations": [
+    {
+      "name": "volkhigh01",
+      "channels": 13
+    }
+  ]
+}

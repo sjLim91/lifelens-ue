@@ -1,0 +1,38 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "FreshwaterFish",
+  "sourceSha256": "adf35a5c0da31140baf4968fe111ba7ff0f7a81efd11d2a0f551197e021b1db6",
+  "bounds": [
+    [
+      -524.39892578125,
+      -1396.71044921875,
+      -546.4737548828125
+    ],
+    [
+      524.39892578125,
+      1428.6661376953125,
+      663.9197998046875
+    ]
+  ],
+  "triangles": 4052,
+  "meshes": [
+    {
+      "name": "Object_2",
+      "vertices": 2162,
+      "uvLayers": 1,
+      "vertexGroups": 0
+    }
+  ],
+  "rigs": [],
+  "actions": [],
+  "materials": [
+    {
+      "name": "polySurface2SG",
+      "textures": [
+        "Image_0",
+        "Image_0"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "Hare",
+  "sourceSha256": "2bb6f05bd3e58ccf437ddb05c77a97ddd8ff67b9841b6b69bce90ba275165538",
+  "bounds": [
+    [
+      -0.850487470626831,
+      -2.195908546447754,
+      -0.09313765168190002
+    ],
+    [
+      0.7896976470947266,
+      1.477756381034851,
+      3.0432326793670654
+    ]
+  ],
+  "triangles": 8896,
+  "meshes": [
+    {
+      "name": "Object_7",
+      "vertices": 4115,
+      "uvLayers": 1,
+      "vertexGroups": 29
+    },
+    {
+      "name": "Object_8",
+      "vertices": 1118,
+      "uvLayers": 1,
+      "vertexGroups": 29
+    }
+  ],
+  "rigs": [
+    {
+      "name": "GLTF_created_0",
+      "bones": [
+        "GLTF_created_0_rootJoint",
+        "spine 1_18",
+        "spine 2_17",
+        "spine 3_16",
+        "spine 4_15",
+        "spine 5_14",
+        "neck_5",
+        "head_4",
+        "ear.L_0",
+        "ear.R_1",
+        "jaw_2",
+        "nose_3",
+        "Upper arm.L_9",
+        "lower arm.L_8",
+        "Hand.L_7",
+        "Paw.L_6",
+        "Upper arm.R_13",
+        "lower arm.R_12",
+        "Hand.R_11",
+        "Paw.R_10",
+        "tail_19",
+        "upper leg.L_23",
+        "Lower leg.L_22",
+        "foot.L_21",
+        "Toes.L_20",
+        "upper leg.R_27",
+        "Lower leg.R_26",
+        "foot.R_25",
+        "Toes.R_24"
+      ]
+    }
+  ],
+  "actions": [],
+  "materials": [
+    {
+      "name": "Material",
+      "textures": [
+        "Image_0",
+        "Image_1"
+      ]
+    },
+    {
+      "name": "Material.001",
+      "textures": []
+    }
+  ]
+}

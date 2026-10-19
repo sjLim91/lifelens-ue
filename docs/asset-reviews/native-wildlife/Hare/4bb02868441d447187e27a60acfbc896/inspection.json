@@ -1,0 +1,41 @@
+{
+  "status": "SOURCE_INSPECTION_NOT_RUNTIME_ADMISSION",
+  "runtimeAdmission": false,
+  "species": "Hare",
+  "sourceSha256": "711c9bfa20d42d589c0d559b618a7d3113ac77b369a981fceaae6f046bcc5667",
+  "bounds": [
+    [
+      -0.810433030128479,
+      -0.9444488883018494,
+      -3.5300328731536865
+    ],
+    [
+      0.810433030128479,
+      3.402787923812866,
+      1.8724957704544067
+    ]
+  ],
+  "triangles": 29922,
+  "meshes": [
+    {
+      "name": "Object_2",
+      "vertices": 11839,
+      "uvLayers": 0,
+      "vertexGroups": 0
+    },
+    {
+      "name": "Object_3",
+      "vertices": 3237,
+      "uvLayers": 0,
+      "vertexGroups": 0
+    }
+  ],
+  "rigs": [],
+  "actions": [],
+  "materials": [
+    {
+      "name": "material_0",
+      "textures": []
+    }
+  ]
+}

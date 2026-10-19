@@ -1,0 +1,98 @@
+{
+  "status": "PASS_SOURCE_SKIN_LOD_RUNTIME_CONTRACTS",
+  "records": [
+    {
+      "species": "Hare",
+      "nativeBones": 29,
+      "loopError": 0,
+      "maxHeight": 0.7820404221521063
+    },
+    {
+      "species": "Deer",
+      "nativeBones": 50,
+      "loopError": 0,
+      "maxHeight": 2.037729952598381
+    },
+    {
+      "species": "Wolf",
+      "nativeBones": 90,
+      "loopError": 0,
+      "maxHeight": 1.1812827543759463
+    },
+    {
+      "species": "FreshwaterFish",
+      "nativeBones": 19,
+      "loopError": 0,
+      "maxHeight": 0.0381879993570102
+    }
+  ],
+  "contacts": [
+    {
+      "species": "Hare",
+      "tier": "near",
+      "restSlopeSoleError": 0.00040966386899244766,
+      "feet": [
+        1.3285661271643379e-8,
+        -0.00009558343536497909,
+        -0.00040966386899244766,
+        -0.0004033560752056556
+      ]
+    },
+    {
+      "species": "Deer",
+      "tier": "near",
+      "restSlopeSoleError": 0.0007761528741109577,
+      "feet": [
+        1.0829233274001204e-9,
+        -0.0007761528741109577,
+        -0.000508773668462803,
+        -0.0005087644085580104
+      ]
+    },
+    {
+      "species": "Wolf",
+      "tier": "near",
+      "restSlopeSoleError": 0.0002431070848320175,
+      "feet": [
+        -0.0002431070848320175,
+        -5.460296098949713e-9,
+        -0.0000697182814978995,
+        -0.00009740496618840938
+      ]
+    },
+    {
+      "species": "Hare",
+      "tier": "mid",
+      "restSlopeSoleError": 0.0007087906588850016,
+      "feet": [
+        -0.0007087906588850016,
+        -0.0005251392512988359,
+        2.417493280212901e-10,
+        -0.000036726009969583265
+      ]
+    },
+    {
+      "species": "Deer",
+      "tier": "mid",
+      "restSlopeSoleError": 0.0008273720509454664,
+      "feet": [
+        4.913030416525688e-10,
+        -0.0007036345007760628,
+        -0.0008248769291397985,
+        -0.0008273720509454664
+      ]
+    },
+    {
+      "species": "Wolf",
+      "tier": "mid",
+      "restSlopeSoleError": 0.0005220124530104448,
+      "feet": [
+        -0.0005220124530104448,
+        -0.00027891082847453057,
+        1.1528503179869531e-8,
+        -0.00012659919650358144
+      ]
+    }
+  ],
+  "physicalAndroid": "NOT_MEASURED"
+}

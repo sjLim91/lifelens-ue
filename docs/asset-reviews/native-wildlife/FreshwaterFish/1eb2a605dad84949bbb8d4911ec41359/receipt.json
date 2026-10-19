@@ -1,0 +1,200 @@
+{
+  "uid": "1eb2a605dad84949bbb8d4911ec41359",
+  "name": "Catfish",
+  "author": {
+    "uid": "6b5e3c178bb04cb7bfcd0deb998c837e",
+    "username": "lizongyong",
+    "displayName": "lizongyong",
+    "profileUrl": "https://sketchfab.com/lizongyong",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/78fa317e46024a5283765aa34df5e508",
+      "images": [
+        {
+          "size": 6421,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/aec92fe9a74e499c98d759362cd7f02f.jpeg",
+          "height": 100
+        },
+        {
+          "size": 2518,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/17fa177ffaa344a2b2fc8e78efd40fbb.jpeg",
+          "height": 48
+        },
+        {
+          "size": 5653,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/02162695bdc840faa3bcb2d418309c5e.jpeg",
+          "height": 90
+        },
+        {
+          "size": 1350,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/6fde876cbded4cd48d36a76029e3aa02.jpeg",
+          "height": 32
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/6b5e3c178bb04cb7bfcd0deb998c837e"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/1eb2a605dad84949bbb8d4911ec41359",
+  "description": "",
+  "faceCount": 4052,
+  "vertexCount": 2146,
+  "animationCount": 0,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T07:42:19.121876+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-142/1eb2a605dad84949bbb8d4911ec41359.glb",
+  "sha256": "adf35a5c0da31140baf4968fe111ba7ff0f7a81efd11d2a0f551197e021b1db6",
+  "bytes": 250792,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/1eb2a605dad84949bbb8d4911ec41359",
+    "uid": "1eb2a605dad84949bbb8d4911ec41359",
+    "name": "Catfish",
+    "staffpickedAt": null,
+    "viewCount": 9,
+    "likeCount": 0,
+    "animationCount": 0,
+    "viewerUrl": "https://sketchfab.com/3d-models/1eb2a605dad84949bbb8d4911ec41359",
+    "embedUrl": "https://sketchfab.com/models/1eb2a605dad84949bbb8d4911ec41359/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2022-03-08T07:02:46.146322",
+    "tags": [],
+    "categories": [],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "9f412ef63eda49429b368f1e22f1e46e",
+          "size": 79303,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/1eb2a605dad84949bbb8d4911ec41359/thumbnails/fe2147bfa09c49eba8a68887929194ff/22233f8328514f61ba8686a5e5b50700.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "537d529f85d0448fa69c2f3552a1b4b3",
+          "size": 30447,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/1eb2a605dad84949bbb8d4911ec41359/thumbnails/fe2147bfa09c49eba8a68887929194ff/9c9bb477ae394e96acc6c12396acca79.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "a0f8e7a721f34ea1a9a5f6c308efee14",
+          "size": 18645,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/1eb2a605dad84949bbb8d4911ec41359/thumbnails/fe2147bfa09c49eba8a68887929194ff/9b291eed26f64d1f84b92bc7e2e724fd.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "ddabdc8231e64245b563d3cc336b626d",
+          "size": 4384,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/1eb2a605dad84949bbb8d4911ec41359/thumbnails/fe2147bfa09c49eba8a68887929194ff/e2f4512a04204a1f8d1296b1cc406e29.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "7a1dcb60ad65435e998495a4b8df42b3",
+          "size": 950,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/1eb2a605dad84949bbb8d4911ec41359/thumbnails/fe2147bfa09c49eba8a68887929194ff/63aba61f739f4ce690c76d9ab03fa721.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "6b5e3c178bb04cb7bfcd0deb998c837e",
+      "username": "lizongyong",
+      "displayName": "lizongyong",
+      "profileUrl": "https://sketchfab.com/lizongyong",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/78fa317e46024a5283765aa34df5e508",
+        "images": [
+          {
+            "size": 6421,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/aec92fe9a74e499c98d759362cd7f02f.jpeg",
+            "height": 100
+          },
+          {
+            "size": 2518,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/17fa177ffaa344a2b2fc8e78efd40fbb.jpeg",
+            "height": 48
+          },
+          {
+            "size": 5653,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/02162695bdc840faa3bcb2d418309c5e.jpeg",
+            "height": 90
+          },
+          {
+            "size": 1350,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/6fde876cbded4cd48d36a76029e3aa02.jpeg",
+            "height": 32
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/6b5e3c178bb04cb7bfcd0deb998c837e"
+    },
+    "description": "",
+    "faceCount": 4052,
+    "createdAt": "2022-03-08T07:01:21.737638",
+    "vertexCount": 2146,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 1,
+        "size": 250792,
+        "type": "glb",
+        "textureMaxResolution": 1024,
+        "faceCount": 4052,
+        "vertexCount": 2162
+      },
+      "gltf": {
+        "textureCount": 1,
+        "size": 180434,
+        "type": "gltf",
+        "textureMaxResolution": 1024,
+        "faceCount": 4052,
+        "vertexCount": 2162
+      },
+      "source": {
+        "textureCount": null,
+        "size": 441879,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 231183,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "lizongyong (https://sketchfab.com/lizongyong)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/catfish-1eb2a605dad84949bbb8d4911ec41359",
+      "title": "Catfish"
+    },
+    "generator": "Sketchfab-12.66.0",
+    "version": "2.0"
+  },
+  "skins": [],
+  "animations": []
+}

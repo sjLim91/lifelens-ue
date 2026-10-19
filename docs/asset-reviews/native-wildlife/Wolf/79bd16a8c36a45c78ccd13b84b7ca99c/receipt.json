@@ -1,0 +1,245 @@
+{
+  "uid": "79bd16a8c36a45c78ccd13b84b7ca99c",
+  "name": "wolf animated",
+  "author": {
+    "uid": "235e14e5a89e441fa436092807e27d53",
+    "username": "victory_mirosya",
+    "displayName": "victory_mirosya",
+    "profileUrl": "https://sketchfab.com/victory_mirosya",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/7d9f11a8519b41e4b7c1837cfc9c409b",
+      "images": [
+        {
+          "size": 1028,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/7d9f11a8519b41e4b7c1837cfc9c409b/6bafd48e73364013842794ef80f0be93.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1450,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/7d9f11a8519b41e4b7c1837cfc9c409b/f401983d4263453b9c144aa3ed3afb5d.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2911,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/7d9f11a8519b41e4b7c1837cfc9c409b/6e035078b5af4378ba616b089184b588.jpeg",
+          "height": 90
+        },
+        {
+          "size": 3319,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/7d9f11a8519b41e4b7c1837cfc9c409b/daa0d3bf6e6a4400a4ab6dd8a62e6365.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/235e14e5a89e441fa436092807e27d53"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/79bd16a8c36a45c78ccd13b84b7ca99c",
+  "description": "# wolf\nя разрешаю использовать модель для вашего проекта",
+  "faceCount": 3884,
+  "vertexCount": 2086,
+  "animationCount": 4,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-18T07:42:18.223044+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-050/79bd16a8c36a45c78ccd13b84b7ca99c.glb",
+  "sha256": "6fb344d1d1895a8003ddb01ea84ba030a461bcd17609b9aa97b6e83e1913fb89",
+  "bytes": 2245500,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/79bd16a8c36a45c78ccd13b84b7ca99c",
+    "uid": "79bd16a8c36a45c78ccd13b84b7ca99c",
+    "name": "wolf animated",
+    "staffpickedAt": null,
+    "viewCount": 633,
+    "likeCount": 19,
+    "animationCount": 4,
+    "viewerUrl": "https://sketchfab.com/3d-models/79bd16a8c36a45c78ccd13b84b7ca99c",
+    "embedUrl": "https://sketchfab.com/models/79bd16a8c36a45c78ccd13b84b7ca99c/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2022-04-16T21:01:09.501976",
+    "tags": [
+      {
+        "name": "loupoli",
+        "slug": "loupoli",
+        "uri": "https://api.sketchfab.com/v3/tags/loupoli"
+      },
+      {
+        "name": "volk",
+        "slug": "volk",
+        "uri": "https://api.sketchfab.com/v3/tags/volk"
+      },
+      {
+        "name": "dikii",
+        "slug": "dikii",
+        "uri": "https://api.sketchfab.com/v3/tags/dikii"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      },
+      {
+        "name": "characters-creatures"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "633befea800c46cbb8643a788047e6d0",
+          "size": 95041,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/79bd16a8c36a45c78ccd13b84b7ca99c/thumbnails/126c0506dbac4e35b41c423cf75ca6b8/7a53f4ea45cb47b4ab48d02a31907f59.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "ef428d260d8b4bf7ada630fd81d69eca",
+          "size": 28507,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/79bd16a8c36a45c78ccd13b84b7ca99c/thumbnails/126c0506dbac4e35b41c423cf75ca6b8/3b4977465e3c4834a623347c6cc5a090.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "04561e54995a45409e61f71d4dab3266",
+          "size": 15656,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/79bd16a8c36a45c78ccd13b84b7ca99c/thumbnails/126c0506dbac4e35b41c423cf75ca6b8/3144903605c24054a639f5750ed657be.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "1c05cd2c57604aecb87f4be01ffa910f",
+          "size": 3194,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/79bd16a8c36a45c78ccd13b84b7ca99c/thumbnails/126c0506dbac4e35b41c423cf75ca6b8/ed76719797564ac69b1dc77bfa3f8f18.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "42b011dee807411798dd83f59f907181",
+          "size": 931,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/79bd16a8c36a45c78ccd13b84b7ca99c/thumbnails/126c0506dbac4e35b41c423cf75ca6b8/20621bc530cc4430b2962f5698ee86c7.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "235e14e5a89e441fa436092807e27d53",
+      "username": "victory_mirosya",
+      "displayName": "victory_mirosya",
+      "profileUrl": "https://sketchfab.com/victory_mirosya",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/7d9f11a8519b41e4b7c1837cfc9c409b",
+        "images": [
+          {
+            "size": 1028,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/7d9f11a8519b41e4b7c1837cfc9c409b/6bafd48e73364013842794ef80f0be93.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1450,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/7d9f11a8519b41e4b7c1837cfc9c409b/f401983d4263453b9c144aa3ed3afb5d.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2911,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/7d9f11a8519b41e4b7c1837cfc9c409b/6e035078b5af4378ba616b089184b588.jpeg",
+            "height": 90
+          },
+          {
+            "size": 3319,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/7d9f11a8519b41e4b7c1837cfc9c409b/daa0d3bf6e6a4400a4ab6dd8a62e6365.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/235e14e5a89e441fa436092807e27d53"
+    },
+    "description": "# wolf\nя разрешаю использовать модель для вашего проекта",
+    "faceCount": 3884,
+    "createdAt": "2022-04-16T20:59:37.484264",
+    "vertexCount": 2086,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 1,
+        "size": 4962292,
+        "type": "glb",
+        "textureMaxResolution": 2048,
+        "faceCount": 9948,
+        "vertexCount": 10896
+      },
+      "gltf": {
+        "textureCount": 1,
+        "size": 4242192,
+        "type": "gltf",
+        "textureMaxResolution": 2048,
+        "faceCount": 9948,
+        "vertexCount": 10896
+      },
+      "source": {
+        "textureCount": null,
+        "size": 5600355,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 1258043,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "victory_mirosya (https://sketchfab.com/victory_mirosya)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/wolf-animated-79bd16a8c36a45c78ccd13b84b7ca99c",
+      "title": "wolf animated"
+    },
+    "generator": "Sketchfab-12.97.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 64
+    }
+  ],
+  "animations": [
+    {
+      "name": "metarig.002|eating",
+      "channels": 66
+    },
+    {
+      "name": "metarig.002|IDLE",
+      "channels": 56
+    },
+    {
+      "name": "metarig.002|RRAR",
+      "channels": 57
+    },
+    {
+      "name": "metarig.002|SLEEP",
+      "channels": 21
+    }
+  ]
+}

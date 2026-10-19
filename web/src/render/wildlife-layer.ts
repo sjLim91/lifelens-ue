@@ -8,6 +8,7 @@ import { buildFlowWaterSurfaceGeometry, createVisibleWaterFootprintTester } from
 import { facilityPresentationFootprints, outsideFacilityFootprints } from './facility-layer';
 import { terrainDressingSignature } from './terrain-dressing-signature';
 import { ImportedTigerPool, type TigerAssetLoader } from './imported-tiger';
+import { NativeWildlifePool, type NativeWildlifeLoader } from './native-wildlife';
 
 // Actual 3D anatomy has three levels of detail. Near uses fused surfaces and
 // shader fur, mid reduces topology and far preserves just essential silhouette.
@@ -21,6 +22,7 @@ const behaviorCode=(name:WildlifeAnimalObservation['behavior'])=>
     :name==='Hunt'?5:name==='Swim'?6:0;
 type Visible = {
   id:string;species:WildlifeSpecies;key:string;behavior:WildlifeAnimalObservation['behavior'];
+  sex:WildlifeAnimalObservation['sex'];
   x:number;z:number;goalX:number;goalZ:number;heading:number;phase:number;
   scale:number;motion:number;speed:number;fish:boolean;
 };
@@ -52,11 +54,21 @@ export class WildlifeLayer {
   private readonly scratch=new Map<string,number>();
   private readonly cameraPosition=new THREE.Vector3();
   private readonly cameraAbsolute=new THREE.Vector3();
+  private readonly screenPosition=new THREE.Vector3();
+  private readonly viewProjection=new THREE.Matrix4();
+  private viewOriginX=0;
+  private viewOriginZ=0;
+  private readonly renderPriority=new Map<string,number>();
   private hasCamera=false;
   private readonly tigers:ImportedTigerPool;
+  private readonly native:NativeWildlifePool;
+  private readonly renderedIds=new Set<string>();
   instanceCount=0;
-  constructor(tigerLoader?:TigerAssetLoader){
+  get candidateCoreIds():IterableIterator<string>{return this.animals.keys();}
+  get renderedCoreIds():ReadonlySet<string>{return this.renderedIds;}
+  constructor(tigerLoader?:TigerAssetLoader,nativeLoader?:NativeWildlifeLoader|null){
     this.tigers=new ImportedTigerPool(tigerLoader);
+    this.native=new NativeWildlifePool(nativeLoader);
     // Fragment-space stripes and fur variation belong to the animal surface
     // itself. The earlier tiger's black tubular stripes looked like cords.
     this.material.onBeforeCompile=shader=>{
@@ -205,12 +217,12 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
       const goalZ=animal.gridY/grid.gridCellsPerChunk*grid.worldUnitsPerChunk;
       const old=this.animals.get(animal.id);
       const pose:Visible=old&&old.key===key?old:{
-        id:animal.id,species:animal.species,key,behavior:animal.behavior,
+        id:animal.id,species:animal.species,key,behavior:animal.behavior,sex:animal.sex,
         x:goalX,z:goalZ,goalX,goalZ,heading:0,phase:stablePhase(animal.id),
         scale,motion:0,speed:0,fish,
       };
       pose.goalX=goalX;pose.goalZ=goalZ;pose.scale=scale;
-      pose.behavior=animal.behavior;pose.fish=fish;
+      pose.behavior=animal.behavior;pose.fish=fish;pose.sex=animal.sex;
       next.set(animal.id,pose);
     }
     this.animals=next;
@@ -239,8 +251,9 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
     this.render(camera,dt);
   }
   private render(camera?:THREE.Camera,dt=0):void {
-    this.scratch.clear();this.instanceCount=0;
+    this.scratch.clear();this.instanceCount=0;this.renderedIds.clear();
     this.tigers.begin();
+    this.native.begin(dt);
     const offsetX=(this.centerChunkX+.5)*grid.worldUnitsPerChunk;
     const offsetZ=(this.centerChunkY+.5)*grid.worldUnitsPerChunk;
     if(camera){
@@ -249,11 +262,30 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
     }
     this.cameraPosition.copy(this.cameraAbsolute);
     this.cameraPosition.x-=offsetX;this.cameraPosition.z-=offsetZ;
-    // Spend the bounded skinned-model budget on the animals nearest the observer.
+    // Spend bounded skins on the current view. Close animals behind the camera
+    // must not exhaust the budget before the animal being observed.
     const visible=[...this.animals.values()];
-    if(this.hasCamera)visible.sort((a,b)=>
-      Math.hypot(a.x-offsetX-this.cameraPosition.x,a.z-offsetZ-this.cameraPosition.z)
-      -Math.hypot(b.x-offsetX-this.cameraPosition.x,b.z-offsetZ-this.cameraPosition.z));
+    if(camera){
+      this.viewProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+      this.viewOriginX=offsetX;this.viewOriginZ=offsetZ;
+    }
+    // Observation refreshes also render without a camera argument. Keep the
+    // last view's priority so a refresh cannot evict its subject from the skin
+    // budget between update() and the actual frame submission.
+    if(this.hasCamera){
+      this.renderPriority.clear();
+      for(const pose of visible){
+        const x=pose.x-offsetX,z=pose.z-offsetZ;
+        const y=(this.ground.height(x,z)??0)+(pose.fish?.02:.6*pose.scale);
+        // The cached camera matrix uses its original local origin, even when
+        // this observation window rebases before the next camera update.
+        this.screenPosition.set(pose.x-this.viewOriginX,y,pose.z-this.viewOriginZ).applyMatrix4(this.viewProjection);
+        const p=this.screenPosition,distance=Math.hypot(x-this.cameraPosition.x,z-this.cameraPosition.z);
+        const inView=p.z>=-1&&p.z<=1&&Math.abs(p.x)<=1.15&&Math.abs(p.y)<=1.15;
+        this.renderPriority.set(pose.id,inView?distance*(1+2*Math.hypot(p.x,p.y)):1e6+distance);
+      }
+      visible.sort((a,b)=>this.renderPriority.get(a.id)!-this.renderPriority.get(b.id)!||a.id.localeCompare(b.id));
+    }
     for(const pose of visible){
       const x=pose.x-offsetX,z=pose.z-offsetZ;
       let y=this.ground.height(x,z);
@@ -265,14 +297,21 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
       const mesh=this.batches.get(`${pose.key}:${lod}`)!;
       const i=this.scratch.get(mesh.name)??0;
       if(i>=LIMIT)continue;
+      let nativeFishY:number|null=null,fallbackFits=true;
       if(pose.fish){
         if(!this.water)continue;
         this.rayOrigin.set(x,1000,z);
         this.ray.set(this.rayOrigin,this.down);
         const hit=this.ray.intersectObject(this.water)[0];
         const h=mesh.geometry.boundingBox!.max.y*pose.scale;
-        if(!hit||hit.point.y-y<h+.04)continue;
-        y=hit.point.y-h-.02;
+        if(!hit)continue;
+        const depth=hit.point.y-y;
+        const nativeHeight=this.native.heightFor('FreshwaterFish',lod);
+        if(nativeHeight!==null&&depth>=nativeHeight*pose.scale+.04)
+          nativeFishY=hit.point.y-nativeHeight*pose.scale-.02;
+        fallbackFits=depth>=h+.04;
+        if(!fallbackFits&&nativeFishY===null)continue;
+        if(fallbackFits)y=hit.point.y-h-.02;
       }else{
         const width=pose.species==='Hare'?.16:pose.species==='Deer'?.21:.25;
         const length=pose.species==='Hare'?.3:pose.species==='Deer'?.6:.52;
@@ -282,7 +321,13 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
       if(pose.species==='Tiger'&&this.tigers.draw({
         id:pose.id,x,y,z,heading:pose.heading,scale:pose.scale,speed:pose.speed,
         phase:pose.phase,behavior:pose.behavior,
-      },lod,dt,this.groundHeight)){this.instanceCount++;continue;}
+      },lod,dt,this.groundHeight)){this.renderedIds.add(pose.id);this.instanceCount++;continue;}
+      if(pose.species!=='Tiger'&&(!pose.fish||nativeFishY!==null)&&this.native.draw({
+        id:pose.id,species:pose.species,sex:pose.sex,
+        x,y:pose.fish?nativeFishY!:y,z,heading:pose.heading,scale:pose.scale,speed:pose.speed,
+        phase:pose.phase,behavior:pose.behavior,
+      },lod,dt,this.groundHeight)){this.renderedIds.add(pose.id);this.instanceCount++;continue;}
+      if(!fallbackFits)continue;
       this.transform.position.set(x,y,z);
       this.transform.rotation.set(0,pose.heading,0);
       this.transform.scale.setScalar(pose.scale);
@@ -294,9 +339,10 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
         pose.fish?.45:pose.motion);
       (geometry.getAttribute('wildlifeBehavior') as THREE.InstancedBufferAttribute).setX(i,
         behaviorCode(pose.behavior));
-      this.scratch.set(mesh.name,i+1);this.instanceCount++;
+      this.scratch.set(mesh.name,i+1);this.renderedIds.add(pose.id);this.instanceCount++;
     }
     this.tigers.end(this.group);
+    this.native.end(this.group);
     for(const mesh of this.batches.values()){
       mesh.count=this.scratch.get(mesh.name)??0;
       mesh.instanceMatrix.needsUpdate=true;
@@ -306,10 +352,12 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
   }
   dispose():void {
     this.tigers.dispose();
+    this.native.dispose();
     for(const mesh of this.batches.values()){mesh.geometry.dispose();mesh.dispose();}
-    this.batches.clear();this.animals.clear();
+    this.batches.clear();this.animals.clear();this.renderedIds.clear();
     this.water?.geometry.dispose();this.waterMaterial.dispose();this.material.dispose();
     this.group.clear();
   }
 }
+
 
