@@ -68,6 +68,40 @@ int main()
     eco.moisture01=0.81;
     eco.carryingCapacity={{22,10,3,22,2}};
 
+    // v4+ uses sparse Core-founded predator territories instead of a
+    // guaranteed tiger breeding pair in every favorable materialized chunk.
+    // This applies symmetrically across negative world coordinates and never
+    // depends on founder/camera position or the independent population seed.
+    {
+        const auto v4=makeWorldGenesisIdentity(4242001,0,4);
+        const auto v4Alternate=makeWorldGenesisIdentity(4242001,999999,4);
+        for(const auto species:{WildlifeSpecies::Tiger,WildlifeSpecies::Wolf}){
+            const int width=species==WildlifeSpecies::Tiger?4:2;
+            for(int tileX=-2;tileX<=1;++tileX)
+                for(int tileY=-2;tileY<=1;++tileY){
+                    int occupied=0;
+                    for(int localX=0;localX<width;++localX)
+                        for(int localY=0;localY<width;++localY){
+                            auto patch=eco;
+                            patch.coord={tileX*width+localX,
+                                         tileY*width+localY};
+                            const auto observed=startWildlifePopulation(v4,patch);
+                            const auto repeated=startWildlifePopulation(v4,patch);
+                            const auto otherPopulation=startWildlifePopulation(
+                                v4Alternate,patch);
+                            samePopulation(observed,repeated);
+                            samePopulation(observed,otherPopulation);
+                            const int count=wildlifeAliveCount(observed,species);
+                            assert(count==0 || count==2);
+                            if(count>0) ++occupied;
+                        }
+                    assert(occupied==1);
+                }
+        }
+        assert(wildlifePredatorFoundingTerritory(
+            v4.worldSeed,{0,0},WildlifeSpecies::Deer));
+    }
+
     // Spatial truth: a predator at the other end of the chunk may not
     // magically kill prey without chasing into range.
     {

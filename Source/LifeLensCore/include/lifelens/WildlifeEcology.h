@@ -282,6 +282,42 @@ inline WildlifeAnimal wildlifeCreateAnimal(
     return animal;
 }
 
+// Apex predators do not occupy every vegetation-rich 32-cell chunk. A
+// deterministic, species-specific territory admits at most one founding pack
+// or breeding pair across a 2x2 wolf or 4x4 tiger chunk region. This is
+// ecological density, not a founder-protection exemption: humans may still
+// encounter resident predators and existing Core contact outcomes remain.
+// Only NEW v4+ population construction uses these territories; a loaded
+// population, v3 fixture, daily survival and saved wildlife are untouched.
+inline bool wildlifePredatorFoundingTerritory(
+    WorldSeed worldSeed,ChunkCoord coord,WildlifeSpecies species)
+{
+    if(species!=WildlifeSpecies::Tiger &&species!=WildlifeSpecies::Wolf)
+        return true;
+    const int width=species==WildlifeSpecies::Tiger ?4:2;
+    // C++ division truncates toward zero. Use floor division so territories
+    // tile negative and positive chunk coordinates without discontinuities.
+    const auto territoryIndex=[width](int coordinate)->int {
+        const std::int64_t value=coordinate;
+        return static_cast<int>(value>=0
+            ?value/width :(value-width+1)/width);
+    };
+    const ChunkCoord territory{
+        territoryIndex(coord.x),territoryIndex(coord.y)
+    };
+    const std::uint64_t placement=wildlifeHash(
+        worldSeed,territory,static_cast<std::uint64_t>(species),0,
+        0x5445525249544f52ULL); // TERRITOR
+    const int localX=static_cast<int>(
+        static_cast<std::int64_t>(coord.x)
+        -static_cast<std::int64_t>(territory.x)*width);
+    const int localY=static_cast<int>(
+        static_cast<std::int64_t>(coord.y)
+        -static_cast<std::int64_t>(territory.y)*width);
+    return localX==static_cast<int>(placement%width)
+        &&localY==static_cast<int>((placement>>16U)%width);
+}
+
 inline WildlifePopulation startWildlifePopulation(
     const WorldGenesisIdentity& identity,
     const WildlifeHabitat& habitat,std::int64_t startDay=0)
@@ -293,6 +329,11 @@ inline WildlifePopulation startWildlifePopulation(
     state.dayIndex=std::max<std::int64_t>(0,startDay);
     if(!habitat.available) return state;
     for(std::size_t s=0;s<WildlifeSpeciesCount;++s){
+        const auto species=static_cast<WildlifeSpecies>(s);
+        if(state.generationVersion>=4
+           &&!wildlifePredatorFoundingTerritory(
+               state.worldSeed,habitat.coord,species))
+            continue;
         const int cap=std::max(0,habitat.carryingCapacity[s]);
         const int count=cap<2?0:std::min(cap,std::max(2,cap/3));
         for(int i=0;i<count;++i){
