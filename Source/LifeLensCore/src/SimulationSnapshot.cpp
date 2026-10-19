@@ -29,6 +29,8 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
     if(snapshot.version!=SimulationSnapshotVersion) return fail("unsupported snapshot version");
     if(!validSimulationRuleset(snapshot.ruleset)) return fail("snapshot contains invalid simulation ruleset");
     if(snapshot.world.seed==0) return fail("snapshot world seed must be nonzero");
+    if(!validEarthScenarioState(snapshot.world.earthScenario,snapshot.world.genesisIdentity()))
+        return fail("invalid Earth scenario binding");
     if(snapshot.nextContextActionToken==0)
         return fail("snapshot next context action token must be nonzero");
     if(snapshot.world.minute<0) return fail("snapshot minute must be nonnegative");

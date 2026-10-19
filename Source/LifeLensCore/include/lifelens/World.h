@@ -13,11 +13,13 @@
 #include "Hydrology.h"
 #include "NaturalWorldChunk.h"
 #include "WildlifeEcology.h"
+#include "EarthScenarioState.h"
 namespace lifelens {
 struct SnowpackState { ChunkCoord coord{}; double depthMeters=0.0; int minute=0; };
 
 struct World {
     int minute=7*60;
+    EarthScenarioState earthScenario{};
     // `seed` remains the compatibility spelling for authoritative WorldSeed.
     std::uint64_t seed=1;
     PopulationSeed populationSeed=1;

@@ -21,11 +21,17 @@ const valid={
   metricScaleProvisional:true,snapshotPersistence:false,
 };
 assert.deepEqual(readCoreEarthScenario(valid,world),valid);
+const persisted={...valid,snapshotPersistence:true};
+assert.deepEqual(readCoreEarthScenario(persisted,world),persisted);
+for(const snapshotPersistence of [undefined,null,1,"false"]){
+  assert.deepEqual(readCoreEarthScenario({...valid,snapshotPersistence},world),
+    UNBOUND_EARTH_SCENARIO);
+}
 for(const change of [
   {worldSeed:'other'},{generationVersion:2},{regionId:'a12'},
   {latitudeDeg:91},{longitudeDeg:Infinity},{originGridX:1.2},
   {earthDataVersion:'../untrusted'},{source:'web-preview'},
-  {terrainGeographicallyConditioned:true},{snapshotPersistence:true},
+  {terrainGeographicallyConditioned:true},{snapshotPersistence:'true'},
 ]){
   assert.deepEqual(readCoreEarthScenario({...valid,...change},world),
     UNBOUND_EARTH_SCENARIO);

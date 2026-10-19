@@ -47,7 +47,7 @@ export function readCoreEarthScenario(
       entry.singleOrigin !== true ||
       entry.terrainGeographicallyConditioned !== false ||
       entry.metricScaleProvisional !== true ||
-      entry.snapshotPersistence !== false) {
+      typeof entry.snapshotPersistence !== 'boolean') {
     return UNBOUND_EARTH_SCENARIO;
   }
   return entry as unknown as CoreEarthScenarioObservation;
