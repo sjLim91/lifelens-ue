@@ -328,6 +328,13 @@ export class ResidentAIController {
         this.update({ configuration: {
           baseUrl: 'browser-webgpu', model: BUILTIN_RESIDENT_MODEL,
         } });
+      } else if (provider) {
+        // A Core reattach can happen while hundreds of MB are downloading.
+        // A completed OLD engine must be unloaded, not merely ignored:
+        // otherwise the orphaned model keeps occupying mobile GPU memory.
+        try { await provider.dispose?.(); } catch {
+          // An obsolete GPU failure cannot affect the new Core source.
+        }
       }
     } catch {
       // Hardware/weight failures cannot stop physical resident agency.
