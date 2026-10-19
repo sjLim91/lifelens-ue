@@ -1,5 +1,6 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/SocietyEconomy.h"
+#include "lifelens/ResidentCognitiveTeachingPreference.h"
 
 #include <algorithm>
 #include <cmath>
@@ -98,6 +99,7 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
         CharacterId learner=0;
         TechniqueId technique=TechniqueId::None;
         double score=0.0;
+        double rank=0.0;
     } best;
 
     const SettlementPopulation population=settlementPopulation();
@@ -222,14 +224,21 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                     +regionalSpecializationBoost;
                 if(score<0.36) continue;
 
-                const bool better=score>best.score+1e-12;
-                const bool tied=std::fabs(score-best.score)<=1e-12;
+                // A validated resident goal may select a different learner
+                // among REAL Core-approved teaching opportunities. Do not
+                // increase success odds, teach without a fact, interrupt
+                // survival, or create a second simultaneous action slot.
+                const double rank=score+residentCognitiveTeachingPreference(
+                    world_,acceptedCognitiveDecisions_,
+                    teacher.id,learner.id);
+                const bool better=rank>best.rank+1e-12;
+                const bool tied=std::fabs(rank-best.rank)<=1e-12;
                 if(better || (tied &&
                    (best.teacher==0 || teacher.id<best.teacher ||
                     (teacher.id==best.teacher && learner.id<best.learner) ||
                     (teacher.id==best.teacher && learner.id==best.learner &&
                      static_cast<int>(record.technique)<static_cast<int>(best.technique))))){
-                    best={teacher.id,learner.id,record.technique,score};
+                    best={teacher.id,learner.id,record.technique,score,rank};
                 }
             }
         }
