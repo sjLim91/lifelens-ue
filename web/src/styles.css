@@ -1477,3 +1477,29 @@ button:disabled { opacity: .33; cursor: default; }
 .earth-solar-observation strong { color: #f1dfaa; font-size: .81rem; }
 .earth-solar-observation span { color: #d3e5e0; font-size: .75rem; line-height: 1.45; }
 .earth-solar-observation small { color: #98b4ac; font-size: .68rem; line-height: 1.45; }
+
+
+/* GPU/WebGL recovery is presentation-only: keep the active Core simulation. */
+.render-fallback-banner {
+  position: absolute;
+  z-index: 6;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(540px, calc(100% - 32px));
+  padding: 9px 12px;
+  border: 1px solid #8e7747;
+  border-radius: 10px;
+  background: rgba(28, 32, 20, .93);
+  color: #fff0ce;
+  font: 600 .77rem/1.5 system-ui, sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+@media (max-width: 800px) {
+  .render-fallback-banner {
+    top: 63px;
+    width: calc(100% - 24px);
+    font-size: .71rem;
+  }
+}
