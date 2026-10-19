@@ -19,6 +19,16 @@ export const LIVE_AI_BUDGET = Object.freeze({
   maxResidents: 32,
 });
 
+// On-device GPU inference may need several seconds to compile kernels and
+// generate JSON, especially on Android. A fixed 6-second network budget
+// would cancel nearly every legitimate resident thought. This is still ONE
+// resident cognition stream, not a second planner or a separate AI mode.
+export function residentAIExecutionBudget(provider: CognitiveProvider) {
+  return provider.name === 'resident-browser-webgpu'
+    ? { ...LIVE_AI_BUDGET, timeoutMs: 24000 }
+    : LIVE_AI_BUDGET;
+}
+
 export interface ResidentAISource {
   worldOverview(): WorldOverview;
   cognitiveRequest(actor: string, trigger: 'Reflection' | 'ResourceScarcity' | 'RepeatedFailure'): CognitiveRequestDto | null;
@@ -326,7 +336,8 @@ export class ResidentAIController {
     this.resetWorld();
     this.scheduler = this.source && !this.disposed
       ? new CognitionScheduler(provider,
-        () => this.source?.worldOverview().minute ?? NaN, LIVE_AI_BUDGET)
+        () => this.source?.worldOverview().minute ?? NaN,
+        residentAIExecutionBudget(provider))
       : null;
   }
   private rebuildScheduler(): void {
