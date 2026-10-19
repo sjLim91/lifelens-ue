@@ -1,5 +1,9 @@
 # LifeLens Development Milestones
 
+## Current integration checkpoint — 2026-10-19
+
+#798~#802는 main에 통합되었다. #803 동행·귀가 보존과 #804 기억 계측 보고는 구현/로컬 검증을 마치고 최신 commit CI 및 순차 통합 중이다. 실제 완료 상태·배포 근거는 [WORK_STATE](../tasks/WORK_STATE.md)의 2026-10-19 기록을 우선한다. 아래 제품 로드맵 전체를 완료한 것으로 표시하지 않는다.
+
 이 문서는 **LifeLens의 canonical execution roadmap**이다.
 
 ## Runtime platform note — 2026-09-29
