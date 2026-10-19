@@ -1,0 +1,53 @@
+{
+  "runtimeAdmission": false,
+  "available": [
+    {
+      "species": "Wolf",
+      "uid": "cdeff35b7a2541759a561bc921b8e01e",
+      "source": "docs/asset-reviews/wildlife-quality-candidates/Wolf/cdeff35b7a2541759a561bc921b8e01e/source.glb",
+      "review": "docs/asset-reviews/wildlife-quality-candidates/Wolf/cdeff35b7a2541759a561bc921b8e01e/review"
+    },
+    {
+      "species": "Wolf",
+      "uid": "a2832b845e4e4edd9d439342cf4fd590",
+      "source": "docs/asset-reviews/wildlife-quality-candidates/Wolf/a2832b845e4e4edd9d439342cf4fd590/source.glb",
+      "review": "docs/asset-reviews/wildlife-quality-candidates/Wolf/a2832b845e4e4edd9d439342cf4fd590/review"
+    },
+    {
+      "species": "Wolf",
+      "uid": "a330f31c57134b8fb59c93a033b6268f",
+      "source": "docs/asset-reviews/wildlife-quality-candidates/Wolf/a330f31c57134b8fb59c93a033b6268f/source.glb",
+      "review": "docs/asset-reviews/wildlife-quality-candidates/Wolf/a330f31c57134b8fb59c93a033b6268f/review"
+    },
+    {
+      "species": "Deer",
+      "uid": "5d6c6d1918b64f75b76f321e8bc7a0ee",
+      "source": "docs/asset-reviews/wildlife-quality-candidates/Deer/5d6c6d1918b64f75b76f321e8bc7a0ee/source.glb",
+      "review": "docs/asset-reviews/wildlife-quality-candidates/Deer/5d6c6d1918b64f75b76f321e8bc7a0ee/review"
+    },
+    {
+      "species": "Deer",
+      "uid": "01f33919650c421e91666908db8c421e",
+      "source": "docs/asset-reviews/wildlife-quality-candidates/Deer/01f33919650c421e91666908db8c421e/source.glb",
+      "review": "docs/asset-reviews/wildlife-quality-candidates/Deer/01f33919650c421e91666908db8c421e/review"
+    },
+    {
+      "species": "Hare",
+      "uid": "619f8da783b34797871a5b1b2f1f697d",
+      "source": "docs/asset-reviews/wildlife-quality-candidates/Hare/619f8da783b34797871a5b1b2f1f697d/source.glb",
+      "review": "docs/asset-reviews/wildlife-quality-candidates/Hare/619f8da783b34797871a5b1b2f1f697d/review"
+    },
+    {
+      "species": "Hare",
+      "uid": "e7213589744d436b9d96e2dbb31198a5",
+      "source": "docs/asset-reviews/wildlife-quality-candidates/Hare/e7213589744d436b9d96e2dbb31198a5/source.glb",
+      "review": "docs/asset-reviews/wildlife-quality-candidates/Hare/e7213589744d436b9d96e2dbb31198a5/review"
+    },
+    {
+      "species": "FreshwaterFish",
+      "uid": "80220d404cce4c83b859d1fba209b608",
+      "source": "docs/asset-reviews/wildlife-quality-candidates/FreshwaterFish/80220d404cce4c83b859d1fba209b608/source.glb",
+      "review": "docs/asset-reviews/wildlife-quality-candidates/FreshwaterFish/80220d404cce4c83b859d1fba209b608/review"
+    }
+  ]
+}

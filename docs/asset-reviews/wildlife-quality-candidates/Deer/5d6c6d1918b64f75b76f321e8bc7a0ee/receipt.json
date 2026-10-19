@@ -1,0 +1,215 @@
+{
+  "uid": "5d6c6d1918b64f75b76f321e8bc7a0ee",
+  "name": "Deer",
+  "author": {
+    "uid": "e80a68cd06d54c64977dd0650a33e5f4",
+    "username": "Huargenn",
+    "displayName": "Huargenn",
+    "profileUrl": "https://sketchfab.com/Huargenn",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/3a235b1ee3974bfba416072717f1008f",
+      "images": [
+        {
+          "size": 3548,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/3a235b1ee3974bfba416072717f1008f/371007b3f6d74a70bf3ba53ddd767828.jpeg",
+          "height": 100
+        },
+        {
+          "size": 3013,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/3a235b1ee3974bfba416072717f1008f/02467d94558642b89fe0ccbb9bae5264.jpeg",
+          "height": 90
+        },
+        {
+          "size": 1273,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/3a235b1ee3974bfba416072717f1008f/9f1df0d49da44b72ab4f0e7fc79025ec.jpeg",
+          "height": 48
+        },
+        {
+          "size": 822,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/3a235b1ee3974bfba416072717f1008f/fb827134448c42cd9da806c24ab440b6.jpeg",
+          "height": 32
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/e80a68cd06d54c64977dd0650a33e5f4"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/5d6c6d1918b64f75b76f321e8bc7a0ee",
+  "description": "Deer",
+  "faceCount": 125280,
+  "vertexCount": 125587,
+  "animationCount": 0,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-19T06:59:35.506424+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-080/5d6c6d1918b64f75b76f321e8bc7a0ee.glb",
+  "sha256": "d4beb3ead9a78d48d91ef5cbaea4aa4619b8007a824d6ff0ae025bfa33b2960d",
+  "bytes": 7252516,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/5d6c6d1918b64f75b76f321e8bc7a0ee",
+    "uid": "5d6c6d1918b64f75b76f321e8bc7a0ee",
+    "name": "Deer",
+    "staffpickedAt": null,
+    "viewCount": 4528,
+    "likeCount": 51,
+    "animationCount": 0,
+    "viewerUrl": "https://sketchfab.com/3d-models/5d6c6d1918b64f75b76f321e8bc7a0ee",
+    "embedUrl": "https://sketchfab.com/models/5d6c6d1918b64f75b76f321e8bc7a0ee/embed",
+    "commentCount": 8,
+    "isDownloadable": true,
+    "publishedAt": "2014-12-13T20:50:47",
+    "tags": [
+      {
+        "name": "deer",
+        "slug": "deer",
+        "uri": "https://api.sketchfab.com/v3/tags/deer"
+      },
+      {
+        "name": "animal",
+        "slug": "animal",
+        "uri": "https://api.sketchfab.com/v3/tags/animal"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "4e66cd2c61bb4b39b17c438c42df62b1",
+          "size": 97575,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/5d6c6d1918b64f75b76f321e8bc7a0ee/thumbnails/f777ae464fe0435a89164b1e15a3c94a/10a1c68121fc418f85c27f8f24fb255e.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "5de488d9075f4eff9f0fbd1e7731fb3d",
+          "size": 22444,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/5d6c6d1918b64f75b76f321e8bc7a0ee/thumbnails/f777ae464fe0435a89164b1e15a3c94a/5b9f3e75caba47aea3a24cbb1a0d9456.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "29cbb005c56c421ba20147005994f115",
+          "size": 11829,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/5d6c6d1918b64f75b76f321e8bc7a0ee/thumbnails/f777ae464fe0435a89164b1e15a3c94a/f48e279018bd49068b381172e3ee39ac.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "cd823ee5531c475a8200cdec079d9310",
+          "size": 2819,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/5d6c6d1918b64f75b76f321e8bc7a0ee/thumbnails/f777ae464fe0435a89164b1e15a3c94a/29c947d8bc6348f299b789fe097561ec.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "20a4fde5961b4fe9bb9edf2c4e74b1b3",
+          "size": 699,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/5d6c6d1918b64f75b76f321e8bc7a0ee/thumbnails/f777ae464fe0435a89164b1e15a3c94a/f6be1d19298f48fea6f411080fae7002.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "e80a68cd06d54c64977dd0650a33e5f4",
+      "username": "Huargenn",
+      "displayName": "Huargenn",
+      "profileUrl": "https://sketchfab.com/Huargenn",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/3a235b1ee3974bfba416072717f1008f",
+        "images": [
+          {
+            "size": 3548,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/3a235b1ee3974bfba416072717f1008f/371007b3f6d74a70bf3ba53ddd767828.jpeg",
+            "height": 100
+          },
+          {
+            "size": 3013,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/3a235b1ee3974bfba416072717f1008f/02467d94558642b89fe0ccbb9bae5264.jpeg",
+            "height": 90
+          },
+          {
+            "size": 1273,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/3a235b1ee3974bfba416072717f1008f/9f1df0d49da44b72ab4f0e7fc79025ec.jpeg",
+            "height": 48
+          },
+          {
+            "size": 822,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/3a235b1ee3974bfba416072717f1008f/fb827134448c42cd9da806c24ab440b6.jpeg",
+            "height": 32
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/e80a68cd06d54c64977dd0650a33e5f4"
+    },
+    "description": "Deer",
+    "faceCount": 125280,
+    "createdAt": "2014-12-13T20:50:45",
+    "vertexCount": 125587,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 0,
+        "size": 7252516,
+        "type": "glb",
+        "textureMaxResolution": 0,
+        "faceCount": 250560,
+        "vertexCount": 132543
+      },
+      "gltf": {
+        "textureCount": 0,
+        "size": 4248172,
+        "type": "gltf",
+        "textureMaxResolution": 0,
+        "faceCount": 250560,
+        "vertexCount": 132543
+      },
+      "source": {
+        "textureCount": null,
+        "size": 13526695,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 3641846,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "Huargenn (https://sketchfab.com/Huargenn)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/deer-5d6c6d1918b64f75b76f321e8bc7a0ee",
+      "title": "Deer"
+    },
+    "generator": "Sketchfab-12.67.0",
+    "version": "2.0"
+  },
+  "skins": [],
+  "animations": []
+}

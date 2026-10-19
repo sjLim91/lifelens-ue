@@ -1,0 +1,225 @@
+{
+  "uid": "01f33919650c421e91666908db8c421e",
+  "name": "Deer",
+  "author": {
+    "uid": "0a681b610dea46329ef13e9f81a04420",
+    "username": "aeonfitzgerald",
+    "displayName": "aeonfitzgerald",
+    "profileUrl": "https://sketchfab.com/aeonfitzgerald",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+      "images": [
+        {
+          "size": 680,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1253,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2797,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+          "height": 90
+        },
+        {
+          "size": 3215,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/0a681b610dea46329ef13e9f81a04420"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/01f33919650c421e91666908db8c421e",
+  "description": "First time making an animal, free to use.",
+  "faceCount": 11210,
+  "vertexCount": 5623,
+  "animationCount": 0,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-19T06:59:35.853932+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-000/01f33919650c421e91666908db8c421e.glb",
+  "sha256": "7570b2859a672f43e4cf27df9e5161f2618be781165ddf55c31475635df9e235",
+  "bytes": 2765856,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/01f33919650c421e91666908db8c421e",
+    "uid": "01f33919650c421e91666908db8c421e",
+    "name": "Deer",
+    "staffpickedAt": null,
+    "viewCount": 1798,
+    "likeCount": 20,
+    "animationCount": 0,
+    "viewerUrl": "https://sketchfab.com/3d-models/01f33919650c421e91666908db8c421e",
+    "embedUrl": "https://sketchfab.com/models/01f33919650c421e91666908db8c421e/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2020-03-08T05:40:36.287752",
+    "tags": [
+      {
+        "name": "deer",
+        "slug": "deer",
+        "uri": "https://api.sketchfab.com/v3/tags/deer"
+      },
+      {
+        "name": "stag",
+        "slug": "stag",
+        "uri": "https://api.sketchfab.com/v3/tags/stag"
+      },
+      {
+        "name": "nature",
+        "slug": "nature",
+        "uri": "https://api.sketchfab.com/v3/tags/nature"
+      },
+      {
+        "name": "animal",
+        "slug": "animal",
+        "uri": "https://api.sketchfab.com/v3/tags/animal"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "1429fff5523a4c4f8b44202ed9640d7b",
+          "size": 121960,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/01f33919650c421e91666908db8c421e/thumbnails/1d3db6e301674eaaa0e02d1d49c52899/f0a383ef77164e529a41c00e9a74ef69.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "159177ee6f3d4e82b1a13cdcc661b02b",
+          "size": 27859,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/01f33919650c421e91666908db8c421e/thumbnails/1d3db6e301674eaaa0e02d1d49c52899/3cd2e0c7aaf449a29e82dbbfa51275cc.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "ed4c3fa02e7742779b37d875fabca7d4",
+          "size": 14448,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/01f33919650c421e91666908db8c421e/thumbnails/1d3db6e301674eaaa0e02d1d49c52899/42c783871c174a3c975b7aa220e08e54.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "77ac0e3adf7b4e34b3a6ea63ba97781b",
+          "size": 2918,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/01f33919650c421e91666908db8c421e/thumbnails/1d3db6e301674eaaa0e02d1d49c52899/621248ba4e7649198915f3dcb072425d.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "9b04004667e14a1ba368127402cac7d8",
+          "size": 658,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/01f33919650c421e91666908db8c421e/thumbnails/1d3db6e301674eaaa0e02d1d49c52899/b5141c8924cf442497aba572992b3505.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "0a681b610dea46329ef13e9f81a04420",
+      "username": "aeonfitzgerald",
+      "displayName": "aeonfitzgerald",
+      "profileUrl": "https://sketchfab.com/aeonfitzgerald",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+        "images": [
+          {
+            "size": 680,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1253,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2797,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+            "height": 90
+          },
+          {
+            "size": 3215,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/0a681b610dea46329ef13e9f81a04420"
+    },
+    "description": "First time making an animal, free to use.",
+    "faceCount": 11210,
+    "createdAt": "2020-03-08T05:28:38.580541",
+    "vertexCount": 5623,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 3,
+        "size": 20185228,
+        "type": "glb",
+        "textureMaxResolution": 4096,
+        "faceCount": 11210,
+        "vertexCount": 8061
+      },
+      "gltf": {
+        "textureCount": 3,
+        "size": 19988622,
+        "type": "gltf",
+        "textureMaxResolution": 4096,
+        "faceCount": 11210,
+        "vertexCount": 8061
+      },
+      "source": {
+        "textureCount": null,
+        "size": 57344338,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 3647199,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "aeonfitzgerald (https://sketchfab.com/aeonfitzgerald)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/deer-01f33919650c421e91666908db8c421e",
+      "title": "Deer"
+    },
+    "generator": "Sketchfab-12.65.0",
+    "version": "2.0"
+  },
+  "skins": [],
+  "animations": []
+}

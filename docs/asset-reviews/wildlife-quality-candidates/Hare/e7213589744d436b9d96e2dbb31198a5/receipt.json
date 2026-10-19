@@ -1,0 +1,238 @@
+{
+  "uid": "e7213589744d436b9d96e2dbb31198a5",
+  "name": "Rabbit Rigged",
+  "author": {
+    "uid": "fe2547cf716d4c24b117e90282f762d2",
+    "username": "FourthGreen",
+    "displayName": "FourthGreen",
+    "profileUrl": "https://sketchfab.com/FourthGreen",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/715ddb980df542fe83dd061087c6188d",
+      "images": [
+        {
+          "size": 1411,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/715ddb980df542fe83dd061087c6188d/a0bba22aeec74e81806d00d908a7b1c1.png",
+          "height": 32
+        },
+        {
+          "size": 2185,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/715ddb980df542fe83dd061087c6188d/dd62b18b2fea4f9f9fb47528f47eb870.png",
+          "height": 48
+        },
+        {
+          "size": 4493,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/715ddb980df542fe83dd061087c6188d/0bcd01264bef4556b591d399aef131b4.png",
+          "height": 90
+        },
+        {
+          "size": 5147,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/715ddb980df542fe83dd061087c6188d/27b16d13bd1648b88904f2abbc5bcd49.png",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/fe2547cf716d4c24b117e90282f762d2"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/e7213589744d436b9d96e2dbb31198a5",
+  "description": "",
+  "faceCount": 2578,
+  "vertexCount": 1322,
+  "animationCount": 1,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-19T06:59:35.154146+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-052/e7213589744d436b9d96e2dbb31198a5.glb",
+  "sha256": "6fa69d096723b407bc59e1474b805de7c1dc6461fdc14b4dbc3b3bd5b3a0d4bd",
+  "bytes": 324608,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/e7213589744d436b9d96e2dbb31198a5",
+    "uid": "e7213589744d436b9d96e2dbb31198a5",
+    "name": "Rabbit Rigged",
+    "staffpickedAt": null,
+    "viewCount": 8642,
+    "likeCount": 150,
+    "animationCount": 1,
+    "viewerUrl": "https://sketchfab.com/3d-models/e7213589744d436b9d96e2dbb31198a5",
+    "embedUrl": "https://sketchfab.com/models/e7213589744d436b9d96e2dbb31198a5/embed",
+    "commentCount": 2,
+    "isDownloadable": true,
+    "publishedAt": "2020-09-20T15:55:32.540338",
+    "tags": [
+      {
+        "name": "rabbit",
+        "slug": "rabbit",
+        "uri": "https://api.sketchfab.com/v3/tags/rabbit"
+      },
+      {
+        "name": "bunny",
+        "slug": "bunny",
+        "uri": "https://api.sketchfab.com/v3/tags/bunny"
+      },
+      {
+        "name": "rabbits",
+        "slug": "rabbits",
+        "uri": "https://api.sketchfab.com/v3/tags/rabbits"
+      },
+      {
+        "name": "lowpoly",
+        "slug": "lowpoly",
+        "uri": "https://api.sketchfab.com/v3/tags/lowpoly"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      },
+      {
+        "name": "characters-creatures"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "eb3302073f7b4d3cb2075eb77e4b49a6",
+          "size": 236143,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/e7213589744d436b9d96e2dbb31198a5/thumbnails/3bb56830d134411ea395d993003ebe17/48bb3bc233a94addba58e7171c3b61af.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "c6efdee49ecf4c0e8ef6b973e50ef24d",
+          "size": 36355,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/e7213589744d436b9d96e2dbb31198a5/thumbnails/3bb56830d134411ea395d993003ebe17/643aedb9347948de82733fa334fd68c1.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "a7fefb1c3e8b49cd98527584b4525744",
+          "size": 16843,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/e7213589744d436b9d96e2dbb31198a5/thumbnails/3bb56830d134411ea395d993003ebe17/20b75c679344478e9ccb21668b2b2f33.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "39f1a96165e142188cc34f37acf26b3f",
+          "size": 2762,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/e7213589744d436b9d96e2dbb31198a5/thumbnails/3bb56830d134411ea395d993003ebe17/f21c26d347a54dffb44beebc2cd8671b.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "c4c478fd603448e180d5297524e1a004",
+          "size": 648,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/e7213589744d436b9d96e2dbb31198a5/thumbnails/3bb56830d134411ea395d993003ebe17/ceb885d180384c6e8bc261ffb98b62b1.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "fe2547cf716d4c24b117e90282f762d2",
+      "username": "FourthGreen",
+      "displayName": "FourthGreen",
+      "profileUrl": "https://sketchfab.com/FourthGreen",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/715ddb980df542fe83dd061087c6188d",
+        "images": [
+          {
+            "size": 1411,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/715ddb980df542fe83dd061087c6188d/a0bba22aeec74e81806d00d908a7b1c1.png",
+            "height": 32
+          },
+          {
+            "size": 2185,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/715ddb980df542fe83dd061087c6188d/dd62b18b2fea4f9f9fb47528f47eb870.png",
+            "height": 48
+          },
+          {
+            "size": 4493,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/715ddb980df542fe83dd061087c6188d/0bcd01264bef4556b591d399aef131b4.png",
+            "height": 90
+          },
+          {
+            "size": 5147,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/715ddb980df542fe83dd061087c6188d/27b16d13bd1648b88904f2abbc5bcd49.png",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/fe2547cf716d4c24b117e90282f762d2"
+    },
+    "description": "",
+    "faceCount": 2578,
+    "createdAt": "2020-09-20T15:53:20.888737",
+    "vertexCount": 1322,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 1,
+        "size": 324608,
+        "type": "glb",
+        "textureMaxResolution": 256,
+        "faceCount": 2578,
+        "vertexCount": 1597
+      },
+      "gltf": {
+        "textureCount": 1,
+        "size": 172218,
+        "type": "gltf",
+        "textureMaxResolution": 256,
+        "faceCount": 2578,
+        "vertexCount": 1597
+      },
+      "source": {
+        "textureCount": null,
+        "size": 420816,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 126223,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "FourthGreen (https://sketchfab.com/FourthGreen)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/rabbit-rigged-e7213589744d436b9d96e2dbb31198a5",
+      "title": "Rabbit Rigged"
+    },
+    "generator": "Sketchfab-12.66.0",
+    "version": "2.0"
+  },
+  "skins": [
+    {
+      "name": null,
+      "joints": 48
+    }
+  ],
+  "animations": [
+    {
+      "name": "Take 001",
+      "channels": 126
+    }
+  ]
+}

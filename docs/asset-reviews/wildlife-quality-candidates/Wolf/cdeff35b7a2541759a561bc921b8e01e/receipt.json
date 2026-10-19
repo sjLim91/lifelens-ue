@@ -1,0 +1,204 @@
+{
+  "uid": "cdeff35b7a2541759a561bc921b8e01e",
+  "name": "Grey Wolf",
+  "author": {
+    "uid": "41d50345cee042e79eda75bb1e7bb9e2",
+    "username": "salarchana55",
+    "displayName": "salarchana55",
+    "profileUrl": "https://sketchfab.com/salarchana55",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/5cd528d7cff24453ab2547b039b34d1f",
+      "images": [
+        {
+          "size": 694,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/5cd528d7cff24453ab2547b039b34d1f/7a1e8bc3effc4eab954260d3b4d37c4e.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1063,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/5cd528d7cff24453ab2547b039b34d1f/301ef14fb8a845c88d9e90b82d21d34a.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2414,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/5cd528d7cff24453ab2547b039b34d1f/cb096fb41e0f4dd6b1d09831e551c4c6.jpeg",
+          "height": 90
+        },
+        {
+          "size": 2806,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/5cd528d7cff24453ab2547b039b34d1f/7ad92ae239034f27be60ea748cdf0dac.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/41d50345cee042e79eda75bb1e7bb9e2"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/cdeff35b7a2541759a561bc921b8e01e",
+  "description": "",
+  "faceCount": 21464,
+  "vertexCount": 20327,
+  "animationCount": 0,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-19T06:59:36.224440+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-092/cdeff35b7a2541759a561bc921b8e01e.glb",
+  "sha256": "e244a8992f5ab7121854df20789c21c8d891b025eb716f7a70de1e71cde894f9",
+  "bytes": 1039300,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/cdeff35b7a2541759a561bc921b8e01e",
+    "uid": "cdeff35b7a2541759a561bc921b8e01e",
+    "name": "Grey Wolf",
+    "staffpickedAt": null,
+    "viewCount": 112,
+    "likeCount": 0,
+    "animationCount": 0,
+    "viewerUrl": "https://sketchfab.com/3d-models/cdeff35b7a2541759a561bc921b8e01e",
+    "embedUrl": "https://sketchfab.com/models/cdeff35b7a2541759a561bc921b8e01e/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2019-09-30T19:34:17.189229",
+    "tags": [],
+    "categories": [
+      {
+        "name": "animals-pets"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "db99670b54904ba5ac743b7f398e2ce4",
+          "size": 56237,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/cdeff35b7a2541759a561bc921b8e01e/thumbnails/a486638b5e9d470985f91160a780d346/f840be49f6e14cfcbae03dcb0afb5181.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "5e05227978e14bea849faecc722128a0",
+          "size": 19871,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/cdeff35b7a2541759a561bc921b8e01e/thumbnails/a486638b5e9d470985f91160a780d346/7b05416edfef47b8b0bca737c3c79e34.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "844a31dfaca849e6bafcb74c49419508",
+          "size": 11596,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/cdeff35b7a2541759a561bc921b8e01e/thumbnails/a486638b5e9d470985f91160a780d346/2bd9bce3c9844d0aa8a299dd2099ff58.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "e1695e4a3ef74bb2acdc36ffac337cf2",
+          "size": 2189,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/cdeff35b7a2541759a561bc921b8e01e/thumbnails/a486638b5e9d470985f91160a780d346/88bee1d238024fe4aa341466b0db0b2d.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "c5131bea400b4f59b4205020f1b82f51",
+          "size": 522,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/cdeff35b7a2541759a561bc921b8e01e/thumbnails/a486638b5e9d470985f91160a780d346/a537619cb83143e7abd0fa6a8bda723b.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "41d50345cee042e79eda75bb1e7bb9e2",
+      "username": "salarchana55",
+      "displayName": "salarchana55",
+      "profileUrl": "https://sketchfab.com/salarchana55",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/5cd528d7cff24453ab2547b039b34d1f",
+        "images": [
+          {
+            "size": 694,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/5cd528d7cff24453ab2547b039b34d1f/7a1e8bc3effc4eab954260d3b4d37c4e.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1063,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/5cd528d7cff24453ab2547b039b34d1f/301ef14fb8a845c88d9e90b82d21d34a.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2414,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/5cd528d7cff24453ab2547b039b34d1f/cb096fb41e0f4dd6b1d09831e551c4c6.jpeg",
+            "height": 90
+          },
+          {
+            "size": 2806,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/5cd528d7cff24453ab2547b039b34d1f/7ad92ae239034f27be60ea748cdf0dac.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/41d50345cee042e79eda75bb1e7bb9e2"
+    },
+    "description": "",
+    "faceCount": 21464,
+    "createdAt": "2019-09-30T19:31:12.916211",
+    "vertexCount": 20327,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 1,
+        "size": 1039300,
+        "type": "glb",
+        "textureMaxResolution": 512,
+        "faceCount": 21426,
+        "vertexCount": 24992
+      },
+      "gltf": {
+        "textureCount": 1,
+        "size": 374380,
+        "type": "gltf",
+        "textureMaxResolution": 512,
+        "faceCount": 21426,
+        "vertexCount": 24992
+      },
+      "source": {
+        "textureCount": null,
+        "size": 436689,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 781172,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "salarchana55 (https://sketchfab.com/salarchana55)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/grey-wolf-cdeff35b7a2541759a561bc921b8e01e",
+      "title": "Grey Wolf"
+    },
+    "generator": "Sketchfab-12.65.0",
+    "version": "2.0"
+  },
+  "skins": [],
+  "animations": []
+}

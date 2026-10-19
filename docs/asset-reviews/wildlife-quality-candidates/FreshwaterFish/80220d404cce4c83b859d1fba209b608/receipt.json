@@ -1,0 +1,233 @@
+{
+  "uid": "80220d404cce4c83b859d1fba209b608",
+  "name": "Trout Model",
+  "author": {
+    "uid": "ceec3e43129a42f98fa917f58fd0ceb2",
+    "username": "Calvinator",
+    "displayName": "Calvinator",
+    "profileUrl": "https://sketchfab.com/Calvinator",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+      "images": [
+        {
+          "size": 680,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1253,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2797,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+          "height": 90
+        },
+        {
+          "size": 3215,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/ceec3e43129a42f98fa917f58fd0ceb2"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/80220d404cce4c83b859d1fba209b608",
+  "description": "This is a Model of a Trout that took me roughly a total of 6 hours to model, I'm pleased with the outcome and I am wondering about what else I should model at this degree of difficulty",
+  "faceCount": 3456,
+  "vertexCount": 1801,
+  "animationCount": 0,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-19T06:59:37.136667+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-050/80220d404cce4c83b859d1fba209b608.glb",
+  "sha256": "46a3307da7082f24b1363cd4ace8a78b29823e2baf43f76ab16743839dcd6b91",
+  "bytes": 111188,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/80220d404cce4c83b859d1fba209b608",
+    "uid": "80220d404cce4c83b859d1fba209b608",
+    "name": "Trout Model",
+    "staffpickedAt": null,
+    "viewCount": 452,
+    "likeCount": 5,
+    "animationCount": 0,
+    "viewerUrl": "https://sketchfab.com/3d-models/80220d404cce4c83b859d1fba209b608",
+    "embedUrl": "https://sketchfab.com/models/80220d404cce4c83b859d1fba209b608/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2020-04-22T18:18:27.430280",
+    "tags": [
+      {
+        "name": "fish",
+        "slug": "fish",
+        "uri": "https://api.sketchfab.com/v3/tags/fish"
+      },
+      {
+        "name": "trout",
+        "slug": "trout",
+        "uri": "https://api.sketchfab.com/v3/tags/trout"
+      },
+      {
+        "name": "aquatic",
+        "slug": "aquatic",
+        "uri": "https://api.sketchfab.com/v3/tags/aquatic"
+      },
+      {
+        "name": "high-poly",
+        "slug": "high-poly",
+        "uri": "https://api.sketchfab.com/v3/tags/high-poly"
+      },
+      {
+        "name": "realistic",
+        "slug": "realistic",
+        "uri": "https://api.sketchfab.com/v3/tags/realistic"
+      }
+    ],
+    "categories": [
+      {
+        "name": "animals-pets"
+      },
+      {
+        "name": "characters-creatures"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "3b331597557547d89ffd9ce27efe84fb",
+          "size": 34845,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/80220d404cce4c83b859d1fba209b608/thumbnails/c07c4a19e55c41b696de1035c0186d7b/53ffc9d11ca74fd092f6e22287d7a79f.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "dbe9a6c1ad2f42a2ad53c3660d011ac4",
+          "size": 13346,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/80220d404cce4c83b859d1fba209b608/thumbnails/c07c4a19e55c41b696de1035c0186d7b/af51b4bbf46e4944a36e9cb7db125513.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "958afcb9c3f940369dd071fd3f2f3213",
+          "size": 8391,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/80220d404cce4c83b859d1fba209b608/thumbnails/c07c4a19e55c41b696de1035c0186d7b/c80d56acbb2c425d9975dd5ba94e1132.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "821f5ce0905c4938bf6fa4edb647d009",
+          "size": 2256,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/80220d404cce4c83b859d1fba209b608/thumbnails/c07c4a19e55c41b696de1035c0186d7b/f3e48563b88b4182bbeda5abca6da10e.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "8b3bba9aaee44715b240597268637bbc",
+          "size": 615,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/80220d404cce4c83b859d1fba209b608/thumbnails/c07c4a19e55c41b696de1035c0186d7b/c9e39c6303db4267b0e54bef2f6c093a.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "ceec3e43129a42f98fa917f58fd0ceb2",
+      "username": "Calvinator",
+      "displayName": "Calvinator",
+      "profileUrl": "https://sketchfab.com/Calvinator",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+        "images": [
+          {
+            "size": 680,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1253,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2797,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+            "height": 90
+          },
+          {
+            "size": 3215,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/ceec3e43129a42f98fa917f58fd0ceb2"
+    },
+    "description": "This is a Model of a Trout that took me roughly a total of 6 hours to model, I'm pleased with the outcome and I am wondering about what else I should model at this degree of difficulty",
+    "faceCount": 3456,
+    "createdAt": "2020-04-22T18:07:32.418312",
+    "vertexCount": 1801,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 0,
+        "size": 111188,
+        "type": "glb",
+        "textureMaxResolution": 0,
+        "faceCount": 3456,
+        "vertexCount": 2047
+      },
+      "gltf": {
+        "textureCount": 0,
+        "size": 44024,
+        "type": "gltf",
+        "textureMaxResolution": 0,
+        "faceCount": 3456,
+        "vertexCount": 2047
+      },
+      "source": {
+        "textureCount": null,
+        "size": 896540,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 65281,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "Calvinator (https://sketchfab.com/Calvinator)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/trout-model-80220d404cce4c83b859d1fba209b608",
+      "title": "Trout Model"
+    },
+    "generator": "Sketchfab-12.66.0",
+    "version": "2.0"
+  },
+  "skins": [],
+  "animations": []
+}

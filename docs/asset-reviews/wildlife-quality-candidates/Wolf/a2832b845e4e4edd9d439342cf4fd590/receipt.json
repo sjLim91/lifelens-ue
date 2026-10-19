@@ -1,0 +1,204 @@
+{
+  "uid": "a2832b845e4e4edd9d439342cf4fd590",
+  "name": "Gray Wolf",
+  "author": {
+    "uid": "9df02d62f3004df48fdbdef6e4a85663",
+    "username": "hamidkhan224",
+    "displayName": "hamidkhan224",
+    "profileUrl": "https://sketchfab.com/hamidkhan224",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/5f9f0ec24eed4e6ebec95d47a102b233",
+      "images": [
+        {
+          "size": 974,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/5f9f0ec24eed4e6ebec95d47a102b233/834e9a9a9f4247a284f1b65b188a00a7.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1408,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/5f9f0ec24eed4e6ebec95d47a102b233/c5c8a080fa2746acbcb8c3c82fc25059.jpeg",
+          "height": 48
+        },
+        {
+          "size": 3522,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/5f9f0ec24eed4e6ebec95d47a102b233/1839e73b32084060b8e754ddeee6bc08.jpeg",
+          "height": 90
+        },
+        {
+          "size": 4122,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/5f9f0ec24eed4e6ebec95d47a102b233/ebb9419204434e97947f219ca0112528.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/9df02d62f3004df48fdbdef6e4a85663"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/a2832b845e4e4edd9d439342cf4fd590",
+  "description": "The Turkish Gray Wolf",
+  "faceCount": 30484,
+  "vertexCount": 15485,
+  "animationCount": 0,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-19T06:59:36.523442+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-105/a2832b845e4e4edd9d439342cf4fd590.glb",
+  "sha256": "278e05fb2b1182600a610bc1b6e394ab8ff5232dda76d1ce363964295469c829",
+  "bytes": 3768944,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/a2832b845e4e4edd9d439342cf4fd590",
+    "uid": "a2832b845e4e4edd9d439342cf4fd590",
+    "name": "Gray Wolf",
+    "staffpickedAt": null,
+    "viewCount": 215,
+    "likeCount": 5,
+    "animationCount": 0,
+    "viewerUrl": "https://sketchfab.com/3d-models/a2832b845e4e4edd9d439342cf4fd590",
+    "embedUrl": "https://sketchfab.com/models/a2832b845e4e4edd9d439342cf4fd590/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2022-03-23T11:27:07.549455",
+    "tags": [],
+    "categories": [
+      {
+        "name": "animals-pets"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "2c4ca79b46414a3d8c840ca464890083",
+          "size": 57006,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/a2832b845e4e4edd9d439342cf4fd590/thumbnails/17578e359bdf43fd9d8675b8736755a8/b5aa82467a00484f86ea7627cf2d4743.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "4e21d5224f6c42bc9ce84ca91a926970",
+          "size": 17224,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/a2832b845e4e4edd9d439342cf4fd590/thumbnails/17578e359bdf43fd9d8675b8736755a8/04ebd240151741c0bd5f9e39c5bf4e6c.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "59c0b22cd7c44dde979fe3e690a10735",
+          "size": 9701,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/a2832b845e4e4edd9d439342cf4fd590/thumbnails/17578e359bdf43fd9d8675b8736755a8/eb83339803634c8b85fed10503d2169e.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "8e4e6d3ebfe74279843f8810675a5a89",
+          "size": 2200,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/a2832b845e4e4edd9d439342cf4fd590/thumbnails/17578e359bdf43fd9d8675b8736755a8/f45371c521624b8fada5133d940587d9.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "90d415b5d9c0473585560b89ed10b59a",
+          "size": 835,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/a2832b845e4e4edd9d439342cf4fd590/thumbnails/17578e359bdf43fd9d8675b8736755a8/56951c024f1c4749a8120f892745830f.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "9df02d62f3004df48fdbdef6e4a85663",
+      "username": "hamidkhan224",
+      "displayName": "hamidkhan224",
+      "profileUrl": "https://sketchfab.com/hamidkhan224",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/5f9f0ec24eed4e6ebec95d47a102b233",
+        "images": [
+          {
+            "size": 974,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/5f9f0ec24eed4e6ebec95d47a102b233/834e9a9a9f4247a284f1b65b188a00a7.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1408,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/5f9f0ec24eed4e6ebec95d47a102b233/c5c8a080fa2746acbcb8c3c82fc25059.jpeg",
+            "height": 48
+          },
+          {
+            "size": 3522,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/5f9f0ec24eed4e6ebec95d47a102b233/1839e73b32084060b8e754ddeee6bc08.jpeg",
+            "height": 90
+          },
+          {
+            "size": 4122,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/5f9f0ec24eed4e6ebec95d47a102b233/ebb9419204434e97947f219ca0112528.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/9df02d62f3004df48fdbdef6e4a85663"
+    },
+    "description": "The Turkish Gray Wolf",
+    "faceCount": 30484,
+    "createdAt": "2022-03-23T11:21:59.780971",
+    "vertexCount": 15485,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 2,
+        "size": 11769032,
+        "type": "glb",
+        "textureMaxResolution": 2048,
+        "faceCount": 30484,
+        "vertexCount": 17132
+      },
+      "gltf": {
+        "textureCount": 2,
+        "size": 11323002,
+        "type": "gltf",
+        "textureMaxResolution": 2048,
+        "faceCount": 30484,
+        "vertexCount": 17132
+      },
+      "source": {
+        "textureCount": null,
+        "size": 35718617,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 2873925,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "hamidkhan224 (https://sketchfab.com/hamidkhan224)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/gray-wolf-a2832b845e4e4edd9d439342cf4fd590",
+      "title": "Gray Wolf"
+    },
+    "generator": "Sketchfab-12.77.0",
+    "version": "2.0"
+  },
+  "skins": [],
+  "animations": []
+}

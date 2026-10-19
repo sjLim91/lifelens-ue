@@ -1,0 +1,204 @@
+{
+  "uid": "a330f31c57134b8fb59c93a033b6268f",
+  "name": "Wolf",
+  "author": {
+    "uid": "61e0b2a0ea3a4872a54bd3aef0b886fa",
+    "username": "Slavonics",
+    "displayName": "Slavonics Bendeguz",
+    "profileUrl": "https://sketchfab.com/Slavonics",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/78fa317e46024a5283765aa34df5e508",
+      "images": [
+        {
+          "size": 6421,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/aec92fe9a74e499c98d759362cd7f02f.jpeg",
+          "height": 100
+        },
+        {
+          "size": 2518,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/17fa177ffaa344a2b2fc8e78efd40fbb.jpeg",
+          "height": 48
+        },
+        {
+          "size": 5653,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/02162695bdc840faa3bcb2d418309c5e.jpeg",
+          "height": 90
+        },
+        {
+          "size": 1350,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/6fde876cbded4cd48d36a76029e3aa02.jpeg",
+          "height": 32
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/61e0b2a0ea3a4872a54bd3aef0b886fa"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/a330f31c57134b8fb59c93a033b6268f",
+  "description": "",
+  "faceCount": 22666,
+  "vertexCount": 11309,
+  "animationCount": 0,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-19T06:59:36.846163+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-005/a330f31c57134b8fb59c93a033b6268f.glb",
+  "sha256": "e6fcc15988031dd3eb71afcd10344ed3260d9466b326f980a560a71d5fa317c1",
+  "bytes": 717180,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/a330f31c57134b8fb59c93a033b6268f",
+    "uid": "a330f31c57134b8fb59c93a033b6268f",
+    "name": "Wolf",
+    "staffpickedAt": null,
+    "viewCount": 13,
+    "likeCount": 0,
+    "animationCount": 0,
+    "viewerUrl": "https://sketchfab.com/3d-models/a330f31c57134b8fb59c93a033b6268f",
+    "embedUrl": "https://sketchfab.com/models/a330f31c57134b8fb59c93a033b6268f/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2022-06-17T08:34:10.574375",
+    "tags": [],
+    "categories": [
+      {
+        "name": "animals-pets"
+      }
+    ],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "7f1305f0635c48cdb98bfd4d34fe3e45",
+          "size": 42068,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/a330f31c57134b8fb59c93a033b6268f/thumbnails/3de2bf8ce54148e19225c0b488f77376/67d8e955a27e4564a58df78c9f0ae9d7.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "6ee0f3a6cc5f478eb809ccc17ea26880",
+          "size": 13434,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/a330f31c57134b8fb59c93a033b6268f/thumbnails/3de2bf8ce54148e19225c0b488f77376/97b9f6dd6aa948f8a3b814338438e7fc.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "7cb828364a2348af93525b694d052883",
+          "size": 7684,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/a330f31c57134b8fb59c93a033b6268f/thumbnails/3de2bf8ce54148e19225c0b488f77376/1f3309b489134096836bfaffe7cc396f.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "d47a3bcabf4c4b3782c0f608d93ace06",
+          "size": 1843,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/a330f31c57134b8fb59c93a033b6268f/thumbnails/3de2bf8ce54148e19225c0b488f77376/0e95f35c965c4e0daf8d77c0b7f1868e.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "a66f6f595a5245d7ac7e5faba76fb6ed",
+          "size": 780,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/a330f31c57134b8fb59c93a033b6268f/thumbnails/3de2bf8ce54148e19225c0b488f77376/b699bc22ad154c3f8aaa735215cc22c5.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "61e0b2a0ea3a4872a54bd3aef0b886fa",
+      "username": "Slavonics",
+      "displayName": "Slavonics Bendeguz",
+      "profileUrl": "https://sketchfab.com/Slavonics",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/78fa317e46024a5283765aa34df5e508",
+        "images": [
+          {
+            "size": 6421,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/aec92fe9a74e499c98d759362cd7f02f.jpeg",
+            "height": 100
+          },
+          {
+            "size": 2518,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/17fa177ffaa344a2b2fc8e78efd40fbb.jpeg",
+            "height": 48
+          },
+          {
+            "size": 5653,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/02162695bdc840faa3bcb2d418309c5e.jpeg",
+            "height": 90
+          },
+          {
+            "size": 1350,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/78fa317e46024a5283765aa34df5e508/6fde876cbded4cd48d36a76029e3aa02.jpeg",
+            "height": 32
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/61e0b2a0ea3a4872a54bd3aef0b886fa"
+    },
+    "description": "",
+    "faceCount": 22666,
+    "createdAt": "2022-06-17T08:33:25.386417",
+    "vertexCount": 11309,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 0,
+        "size": 717180,
+        "type": "glb",
+        "textureMaxResolution": 0,
+        "faceCount": 22666,
+        "vertexCount": 18486
+      },
+      "gltf": {
+        "textureCount": 0,
+        "size": 346369,
+        "type": "gltf",
+        "textureMaxResolution": 0,
+        "faceCount": 22666,
+        "vertexCount": 18486
+      },
+      "source": {
+        "textureCount": null,
+        "size": 1133642,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 550484,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "Slavonics Bendeguz (https://sketchfab.com/Slavonics)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/wolf-a330f31c57134b8fb59c93a033b6268f",
+      "title": "Wolf"
+    },
+    "generator": "Sketchfab-13.46.0",
+    "version": "2.0"
+  },
+  "skins": [],
+  "animations": []
+}

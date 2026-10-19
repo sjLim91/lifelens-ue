@@ -1,0 +1,11 @@
+{
+  "sourceSha256": "46a3307da7082f24b1363cd4ace8a78b29823e2baf43f76ab16743839dcd6b91",
+  "views": [
+    "quarter",
+    "side"
+  ],
+  "engine": "Cycles",
+  "samples": 48,
+  "lighting": "shared-neutral-v1",
+  "status": "VISUAL_REVIEW_REQUIRED"
+}

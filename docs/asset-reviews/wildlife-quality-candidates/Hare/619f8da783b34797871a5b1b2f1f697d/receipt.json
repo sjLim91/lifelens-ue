@@ -1,0 +1,200 @@
+{
+  "uid": "619f8da783b34797871a5b1b2f1f697d",
+  "name": "Rabbit",
+  "author": {
+    "uid": "885bc78ca8ad4d58a90aa6d26b2113ba",
+    "username": "davegaldody",
+    "displayName": "davegaldody",
+    "profileUrl": "https://sketchfab.com/davegaldody",
+    "account": "basic",
+    "avatar": {
+      "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+      "images": [
+        {
+          "size": 680,
+          "width": 32,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+          "height": 32
+        },
+        {
+          "size": 1253,
+          "width": 48,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+          "height": 48
+        },
+        {
+          "size": 2797,
+          "width": 90,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+          "height": 90
+        },
+        {
+          "size": 3215,
+          "width": 100,
+          "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+          "height": 100
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/885bc78ca8ad4d58a90aa6d26b2113ba"
+  },
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "original": "https://sketchfab.com/3d-models/619f8da783b34797871a5b1b2f1f697d",
+  "description": "test rabbit 2",
+  "faceCount": 60160,
+  "vertexCount": 30070,
+  "animationCount": 0,
+  "allowedForReview": true,
+  "purpose": "CANDIDATE_REVIEW_NOT_RUNTIME",
+  "runtimeAdmission": false,
+  "retrievedAt": "2026-10-19T06:59:34.822831+00:00",
+  "datasetRevision": "556637099bf4fa79ea7b239d0d9c328b8a2e9ac8",
+  "downloadUrl": "https://huggingface.co/datasets/allenai/objaverse/resolve/556637099bf4fa79ea7b239d0d9c328b8a2e9ac8/glbs/000-050/619f8da783b34797871a5b1b2f1f697d.glb",
+  "sha256": "01197c3efaa9e2191430f0c1df8d0a7841d2ff06f58368fef75eec8eedc6b352",
+  "bytes": 2966088,
+  "originalMetadata": {
+    "uri": "https://api.sketchfab.com/v3/models/619f8da783b34797871a5b1b2f1f697d",
+    "uid": "619f8da783b34797871a5b1b2f1f697d",
+    "name": "Rabbit",
+    "staffpickedAt": null,
+    "viewCount": 47,
+    "likeCount": 2,
+    "animationCount": 0,
+    "viewerUrl": "https://sketchfab.com/3d-models/619f8da783b34797871a5b1b2f1f697d",
+    "embedUrl": "https://sketchfab.com/models/619f8da783b34797871a5b1b2f1f697d/embed",
+    "commentCount": 0,
+    "isDownloadable": true,
+    "publishedAt": "2019-04-30T05:44:57.418075",
+    "tags": [],
+    "categories": [],
+    "thumbnails": {
+      "images": [
+        {
+          "uid": "45e38e482a854e83b1d46812f39abb94",
+          "size": 86670,
+          "width": 1920,
+          "url": "https://media.sketchfab.com/models/619f8da783b34797871a5b1b2f1f697d/thumbnails/e03e4f8cae75432ca2b93c1fd5d8eb95/a99a046efb7741469547a3fab0115fa1.jpeg",
+          "height": 1080
+        },
+        {
+          "uid": "3a9ae365a10e48769327daa7d4ada473",
+          "size": 27278,
+          "width": 1024,
+          "url": "https://media.sketchfab.com/models/619f8da783b34797871a5b1b2f1f697d/thumbnails/e03e4f8cae75432ca2b93c1fd5d8eb95/7361edf14bef4cc2a934d6e6af239131.jpeg",
+          "height": 576
+        },
+        {
+          "uid": "4c9ab28854da4e3eb19eaf2c155ab6fe",
+          "size": 15683,
+          "width": 720,
+          "url": "https://media.sketchfab.com/models/619f8da783b34797871a5b1b2f1f697d/thumbnails/e03e4f8cae75432ca2b93c1fd5d8eb95/28892ede24014a5b8bff411683214535.jpeg",
+          "height": 405
+        },
+        {
+          "uid": "d3c3ea56a4644befbce3274159036c8a",
+          "size": 3358,
+          "width": 256,
+          "url": "https://media.sketchfab.com/models/619f8da783b34797871a5b1b2f1f697d/thumbnails/e03e4f8cae75432ca2b93c1fd5d8eb95/9548f49052a942a394c9955c4e38a438.jpeg",
+          "height": 144
+        },
+        {
+          "uid": "d5c1744bf54a48a9bca0cc4d0a11ef7f",
+          "size": 717,
+          "width": 64,
+          "url": "https://media.sketchfab.com/models/619f8da783b34797871a5b1b2f1f697d/thumbnails/e03e4f8cae75432ca2b93c1fd5d8eb95/993de12a1af34b35b6bccfb98badb2cb.jpeg",
+          "height": 36
+        }
+      ]
+    },
+    "user": {
+      "uid": "885bc78ca8ad4d58a90aa6d26b2113ba",
+      "username": "davegaldody",
+      "displayName": "davegaldody",
+      "profileUrl": "https://sketchfab.com/davegaldody",
+      "account": "basic",
+      "avatar": {
+        "uri": "https://api.sketchfab.com/v3/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e",
+        "images": [
+          {
+            "size": 680,
+            "width": 32,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/116042a0854e40538adab302b593683d.jpeg",
+            "height": 32
+          },
+          {
+            "size": 1253,
+            "width": 48,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/efea16be51d04eb7a00cb9ea0b43b87f.jpeg",
+            "height": 48
+          },
+          {
+            "size": 2797,
+            "width": 90,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/ac9b469ccec74caf923a81fb2f0be3ed.jpeg",
+            "height": 90
+          },
+          {
+            "size": 3215,
+            "width": 100,
+            "url": "https://media.sketchfab.com/avatars/3ef1bd11d3eb4b57a0b353e8f2e5fc3e/a075e1d43d2f446c949b5967b470c757.jpeg",
+            "height": 100
+          }
+        ]
+      },
+      "uri": "https://api.sketchfab.com/v3/users/885bc78ca8ad4d58a90aa6d26b2113ba"
+    },
+    "description": "test rabbit 2",
+    "faceCount": 60160,
+    "createdAt": "2019-04-30T05:31:40.444592",
+    "vertexCount": 30070,
+    "isAgeRestricted": false,
+    "archives": {
+      "glb": {
+        "textureCount": 1,
+        "size": 13162180,
+        "type": "glb",
+        "textureMaxResolution": 4096,
+        "faceCount": 60160,
+        "vertexCount": 31557
+      },
+      "gltf": {
+        "textureCount": 1,
+        "size": 12536583,
+        "type": "gltf",
+        "textureMaxResolution": 4096,
+        "faceCount": 60160,
+        "vertexCount": 31557
+      },
+      "source": {
+        "textureCount": null,
+        "size": 27296968,
+        "type": "source",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      },
+      "usdz": {
+        "textureCount": null,
+        "size": 2869062,
+        "type": "usdz",
+        "textureMaxResolution": null,
+        "faceCount": null,
+        "vertexCount": null
+      }
+    },
+    "license": "by"
+  },
+  "asset": {
+    "extras": {
+      "author": "davegaldody (https://sketchfab.com/davegaldody)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/rabbit-619f8da783b34797871a5b1b2f1f697d",
+      "title": "Rabbit"
+    },
+    "generator": "Sketchfab-12.66.0",
+    "version": "2.0"
+  },
+  "skins": [],
+  "animations": []
+}
