@@ -574,6 +574,9 @@ export function startObserverEngine(): () => void {
       ownedCore = core;
       shadowObserver.attach(core);
       residentAI.attach(core);
+      // Every world has resident agency from boot. Discover a local language
+      // inference engine automatically; no user-toggle or network cloud key.
+      residentAI.startAutomatically();
       worldSession = new WorldSession(core, residentContinuity);
       observerStore.setRuntime('ready');
       createWorld('');
