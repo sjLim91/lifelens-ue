@@ -4,6 +4,7 @@ import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import { ImportedTigerFar, nativeTigerFarMesh } from './imported-tiger-far';
 import { NativeTigerGrounding, type NativeTigerPaw } from './native-tiger-grounding';
 import type { WildlifeAnimalObservation } from '../runtime/core-types';
+import { wildlifeRigClip } from './wildlife-motion';
 
 type Tier = 'near' | 'mid' | 'far';
 type Clip = { name: string; duration: number; cycle_distance: number };
