@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <map>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -268,6 +269,23 @@ inline CognitiveValidationResult validateCognitiveProposal(
     return {true,CognitiveValidationIssue::None};
 }
 
+// Transient read-only view used only while building a bounded request. Views
+// never escape buildCognitiveRequest and never become persisted memories.
+struct CognitiveMemoryCandidate {
+    CharacterId who=0;
+    MemorySource source=MemorySource::Inferred;
+    bool witnessed=false;
+    int minute=0;
+    double recallScore=0.0;
+    double confidence=0.0;
+    double importance=0.0;
+    double emotionValence=0.0;
+    double emotionIntensity=0.0;
+    std::string_view what;
+    std::string_view where;
+    const std::vector<std::string>* tags=nullptr;
+};
+
 inline CognitiveRequest buildCognitiveRequest(
     const Character& actor,
     const RelationshipBook& relationships,
@@ -287,10 +305,10 @@ inline CognitiveRequest buildCognitiveRequest(
     request.emotion=actor.emotion;
     request.allowedIntents=std::move(allowedIntents);
 
-    std::vector<CognitiveMemoryEvidence> memories;
+    std::vector<CognitiveMemoryCandidate> memories;
     memories.reserve(actor.memory.entries.size());
     for(const MemoryRecord& memory:actor.memory.entries){
-        CognitiveMemoryEvidence evidence;
+        CognitiveMemoryCandidate evidence;
         evidence.who=memory.who;
         evidence.source=memory.source;
         evidence.witnessed=memory.witnessed;
@@ -302,11 +320,11 @@ inline CognitiveRequest buildCognitiveRequest(
         evidence.emotionIntensity=memory.emotionIntensity;
         evidence.what=memory.what;
         evidence.where=memory.where;
-        evidence.tags=memory.tags;
+        evidence.tags=&memory.tags;
         memories.push_back(std::move(evidence));
     }
     std::sort(memories.begin(),memories.end(),
-        [](const CognitiveMemoryEvidence& a,const CognitiveMemoryEvidence& b){
+        [](const CognitiveMemoryCandidate& a,const CognitiveMemoryCandidate& b){
             if(a.recallScore!=b.recallScore) return a.recallScore>b.recallScore;
             if(a.minute!=b.minute) return a.minute>b.minute;
             if(a.who!=b.who) return a.who<b.who;
@@ -316,25 +334,25 @@ inline CognitiveRequest buildCognitiveRequest(
     // RECENT firsthand outcome. Merely keeping any high-recall old outcome
     // can hide a newer, low-salience failed attempt from the next local AI
     // request. Never create an outcome or elevate hearsay/inference.
-    const auto directActionEvidence=[&](const CognitiveMemoryEvidence& m){
+    const auto directActionEvidence=[&](const CognitiveMemoryCandidate& m){
         if(m.source!=MemorySource::DirectWitness ||!m.witnessed
            ||m.minute<0 ||m.minute>currentMinute
-           ||currentMinute-m.minute>1440 ||m.tags.empty()) return false;
-        return m.tags.front()=="action_experience"
-            ||m.tags.front()=="goal_action_feedback"
-            ||m.tags.front()=="social_self_outcome"
+           ||currentMinute-m.minute>1440 ||m.tags->empty()) return false;
+        return m.tags->front()=="action_experience"
+            ||m.tags->front()=="goal_action_feedback"
+            ||m.tags->front()=="social_self_outcome"
             // Current Core physical threat and contact injury outcomes are
             // personally witnessed experiences too, not background rumours.
             // Keep the most recent event visible to local reasoning without
             // increasing its bounded eight-memory budget or claiming that
             // a witnessed encounter proves an attack occurred.
-            ||m.tags.front()=="predator_encounter"
-            ||m.tags.front()=="predator_contact_injury"
+            ||m.tags->front()=="predator_encounter"
+            ||m.tags->front()=="predator_contact_injury"
             // A genuinely completed close-range care provision is a
             // firsthand social/economic outcome for BOTH giver and receiver.
             // Local reasoning can remember aid given or received without
             // converting a transfer into claimed nutrition or instant healing.
-            ||m.tags.front()=="injury_care_provision";
+            ||m.tags->front()=="injury_care_provision";
     };
     if(memoryLimit>0 &&memories.size()>memoryLimit){
         const std::size_t selected=memoryLimit;
@@ -362,12 +380,12 @@ inline CognitiveRequest buildCognitiveRequest(
             const auto& m=memories[i];
             if(m.who!=actor.id ||m.source!=MemorySource::DirectWitness
                ||!m.witnessed ||m.minute<0 ||m.minute>currentMinute
-               ||currentMinute-m.minute>1440 ||m.tags.size()!=3
-               ||m.tags[0]!="action_experience"
-               ||m.tags[1].rfind("Civilization:",0)!=0
-               ||(m.tags[2]!="success" &&m.tags[2]!="failure"))
+               ||currentMinute-m.minute>1440 ||m.tags->size()!=3
+               ||(*m.tags)[0]!="action_experience"
+               ||(*m.tags)[1].rfind("Civilization:",0)!=0
+               ||((*m.tags)[2]!="success" &&(*m.tags)[2]!="failure"))
                 continue;
-            byAction[m.tags[1]].push_back(i);
+            byAction[(*m.tags)[1]].push_back(i);
         }
         std::size_t firstFailure=missing,secondFailure=missing;
         for(auto& group:byAction){
@@ -378,12 +396,12 @@ inline CognitiveRequest buildCognitiveRequest(
                         return memories[a].minute>memories[b].minute;
                     // A success in the same minute defeats a failure
                     // regardless of source memory iteration order.
-                    if(memories[a].tags[2]!=memories[b].tags[2])
-                        return memories[a].tags[2]=="success";
+                    if((*memories[a].tags)[2]!=(*memories[b].tags)[2])
+                        return (*memories[a].tags)[2]=="success";
                     return a<b;
                 });
             const std::size_t newestAttempt=attempts.front();
-            if(memories[newestAttempt].tags[2]!="failure") continue;
+            if((*memories[newestAttempt].tags)[2]!="failure") continue;
             std::size_t priorAttempt=missing;
             for(const std::size_t i:attempts)
                 if(memories[i].minute<memories[newestAttempt].minute){
@@ -391,7 +409,7 @@ inline CognitiveRequest buildCognitiveRequest(
                     break;
                 }
             if(priorAttempt==missing
-               ||memories[priorAttempt].tags[2]!="failure") continue;
+               ||(*memories[priorAttempt].tags)[2]!="failure") continue;
             if(firstFailure==missing
                ||memories[newestAttempt].minute
                    >memories[firstFailure].minute){
@@ -425,14 +443,32 @@ inline CognitiveRequest buildCognitiveRequest(
         // The input order remains ranked by deterministic recall score,
         // and the same 8-memory budget is preserved without fake events.
         std::sort(indices.begin(),indices.end());
-        std::vector<CognitiveMemoryEvidence> chosen;
+        std::vector<CognitiveMemoryCandidate> chosen;
         chosen.reserve(indices.size());
         for(const auto i:indices)
             chosen.push_back(std::move(memories[i]));
         memories=std::move(chosen);
     }
     if(memories.size()>memoryLimit) memories.resize(memoryLimit);
-    request.memories=std::move(memories);
+    // Copy text/tags only for the selected bounded context. All original
+    // memories, ranking, latest-outcome and repeated-failure rules stay intact.
+    request.memories.reserve(memories.size());
+    for(const auto& selected:memories){
+        CognitiveMemoryEvidence evidence;
+        evidence.who=selected.who;
+        evidence.source=selected.source;
+        evidence.witnessed=selected.witnessed;
+        evidence.minute=selected.minute;
+        evidence.recallScore=selected.recallScore;
+        evidence.confidence=selected.confidence;
+        evidence.importance=selected.importance;
+        evidence.emotionValence=selected.emotionValence;
+        evidence.emotionIntensity=selected.emotionIntensity;
+        evidence.what=selected.what;
+        evidence.where=selected.where;
+        evidence.tags=*selected.tags;
+        request.memories.push_back(std::move(evidence));
+    }
 
     std::vector<CognitiveBeliefEvidence> beliefs;
     beliefs.reserve(actor.beliefs.beliefs.size());
