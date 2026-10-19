@@ -1,0 +1,45 @@
+name: Wildlife Source Quality Review
+on:
+  push:
+    branches: ['work/wildlife-realism-*']
+    paths: ['.github/workflows/wildlife-source-quality-review.yml', 'Tools/research/review_wildlife_quality_candidates.py']
+permissions:
+  contents: write
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Research additional individually licensed originals
+        run: python3 Tools/research/review_wildlife_quality_candidates.py
+      - name: Install neutral rendering tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
+      - name: Render actual candidate surfaces
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          report=json.loads(Path('docs/asset-reviews/wildlife-quality-candidates/selection.json').read_text())
+          for row in report['available']:
+              subprocess.run(['blender','--background','--factory-startup','--disable-autoexec','--python-exit-code','1','--threads','2','--python','Tools/blender/review_wildlife_realism.py','--','--source',row['source'],'--output',row['review'],'--view','quarter,side'],check=True)
+          PY
+      - name: Preserve candidate comparisons only on this review branch
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f docs/asset-reviews/wildlife-quality-candidates
+          if ! git diff --cached --quiet; then
+            git commit -m 'Review additional wildlife source candidates; no runtime admission [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wildlife-quality-candidate-originals
+          path: docs/asset-reviews/wildlife-quality-candidates/
+          retention-days: 7
