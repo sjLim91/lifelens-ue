@@ -14,7 +14,8 @@ inline std::string actionExperienceProposition(const char* action)
 }
 
 inline void rememberActionOutcome(
-    Character& actor,const char* action,int minute,bool success)
+    Character& actor,const char* action,int minute,bool success,
+    bool retainRecentPersonalAttempts=false)
 {
     if(action==nullptr || *action=='\0' || minute<0) return;
     const std::string proposition=actionExperienceProposition(action);
@@ -34,22 +35,26 @@ inline void rememberActionOutcome(
     }
     experience.applyEvidence(success,1.0,minute);
 
-    // One durable recollection per outcome/intent pair. This is an actual
-    // attempt, not an invented memory of observing the whole world.
+    // Generic reflex feedback keeps its compact latest success/failure.
+    // Physical civilization attempts instead need a SHORT chronological
+    // history, or repeated failure reflection can never see two failures:
+    // overwriting the first record on every retry erases the evidence.
     const std::string resultTag=success ? "success" : "failure";
-    for(MemoryRecord& memory:actor.memory.entries){
-        if(memory.tags.size()!=3
-           || memory.tags[0]!="action_experience"
-           || memory.tags[1]!=action
-           || memory.tags[2]!=resultTag) continue;
-        memory.minute=minute;
-        memory.confidence=1.0;
-        memory.witnessed=true;
-        memory.source=MemorySource::DirectWitness;
-        memory.importance=success ? 0.28 : 0.42;
-        memory.emotionValence=success ? 0.20 : -0.28;
-        memory.emotionIntensity=success ? 0.18 : 0.38;
-        return;
+    if(!retainRecentPersonalAttempts){
+        for(MemoryRecord& memory:actor.memory.entries){
+            if(memory.tags.size()!=3
+               || memory.tags[0]!="action_experience"
+               || memory.tags[1]!=action
+               || memory.tags[2]!=resultTag) continue;
+            memory.minute=minute;
+            memory.confidence=1.0;
+            memory.witnessed=true;
+            memory.source=MemorySource::DirectWitness;
+            memory.importance=success ? 0.28 : 0.42;
+            memory.emotionValence=success ? 0.20 : -0.28;
+            memory.emotionIntensity=success ? 0.18 : 0.38;
+            return;
+        }
     }
 
     MemoryRecord memory;
@@ -62,7 +67,42 @@ inline void rememberActionOutcome(
     memory.emotionValence=success ? 0.20 : -0.28;
     memory.emotionIntensity=success ? 0.18 : 0.38;
     memory.tags={"action_experience",action,resultTag};
+    if(retainRecentPersonalAttempts){
+        memory.who=actor.id;
+        memory.sourceCharacter=actor.id;
+    }
     actor.memory.add(std::move(memory));
+
+    if(retainRecentPersonalAttempts){
+        // Bound growth per Core action key (both successes AND failures).
+        // Keep actual most-recent minutes, not insertion order: snapshots
+        // and observer views may present memories in different orders.
+        constexpr std::size_t MaxPersonalAttemptsPerAction=4;
+        const auto belongsToActor=[&](const MemoryRecord& entry){
+            return entry.source==MemorySource::DirectWitness
+                &&entry.witnessed &&entry.sourceCharacter==actor.id
+                &&entry.tags.size()==3
+                &&entry.tags[0]=="action_experience"
+                &&entry.tags[1]==action
+                &&(entry.tags[2]=="success" ||entry.tags[2]=="failure");
+        };
+        std::size_t count=0;
+        for(const auto& entry:actor.memory.entries)
+            if(belongsToActor(entry)) ++count;
+        while(count>MaxPersonalAttemptsPerAction){
+            std::size_t oldest=actor.memory.entries.size();
+            for(std::size_t i=0;i<actor.memory.entries.size();++i){
+                if(belongsToActor(actor.memory.entries[i])
+                   &&(oldest==actor.memory.entries.size()
+                       ||actor.memory.entries[i].minute
+                           <actor.memory.entries[oldest].minute))
+                    oldest=i;
+            }
+            if(oldest==actor.memory.entries.size()) break;
+            actor.memory.entries.erase(actor.memory.entries.begin()+oldest);
+            --count;
+        }
+    }
 }
 
 inline double learnedActionDisposition(
