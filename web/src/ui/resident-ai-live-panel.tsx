@@ -27,8 +27,8 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
       {localInference
         ? `연결됨 (${localInference.model})`
         : state.discovering
-          ? '자동 검색 중'
-          : '연결 대기 (주민 생활은 계속됨)'}
+          ? '무료 추론 자동 검색·모델 준비 중 (첫 실행 시 큰 다운로드 가능)'
+          : '추론 장치 연결 대기 (주민 생활은 계속됨)'}
     </p>
     <p className="hint">
       인지 제안 Core 승인 {state.accepted}회 · 거부/오류 {state.rejected}회
@@ -61,8 +61,9 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
         : <p className="hint">현재 기록된 실행 감사 구간 없음</p>}
       <p className="hint">
         무료 로컬 언어 추론 엔진을 찾지 못하면 해당 추론은 연결 대기 상태로 표시합니다.
-        브라우저만으로 외부 네이티브 모델 서버가 자동 설치·실행되지는 않습니다.
-        이때에도 같은 주민의 Core 생존과 경험은 중단되지 않습니다.
+        WebGPU가 지원되면 무료 경량 모델을 브라우저 안에서 자동 다운로드·실행합니다.
+        첫 실행 시 상당한 데이터와 GPU 메모리가 필요하며, 일부 모바일 브라우저에서는
+        모델 추론이 지원되지 않을 수 있습니다. 그때에도 동일 주민의 생활은 계속됩니다.
       </p>
     </details>
   </section>;
