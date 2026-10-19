@@ -260,7 +260,8 @@ inline CivilizationUtilityDecision chooseResidentAIToolPrerequisite(
            // experiment/source. Search the SAME legal Core catalog for a
            // fresh possible step, without fabricating success or a recipe.
            &&(thought==nullptr ||!residentAIPlanAlreadyAttempted(
-               resident,*thought,next,world.minute)))
+               resident,*thought,next,world.minute,
+               next.intent==CivilizationIntent::Gather)))
             considerCivilizationDecision(best,next);
     }
     return best;
