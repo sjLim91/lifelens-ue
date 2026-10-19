@@ -217,5 +217,69 @@ int main()
     assert(beginner.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::Flint)==0);
     assert(beginner.civilization.knowledge.all().empty());
+    // The same resident goal remains viable after one real FAILED tool
+    // experiment when a DIFFERENT, registered experiment is available.
+    World hypotheses(4466);
+    hypotheses.minute=480;
+    hypotheses.resourceNodes.clear();
+    Character inventor=makeResident();
+    inventor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Flint,2,0.7,1.0});
+    inventor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Fiber,2,0.7,1.0});
+    auto original=chooseResidentAIExistingCivilizationAffordance(
+        hypotheses,inventor,{0,0},thought);
+    assert(original);
+    assert(original->intent==CivilizationIntent::Experiment);
+    assert(original->technique==TechniqueId::SharpFlake
+        ||original->technique==TechniqueId::FiberCordage);
+    // The actual Core execution site records the failure with personal
+    // provenance. The other registered experiment remains untouched.
+    hypotheses.minute=481;
+    rememberCivilizationAttemptOutcome(inventor,*original,481,false);
+    const auto revised=chooseResidentAIExistingCivilizationAffordance(
+        hypotheses,inventor,{0,0},thought);
+    assert(revised);
+    assert(revised->intent==CivilizationIntent::Experiment);
+    assert(revised->technique!=original->technique);
+    assert(!residentAIPlanAlreadyAttempted(
+        inventor,thought,*revised,hypotheses.minute));
+    assert(!inventor.civilization.knowledge.knowsAtLeast(
+        original->technique,KnowledgeLevel::Reproducible));
+    assert(inventor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Flint)==2);
+
+    // A failed node 101 cannot prevent trying the accessible, real node 202
+    // for the SAME material. No resource is inserted by the resident planner.
+    World shifted(4466);
+    shifted.minute=482;
+    shifted.resourceNodes.clear();
+    ResourceNode exhausted=wood;
+    exhausted.id=101;
+    exhausted.quantity=0;
+    shifted.resourceNodes.push_back(exhausted);
+    ResourceNode available=wood;
+    available.id=202;
+    available.quantity=7;
+    shifted.resourceNodes.push_back(available);
+    Character survivor=makeResident();
+    survivor.civilization.knowledge.learn(
+        TechniqueId::DiggingStick,KnowledgeLevel::Reproducible,1.0);
+    CivilizationUtilityDecision failedGather;
+    failedGather.intent=CivilizationIntent::Gather;
+    failedGather.material=MaterialKind::Wood;
+    failedGather.resourceNode=101;
+    rememberCivilizationAttemptOutcome(
+        survivor,failedGather,481,false,
+        ResidentGatherFailureCause::SourceExhausted);
+    const auto newSource=chooseResidentAIExistingCivilizationAffordance(
+        shifted,survivor,{0,0},thought);
+    assert(newSource);
+    assert(newSource->intent==CivilizationIntent::Gather);
+    assert(newSource->resourceNode==202);
+    assert(!residentAIPlanAlreadyAttempted(
+        survivor,thought,*newSource,shifted.minute));
+    assert(shifted.resourceNodes[0].quantity==0);
+    assert(shifted.resourceNodes[1].quantity==7);
     return 0;
 }
