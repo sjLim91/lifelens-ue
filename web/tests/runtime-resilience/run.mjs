@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import ts from 'typescript';
 import './world-session.mjs';
 import './world-lifecycle.mjs';
+import './offline-world.mjs';
 import './render-failover.mjs';
 
 const root = resolve(import.meta.dirname, '../..');

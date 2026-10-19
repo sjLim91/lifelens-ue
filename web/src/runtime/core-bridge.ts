@@ -201,6 +201,23 @@ export class LifeLensCoreBridge {
     if (wholeMinutes > 0) this.client.runMinutes(wholeMinutes);
   }
 
+  // Exact Core snapshot; no observer-derived fake reconstruction.
+  saveSnapshotBase64(): string {
+    if (typeof this.client.saveSnapshotBase64 !== 'function') {
+      throw Error('현재 Core 런타임은 영구 월드 저장을 지원하지 않습니다.');
+    }
+    const encoded = this.client.saveSnapshotBase64();
+    if (!encoded || encoded.length < 16) throw Error('Core 월드 저장에 실패했습니다.');
+    return encoded;
+  }
+
+  restoreSnapshotBase64(encoded: string): boolean {
+    if (typeof this.client.restoreSnapshotBase64 !== 'function') {
+      throw Error('현재 Core 런타임은 월드 복원을 지원하지 않습니다.');
+    }
+    return this.client.restoreSnapshotBase64(encoded);
+  }
+
   worldOverview(): WorldOverview {
     return readWorldOverview(this.client.worldOverviewJson());
   }

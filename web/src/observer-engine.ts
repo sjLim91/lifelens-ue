@@ -4,6 +4,8 @@ import { CharacterLayer } from './character-layer';
 import { LifeLensCoreBridge } from './runtime/core-bridge';
 import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
 import { SimulationClock } from './runtime/simulation-clock';
+import { elapsedOfflineMinutes, readPersistedWorld, wallTimeAfterAdvance,
+  writePersistedWorld, type PersistedWorld } from './runtime/offline-world-store';
 import {
   OBSERVER_CAMERA_CONTRACT,
   OBSERVER_RUNTIME_CONTRACT,
@@ -144,6 +146,132 @@ export function startObserverEngine(): () => void {
   let followResidents = false;
   let simulationClock: SimulationClock | null = null;
   let fastForwardRunning = false;
+  let catchupRunning = false;
+  let timelineAnchorMs = Date.now();
+  let activeEarthOrigin: PersistedWorld['earthOrigin'] = null;
+  let pendingSaves: Promise<void> = Promise.resolve();
+  let offlineBanner: HTMLDivElement | null = null;
+  let catchupFailed = false;
+  let storageFailed = false;
+
+  function offlineStatus(message: string | null): void {
+    if (stopped) return;
+    if (message === null) { offlineBanner?.remove(); offlineBanner = null; return; }
+    if (!offlineBanner) {
+      offlineBanner = document.createElement('div');
+      offlineBanner.className = 'offline-world-banner';
+      offlineBanner.setAttribute('role', 'status');
+      canvas.parentElement?.appendChild(offlineBanner);
+    }
+    offlineBanner.textContent = message;
+  }
+
+  function saveCheckpoint(savedAtWallMs: number): Promise<void> {
+    if (!worldSession || stopped || !ownedCore) return Promise.resolve();
+    let checkpoint: PersistedWorld;
+    try {
+      const overview = ownedCore.worldOverview();
+      if (typeof overview.worldSeed !== 'string' || !overview.worldSeed) {
+        throw Error('Core 월드 시드가 없습니다.');
+      }
+      checkpoint = {
+        key: 'active-world',
+        schemaVersion: 1,
+        worldSeed: overview.worldSeed,
+        minute: Number(overview.minute),
+        savedAtWallMs: Math.floor(savedAtWallMs),
+        snapshotBase64: worldSession.saveWorld(),
+        earthOrigin: activeEarthOrigin,
+      };
+    } catch (error) {
+      storageFailed = true;
+      offlineStatus('자동 저장 실패: ' + String(error));
+      return Promise.resolve();
+    }
+    // Commit strictly in observation order even if one IndexedDB transaction
+    // is still pending when the next authoritative Core state is captured.
+    pendingSaves = pendingSaves.catch(() => {}).then(
+      () => writePersistedWorld(checkpoint),
+    );
+    return pendingSaves.then(() => {
+      storageFailed = false;
+    }, error => {
+      storageFailed = true;
+      offlineStatus('월드 저장 실패: ' + String(error));
+    });
+  }
+
+  async function resumeOfflineWorld(): Promise<void> {
+    if (!worldSession || stopped || catchupRunning || fastForwardRunning) return;
+    const savedAt = timelineAnchorMs;
+    const debt = elapsedOfflineMinutes(savedAt, Date.now());
+    if (debt <= 0) { simulationClock?.start(); return; }
+    catchupRunning = true;
+    simulationClock?.stop();
+    residentAI.suspend(true);
+    shadowObserver.suspend(true);
+    let advanced = 0;
+    let nextCheckpoint = MINUTES_PER_DAY;
+    try {
+      while (!stopped) {
+        const target = elapsedOfflineMinutes(savedAt, Date.now());
+        const remaining = target - advanced;
+        if (remaining <= 0) break;
+        const step = Math.min(240, remaining);
+        worldSession.runMinutes(step);
+        advanced += step;
+        timelineAnchorMs = wallTimeAfterAdvance(savedAt, advanced);
+        if (advanced >= nextCheckpoint) {
+          await saveCheckpoint(timelineAnchorMs);
+          if (storageFailed) throw Error('월드 저장 실패로 복원을 중단합니다.');
+          nextCheckpoint = advanced + MINUTES_PER_DAY;
+        }
+        if (advanced % 720 === 0 || remaining <= 240) {
+          offlineStatus('미접속 시간의 삶 복원 중 · '
+            + Math.floor(advanced / MINUTES_PER_DAY) + '일 / '
+            + Math.floor(target / MINUTES_PER_DAY) + '일');
+        }
+        await yieldToBrowser();
+      }
+      if (!stopped) {
+        refreshSafely();
+        await saveCheckpoint(timelineAnchorMs);
+        if (storageFailed) throw Error('월드 저장 실패로 복원을 중단합니다.');
+        offlineStatus(null);
+      }
+    } catch (error) {
+      // Never mark unprocessed wall time as processed. The next session can
+      // resume from the last durable Core checkpoint without losing history.
+      console.error('LifeLens offline continuation failed', error);
+      catchupFailed = true;
+      offlineStatus('오프라인 삶 복원에 실패했습니다: ' + String(error));
+      await saveCheckpoint(timelineAnchorMs);
+    } finally {
+      catchupRunning = false;
+      if (!stopped && !catchupFailed) {
+        residentAI.suspend(false);
+        shadowObserver.suspend(false);
+        simulationClock?.start();
+      }
+    }
+  }
+
+  function onWorldVisibility(): void {
+    if (!worldSession || catchupRunning || catchupFailed || fastForwardRunning || stopped) return;
+    if (document.visibilityState !== 'visible') {
+      simulationClock?.stop();
+      timelineAnchorMs = Date.now();
+      void saveCheckpoint(timelineAnchorMs);
+    } else {
+      void resumeOfflineWorld();
+    }
+  }
+  function onWorldPageHide(): void {
+    if (!worldSession || stopped) return;
+    if (!catchupRunning) timelineAnchorMs = Date.now();
+    void saveCheckpoint(timelineAnchorMs);
+  }
+
   let angle: number = OBSERVER_CAMERA_CONTRACT.defaultAngleRadians;
   let elevation: number = OBSERVER_CAMERA_CONTRACT.defaultElevationRadians;
   const compactViewport = window.matchMedia(
@@ -343,25 +471,27 @@ export function startObserverEngine(): () => void {
   }
   
   function createWorld(seed: string): void {
-    if (!worldSession || fastForwardRunning) return;
+    if (!worldSession || fastForwardRunning || catchupRunning) return;
     const requestedSeed = seed.trim();
     const effectiveSeed = requestedSeed || generateWorldSeed();
     worldSession.createWorld(effectiveSeed);
+    activeEarthOrigin = null;
     resetAfterWorldCreated();
   }
 
   function createEarthWorld(latitude: number, longitude: number): boolean {
-    if (!worldSession || fastForwardRunning
+    if (!worldSession || fastForwardRunning || catchupRunning || catchupFailed
       || !Number.isFinite(latitude) || !Number.isFinite(longitude))
       return false;
     const seed = generateWorldSeed();
     if (!worldSession.createEarthWorld(seed, latitude, longitude))
       return false;
+    activeEarthOrigin = { latitudeDeg: latitude, longitudeDeg: longitude };
     resetAfterWorldCreated();
     return true;
   }
 
-  function resetAfterWorldCreated(): void {
+  function resetAfterWorldCreated(persist = true): void {
     shadowObserver.resetWorld();
     residentAI.resetWorld();
     centerX = 0;
@@ -385,6 +515,10 @@ export function startObserverEngine(): () => void {
     // Building the initial terrain is presentation work, not elapsed life.
     // Start the new world's wall-clock baseline after that synchronous work.
     simulationClock?.resetAccumulator();
+    if (persist) {
+      timelineAnchorMs = Date.now();
+      void saveCheckpoint(timelineAnchorMs);
+    }
   }
 
   function selectResident(residentId: string | null): void {
@@ -503,7 +637,7 @@ export function startObserverEngine(): () => void {
   }
 
   async function fastForwardDays(days: number): Promise<void> {
-    if (!worldSession || fastForwardRunning) return;
+    if (!worldSession || fastForwardRunning || catchupRunning || catchupFailed) return;
 
     const requestedDays = Math.floor(Number(days));
     if (
@@ -577,7 +711,11 @@ export function startObserverEngine(): () => void {
       } else ownedCore?.dispose();
       threeWorldRenderer?.breakFootTrafficContinuity();
       simulationClock?.resetAccumulator();
-      if (!stopped) simulationClock?.start();
+      if (!stopped) {
+        timelineAnchorMs = Date.now();
+        void saveCheckpoint(timelineAnchorMs);
+        simulationClock?.start();
+      }
     }
   }
   
@@ -640,9 +778,32 @@ export function startObserverEngine(): () => void {
       // inference engine automatically; no user-toggle or network cloud key.
       residentAI.startAutomatically();
       worldSession = new WorldSession(core, residentContinuity);
+      // Never overwrite a corrupted or newer Core save with a fresh world.
+      const saved = await readPersistedWorld();
+      if (stopped) return;
+      if (saved) {
+        if (saved.earthOrigin && !core.createEarthWorld(
+          saved.worldSeed,
+          saved.earthOrigin.latitudeDeg,
+          saved.earthOrigin.longitudeDeg,
+        )) throw Error('저장된 지구 월드의 지리 정보를 복원할 수 없습니다.');
+        if (!worldSession.restoreWorld(saved.snapshotBase64)) {
+          throw Error('저장된 월드의 Core 스냅샷이 손상되었습니다. 저장본을 덮어쓰지 않습니다.');
+        }
+        const overview = core.worldOverview();
+        if (overview.worldSeed !== saved.worldSeed
+          || Number(overview.minute) !== saved.minute) {
+          throw Error('복원된 세계의 식별자나 시간이 저장된 기록과 다릅니다.');
+        }
+        timelineAnchorMs = saved.savedAtWallMs;
+        activeEarthOrigin = saved.earthOrigin;
+        resetAfterWorldCreated(false);
+      } else {
+        createWorld('');
+      }
       observerStore.setRuntime('ready');
-      createWorld('');
       startSimulationClock();
+      if (saved) await resumeOfflineWorld();
     } catch (error) {
       if (stopped) return;
       const message = error instanceof Error ? error.message : String(error);
@@ -652,8 +813,21 @@ export function startObserverEngine(): () => void {
     }
   }
   
+  document.addEventListener('visibilitychange', onWorldVisibility);
+  window.addEventListener('pagehide', onWorldPageHide);
+  const checkpointTimer = window.setInterval(() => {
+    if (!catchupRunning && !catchupFailed && !fastForwardRunning
+      && document.visibilityState === 'visible' && worldSession) {
+      timelineAnchorMs = Date.now();
+      void saveCheckpoint(timelineAnchorMs);
+    }
+  }, 15000);
+
   void boot();
   return () => {
+    window.clearInterval(checkpointTimer);
+    document.removeEventListener('visibilitychange', onWorldVisibility);
+    window.removeEventListener('pagehide', onWorldPageHide);
     stopped = true;
     shadowObserver.dispose();
     residentAI.dispose();
@@ -663,6 +837,7 @@ export function startObserverEngine(): () => void {
     cameraInput.dispose();
     threeWorldRenderer?.dispose();
     renderFailureBanner?.remove();
+    offlineBanner?.remove();
     // Yielded fast-forward work retains its Core until it finishes.
     if (!fastForwardRunning) ownedCore?.dispose();
     worldSession = null;

@@ -1011,6 +1011,8 @@ export interface RuntimeClient {
   earthScenarioJson?: () => string;
   earthSolarJson?: () => string;
   runMinutes(minutes: number): void;
+  saveSnapshotBase64?: () => string;
+  restoreSnapshotBase64?: (encoded: string) => boolean;
   worldOverviewJson(): string;
   residentRuntimeJson?: () => string;
   residentsJson(): string;

@@ -165,5 +165,26 @@ int main()
     const std::string after = bridge.worldOverviewJson();
     assert(before != after);
 
+    const std::string saved=bridge.saveSnapshotBase64();
+    assert(saved.size()>64);
+    WebClientBridge recovered;
+    assert(recovered.restoreSnapshotBase64(saved));
+    assert(recovered.worldOverviewJson()==bridge.worldOverviewJson());
+    assert(recovered.saveSnapshotBase64()==saved);
+    // A bad save fails without destroying an already active simulation.
+    assert(!recovered.restoreSnapshotBase64("not-a-snapshot"));
+    assert(!recovered.restoreSnapshotBase64(saved.substr(1)));
+    assert(recovered.saveSnapshotBase64()==saved);
+    bridge.runMinutes(250);
+    recovered.runMinutes(250);
+    assert(bridge.saveSnapshotBase64()==recovered.saveSnapshotBase64());
+
+    // Genuine world identity must be replaced on restore, not merely
+    // recomputed as a fresh world with the same seed.
+    WebClientBridge other;
+    assert(other.newGame("78901234","",CurrentWorldGenerationVersion));
+    assert(other.restoreSnapshotBase64(saved));
+    assert(other.saveSnapshotBase64()==saved);
+    assert(other.worldOverviewJson()==after);
     return 0;
 }
