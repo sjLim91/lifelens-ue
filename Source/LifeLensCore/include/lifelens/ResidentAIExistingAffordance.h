@@ -185,6 +185,55 @@ chooseResidentAIMissingExperimentMaterial(
     return none;
 }
 
+// Tool-making is a real multi-step personal goal. If the desired item is
+// not yet craftable, derive the next legal prerequisite from the SAME Core
+// technology/recipe registry instead of abandoning this resident's goal.
+// This is only an observation/choice: no free inventory, discoveries or XP.
+inline CivilizationUtilityDecision chooseResidentAIToolPrerequisite(
+    const World& world,
+    const Character& resident,
+    GridPos position,
+    const SettlementPopulation* population=nullptr)
+{
+    CivilizationUtilityDecision best;
+    for(const TechnologyDefinition& technology:TechnologyRegistry){
+        const TechniqueId technique=technology.legacyTechnique;
+        const TechniqueRecipe recipe=techniqueRecipe(technique);
+        if(recipe.technique!=technique || !recipe.producesItem
+           ||recipe.outputQuantity<=0
+           ||desiredTechniqueOutputStock(technique)<=0
+           ||(itemCapability(recipe.outputKind)==ToolCapability::None
+              &&recipe.outputKind!=ItemKind::Cordage)) continue;
+        const bool anyMaterial=recipe.outputMaterial==MaterialKind::Unknown;
+        if(resident.civilization.inventory.count(
+            recipe.outputKind,recipe.outputMaterial,anyMaterial)
+             >=desiredTechniqueOutputStock(technique)) continue;
+
+        CivilizationUtilityDecision next;
+        if(resident.civilization.knowledge.knowsAtLeast(
+            technique,KnowledgeLevel::Reproducible)){
+            // Known tool recipe but missing a real raw ingredient. Other
+            // intermediate crafts (cordage, flakes) are separately eligible
+            // tool goals in this same registry, with their own real steps.
+            next=chooseResidentAIMissingRecipeMaterial(
+                world,resident,position,technique,population);
+        }else{
+            // An unknown tool must actually be experimented with. Its
+            // probabilistic success is owned by Core, never guaranteed here.
+            next=bestExperimentDecisionAtPosition(
+                world,resident,position,population,technique);
+            if(next.intent!=CivilizationIntent::Experiment
+               ||next.technique!=technique) continue;
+        }
+        if((next.intent==CivilizationIntent::Gather
+             ||next.intent==CivilizationIntent::Experiment)
+           &&std::isfinite(next.utility)
+           &&next.utility>=0.14 &&next.utility<=1.0)
+            considerCivilizationDecision(best,next);
+    }
+    return best;
+}
+
 // Translate an accepted resident's *strategic preference* into ONE existing
 // Core-authorized affordance candidate. This is never an action execution:
 // normal Civilization routing, inventory, terrain, path and outcome checks
@@ -260,10 +309,22 @@ chooseResidentAIExistingCivilizationAffordance(
         case CognitiveIntentKind::CraftUsefulTools:
             candidate=bestCraftDecisionAtPosition(
                 world,actor,actorPosition,settlementPopulation);
-            // Toolcraft is different from unrequested settlement projects.
+            // The generic chooser can also return an infrastructure action;
+            // it is not authorization for a model's personal tool goal.
             if(candidate.intent!=CivilizationIntent::Craft
                ||candidate.facilityAction!=FacilityBuildAction::None
                ||candidate.technique==TechniqueId::None)
+                candidate=chooseResidentAIToolPrerequisite(
+                    world,actor,actorPosition,settlementPopulation);
+            // A missing tool may require collecting a REAL ingredient or a
+            // Core experiment, not a magical craft on this same tick.
+            if(candidate.intent!=CivilizationIntent::Craft
+               &&candidate.intent!=CivilizationIntent::Gather
+               &&candidate.intent!=CivilizationIntent::Experiment)
+                return std::nullopt;
+            if(candidate.intent==CivilizationIntent::Craft
+               &&(candidate.facilityAction!=FacilityBuildAction::None
+                  ||candidate.technique==TechniqueId::None))
                 return std::nullopt;
             break;
         case CognitiveIntentKind::ExpandCultivation:

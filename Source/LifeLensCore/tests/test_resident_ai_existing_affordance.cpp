@@ -73,9 +73,17 @@ int main()
     const auto craft=chooseResidentAIExistingCivilizationAffordance(
         world,actor,{0,0},thought);
     if(craft) {
-        assert(craft->intent==CivilizationIntent::Craft);
-        assert(craft->facilityAction==FacilityBuildAction::None);
-        assert(craft->technique!=TechniqueId::None);
+        // A personally chosen tool may legitimately start by gathering
+        // actual ingredients or experimenting with an existing Core recipe.
+        assert(craft->intent==CivilizationIntent::Craft
+            ||craft->intent==CivilizationIntent::Gather
+            ||craft->intent==CivilizationIntent::Experiment);
+        if(craft->intent==CivilizationIntent::Craft){
+            assert(craft->facilityAction==FacilityBuildAction::None);
+            assert(craft->technique!=TechniqueId::None);
+        }
+        if(craft->intent==CivilizationIntent::Gather)
+            assert(craft->resourceNode!=0);
     }
 
     thought.intent=CognitiveIntentKind::ImproveFoodSecurity;
