@@ -14,7 +14,11 @@ void writeCognitiveJournalSnapshotExtension(
 {
     w.raw(CognitiveJournalSnapshotExtensionMagic,
           sizeof(CognitiveJournalSnapshotExtensionMagic));
-    w.u32(CognitiveJournalSnapshotExtensionVersion);
+    const bool observed=std::any_of(
+        snapshot.acceptedCognitiveDecisions.begin(),
+        snapshot.acceptedCognitiveDecisions.end(),
+        [](const AcceptedCognitiveDecision& e){return e.observedMinute>=0;});
+    w.u32(observed ? 2 : CognitiveJournalSnapshotExtensionVersion);
     w.u32(static_cast<std::uint32_t>(snapshot.acceptedCognitiveDecisions.size()));
     for(const auto& e:snapshot.acceptedCognitiveDecisions){
         w.u64(e.actor);
@@ -26,6 +30,10 @@ void writeCognitiveJournalSnapshotExtension(
         w.real(e.priority);
         w.u64(e.target);
         w.string(e.rationaleDigest);
+        if(observed){
+            w.i32(e.observedMinute);
+            w.u64(e.observedContextFingerprint);
+        }
     }
 }
 
@@ -39,7 +47,7 @@ bool readCognitiveJournalSnapshotExtension(
        || !std::equal(magic,magic+sizeof(magic),
                       CognitiveJournalSnapshotExtensionMagic)
        || !r.u32(version)
-       || version!=CognitiveJournalSnapshotExtensionVersion
+       || (version!=CognitiveJournalSnapshotExtensionVersion &&version!=2)
        || !r.count(count)
        || count>MaxAcceptedCognitiveDecisions)
         return false;
@@ -57,6 +65,8 @@ bool readCognitiveJournalSnapshotExtension(
            || !r.u64(e.target)
            || !r.string(e.rationaleDigest))
             return false;
+        if(version==2 &&(!r.i32(e.observedMinute)
+           ||!r.u64(e.observedContextFingerprint))) return false;
         events.push_back(std::move(e));
     }
     if(!validCognitiveDecisionJournal(events,snapshot.world)) return false;

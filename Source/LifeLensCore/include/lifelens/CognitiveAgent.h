@@ -169,6 +169,9 @@ struct CognitiveRelationshipEvidence {
 };
 
 struct CognitiveRequest {
+    WorldSeed worldSeed=0;
+    PopulationSeed populationSeed=0;
+    WorldGenerationVersion generationVersion=0;
     CharacterId actor=0;
     int minute=0;
     CognitiveTriggerKind trigger=CognitiveTriggerKind::None;

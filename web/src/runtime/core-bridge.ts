@@ -240,14 +240,18 @@ export class LifeLensCoreBridge {
     }
   }
 
-  // The Core reconstructs a fresh authoritative request. The local model
-  // cannot mutate any world object; it only submits one validated preference.
+  // Core checks the issued observation receipt and validates the preference
+  // against current legal actions before recording both contexts.
   submitLocalCognitiveProposal(
     request: CognitiveRequestDto,
     proposal: CognitiveProposalDto,
     observedWorldSeed: string,
   ): boolean {
-    if (typeof this.client.submitLocalCognitiveProposal !== 'function') return false;
+    if (typeof this.client.submitLocalCognitiveProposal !== 'function'
+        || request.worldSeed !== observedWorldSeed
+        || !request.contextFingerprint
+        || !request.populationSeed
+        || request.generationVersion === undefined) return false;
     let digest = 2166136261;
     for (const point of proposal.rationale) {
       digest = Math.imul(digest ^ (point.codePointAt(0) ?? 0), 16777619) >>> 0;
@@ -257,6 +261,7 @@ export class LifeLensCoreBridge {
         request.actor, request.minute, observedWorldSeed,
         proposal.intent, proposal.priority, proposal.targetResident ?? '',
         `local-${digest.toString(16).padStart(8, '0')}`, request.trigger,
+        request.contextFingerprint,
       );
     } catch {
       return false;

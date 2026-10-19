@@ -342,6 +342,31 @@ await test('Core request parser is bounded and rejects malformed runtime context
   );
 });
 
+await test('issued context identities stay lossless and incomplete receipts fail closed',()=>{
+  const legacy=request();
+  const issued={...legacy,worldSeed:'18446744073709551615',
+    populationSeed:'9',generationVersion:4,contextFingerprint:'9007199254740993'};
+  assert.deepEqual(parseCognitiveRequest(issued),issued);
+  for(const patch of [
+    {contextFingerprint:'9007199254740993.0'},
+    {contextFingerprint:'18446744073709551616'},
+    {contextFingerprint:9007199254740992},
+    {populationSeed:undefined},
+    {generationVersion:0},
+  ])assert.throws(()=>parseCognitiveRequest({...issued,...patch}),/receipt|generation/);
+  let calls=0,received;
+  const bridge=new LifeLensCoreBridge({
+    submitLocalCognitiveProposal:(...args)=>{calls++;received=args;return true;},
+  });
+  assert.equal(bridge.submitLocalCognitiveProposal(legacy,proposal(legacy),'1'),false);
+  assert.equal(bridge.submitLocalCognitiveProposal(issued,proposal(issued),'2'),false);
+  assert.equal(calls,0);
+  assert.equal(bridge.submitLocalCognitiveProposal(issued,proposal(issued),issued.worldSeed),true);
+  assert.equal(calls,1);
+  assert.equal(received[8],issued.contextFingerprint);
+  assert.equal(received[2],issued.worldSeed);
+});
+
 await test('dynamic JSON schema contains only Core-supplied allowed intents',()=>{
   const req=request('1',100,['ExpandCultivation','ImproveFoodSecurity']);
   const schema=cognitiveProposalJsonSchema(req);

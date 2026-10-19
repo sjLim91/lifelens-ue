@@ -347,6 +347,7 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
     births_=snapshot.births;
     socialKnowledge_=snapshot.socialKnowledge;
     acceptedCognitiveDecisions_=snapshot.acceptedCognitiveDecisions;
+    issuedCognitiveRequests_.clear();
     nextContextActionToken_=snapshot.nextContextActionToken;
     runtime_=std::move(restoredRuntime);
     logs_=snapshot.logs;
