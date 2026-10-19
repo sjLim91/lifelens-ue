@@ -1337,6 +1337,20 @@ inline CivilizationUtilityDecision bestGatherDecision(
         world,self,civilizationSanitationReferencePosition(world));
 }
 
+// One Core-owned list of genuinely supported experiments. The resident AI
+// may inspect the same catalog to find real missing prerequisites, rather
+// than inventing a recipe or duplicating the action list in a second planner.
+inline constexpr std::array<ExperimentKind,17> CivilizationExperimentCatalog={{
+    ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
+    ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
+    ExperimentKind::ShapeDiggingStick,ExperimentKind::HaftStoneHammer,
+    ExperimentKind::DesignateSanitationArea,ExperimentKind::DigSanitationPit,
+    ExperimentKind::OrganizeStockpile,ExperimentKind::SmeltCopperOre,
+    ExperimentKind::CultivatePlantFood,ExperimentKind::SmeltTinOre,
+    ExperimentKind::AlloyBronze,ExperimentKind::CastBronzeAxe,
+    ExperimentKind::CastBronzePick,ExperimentKind::WeavePrimitiveWrap
+}};
+
 inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -1360,17 +1374,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const InnovationPressureContextSnapshot innovationContext=
         observeInnovationPressureContext(
             world,self,authoritativePosition,population);
-    const std::array<ExperimentKind,17> experiments={
-        ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
-        ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
-        ExperimentKind::ShapeDiggingStick,ExperimentKind::HaftStoneHammer,
-        ExperimentKind::DesignateSanitationArea,ExperimentKind::DigSanitationPit,
-        ExperimentKind::OrganizeStockpile,ExperimentKind::SmeltCopperOre,
-        ExperimentKind::CultivatePlantFood,ExperimentKind::SmeltTinOre,
-        ExperimentKind::AlloyBronze,ExperimentKind::CastBronzeAxe,
-        ExperimentKind::CastBronzePick,ExperimentKind::WeavePrimitiveWrap};
-
-    for(const ExperimentKind kind:experiments){
+    for(const ExperimentKind kind:CivilizationExperimentCatalog){
         const TechniqueId technique=experimentTechnique(kind);
         if(technique==TechniqueId::None
            || (requestedTechnique!=TechniqueId::None
