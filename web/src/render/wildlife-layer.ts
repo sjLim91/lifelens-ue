@@ -232,12 +232,16 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
   update(dtSeconds:number,camera?:THREE.Camera):void {
     const dt=THREE.MathUtils.clamp(Number.isFinite(dtSeconds)?dtSeconds:0,0,.1);
     this.time.value+=dt;
-    const speed=grid.worldUnitsPerChunk/grid.gridCellsPerChunk*.75;
+    const baseSpeed=grid.worldUnitsPerChunk/grid.gridCellsPerChunk*.75;
     for(const pose of this.animals.values()){
       const dx=pose.goalX-pose.x,dz=pose.goalZ-pose.z;
       const distance=Math.hypot(dx,dz);
       if(distance>1e-4){
-        const step=Math.min(distance,dt*speed);
+        // The only destination is the latest actual Core position. Species
+        // locomotion illustrates its Core behavior but cannot invent a chase,
+        // collision, attack or a movement beyond the authoritative goal.
+        const gaitSpeed=baseSpeed*wildlifeVisualTravelMultiplier(pose.behavior);
+        const step=Math.min(distance,dt*gaitSpeed);
         pose.speed=dt>0?step/dt:0;
         pose.x+=dx/distance*step;pose.z+=dz/distance*step;
         pose.heading=Math.atan2(dx,dz);
