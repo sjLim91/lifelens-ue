@@ -159,5 +159,63 @@ int main()
         TechniqueId::DiggingStick,KnowledgeLevel::Reproducible,1.0);
     assert(!chooseResidentAIExistingCivilizationAffordance(
         empty,isolated,{0,0},thought));
+    // Unknown tool knowledge is NOT a dead end. First gather actual flint
+    // needed by the registered StrikeStone experiment; then the same goal
+    // may attempt that Core experiment, subject to its real probability.
+    World discovery(4466);
+    discovery.minute=480;
+    discovery.resourceNodes.clear();
+    ResourceNode flint=wood;
+    flint.id=404;
+    flint.pos={0,0};
+    flint.material=MaterialKind::Flint;
+    flint.quantity=8;
+    flint.maxQuantity=8;
+    discovery.resourceNodes.push_back(flint);
+    Character novice=makeResident();
+    assert(!novice.civilization.knowledge.knowsAtLeast(
+        TechniqueId::SharpFlake,KnowledgeLevel::Reproducible));
+    assert(residentAIToolOutputNeeded(novice,TechniqueId::SharpFlake));
+    assert(!residentAIToolOutputNeeded(
+        novice,TechniqueId::DesignatedSanitationArea));
+    assert(!residentAIToolOutputNeeded(novice,TechniqueId::FireMaking));
+    const auto seekFlint=chooseResidentAIExistingCivilizationAffordance(
+        discovery,novice,{0,0},thought);
+    assert(seekFlint);
+    assert(seekFlint->intent==CivilizationIntent::Gather);
+    assert(seekFlint->material==MaterialKind::Flint);
+    assert(seekFlint->resourceNode==404);
+    assert(novice.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Flint)==0);
+    assert(discovery.resourceNodes.front().quantity==8);
+    novice.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Flint,2,0.7,0.9});
+    const auto experimental=chooseResidentAIExistingCivilizationAffordance(
+        discovery,novice,{0,0},thought);
+    assert(experimental);
+    assert(experimental->intent==CivilizationIntent::Experiment);
+    assert(experimental->experiment==ExperimentKind::StrikeStone);
+    assert(experimental->technique==TechniqueId::SharpFlake);
+    assert(!novice.civilization.knowledge.knowsAtLeast(
+        TechniqueId::SharpFlake,KnowledgeLevel::Reproducible));
+    assert(discovery.resourceNodes.front().quantity==8);
+    // A full personal tool supply should not justify unrelated maintenance
+    // or excess craft practice under the model's tool-only preference.
+    novice.civilization.inventory.add({
+        ItemKind::SharpFlake,MaterialKind::Flint,2,0.7,0.9});
+    assert(!residentAIToolOutputNeeded(novice,TechniqueId::SharpFlake));
+
+    // No legal local source: both cognition and execution remain unable
+    // to conjure the material, even when the model strongly wants a tool.
+    World barren(4466);
+    barren.minute=480;
+    barren.resourceNodes.clear();
+    Character beginner=makeResident();
+    const auto noIngredient=chooseResidentAIExistingCivilizationAffordance(
+        barren,beginner,{0,0},thought);
+    assert(!noIngredient);
+    assert(beginner.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Flint)==0);
+    assert(beginner.civilization.knowledge.all().empty());
     return 0;
 }
