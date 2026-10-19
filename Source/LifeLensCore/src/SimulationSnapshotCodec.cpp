@@ -1,4 +1,5 @@
 #include "lifelens/NaturalEcologyValidation.h"
+#include "lifelens/DependentEscortSnapshotCodec.h"
 #include "lifelens/NaturalEcologySnapshotCodec.h"
 #include "lifelens/AutonomousGoalActionLinkSnapshotCodec.h"
 #include "lifelens/SimulationSnapshotCodec.h"
@@ -276,6 +277,16 @@ bool encodeSimulationSnapshot(
         body.insert(body.end(),goalExtension.bytes.begin(),
                     goalExtension.bytes.end());
     }
+    if(!validDependentEscorts(snapshot)){
+        setError(error,"invalid dependent escort state");return false;
+    }
+    bool hasEscort=false;
+    for(const auto& entry:snapshot.runtime)
+        hasEscort|=entry.second.dependentEscort.active();
+    if(hasEscort){
+        Writer escortExtension;writeDependentEscorts(escortExtension,snapshot);
+        body.insert(body.end(),escortExtension.bytes.begin(),escortExtension.bytes.end());
+    }
     outBytes=std::move(body);
     if(error) error->clear();
     return true;
@@ -369,15 +380,23 @@ bool decodeSimulationSnapshot(
         && (!hasHealthExtension || tradeJourneyMarker>healthMarker);
 
     const auto ecologyMarker=std::find_end(bytes.begin()+12,bytes.end(),NaturalEcologyMagic,NaturalEcologyMagic+sizeof(NaturalEcologyMagic));
+    const auto escortMarker=std::find_end(
+        bytes.begin()+12,bytes.end(),DependentEscortMagic,
+        DependentEscortMagic+sizeof(DependentEscortMagic));
+    const bool hasEscortExtension=escortMarker!=bytes.end();
+    const auto tailEnd=hasEscortExtension?escortMarker:bytes.end();
+    if(hasEscortExtension &&(ecologyMarker==bytes.end() ||escortMarker<=ecologyMarker)){
+        setError(error,"misplaced dependent escort extension");return false;
+    }
     const auto goalMarker=ecologyMarker!=bytes.end()
         ?std::find_end(
-            ecologyMarker,bytes.end(),
+            ecologyMarker,tailEnd,
             AutonomousGoalActionLinkExtensionMagic,
             AutonomousGoalActionLinkExtensionMagic
                 +sizeof(AutonomousGoalActionLinkExtensionMagic))
         :bytes.end();
     const bool hasGoalExtension=
-        goalMarker!=bytes.end()
+        goalMarker!=tailEnd
         &&ecologyMarker!=bytes.end()
         &&goalMarker>ecologyMarker;
     const auto preEcologyEnd=ecologyMarker!=bytes.end() ? ecologyMarker : bytes.end();
@@ -512,19 +531,26 @@ bool decodeSimulationSnapshot(
 
     if(ecologyMarker!=bytes.end()){
         std::vector<std::uint8_t> ecologyBytes(
-            ecologyMarker,hasGoalExtension ? goalMarker : bytes.end());
+            ecologyMarker,hasGoalExtension ? goalMarker : tailEnd);
         Reader ecologyReader(ecologyBytes);
         if(!readNaturalEcology(ecologyReader,decoded.world) || !ecologyReader.done()){
             setError(error,"invalid natural ecology snapshot extension"); return false;
         }
     }
     if(hasGoalExtension){
-        const std::vector<std::uint8_t> goalBytes(goalMarker,bytes.end());
+        const std::vector<std::uint8_t> goalBytes(goalMarker,tailEnd);
         Reader goalReader(goalBytes);
         if(!readAutonomousGoalActionLinkExtension(goalReader,decoded)
            ||!goalReader.done()){
             setError(error,"invalid autonomous goal action link extension");
             return false;
+        }
+    }
+    if(hasEscortExtension){
+        const std::vector<std::uint8_t> escortBytes(escortMarker,bytes.end());
+        Reader escortReader(escortBytes);
+        if(!readDependentEscorts(escortReader,decoded) ||!escortReader.done()){
+            setError(error,"invalid dependent escort extension");return false;
         }
     }
     outSnapshot=std::move(decoded);
