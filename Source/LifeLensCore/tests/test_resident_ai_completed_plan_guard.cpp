@@ -86,6 +86,28 @@ int main()
     assert(residentAIPlanAlreadyAttempted(
         legacy,sourceThought,replacement,504));
 
+    // A successful partial ingredient collection is normally consumed.
+    // Only the caller that has rechecked the STILL-UNMET real recipe can
+    // explicitly request continuation for the same original tool goal.
+    Character partial;
+    partial.id=25;
+    partial.alive=true;
+    CivilizationUtilityDecision clay;
+    clay.intent=CivilizationIntent::Gather;
+    clay.material=MaterialKind::Clay;
+    clay.resourceNode=515;
+    AcceptedCognitiveDecision toolThought=thought;
+    toolThought.actor=partial.id;
+    toolThought.intent=CognitiveIntentKind::CraftUsefulTools;
+    rememberCivilizationAttemptOutcome(partial,clay,503,true);
+    assert(residentAIPlanAlreadyAttempted(
+        partial,toolThought,clay,504));
+    assert(!residentAIPlanAlreadyAttempted(
+        partial,toolThought,clay,504,true));
+    rememberCivilizationAttemptOutcome(partial,clay,505,false);
+    assert(residentAIPlanAlreadyAttempted(
+        partial,toolThought,clay,506,true));
+
     // Snapshot restore preserves the owner/provenance and matches the exact
     // execution key; no new journal or snapshot extension is necessary.
     Simulation sim(8842);
