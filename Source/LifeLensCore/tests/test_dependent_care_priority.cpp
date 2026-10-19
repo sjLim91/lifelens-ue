@@ -2,6 +2,7 @@
 #include <string>
 
 #include "lifelens/Simulation.h"
+#include "lifelens/ResidentCognitiveCarePreference.h"
 
 using namespace lifelens;
 
@@ -15,8 +16,138 @@ static Character* findResident(Simulation& sim,CharacterId id)
     return nullptr;
 }
 
+static int cognitiveCareChoiceTests()
+{
+    Simulation sim(909090);
+    sim.setupNewGame();
+    auto snap=sim.captureSnapshot();
+    CHECK(snap.world.characters.size()>=2);
+    const auto a=snap.world.characters[0].id;
+    const auto b=snap.world.characters[1].id;
+    auto& parentA=snap.world.characters[0];
+    auto& parentB=snap.world.characters[1];
+
+    // Two equally capable parents; the baseline uses the first valid
+    // caregiver, while the single accepted AI intent can prefer the second.
+    parentB.personality=parentA.personality;
+    parentB.development=parentA.development;
+    parentA.needs={0.02,0.02,0.02,0.02,0.02};
+    parentB.needs=parentA.needs;
+    parentA.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,5,0.8,1.0});
+    parentB.civilization.inventory=parentA.civilization.inventory;
+
+    Character child;
+    child.id=998877;
+    child.name="DependentChoice";
+    child.sex=Sex::Female;
+    child.alive=true;
+    child.lifeStage=LifeStage::Toddler;
+    child.hasBirthMinute=true;
+    child.birthMinute=0;
+    child.parentIds={a,b};
+    child.civilization.character=child.id;
+    applyLifeStageProfile(child,LifeStage::Toddler);
+    child.needs={0.70,0.10,0.10,0.10,0.10};
+    child.development.health=1.0;
+    // Isolate physical feeding from a competing routine education opportunity.
+    child.development.attachment=1.0;
+    child.development.socialSkill=1.0;
+    child.development.confidence=1.0;
+    child.development.learningSupport=1.0;
+    child.development.disciplineInternalization=1.0;
+    snap.world.characters.push_back(child);
+    CHECK(snap.genealogy.registerBirth(child.id,a,b));
+    const GridPos home=snap.runtime[a].pos;
+    snap.runtime[b].pos=home;
+    SimulationRuntimeSnapshot babyRuntime;
+    babyRuntime.pos=home;
+    snap.runtime.emplace(child.id,babyRuntime);
+    for(auto id:{a,b}){
+        auto& runtime=snap.runtime[id];
+        runtime.goal=Goal::Idle;
+        runtime.plan.clear();
+        runtime.pendingContext.clear();
+        runtime.penaltyUntilMinute=0;
+        auto& rel=snap.relationships.getOrCreate(id,child.id);
+        rel.affection=0.9;
+        rel.commitment=0.8;
+        rel.comfort=0.9;
+        rel.trust=0.9;
+    }
+    snap.world.minute=30;
+    // Keep the real issued token pending until the external executor ACKs it.
+    snap.world.externalPhysicalExecution=true;
+    Simulation ordinary(909090);
+    CHECK(ordinary.restoreSnapshot(snap));
+    ordinary.step();
+    const auto ordinaryA=ordinary.observePendingContextAction(a);
+    const auto ordinaryB=ordinary.observePendingContextAction(b);
+    const CharacterId baseline=ordinaryA.active
+        &&ordinaryA.kind==ContextActionKind::Parenting ?a:
+        (ordinaryB.active &&ordinaryB.kind==ContextActionKind::Parenting ?b:0);
+    CHECK(baseline!=0);
+    const CharacterId chosen=baseline==a?b:a;
+
+    AcceptedCognitiveDecision thought;
+    thought.actor=chosen;
+    thought.target=child.id;
+    thought.minute=snap.world.minute;
+    thought.trigger=CognitiveTriggerKind::Reflection;
+    thought.contextFingerprint=99221;
+    thought.backendIdentity="local-model-test";
+    thought.intent=CognitiveIntentKind::CareForDependent;
+    thought.priority=1.0;
+    thought.rationaleDigest="test-digest";
+    CHECK(appendAcceptedCognitiveDecision(
+        snap.acceptedCognitiveDecisions,thought,snap.world));
+    CHECK(residentCognitiveCarePreference(
+        snap.world,snap.acceptedCognitiveDecisions,
+        snap.world.characters[baseline==a?0:1],child)==0.0);
+    CHECK(residentCognitiveCarePreference(
+        snap.world,snap.acceptedCognitiveDecisions,
+        snap.world.characters[chosen==a?0:1],child)>0.0);
+    Simulation selected(909090);
+    CHECK(selected.restoreSnapshot(snap));
+    Simulation replay(909090);
+    CHECK(replay.restoreSnapshot(snap));
+    selected.step();
+    replay.step();
+    const auto pending=selected.observePendingContextAction(chosen);
+    CHECK(pending.active);
+    CHECK(pending.kind==ContextActionKind::Parenting);
+    CHECK(pending.targetResident==child.id);
+    CHECK(pending.token==
+        replay.observePendingContextAction(chosen).token);
+    const auto* liveChild=findResident(selected,child.id);
+    CHECK(liveChild!=nullptr);
+    CHECK(liveChild->needs.hunger>=0.65);
+    CHECK(residentCognitiveCarePreference(
+        selected.world(),snap.acceptedCognitiveDecisions,
+        selected.world().characters[chosen==a?0:1],
+        *liveChild)>0.0);
+
+    const double hungerBefore=liveChild->needs.hunger;
+    CHECK(selected.completeExternalContextAction(chosen,pending.token,home));
+    CHECK(replay.completeExternalContextAction(chosen,pending.token,home));
+    CHECK(findResident(selected,child.id)->needs.hunger<hungerBefore);
+    CHECK(!selected.completeExternalContextAction(chosen,pending.token,home));
+
+    // The same person's newer unrelated idea cannot silently keep their
+    // old preferred dependent target forever.
+    thought.intent=CognitiveIntentKind::ExploreOpportunity;
+    thought.target=0;
+    auto changed=snap.acceptedCognitiveDecisions;
+    changed.front()=thought;
+    CHECK(residentCognitiveCarePreference(
+        snap.world,changed,snap.world.characters[chosen==a?0:1],
+        child)==0.0);
+    return 0;
+}
+
 int main()
 {
+    CHECK(cognitiveCareChoiceTests()==0);
     Simulation sim(707070);
     sim.setupNewGame();
     SimulationStateSnapshot snapshot=sim.captureSnapshot();

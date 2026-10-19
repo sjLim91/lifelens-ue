@@ -1,5 +1,6 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/SocietyEconomy.h"
+#include "lifelens/ResidentCognitivePreference.h"
 
 #include <algorithm>
 #include <cmath>
@@ -154,6 +155,7 @@ void Simulation::advanceSocietyExchange()
     // physically together. C6-C adds travel only when no useful local exchange
     // was completed; it never turns inventories into remote RPC endpoints.
     SocietyExchangePlan bestLocal;
+    double bestLocalRank=-1.0;
     for(std::size_t i=0;i<world_.characters.size();++i){
         Character& first=world_.characters[i];
         if(!first.alive || requiresDirectCare(first.lifeStage)) continue;
@@ -193,7 +195,15 @@ void Simulation::advanceSocietyExchange()
                     candidate.score=societyClamp01(candidate.score+0.05);
                 }
             }
-            if(candidate.score>bestLocal.score+1e-12){
+            // Preserve ordinary ordering exactly without a current preference.
+            // Only independently viable barter receives a cognition bonus.
+            const double preference=candidate.valid() &&candidate.score>=0.66
+                ? residentCognitiveTradePreference(
+                    world_,acceptedCognitiveDecisions_,first.id,second.id)
+                : 0.0;
+            const double rank=candidate.score+preference;
+            if(rank>bestLocalRank+1e-12){
+                bestLocalRank=rank;
                 bestLocal=candidate;
             }
         }
@@ -256,7 +266,8 @@ void Simulation::advanceSocietyExchange()
     InterSettlementTradeMission mission=
         bestInterSettlementTradeMission(
             world_,network,population,
-            relationships_,socialKnowledge_,&eligible);
+            relationships_,socialKnowledge_,&eligible,
+            &acceptedCognitiveDecisions_);
     if(!mission.available) return;
 
     const SettlementGroupRelationsObservation groupRelations=

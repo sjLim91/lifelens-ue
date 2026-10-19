@@ -3,6 +3,7 @@
 
 #include "lifelens/SettlementMigration.h"
 #include "lifelens/Simulation.h"
+#include "lifelens/SimulationSnapshotCodec.h"
 
 using namespace lifelens;
 
@@ -116,6 +117,57 @@ int main()
     CHECK(plan.consensusPressure01>=HouseholdMigrationConsensusThreshold);
     CHECK(manhattan(plan.target,origin)>SettlementServiceRadiusGrid);
     CHECK(planningWorld.findGeneratedNaturalChunk(plan.targetChunk)==nullptr);
+
+    // Two equally pressured households remain physically eligible without a
+    // model. A current accepted goal can choose among them, not manufacture
+    // migration pressure, a dependent-transport action or a destination.
+    {
+        World competing=planningWorld;
+        competing.minute=1;
+        competing.characters.push_back(makeMigrant(3,"Third"));
+        competing.characters.push_back(makeMigrant(4,"Fourth"));
+        HouseholdBook groups=households;
+        CHECK(groups.create(2,{3,4}));
+        SettlementPopulation positions=population;
+        positions.emplace(3,origin);
+        positions.emplace(4,GridPos{1,0});
+        const auto ordinary=chooseHouseholdMigrationPlan(
+            competing,groups,positions);
+        CHECK(ordinary.available &&ordinary.householdId==1);
+        AcceptedCognitiveDecision thought;
+        thought.actor=3;
+        thought.minute=1;
+        thought.trigger=CognitiveTriggerKind::Reflection;
+        thought.contextFingerprint=790104;
+        thought.backendIdentity="local-test";
+        thought.intent=CognitiveIntentKind::MigrateHousehold;
+        thought.priority=1.0;
+        thought.rationaleDigest="existing-household-pressure";
+        std::vector<AcceptedCognitiveDecision> journal;
+        CHECK(appendAcceptedCognitiveDecision(journal,thought,competing));
+        const auto selected=chooseHouseholdMigrationPlan(
+            competing,groups,positions,&journal);
+        CHECK(selected.available &&selected.householdId==2);
+        CHECK(selected.consensusPressure01==ordinary.consensusPressure01);
+        CHECK(selected.leaderPressure01>=HouseholdMigrationLeaderThreshold);
+        CHECK(selected.members==std::vector<CharacterId>({3,4}));
+
+        competing.characters[3].lifeStage=LifeStage::Baby;
+        const auto noInfantWalking=chooseHouseholdMigrationPlan(
+            competing,groups,positions,&journal);
+        CHECK(noInfantWalking.available &&noInfantWalking.householdId==1);
+        competing.characters[3].lifeStage=LifeStage::Adult;
+        for(auto& resident:competing.characters){
+            // Raw Water without a real container is not a usable reserve.
+            resident.civilization.inventory.add({
+                ItemKind::SimpleContainer,MaterialKind::Clay,100,0.8,1.0});
+            for(const auto material:MigrationFoundationalMaterials)
+                resident.civilization.inventory.add({
+                    ItemKind::RawMaterial,material,100,0.8,1.0});
+        }
+        CHECK(!chooseHouseholdMigrationPlan(
+            competing,groups,positions,&journal).available);
+    }
 
     // A dependent household is intentionally deferred until a real carry /
     // accompany action exists; C6-D must never fake infant locomotion.
@@ -313,6 +365,80 @@ int main()
     }
     CHECK(firstMoved);
     CHECK(secondMoved);
+
+    // Runtime choice, binary persistence and actual locomotion use the same
+    // accepted input. No extra action slot or model call is created on replay.
+    {
+        Simulation choice(606303,0,CurrentWorldGenerationVersion,rules);
+        choice.setupNewGame();
+        auto ready=choice.captureSnapshot();
+        CHECK(ready.world.characters.size()==4);
+        const auto a=ready.world.characters[0].id;
+        const auto b=ready.world.characters[1].id;
+        const auto d=ready.world.characters[2].id;
+        const auto e=ready.world.characters[3].id;
+        const GridPos home=ready.runtime.at(a).pos;
+        ready.households=HouseholdBook{};
+        CHECK(ready.households.create(1,{a,b}));
+        CHECK(ready.households.create(2,{d,e}));
+        for(auto& resident:ready.world.characters){
+            resident.lifeStage=LifeStage::Adult;
+            resident.personality.curiosity=0.90;
+            resident.personality.adaptability=0.88;
+            resident.needs={0.20,0.24,0.18,0.16,0.18};
+            resident.civilization.inventory=Inventory{};
+            auto& runtime=ready.runtime.at(resident.id);
+            runtime.pos=home;
+            runtime.goal=Goal::Idle;
+            runtime.plan.clear();
+            runtime.pendingContext.clear();
+            runtime.penaltyUntilMinute=10000;
+        }
+        CHECK(choice.restoreSnapshot(ready));
+        depleteLiveRegion(choice.world(),home);
+        choice.world().minute=HouseholdMigrationDecisionIntervalMinutes*2;
+        CHECK(choice.observeHouseholdMigrationPlan().householdId==1);
+        const auto request=choice.observeCognitiveRequest(
+            d,CognitiveTriggerKind::MigrationPressure);
+        CognitiveProposal proposal;
+        proposal.actor=d;
+        proposal.intent=CognitiveIntentKind::MigrateHousehold;
+        proposal.priority=1.0;
+        CHECK(choice.acceptCognitiveProposal(
+            request,proposal,"local-test","real-household-migration"));
+        const auto chosen=choice.observeHouseholdMigrationPlan();
+        CHECK(chosen.available &&chosen.householdId==2);
+        std::vector<std::uint8_t> bytes;
+        CHECK(encodeSimulationSnapshot(choice.captureSnapshot(),bytes));
+        SimulationStateSnapshot decoded;
+        CHECK(decodeSimulationSnapshot(bytes,decoded));
+        Simulation replay(606303,0,CurrentWorldGenerationVersion,rules);
+        CHECK(replay.restoreSnapshot(decoded));
+        choice.step();
+        replay.step();
+        for(const auto id:{d,e}){
+            const auto pending=choice.observePendingContextAction(id);
+            const auto restored=replay.observePendingContextAction(id);
+            CHECK(pending.active);
+            CHECK(pending.civilizationIntent==CivilizationIntent::Explore);
+            CHECK(sameGridPos(pending.targetPos,chosen.target));
+            CHECK(pending.token==restored.token);
+            GridPos position{};
+            CHECK(choice.runtimePosition(id,position));
+            CHECK(manhattan(home,position)<=1);
+        }
+        for(int minute=0;minute<12;++minute){
+            choice.step();
+            replay.step();
+        }
+        GridPos moved{};
+        CHECK(choice.runtimePosition(d,moved));
+        CHECK(!sameGridPos(moved,home));
+        std::vector<std::uint8_t> expected,actual;
+        CHECK(encodeSimulationSnapshot(choice.captureSnapshot(),expected));
+        CHECK(encodeSimulationSnapshot(replay.captureSnapshot(),actual));
+        CHECK(expected==actual);
+    }
 
     std::cout
         << "C6-D household migration and settlement decline passed\n";
