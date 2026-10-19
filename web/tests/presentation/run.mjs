@@ -146,7 +146,7 @@ test('camera targets the same interpolated slope that the terrain renders', () =
 
 test('low camera clears a higher hillside below its eye position', () => withScene(scene => {
   const chunks = [];
-  for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) chunks.push(chunk(x, y, 'None', x >= 1 ? 0.95 : 0.1));
+  for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) chunks.push(chunk(x, y, 'None', x >= 4 ? 0.95 : 0.1));
   scene.setTerrain(windowOf(chunks));
   scene.setCamera(cameraState());
   assert.ok(scene.camera.position.y > 0.95 * scale + 1, 'camera is inside the uphill terrain');
