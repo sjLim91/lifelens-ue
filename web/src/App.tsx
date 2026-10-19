@@ -643,6 +643,23 @@ function MobileObserverModal({
               </section>
 
               <section>
+                <h3>화면 복구</h3>
+                <button
+                  type="button"
+                  className="mobile-full-button"
+                  onClick={() => {
+                    observerActions.recoverRendering();
+                    onClose();
+                  }}
+                >
+                  3D 화면이 하얗거나 멈췄다면 2D 비상 관찰로 복구
+                </button>
+                <p className="hint">
+                  저장된 세계와 시뮬레이션은 그대로 유지됩니다. 다음 접속에는 3D를 다시 시도합니다.
+                </p>
+              </section>
+
+              <section>
                 <h3>월드</h3>
                 <div className="mobile-current-seed">
                   <span>현재 시드</span>
