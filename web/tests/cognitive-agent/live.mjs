@@ -497,4 +497,53 @@ const provider = {
   f.controller.dispose();
 }
 
+// Production auto-start must require no human click or manual model name.
+// A free localhost model may appear later and joins the SAME resident agency.
+{
+  const previousFetch=globalThis.fetch;
+  const seen=[];
+  let online=false;
+  globalThis.fetch=async (url,init) => {
+    const address=String(url);
+    seen.push({address,method:init?.method});
+    assert(address.startsWith('http://127.0.0.1:'));
+    if (!online) throw Error('local model absent');
+    if (init?.method==='GET') return new Response(JSON.stringify({
+      data:[{id:'free-local-reasoner'}],
+    }),{status:200});
+    const request=JSON.parse(init.body).messages[1].content;
+    const actor=JSON.parse(request).actor;
+    return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({
+      actor, intent:'CooperateWithResident', priority:.85,
+      targetResident:actor==='1'?'2':'1', rationale:'실제 관계를 확인한다',
+    })}}]}),{status:200});
+  };
+  try {
+    const f=fixture();
+    f.controller.startAutomatically();
+    await tick();
+    await tick();
+    assert.equal(f.controller.getSnapshot().enabled,true);
+    assert.equal(f.controller.getSnapshot().automatic,true);
+    assert.equal(f.controller.getSnapshot().configuration,null);
+    assert.equal(f.submitted.length,0,'no invented language response');
+    online=true;
+    for(let i=0;i<13;++i) f.advance();
+    f.controller.observe(f.world,f.residents);
+    await tick();
+    await tick();
+    assert.equal(f.controller.getSnapshot().configuration?.model,
+      'free-local-reasoner');
+    f.controller.observe(f.world,f.residents);
+    await tick();
+    assert.equal(f.submitted.length,1,
+      'auto-started resident must reason without a manual start button');
+    assert.equal(f.submitted[0].proposal.actor,'1');
+    assert(seen.every(x=>x.address.includes('127.0.0.1')));
+    f.controller.dispose();
+  } finally {
+    globalThis.fetch=previousFetch;
+  }
+}
+
 console.log('Live Resident AI: independent actor context, Core handoff, cancellation PASS');

@@ -3,7 +3,7 @@ import type {
 } from './cognitive-contract';
 import { CognitionScheduler } from './cognition-scheduler';
 import type { CognitiveProvider } from './cognitive-provider';
-import { LocalCognitionProvider, isLoopbackCognitionUrl } from './local-cognition-provider';
+import { LocalCognitionProvider, isLoopbackCognitionUrl, discoverAutomaticLocalCognition } from './local-cognition-provider';
 import { ResidentAISessionAudit } from './resident-ai-session-audit';
 import type { Resident, WorldOverview } from '../runtime/core-types';
 
@@ -130,6 +130,8 @@ export interface ResidentAIDecision {
 
 export interface ResidentAIState {
   enabled: boolean;
+  automatic: boolean;
+  discovering: boolean;
   suspended: boolean;
   pendingActor: string | null;
   configuration: { baseUrl: string; model: string } | null;
@@ -154,7 +156,8 @@ export class ResidentAIController {
   private observedWorld: WorldOverview | null = null;
   private observedResidents: readonly Resident[] = [];
   private state: ResidentAIState = {
-    enabled: false, suspended: false, pendingActor: null,
+    enabled: false, automatic: false, discovering: false,
+    suspended: false, pendingActor: null,
     configuration: null, accepted: 0, rejected: 0,
     lastDecision: null, byResident: {},
   };
@@ -167,13 +170,17 @@ export class ResidentAIController {
   private identity: string | null = null;
   private lastMinute = -1;
   private disposed = false;
+  private automaticallyRunning = false;
+  private lastAutoDiscovery = -Infinity;
+  private autoDiscoveryAbort: AbortController | null = null;
+  private autoDiscoveryGeneration = 0;
 
   constructor(private readonly now: () => number = () => Date.now()) {}
   getSnapshot = (): ResidentAIState => this.state;
   getAuditReport = () => this.sessionAudit.snapshot();
   beginAuditSession(): boolean {
     if (this.disposed || this.state.suspended || !this.observedWorld) return false;
-    const mode = this.state.enabled ? 'local-ai' : 'baseline';
+    const mode = this.state.enabled && this.scheduler ? 'local-ai' : 'baseline';
     if (!this.sessionAudit.begin(this.observedWorld, mode,
       this.state.configuration?.model ?? null)) return false;
     this.sessionAudit.observe(this.observedWorld, this.observedResidents, mode);
@@ -200,9 +207,51 @@ export class ResidentAIController {
   }
   attach(source: ResidentAISource): void {
     this.disposed = false;
+    this.autoDiscoveryAbort?.abort();
+    this.autoDiscoveryAbort = null;
+    this.autoDiscoveryGeneration += 1;
     this.resetWorld();
     this.source = source;
     this.rebuildScheduler();
+    if (this.automaticallyRunning) void this.discoverAutomatically();
+  }
+  // Production LifeLens always starts ONE resident cognition stream when the
+  // Core becomes available. No operator-facing on/off switch or model setup.
+  // An absent native local service is an unavailable inference accelerator,
+  // NOT an absent person; the same resident continues embodied Core agency.
+  startAutomatically(): void {
+    if (this.disposed || !this.source) return;
+    this.automaticallyRunning = true;
+    this.update({ enabled: true, automatic: true });
+    void this.discoverAutomatically();
+  }
+  private async discoverAutomatically(): Promise<void> {
+    if (!this.automaticallyRunning || this.disposed || !this.source
+      || this.autoDiscoveryAbort || this.scheduler) return;
+    const controller = new AbortController();
+    this.autoDiscoveryAbort = controller;
+    const generation = ++this.autoDiscoveryGeneration;
+    const source = this.source;
+    this.lastAutoDiscovery = this.now();
+    this.update({ discovering: true });
+    // Bounded wait: browsers may silently block a localhost model endpoint.
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    try {
+      const config = await discoverAutomaticLocalCognition(controller.signal);
+      if (!controller.signal.aborted && config
+        && !this.disposed && this.automaticallyRunning
+        && this.source === source && this.autoDiscoveryGeneration === generation) {
+        this.configure(config.baseUrl, config.model);
+      }
+    } catch {
+      // Missing local inference must not stop the world or fabricate a model.
+    } finally {
+      clearTimeout(timeout);
+      if (this.autoDiscoveryAbort === controller) {
+        this.autoDiscoveryAbort = null;
+        this.update({ discovering: false });
+      }
+    }
   }
   configure(baseUrl: string, model: string): boolean {
     if (!isLoopbackCognitionUrl(baseUrl)
@@ -266,11 +315,15 @@ export class ResidentAIController {
   }
   dispose(): void {
     this.disposed = true;
+    this.automaticallyRunning = false;
+    this.autoDiscoveryAbort?.abort();
+    this.autoDiscoveryAbort = null;
+    this.autoDiscoveryGeneration += 1;
     this.resetWorld();
     this.scheduler?.dispose();
     this.scheduler = null;
     this.source = null;
-    this.update({ enabled: false, configuration: null });
+    this.update({ enabled: false, automatic: false, discovering: false, configuration: null });
   }
   // Called from the existing 500ms observer refresh, never the render loop.
   observe(world: WorldOverview, residents: readonly Resident[]): void {
@@ -286,7 +339,10 @@ export class ResidentAIController {
     this.observedWorld = world;
     this.observedResidents = residents;
     this.sessionAudit.observe(world, residents,
-      this.state.enabled ? 'local-ai' : 'baseline');
+      this.state.enabled && this.scheduler ? 'local-ai' : 'baseline');
+    if (this.automaticallyRunning && !this.scheduler && !this.autoDiscoveryAbort
+      && this.now() - this.lastAutoDiscovery >= 60000)
+      void this.discoverAutomatically();
     if (!this.state.enabled || this.state.suspended || !this.scheduler
       || !this.source || this.state.pendingActor
       || this.now() - this.lastCall < LIVE_AI_BUDGET.wallCadenceMs) return;

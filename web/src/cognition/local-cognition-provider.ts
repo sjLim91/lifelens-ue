@@ -79,6 +79,34 @@ export async function discoverLocalCognitionModels(
   return [...unique];
 }
 
+// Auto-discovery uses only local, credential-free endpoints. A browser cannot
+// start a native model server; if none is available, the SAME Core resident
+// remains alive and autonomous while on-device language reasoning is pending.
+export const AUTOMATIC_LOCAL_COGNITION_ENDPOINTS = Object.freeze([
+  'http://127.0.0.1:11434', // Ollama OpenAI-compatible API
+  'http://127.0.0.1:1234',  // LM Studio
+  'http://127.0.0.1:8080',  // llama.cpp
+] as const);
+
+export async function discoverAutomaticLocalCognition(
+  signal: AbortSignal,
+  fetcher: FetchLike = fetch,
+): Promise<LocalCognitionProviderConfig | null> {
+  for (const baseUrl of AUTOMATIC_LOCAL_COGNITION_ENDPOINTS) {
+    if (signal.aborted) return null;
+    try {
+      const models = await discoverLocalCognitionModels(baseUrl, signal, fetcher);
+      const model = models.find(name => name.length > 0 && name.length <= 200);
+      if (model) return { baseUrl, model };
+    } catch {
+      // A missing local service, browser CORS restriction or malformed local
+      // response never authorizes a cloud API or an imaginary model.
+      if (signal.aborted) return null;
+    }
+  }
+  return null;
+}
+
 function chatCompletionsUrl(baseUrl: string): string {
   const normalized = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   return new URL('v1/chat/completions', normalized).toString();
