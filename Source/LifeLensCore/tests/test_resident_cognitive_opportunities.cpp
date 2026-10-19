@@ -119,8 +119,8 @@ static void localTradeChoice()
         snapshot.world.characters[i].civilization.inventory.add({
             ItemKind::RawMaterial,MaterialKind::Stone,10,0.8,1.0});
     for(const auto target:{b,requested}){
-        snapshot.relationships.getOrCreate(a,target).trust=0.95;
-        snapshot.relationships.getOrCreate(target,a).trust=0.95;
+        snapshot.relationships.getOrCreate(a,target).trust=1.0;
+        snapshot.relationships.getOrCreate(target,a).trust=1.0;
     }
 
     Simulation ordinary(790102);

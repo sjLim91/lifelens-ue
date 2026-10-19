@@ -157,10 +157,14 @@ int main()
             competing,groups,positions,&journal);
         CHECK(noInfantWalking.available &&noInfantWalking.householdId==1);
         competing.characters[3].lifeStage=LifeStage::Adult;
-        for(auto& resident:competing.characters)
+        for(auto& resident:competing.characters){
+            // Raw Water without a real container is not a usable reserve.
+            resident.civilization.inventory.add({
+                ItemKind::SimpleContainer,MaterialKind::Clay,100,0.8,1.0});
             for(const auto material:MigrationFoundationalMaterials)
                 resident.civilization.inventory.add({
                     ItemKind::RawMaterial,material,100,0.8,1.0});
+        }
         CHECK(!chooseHouseholdMigrationPlan(
             competing,groups,positions,&journal).available);
     }

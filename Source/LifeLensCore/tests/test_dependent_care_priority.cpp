@@ -50,6 +50,12 @@ static int cognitiveCareChoiceTests()
     applyLifeStageProfile(child,LifeStage::Toddler);
     child.needs={0.70,0.10,0.10,0.10,0.10};
     child.development.health=1.0;
+    // Isolate physical feeding from a competing routine education opportunity.
+    child.development.attachment=1.0;
+    child.development.socialSkill=1.0;
+    child.development.confidence=1.0;
+    child.development.learningSupport=1.0;
+    child.development.disciplineInternalization=1.0;
     snap.world.characters.push_back(child);
     CHECK(snap.genealogy.registerBirth(child.id,a,b));
     const GridPos home=snap.runtime[a].pos;
@@ -69,7 +75,9 @@ static int cognitiveCareChoiceTests()
         rel.comfort=0.9;
         rel.trust=0.9;
     }
-    snap.world.minute=29;
+    snap.world.minute=30;
+    // Keep the real issued token pending until the external executor ACKs it.
+    snap.world.externalPhysicalExecution=true;
     Simulation ordinary(909090);
     CHECK(ordinary.restoreSnapshot(snap));
     ordinary.step();
@@ -95,7 +103,7 @@ static int cognitiveCareChoiceTests()
         snap.acceptedCognitiveDecisions,thought,snap.world));
     CHECK(residentCognitiveCarePreference(
         snap.world,snap.acceptedCognitiveDecisions,
-        snap.world.characters[baseline==a?1:0],child)==0.0);
+        snap.world.characters[baseline==a?0:1],child)==0.0);
     CHECK(residentCognitiveCarePreference(
         snap.world,snap.acceptedCognitiveDecisions,
         snap.world.characters[chosen==a?0:1],child)>0.0);
@@ -118,6 +126,12 @@ static int cognitiveCareChoiceTests()
         selected.world(),snap.acceptedCognitiveDecisions,
         selected.world().characters[chosen==a?0:1],
         *liveChild)>0.0);
+
+    const double hungerBefore=liveChild->needs.hunger;
+    CHECK(selected.completeExternalContextAction(chosen,pending.token,home));
+    CHECK(replay.completeExternalContextAction(chosen,pending.token,home));
+    CHECK(findResident(selected,child.id)->needs.hunger<hungerBefore);
+    CHECK(!selected.completeExternalContextAction(chosen,pending.token,home));
 
     // The same person's newer unrelated idea cannot silently keep their
     // old preferred dependent target forever.
