@@ -26,7 +26,7 @@ import { syncResidentAuthoredHair, syncResidentAuthoredFace, setResidentFaceDeta
 import { syncResidentAuthoredGarment } from './resident-authored-garment';
 import { setResidentSkinMaterialQuality } from './resident-surface-material';
 import { syncResidentAnatomicalBody } from './resident-anatomical-body';
-import { loadNativeResidentTemplates, setNativeResidentLOD } from './resident-native-body';
+import { loadNativeResidentTemplates, nativeResidentTemplatesReady, setNativeResidentLOD } from './resident-native-body';
 import { ResidentInventoryProps, ResidentPropResources } from './resident-props';
 import { ResidentProductionTargets } from './resident-production-context';
 import { residentActionCue } from './resident-action-context';
@@ -974,7 +974,7 @@ export class ResidentWorldLayer {
       // Keep the established body visible while downloads are pending, then
       // refresh those same actors from their existing Core observations.
       void loadNativeResidentTemplates(this.loader).then(() => {
-        if (this.disposed || !this.pendingTerrain) return;
+        if (this.disposed || !this.pendingTerrain || !nativeResidentTemplatesReady()) return;
         const nativeCalibration = cloneSkeleton(normalized) as THREE.Group;
         applyResidentMaterialVariant(nativeCalibration, calibrationAppearance);
         syncResidentAnatomicalBody(nativeCalibration, calibrationAppearance);
