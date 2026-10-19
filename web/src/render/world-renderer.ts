@@ -23,14 +23,18 @@ export class WorldRenderer {
     canvas: HTMLCanvasElement,
     private readonly onRenderFailure?: (reason: string, error?: unknown) => void,
   ) {
+    // A tall Android WebView at DPR 2 consumes multiple large color/depth
+    // buffers, plus reflected water and resident rigs. Bound the mobile
+    // framebuffer before the GPU silently blanks the canvas.
+    const compactGpu = window.matchMedia?.('(max-width: 800px) and (pointer: coarse)').matches ?? false;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: !compactGpu,
       alpha: false,
-      powerPreference: 'high-performance',
+      powerPreference: compactGpu ? 'low-power' : 'high-performance',
     });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, compactGpu ? 1.35 : 2));
     canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
   }
 
