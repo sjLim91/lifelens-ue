@@ -5,6 +5,7 @@
 #include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/ResidentAICompletedPlanGuard.h"
 #include "lifelens/ResidentUnifiedAgency.h"
+#include "lifelens/ResidentCognitiveCarePreference.h"
 #include "lifelens/ResidentPredatorResponse.h"
 #include "lifelens/CoreNavigation.h"
 #include "lifelens/CultivationProgression.h"
@@ -2856,6 +2857,7 @@ void Simulation::advanceDependentCare()
         ParentingDecision chosenDecision;
         ParentingContext chosenContext;
         chosenDecision.utility=-1.0;
+        double chosenCareRank=-1.0;
 
         Character* provisionCaregiver=nullptr;
         MaterialKind provisionMaterial=MaterialKind::Unknown;
@@ -2987,10 +2989,13 @@ void Simulation::advanceDependentCare()
                                 std::min(acquisitionDistance,150))
                             +0.08*caregiver->personality.empathy
                             +0.05*caregiver->personality.conscientiousness;
-                        if(score>provisionScore){
+                        const double rank=score+residentCognitiveCarePreference(
+                            world_,acceptedCognitiveDecisions_,
+                            *caregiver,child);
+                        if(rank>provisionScore){
                             provisionCaregiver=caregiver;
                             provisionMaterial=missingDominantProvision;
-                            provisionScore=score;
+                            provisionScore=rank;
                         }
                         // Do not substitute comfort/sleep/toilet care for an
                         // addressable dehydration/starvation emergency.
@@ -3011,7 +3016,12 @@ void Simulation::advanceDependentCare()
                     return;
                 }
 
-                if(decision.utility>chosenDecision.utility){
+                const double rank=decision.utility
+                    +residentCognitiveCarePreference(
+                        world_,acceptedCognitiveDecisions_,
+                        *caregiver,child);
+                if(rank>chosenCareRank){
+                    chosenCareRank=rank;
                     chosenCaregiver=caregiver;
                     chosenDecision=decision;
                     chosenContext=context;
