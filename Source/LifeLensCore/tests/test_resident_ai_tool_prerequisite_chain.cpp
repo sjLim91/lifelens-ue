@@ -71,7 +71,7 @@ int main()
 
     // Actual generated equipment is ONLY allowed after the existing Core
     // craft action consumes real ingredients in its execution path.
-    auto result=craftTechnique(
+    auto result=reproduceTechnique(
         resident.id,TechniqueId::DiggingStick,
         resident.civilization.inventory,
         resident.civilization.knowledge,
@@ -116,7 +116,7 @@ int main()
     assert(makeBinding);
     assert(makeBinding->intent==CivilizationIntent::Craft);
     assert(makeBinding->technique==TechniqueId::FiberCordage);
-    auto cordage=craftTechnique(
+    auto cordage=reproduceTechnique(
         smith.id,TechniqueId::FiberCordage,
         smith.civilization.inventory,smith.civilization.knowledge,
         smith.civilization.craftingSkill);
@@ -130,7 +130,7 @@ int main()
         ItemKind::StoneHammer,MaterialKind::Stone)==0);
     assert(complex.resourceNodes.front().quantity==10);
 
-    auto built=craftTechnique(
+    auto built=reproduceTechnique(
         smith.id,TechniqueId::StoneHammer,
         smith.civilization.inventory,smith.civilization.knowledge,
         smith.civilization.craftingSkill);
