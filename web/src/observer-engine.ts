@@ -151,6 +151,8 @@ export function startObserverEngine(): () => void {
   let activeEarthOrigin: PersistedWorld['earthOrigin'] = null;
   let pendingSaves: Promise<void> = Promise.resolve();
   let offlineBanner: HTMLDivElement | null = null;
+  let catchupFailed = false;
+  let storageFailed = false;
 
   function offlineStatus(message: string | null): void {
     if (stopped) return;
@@ -182,6 +184,7 @@ export function startObserverEngine(): () => void {
         earthOrigin: activeEarthOrigin,
       };
     } catch (error) {
+      storageFailed = true;
       offlineStatus('자동 저장 실패: ' + String(error));
       return Promise.resolve();
     }
@@ -190,7 +193,10 @@ export function startObserverEngine(): () => void {
     pendingSaves = pendingSaves.catch(() => {}).then(
       () => writePersistedWorld(checkpoint),
     );
-    return pendingSaves.catch(error => {
+    return pendingSaves.then(() => {
+      storageFailed = false;
+    }, error => {
+      storageFailed = true;
       offlineStatus('월드 저장 실패: ' + String(error));
     });
   }
@@ -217,6 +223,7 @@ export function startObserverEngine(): () => void {
         timelineAnchorMs = wallTimeAfterAdvance(savedAt, advanced);
         if (advanced >= nextCheckpoint) {
           await saveCheckpoint(timelineAnchorMs);
+          if (storageFailed) throw Error('월드 저장 실패로 복원을 중단합니다.');
           nextCheckpoint = advanced + MINUTES_PER_DAY;
         }
         if (advanced % 720 === 0 || remaining <= 240) {
@@ -227,19 +234,21 @@ export function startObserverEngine(): () => void {
         await yieldToBrowser();
       }
       if (!stopped) {
-        refresh(true);
+        refreshSafely();
         await saveCheckpoint(timelineAnchorMs);
+        if (storageFailed) throw Error('월드 저장 실패로 복원을 중단합니다.');
         offlineStatus(null);
       }
     } catch (error) {
       // Never mark unprocessed wall time as processed. The next session can
       // resume from the last durable Core checkpoint without losing history.
       console.error('LifeLens offline continuation failed', error);
+      catchupFailed = true;
       offlineStatus('오프라인 삶 복원에 실패했습니다: ' + String(error));
       await saveCheckpoint(timelineAnchorMs);
     } finally {
       catchupRunning = false;
-      if (!stopped) {
+      if (!stopped && !catchupFailed) {
         residentAI.suspend(false);
         shadowObserver.suspend(false);
         simulationClock?.start();
@@ -248,7 +257,7 @@ export function startObserverEngine(): () => void {
   }
 
   function onWorldVisibility(): void {
-    if (!worldSession || catchupRunning || fastForwardRunning || stopped) return;
+    if (!worldSession || catchupRunning || catchupFailed || fastForwardRunning || stopped) return;
     if (document.visibilityState !== 'visible') {
       simulationClock?.stop();
       timelineAnchorMs = Date.now();
@@ -471,7 +480,7 @@ export function startObserverEngine(): () => void {
   }
 
   function createEarthWorld(latitude: number, longitude: number): boolean {
-    if (!worldSession || fastForwardRunning || catchupRunning
+    if (!worldSession || fastForwardRunning || catchupRunning || catchupFailed
       || !Number.isFinite(latitude) || !Number.isFinite(longitude))
       return false;
     const seed = generateWorldSeed();
@@ -628,7 +637,7 @@ export function startObserverEngine(): () => void {
   }
 
   async function fastForwardDays(days: number): Promise<void> {
-    if (!worldSession || fastForwardRunning || catchupRunning) return;
+    if (!worldSession || fastForwardRunning || catchupRunning || catchupFailed) return;
 
     const requestedDays = Math.floor(Number(days));
     if (
@@ -807,7 +816,7 @@ export function startObserverEngine(): () => void {
   document.addEventListener('visibilitychange', onWorldVisibility);
   window.addEventListener('pagehide', onWorldPageHide);
   const checkpointTimer = window.setInterval(() => {
-    if (!catchupRunning && !fastForwardRunning
+    if (!catchupRunning && !catchupFailed && !fastForwardRunning
       && document.visibilityState === 'visible' && worldSession) {
       timelineAnchorMs = Date.now();
       void saveCheckpoint(timelineAnchorMs);
