@@ -15,6 +15,7 @@
 #include <sys/resource.h>
 #endif
 #include "lifelens/Simulation.h"
+#include "lifelens/MemoryAttribution.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
 namespace lifelens::audit {
@@ -491,6 +492,27 @@ public:
         for(const auto& c:w.characters){auto& r=residents[c.id];auto x=base("resident",day);x.add("id",idString(c.id));x.add("name",c.name);x.add("alive",c.alive?1:0);
             x.add("stage",lifeStageName(c.lifeStage));x.add("founder",founders.count(c.id)?1:0);x.add("generation",generation(c.id));
             x.add("birth_minute",c.birthMinute);x.add("death_minute",c.deathMinute);x.add("observed_minutes",r.observations);
+            const auto attribution=observeMemoryAttribution(c.memory,w.minute);
+            Json memory;
+            memory.add("entries",attribution.entries);
+            memory.add("utf8_text_bytes",attribution.textBytes);
+            memory.add("exact_duplicate_entries",attribution.exactDuplicates);
+            memory.add("witnessed_direct_entries",attribution.witnessedDirect);
+            memory.add("future_entries",attribution.futureEntries);
+            const char* ageNames[]={"age_lt_1d_entries","age_1to7d_entries",
+                "age_7to30d_entries","age_30to365d_entries","age_365d_plus_entries"};
+            for(int age=0;age<5;++age)memory.add(ageNames[age],attribution.ageBuckets[age]);
+            memory.add("direct_witness_entries",attribution.sources[0]);
+            memory.add("told_by_other_entries",attribution.sources[1]);
+            memory.add("inferred_entries",attribution.sources[2]);
+            Json categories;
+            for(const auto& category:attribution.primaryTags){
+                Json item;item.add("entries",category.second.entries);
+                item.add("utf8_text_bytes",category.second.textBytes);
+                categories.raw(category.first,item.str());
+            }
+            memory.raw("primary_tags",categories.str());
+            x.raw("memory_attribution",memory.str());
             Json b;for(int i=0;i<22;++i)b.add(BudgetNames[i],r.budget[i]);x.raw("activity_minutes",b.str());
             Json ns;for(int i=0;i<5;++i)ns.raw(NeedNames[i],r.needs[i].json());x.raw("needs",ns.str());
             x.add("illness",c.health.illnessSeverity);x.add("pathogen",c.health.pathogenLoad);x.add("immunity",c.health.immunity01);
