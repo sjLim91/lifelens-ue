@@ -140,10 +140,11 @@ inline int wildlifeAliveCount(const WildlifePopulation& state,WildlifeSpecies s)
 }
 
 // Actual Core resident positions (not observer/camera positions) constrain
-// wild-animal movement. The current ecology does not implement human attacks
-// or wounds: until those Core outcomes exist, do NOT stage predators as tame
-// companions walking through the founders. Wildlife withdraws from contact.
-// Radii are logical grid cells; they are not physical metres.
+// wild-animal movement. Ordinary wildlife avoids humans. Only severely hungry
+// v4+ wolves and tigers may approach a nearby resident. The already existing
+// ResidentPredatorResponse Core injury rule alone determines real attacks:
+// this movement helper never changes resident health or invents a kill.
+// Radii are logical grid cells, not physical metres.
 inline int wildlifeHumanAvoidanceRadius(WildlifeSpecies s)
 {
     switch(s){
@@ -211,6 +212,71 @@ inline bool wildlifeRetreatFromResidents(
         animal.position=best;
         if(!wildlifeResidentClose(animal,residents)) break;
     }
+    return true;
+}
+
+// A desperate animal can sometimes take the risk of approaching humans
+// instead of indefinitely fleeing them. Ordinary satiated animals retain
+// their existing avoidance contract. This is a drive, not a scripted scene,
+// and remains disabled for historical pre-v4 snapshots.
+inline int wildlifeHungryHumanPursuitRadius(
+    const WildlifePopulation& population,const WildlifeAnimal& animal)
+{
+    if(population.generationVersion<4 ||!animal.alive) return 0;
+    if(animal.species==WildlifeSpecies::Tiger)
+        return animal.hunger01>=0.82 ?6:0;
+    if(animal.species==WildlifeSpecies::Wolf)
+        return animal.hunger01>=0.78 ?4:0;
+    return 0;
+}
+
+inline bool wildlifeHungryHumanPursuitReady(
+    const WildlifePopulation& population,const WildlifeAnimal& animal,
+    const std::vector<GridPos>& residents)
+{
+    const int radius=wildlifeHungryHumanPursuitRadius(population,animal);
+    return radius>0 &&!residents.empty()
+        &&wildlifeNearestResidentDistance(animal.position,residents)<=radius;
+}
+
+// One traversable cardinal cell at most per hour. Real positions and
+// hydrology decide the result; no teleport, target-inventing proxy,
+// cross-chunk chase, water crossing, resident damage or RNG consumption.
+inline bool wildlifeApproachHungryResident(
+    const WildlifePopulation& population,WildlifeAnimal& animal,
+    const std::vector<GridPos>& residents)
+{
+    if(!wildlifeHungryHumanPursuitReady(
+           population,animal,residents)) return false;
+    const GridPos before=animal.position;
+    const GridPos origin=chunkOriginGrid(population.habitat.coord);
+    const auto hydrology=deriveHydrologyFacts(
+        makeWorldGenesisIdentity(population.worldSeed,0,
+            population.generationVersion),population.habitat.coord);
+    constexpr std::array<GridPos,4> directions={{
+        {1,0},{0,1},{-1,0},{0,-1}
+    }};
+    const auto previous=wildlifeNearestResidentDistance(before,residents);
+    std::int64_t closest=previous;
+    GridPos best=before;
+    for(const GridPos direction:directions){
+        const GridPos candidate{
+            before.x+direction.x,before.y+direction.y
+        };
+        if(candidate.x<origin.x ||candidate.y<origin.y
+           ||candidate.x>=origin.x+WildlifeCellsPerChunk
+           ||candidate.y>=origin.y+WildlifeCellsPerChunk
+           ||surfaceWaterGroundContainsGrid(hydrology,candidate))
+            continue;
+        const auto distance=wildlifeNearestResidentDistance(
+            candidate,residents);
+        if(distance<closest){
+            closest=distance;
+            best=candidate;
+        }
+    }
+    if(closest>=previous) return false;
+    animal.position=best;
     return true;
 }
 
@@ -493,6 +559,9 @@ inline WildlifeBehavior wildlifeBehavior(
 {
     if(animal.species==WildlifeSpecies::FreshwaterFish)
         return WildlifeBehavior::Swim;
+    if(wildlifeHungryHumanPursuitReady(
+           population,animal,residentPositions))
+        return WildlifeBehavior::Hunt;
     if(wildlifeResidentClose(animal,residentPositions))
         return WildlifeBehavior::Flee;
     const bool predator=animal.species==WildlifeSpecies::Wolf
@@ -533,6 +602,11 @@ inline int stepWildlifeHour(
         if(!animal.alive || animal.species==WildlifeSpecies::FreshwaterFish)
             continue;
         const GridPos before=animal.position;
+        if(wildlifeApproachHungryResident(
+               population,animal,residentPositions)){
+            ++moved;
+            continue;
+        }
         if(wildlifeRetreatFromResidents(
                population,animal,residentPositions,3)){
             if(before.x!=animal.position.x ||before.y!=animal.position.y)
