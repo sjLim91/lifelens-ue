@@ -185,6 +185,26 @@ chooseResidentAIMissingExperimentMaterial(
     return none;
 }
 
+// Only real, unmet TOOL output recipes qualify for this personal goal.
+// Ordinary Core craft candidates can also mean sanitation work, facilities
+// or practicing already-satisfied outputs. Those remain normal civilization
+// options, not evidence of fulfilling the resident's chosen tool objective.
+inline bool residentAIToolOutputNeeded(
+    const Character& resident,TechniqueId technique)
+{
+    const TechniqueRecipe recipe=techniqueRecipe(technique);
+    if(recipe.technique!=technique ||!recipe.producesItem
+       ||recipe.outputQuantity<=0
+       ||desiredTechniqueOutputStock(technique)<=0
+       ||(itemCapability(recipe.outputKind)==ToolCapability::None
+           &&recipe.outputKind!=ItemKind::Cordage))
+        return false;
+    return resident.civilization.inventory.count(
+        recipe.outputKind,recipe.outputMaterial,
+        recipe.outputMaterial==MaterialKind::Unknown)
+            <desiredTechniqueOutputStock(technique);
+}
+
 // Tool-making is a real multi-step personal goal. If the desired item is
 // not yet craftable, derive the next legal prerequisite from the SAME Core
 // technology/recipe registry instead of abandoning this resident's goal.
@@ -198,16 +218,7 @@ inline CivilizationUtilityDecision chooseResidentAIToolPrerequisite(
     CivilizationUtilityDecision best;
     for(const TechnologyDefinition& technology:TechnologyRegistry){
         const TechniqueId technique=technology.legacyTechnique;
-        const TechniqueRecipe recipe=techniqueRecipe(technique);
-        if(recipe.technique!=technique || !recipe.producesItem
-           ||recipe.outputQuantity<=0
-           ||desiredTechniqueOutputStock(technique)<=0
-           ||(itemCapability(recipe.outputKind)==ToolCapability::None
-              &&recipe.outputKind!=ItemKind::Cordage)) continue;
-        const bool anyMaterial=recipe.outputMaterial==MaterialKind::Unknown;
-        if(resident.civilization.inventory.count(
-            recipe.outputKind,recipe.outputMaterial,anyMaterial)
-             >=desiredTechniqueOutputStock(technique)) continue;
+        if(!residentAIToolOutputNeeded(resident,technique)) continue;
 
         CivilizationUtilityDecision next;
         if(resident.civilization.knowledge.knowsAtLeast(
@@ -223,7 +234,21 @@ inline CivilizationUtilityDecision chooseResidentAIToolPrerequisite(
             next=bestExperimentDecisionAtPosition(
                 world,resident,position,population,technique);
             if(next.intent!=CivilizationIntent::Experiment
-               ||next.technique!=technique) continue;
+               ||next.technique!=technique){
+                // Lack of ingredients makes a Core experiment unavailable.
+                // The next step of the SAME goal can gather the real missing
+                // raw input, but only for a technique in Core's own experiment
+                // catalog and only if its knowledge prerequisites hold.
+                next=CivilizationUtilityDecision{};
+                for(const ExperimentKind experiment:CivilizationExperimentCatalog){
+                    if(experimentTechnique(experiment)!=technique) continue;
+                    const auto gather=chooseResidentAIMissingExperimentMaterial(
+                        world,resident,position,experiment,population);
+                    if(gather.intent==CivilizationIntent::Gather
+                       &&gather.material!=MaterialKind::Unknown)
+                        considerCivilizationDecision(next,gather);
+                }
+            }
         }
         if((next.intent==CivilizationIntent::Gather
              ||next.intent==CivilizationIntent::Experiment)
@@ -313,7 +338,7 @@ chooseResidentAIExistingCivilizationAffordance(
             // it is not authorization for a model's personal tool goal.
             if(candidate.intent!=CivilizationIntent::Craft
                ||candidate.facilityAction!=FacilityBuildAction::None
-               ||candidate.technique==TechniqueId::None)
+               ||!residentAIToolOutputNeeded(actor,candidate.technique))
                 candidate=chooseResidentAIToolPrerequisite(
                     world,actor,actorPosition,settlementPopulation);
             // A missing tool may require collecting a REAL ingredient or a
