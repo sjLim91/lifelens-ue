@@ -2,6 +2,7 @@
 
 #include "Character.h"
 #include "Civilization.h"
+#include "Parenting.h" // requiresDirectCare: Baby/Toddler need direct household care
 
 namespace lifelens {
 
