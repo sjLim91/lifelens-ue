@@ -55,6 +55,10 @@ int main()
     for(const char* intent:CognitiveOpportunityIntentNames){
         assert(focusedJson.find(intent)!=std::string::npos);
     }
+    assert(focusedJson.find("\"noEligibleTarget\":")!=std::string::npos);
+    assert(focused.proxy.opportunityProposalsAttempted[0]>0);
+    assert(focused.proxy.opportunityProposalsAttempted[2]>0);
+    assert(focused.proxy.opportunityProposalsAttempted[3]>0);
     assert(focusedJson.find("\"observedTradePendingStarts\":")
         !=std::string::npos);
     assert(focusedJson.find("\"observedParentingPendingStarts\":")
