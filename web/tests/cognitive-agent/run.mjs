@@ -175,6 +175,49 @@ await test('embedded WebGPU model can reason locally with no server or cloud key
     /violated the Core contract/);
 });
 
+await test('replacing WebGPU scheduler unloads GPU model once, not on World reset',async()=>{
+  const req=request('7',120,['ImproveFoodSecurity']);
+  let unloads=0,reasonCalls=0;
+  const engine={
+    chat:{completions:{create:async()=>{
+      reasonCalls++;
+      return {choices:[{message:{content:JSON.stringify(proposal(req))}}]};
+    }}},
+    unload:async()=>{unloads++;},
+  };
+  const provider=new BrowserCognitionProvider(engine);
+  const scheduler=new CognitionScheduler(provider,()=>120,{
+    maxConcurrent:1,maxQueued:0,timeoutMs:200,
+    staleAfterSimulationMinutes:96,
+  });
+  assert.equal((await scheduler.submit(req)).actor,'7');
+  scheduler.reset();
+  assert.equal(unloads,0,
+    'resetting the world should not unnecessarily reload resident language AI');
+  assert.equal((await scheduler.submit(req)).actor,'7');
+  assert.equal(reasonCalls,2);
+  scheduler.dispose();
+  await Promise.resolve();
+  assert.equal(unloads,1,'discarding the old scheduler releases GPU resources');
+  assert.equal(await provider.reason(req,new AbortController().signal),null,
+    'a disposed GPU engine cannot generate new resident decisions');
+  scheduler.dispose();
+  assert.equal(unloads,1,'GPU teardown is idempotent');
+
+  // A WebGPU driver unload failure must not become an unhandled rejection
+  // or stop Core itself from continuing.
+  const failing=new BrowserCognitionProvider({
+    chat:{completions:{create:async()=>({choices:[]})}},
+    unload:async()=>{throw Error('GPU lost while unloading');},
+  });
+  const lost=new CognitionScheduler(failing,()=>120,{
+    maxConcurrent:1,maxQueued:0,timeoutMs:200,
+    staleAfterSimulationMinutes:96,
+  });
+  lost.dispose();
+  await Promise.resolve();
+});
+
 await test('Core bridge reads optional cognitive ABI and fails closed on corrupt or old runtime',()=>{
   const req=request('9',140,['ImproveFoodSecurity']);
   const baseClient={

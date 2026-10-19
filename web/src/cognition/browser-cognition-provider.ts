@@ -22,6 +22,9 @@ interface BrowserChatRequest {
 }
 
 export interface BrowserChatEngine {
+  // Native WebLLM MLCEngine.unload frees the model's GPU pipelines/buffers.
+  // Optional for small deterministic fake engines used by the tests.
+  unload?(): Promise<void>;
   chat: {
     completions: {
       create(request: BrowserChatRequest): Promise<{
@@ -33,13 +36,20 @@ export interface BrowserChatEngine {
 
 export class BrowserCognitionProvider implements CognitiveProvider {
   readonly name = 'resident-browser-webgpu';
+  private disposed = false;
   constructor(private readonly engine: BrowserChatEngine) {}
+
+  async dispose(): Promise<void> {
+    if (this.disposed) return;
+    this.disposed = true;
+    await this.engine.unload?.();
+  }
 
   async reason(
     request: CognitiveRequestDto,
     signal: AbortSignal,
   ): Promise<CognitiveProposalDto | null> {
-    if (signal.aborted || request.allowedIntents.length === 0) return null;
+    if (this.disposed || signal.aborted || request.allowedIntents.length === 0) return null;
     let reply: { choices?: Array<{ message?: { content?: unknown } }> };
     try {
       reply = await this.engine.chat.completions.create({

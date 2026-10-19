@@ -677,6 +677,8 @@ const provider = {
   globalThis.fetch=async () => { throw Error('native model absent'); };
   try {
     const pending=[];
+    let obsoleteUnloads=0;
+    const staleProvider={...provider,dispose:async()=>{obsoleteUnloads++;}};
     const f=fixture(undefined, () => new Promise(resolve => pending.push(resolve)));
     f.controller.startAutomatically();
     await tick();
@@ -686,8 +688,10 @@ const provider = {
     await tick();
     await tick();
     assert.equal(pending.length,2);
-    pending[0](provider);
+    pending[0](staleProvider);
     await tick();
+    assert.equal(obsoleteUnloads,1,
+      'orphaned prior-world WebGPU model must release its GPU memory');
     assert.equal(f.controller.getSnapshot().configuration,null,
       'old world WebGPU completion cannot install stale model');
     pending[1](null);

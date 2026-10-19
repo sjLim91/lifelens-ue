@@ -93,6 +93,16 @@ export class CognitionScheduler {
     if (this.disposed) return;
     this.disposed = true;
     this.reset();
+    // A scheduler owns its provider. Explicitly free obsolete on-device
+    // WebGPU model allocations; resetting only the World does not do this.
+    // Cleanup is best-effort and asynchronous so a stalled GPU cannot block
+    // Core restart or create an unhandled rejected Promise.
+    try {
+      const cleanup = this.provider.dispose?.();
+      if (cleanup) void Promise.resolve(cleanup).catch(() => {});
+    } catch {
+      // Disposal failures never mutate simulation truth.
+    }
   }
 
   private pump(): void {
