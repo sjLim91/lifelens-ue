@@ -10,6 +10,8 @@ const { parseAutonomousGoalPreview } = await source('cognition/autonomous-goal-p
 const {
   LocalCognitionProvider,
   discoverLocalCognitionModels,
+  discoverAutomaticLocalCognition,
+  AUTOMATIC_LOCAL_COGNITION_ENDPOINTS,
   isLoopbackCognitionUrl,
 }=await source('cognition/local-cognition-provider.ts');
 const {
@@ -108,6 +110,32 @@ await test('loopback model discovery is bounded, unique and credential-free',asy
     ),
     /loopback\/local/,
   );
+});
+
+await test('automatic model discovery uses only bounded free loopback services', async()=>{
+  const called=[];
+  const result=await discoverAutomaticLocalCognition(
+    new AbortController().signal, async (url,init)=>{
+      called.push({url:String(url),method:init.method});
+      if(String(url).includes(':11434/')) throw Error('not running');
+      if(String(url).includes(':1234/')) return new Response(JSON.stringify({
+        data:[{id:'local-available-model'}],
+      }),{status:200});
+      throw Error('unexpected local model');
+    },
+  );
+  assert.equal(result.baseUrl,'http://127.0.0.1:1234');
+  assert.equal(result.model,'local-available-model');
+  assert.deepEqual(called.map(c=>c.method),['GET','GET']);
+  for(const endpoint of AUTOMATIC_LOCAL_COGNITION_ENDPOINTS)
+    assert(isLoopbackCognitionUrl(endpoint));
+  assert.equal(await discoverAutomaticLocalCognition(
+    new AbortController().signal,
+    async()=>{ throw Error('not running'); },
+  ),null,'absence of local model must never fabricate a cloud model');
+  assert.equal(await discoverAutomaticLocalCognition(
+    AbortSignal.abort(),async()=>{throw Error('never called');},
+  ),null);
 });
 
 await test('Core bridge reads optional cognitive ABI and fails closed on corrupt or old runtime',()=>{
