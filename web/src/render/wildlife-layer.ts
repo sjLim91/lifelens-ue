@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { TerrainWindow, WildlifeSpecies, WildlifeAnimalObservation } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT as grid } from '../runtime/lifelens-contract';
 import { createWildlifeGeometry } from './procedural-wildlife';
+import { wildlifeVisualTravelMultiplier } from './wildlife-motion';
 type WildlifeLod = 'near' | 'mid' | 'far';
 import { ResidentGroundSurface } from './resident-grounding';
 import { buildFlowWaterSurfaceGeometry, createVisibleWaterFootprintTester } from './water-geometry';
