@@ -362,10 +362,17 @@ inline DailyHealthOutcome advanceHealthOneDay(
         state.lastAccidentMinute=currentMinute;
         outcome.accidentOccurred=true;
     }else{
-        const double injuryRecovery=
+        // Healing depends on REAL food, water and rest accumulated in
+        // Needs, not an invented treatment event. Good care knowledge and
+        // genetic resilience still help, while severe deprivation delays
+        // but does not completely disable ordinary wound recovery.
+        // Baseline satisfied-needs recovery stays unchanged.
+        const double availableRecovery=1.0-0.60*deprivation;
+        const double injuryRecovery=(
             0.018
             +0.025*innateResilience
-            +0.018*state.careKnowledge01;
+            +0.018*state.careKnowledge01
+        )*availableRecovery;
         state.injurySeverity=healthClamp01(
             state.injurySeverity-injuryRecovery);
     }
