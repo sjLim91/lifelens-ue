@@ -120,8 +120,8 @@ try {
       module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020,
     } },
   ).outputText;
-  const begin = engineSource.indexOf('  function enterCanvasFailover(');
-  const end = engineSource.indexOf("  if (requestedRenderMode === 'three-world')", begin);
+  const begin = engineSource.indexOf('function enterCanvasFailover(');
+  const end = engineSource.indexOf("if (requestedRenderMode === 'three-world')", begin);
   assert(begin >= 0 && end > begin);
   const failoverCode = engineSource.slice(begin, end);
 
