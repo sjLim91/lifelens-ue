@@ -47,6 +47,13 @@ export function loadNativeResidentTemplates(loader: GLTFLoader): Promise<void> {
   return loading;
 }
 
+/** Native source geometry only becomes usable after the WHOLE verified six-LOD
+ * set is staged; partial or failed loads must not replace an established body. */
+export function nativeResidentTemplatesReady(): boolean {
+  return ['female', 'male'].every(sex =>
+    ['near', 'mid', 'far'].every(tier => templates.has(sex + '/' + tier)));
+}
+
 function disposeNative(group: THREE.Object3D): void {
   group.traverse(object => {
     if (!(object instanceof THREE.Mesh)) return;
