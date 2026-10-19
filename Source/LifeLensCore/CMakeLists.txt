@@ -127,6 +127,7 @@ lifelens_add_test(test_birth_genetics)
 lifelens_add_test(test_lifecycle_growth)
 
 lifelens_add_test(test_parenting)
+lifelens_add_test(test_parenting_opportunity_windows)
 
 lifelens_add_test(test_genealogy)
 
