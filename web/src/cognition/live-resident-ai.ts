@@ -360,6 +360,16 @@ export class ResidentAIController {
   private rebuildScheduler(): void {
     this.scheduler?.dispose();
     const config = this.state.configuration;
+    // Browser WebGPU is an in-process engine, never an HTTP endpoint.
+    // When Core/WASM reattaches, the old scheduler has been disposed and a
+    // fresh browser engine must be loaded by the existing automatic path.
+    // Do NOT pass the 'browser-webgpu' identity into LocalCognitionProvider:
+    // that path only accepts real 127.0.0.1/localhost URLs and throws.
+    if(config?.baseUrl === 'browser-webgpu'){
+      this.scheduler = null;
+      this.update({ configuration: null });
+      return;
+    }
     this.scheduler = config && this.source && !this.disposed
       ? new CognitionScheduler(
         new LocalCognitionProvider(config),
