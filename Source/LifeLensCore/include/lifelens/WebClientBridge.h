@@ -42,6 +42,11 @@ public:
 
     void runMinutes(int minutes);
 
+    // Canonical full Core snapshot, encoded as portable base64 for the WASM
+    // string boundary. Never approximate life state from observer JSON.
+    std::string saveSnapshotBase64() const;
+    bool restoreSnapshotBase64(const std::string& encoded);
+
     std::string worldOverviewJson() const;
     std::string residentRuntimeJson() const;
     std::string residentsJson() const;
