@@ -2,9 +2,23 @@ import assert from 'node:assert/strict';
 import { source } from './compile.mjs';
 
 const { ResidentAIController, LIVE_AI_BUDGET, liveActionableCognitiveRequest,
-  residentAIObservedTrigger } =
+  residentAIObservedTrigger, residentAIExecutionBudget } =
   await source('cognition/live-resident-ai.ts');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+{
+  const browser=residentAIExecutionBudget({name:'resident-browser-webgpu'});
+  const native=residentAIExecutionBudget({name:'local-openai-compatible'});
+  assert(browser.timeoutMs >= 20000,
+    'GPU generation cannot inherit a 6-second network cutoff');
+  assert(browser.timeoutMs > native.timeoutMs);
+  assert.equal(browser.staleAfterSimulationMinutes,
+    native.staleAfterSimulationMinutes,
+    'slower hardware must never extend the authoritative Core world age');
+  assert.equal(browser.maxConcurrent,1);
+  assert.equal(native.maxConcurrent,1);
+  assert.equal(native.timeoutMs,LIVE_AI_BUDGET.timeoutMs);
+}
 
 function fixture(provider) {
   let wall = 100;
