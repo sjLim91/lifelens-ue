@@ -10,6 +10,7 @@
 #include "lifelens/CultivationProgression.h"
 #include "lifelens/FamilyProgression.h"
 #include "lifelens/InitialPopulation.h"
+#include "lifelens/InitialPopulationPlacement.h"
 #include "lifelens/EmotionRuntime.h"
 #include "lifelens/PrimitiveFireProgression.h"
 #include <algorithm>
@@ -372,14 +373,13 @@ void Simulation::setupNewGame(){
     std::mt19937_64 populationRng(world_.populationSeed);
     world_.characters=generateInitialFounders(populationRng,world_.minute);
 
-    const GridPos startCenter=world_.initialStartRegionCenterGrid();
-    const std::array<GridPos,4> founderOffsets={GridPos{-1,-1},GridPos{1,-1},GridPos{-1,1},GridPos{1,1}};
+    const auto founderPositions=initialFounderPositions(world_);
+    separateInitialLandWildlife(world_,founderPositions);
     std::uniform_real_distribution<double> familiarity(0.0,0.04);
     std::size_t founderIndex=0;
     for(const Character& from:world_.characters){
         Runtime initialRuntime;
-        const GridPos offset=founderOffsets[std::min(founderIndex,founderOffsets.size()-1)];
-        initialRuntime.pos={startCenter.x+offset.x,startCenter.y+offset.y};
+        initialRuntime.pos=founderPositions[std::min(founderIndex,founderPositions.size()-1)];
         runtime_[from.id]=initialRuntime;
         ++founderIndex;
         for(const Character& to:world_.characters){

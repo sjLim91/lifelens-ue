@@ -26,7 +26,7 @@ import { syncResidentAuthoredHair, syncResidentAuthoredFace, setResidentFaceDeta
 import { syncResidentAuthoredGarment } from './resident-authored-garment';
 import { setResidentSkinMaterialQuality } from './resident-surface-material';
 import { syncResidentAnatomicalBody } from './resident-anatomical-body';
-import { loadNativeResidentTemplates, setNativeResidentLOD } from './resident-native-body';
+import { loadNativeResidentTemplates, nativeResidentTemplatesReady, setNativeResidentLOD } from './resident-native-body';
 import { ResidentInventoryProps, ResidentPropResources } from './resident-props';
 import { ResidentProductionTargets } from './resident-production-context';
 import { residentActionCue } from './resident-action-context';
@@ -469,6 +469,17 @@ export class ResidentWorldLayer {
         this.updateActionCue(actor, actor.motionFacts, this.pendingResidents, false);
     }
     this.updateSelectionRing();
+  }
+
+  observationFocuses(camera: THREE.Camera): THREE.Vector3[] {
+    camera.getWorldPosition(this.cameraPosition);
+    return [...this.actors.values()]
+      .filter(actor => actor.initialized && actor.root.visible
+        && actor.current.distanceToSquared(this.cameraPosition) < 50 * 50)
+      .sort((a, b) => a.current.distanceToSquared(this.cameraPosition)
+        - b.current.distanceToSquared(this.cameraPosition))
+      .slice(0, 4)
+      .map(actor => actor.current.clone().add(new THREE.Vector3(0, actor.root.scale.y * .55, 0)));
   }
 
   pickResident(raycaster: THREE.Raycaster): string | null {
@@ -915,8 +926,6 @@ export class ResidentWorldLayer {
       }
 
       if (this.disposed) return;
-      await loadNativeResidentTemplates(this.loader);
-      if (this.disposed) return;
       const source = base.scene;
       source.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(source);
@@ -960,6 +969,21 @@ export class ResidentWorldLayer {
           this.pendingCenterY,
         );
       }
+
+      // Optional source-derived surfaces must never gate the first residents.
+      // Keep the established body visible while downloads are pending, then
+      // refresh those same actors from their existing Core observations.
+      void loadNativeResidentTemplates(this.loader).then(() => {
+        if (this.disposed || !this.pendingTerrain || !nativeResidentTemplatesReady()) return;
+        const nativeCalibration = cloneSkeleton(normalized) as THREE.Group;
+        applyResidentMaterialVariant(nativeCalibration, calibrationAppearance);
+        syncResidentAnatomicalBody(nativeCalibration, calibrationAppearance);
+        const calibrated = calibrateResidentSleep(nativeCalibration, this.sleepClip!);
+        this.sleepCalibration?.offsets.set(calibrated.offsets);
+        for (const actor of this.actors.values()) actor.appearanceSignature = '';
+        this.setResidents(this.pendingResidents, this.pendingTerrain,
+          this.pendingCenterX, this.pendingCenterY);
+      });
     } catch (error) {
       console.warn(
         'LifeLens Three World resident model unavailable',
@@ -1416,6 +1440,7 @@ export class ResidentWorldLayer {
     actor.active = desired;
   }
 }
+
 
 
 

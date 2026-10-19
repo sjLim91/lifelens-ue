@@ -16,7 +16,7 @@ const modules = new Map();
 class AssetLayer {
   group = new THREE.Group();
   setEnvironment() {} setCivilization() {} setTerrain() {} setResidents() {} setWetness() {} setSnowCoverage() {} update() {}
-  setSimulationSpeed() {} setSelectedResident() {} setObservationFocus() {} dispose() {}
+  setSimulationSpeed() {} setSelectedResident() {} setObservationFocus() {} observationFocuses() { return []; } dispose() {}
 }
 function load(path) {
   if (modules.has(path)) return modules.get(path).exports;
@@ -144,15 +144,28 @@ test('camera targets the same interpolated slope that the terrain renders', () =
   near(target.y, 0, 'slope framing');
 }));
 
-test('low camera clears a higher hillside below its eye position', () => withScene(scene => {
+test('low camera clears local terrain at close zoom and uphill terrain when orbiting farther', () => {
   const chunks = [];
   for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) chunks.push(chunk(x, y, 'None', x >= 4 ? 0.95 : 0.1));
-  scene.setTerrain(windowOf(chunks));
-  scene.setCamera(cameraState());
-  assert.ok(scene.camera.position.y > 0.95 * scale + 1, 'camera is inside the uphill terrain');
-  const target = project(scene, new THREE.Vector3(0, 0.1 * scale, 0));
-  near(target.y, 0, 'raised camera still frames its focus');
-}));
+  const terrain = windowOf(chunks);
+  // The resident-focused camera now orbits close to the subject. The remote
+  // ridge at x>=4 chunks must not force an artificial high-altitude camera.
+  withScene(scene => {
+    scene.setTerrain(terrain);
+    scene.setCamera(cameraState());
+    assert.ok(scene.camera.position.y > 0.1 * scale + 1, 'close camera entered local ground');
+    assert.ok(scene.camera.position.y < 0.95 * scale, 'remote ridge incorrectly raised the close camera');
+    near(project(scene, new THREE.Vector3(0, 0.1 * scale, 0)).y, 0, 'close camera focus');
+  });
+  // At a wider orbit the camera is physically above the ridge, so the
+  // clearance contract still MUST prevent clipping through the hillside.
+  withScene(scene => {
+    scene.setTerrain(terrain);
+    scene.setCamera(cameraState({ zoom: 0.6 }));
+    assert.ok(scene.camera.position.y > 0.95 * scale + 1, 'wide camera entered the hillside');
+    near(project(scene, new THREE.Vector3(0, 0.1 * scale, 0)).y, 0, 'wide camera focus');
+  });
+});
 
 test('origin shifts do not jump or reverse the view across positive and negative chunk borders', () => {
   for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1]]) withScene(scene => {

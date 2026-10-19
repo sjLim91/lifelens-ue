@@ -14,7 +14,14 @@ export class ObserverFoliageClarity {
     llClarityFocus: { value: new THREE.Vector3() },
     llClarityRadius: { value: 0 },
     llClarityStrength: { value: 0 },
+    llResidentFocus: { value: Array.from({ length: 4 }, () => new THREE.Vector3()) },
+    llResidentFocusCount: { value: 0 },
   };
+  setResidents(targets: readonly THREE.Vector3[]): void {
+    this.uniforms.llResidentFocusCount.value = Math.min(4, targets.length);
+    for (let i = 0; i < this.uniforms.llResidentFocusCount.value; i++)
+      this.uniforms.llResidentFocus.value[i].copy(targets[i]);
+  }
   set(camera: THREE.Camera, target: THREE.Vector3 | null, selected: boolean): void {
     if (!target) {
       this.uniforms.llClarityStrength.value = 0;
@@ -54,22 +61,38 @@ uniform vec3 llClarityCamera;
 uniform vec3 llClarityFocus;
 uniform float llClarityRadius;
 uniform float llClarityStrength;
+uniform vec3 llResidentFocus[4];
+uniform int llResidentFocusCount;
 varying vec3 vLlFoliageWorld;`);
   shader.fragmentShader = shader.fragmentShader.replace('#include <dithering_fragment>',
     `#include <dithering_fragment>
-if (llClarityStrength > 0.0) {
+float residentFade = 0.0;
+for (int i = 0; i < 4; i++) {
+  if (i >= llResidentFocusCount) break;
+  vec3 residentRay = llResidentFocus[i] - llClarityCamera;
+  float residentT = dot(vLlFoliageWorld-llClarityCamera, residentRay)
+    / max(dot(residentRay, residentRay), .0001);
+  float residentSeparation = length(vLlFoliageWorld - llClarityCamera - residentRay * residentT);
+  if (residentT > .02 && residentT < 1.01)
+    residentFade = max(residentFade, (1.0-smoothstep(.4, .85, residentSeparation)) * .96);
+}
+if (llClarityStrength > 0.0 || residentFade > 0.0) {
   vec3 ray = llClarityFocus - llClarityCamera;
   float rayLength2 = max(dot(ray, ray), 0.0001);
   float t = clamp(dot(vLlFoliageWorld-llClarityCamera, ray)/rayLength2, 0.0, 1.0);
   vec3 nearest = llClarityCamera + ray * t;
   float separation = length(vLlFoliageWorld - nearest);
   // Only the foliage obstructing the sightline, never the entire tree.
+  float fade = residentFade;
   if (t > .06 && t < .98 && separation < llClarityRadius) {
-    float fade = (1.0-smoothstep(llClarityRadius*.62, llClarityRadius, separation));
+    fade = max(fade, (1.0-smoothstep(llClarityRadius*.62, llClarityRadius, separation)) * llClarityStrength);
+  }
+  {
     vec3 cell = floor(vLlFoliageWorld*18.0);
     float stablePattern = fract(sin(dot(cell, vec3(12.9898,78.233,37.719)))
       * 43758.5453);
-    if (stablePattern < fade * llClarityStrength) discard;
+    if (stablePattern < fade) discard;
   }
 }`);
 }
+

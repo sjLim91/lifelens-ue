@@ -33,19 +33,25 @@ export function loadNativeResidentTemplates(loader: GLTFLoader): Promise<void> {
   if (loading) return loading;
   loading = (async () => {
     const staged = new Map<string, GLTF>();
-    for (const sex of ['female', 'male']) {
-      for (const tier of ['near', 'mid', 'far']) {
+    await Promise.all(['female', 'male'].flatMap(sex =>
+      ['near', 'mid', 'far'].map(async tier => {
         const suffix = tier === 'near' ? '' : '-' + tier;
         const gltf = await loader.loadAsync(`${import.meta.env.BASE_URL}vendor/characters/resident-${sex}${suffix}.glb`);
         const body = gltf.scene.getObjectByName('NativeResidentBody');
         if (!(body instanceof THREE.SkinnedMesh) || !body.geometry.getAttribute('uv'))
           throw new Error('Native resident asset lacks its skinned UV surface');
         staged.set(sex + '/' + tier, gltf);
-      }
-    }
+      })));
     for (const [key, gltf] of staged) templates.set(key, gltf);
   })().catch(error => { console.warn('LifeLens native resident assets unavailable; retaining existing presentation', error); });
   return loading;
+}
+
+/** Native source geometry only becomes usable after the WHOLE verified six-LOD
+ * set is staged; partial or failed loads must not replace an established body. */
+export function nativeResidentTemplatesReady(): boolean {
+  return ['female', 'male'].every(sex =>
+    ['near', 'mid', 'far'].every(tier => templates.has(sex + '/' + tier)));
 }
 
 function disposeNative(group: THREE.Object3D): void {
@@ -164,3 +170,4 @@ export function setNativeResidentLOD(model: THREE.Object3D, distance: number): v
   const tier = distance < 7 ? 'near' : distance < 18 ? 'mid' : 'far';
   for (const child of group.children) child.visible = child.name === 'NativeResidentLOD:' + tier;
 }
+

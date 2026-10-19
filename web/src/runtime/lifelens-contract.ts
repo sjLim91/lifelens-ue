@@ -76,6 +76,7 @@ export const RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X =
   / (REAL_MS_PER_SIMULATION_MINUTE_AT_1X / 1000);
 
 export const OBSERVER_CAMERA_CONTRACT = {
+  orbitDistanceWorldUnitsAtZoom1: 40,
   defaultAngleRadians: -0.68,
   defaultElevationRadians: 0.67,
   defaultDesktopZoom: 1.25,
@@ -200,3 +201,4 @@ export function simulationTimeHint(): string {
     + '라이프렌즈 1일 · 시간 점프 없이 관찰 배속만 조절'
   );
 }
+
