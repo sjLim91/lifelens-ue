@@ -6,6 +6,17 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {source} from './compile.mjs';
 const {NativeWildlifePool}=await source('render/native-wildlife.ts');
 const {wildlifeRigClip,wildlifeVisualTravelMultiplier}=await source('render/wildlife-motion.ts');
+assert.equal(wildlifeRigClip('Wolf','Flee',.15,1),'run');
+assert.equal(wildlifeRigClip('Tiger','Flee',.15,1),'run');
+assert.equal(wildlifeRigClip('Deer','Flee',.15,1),'run');
+assert.equal(wildlifeRigClip('Hare','Flee',.15,1),'run');
+assert.equal(wildlifeRigClip('Wolf','Hunt',.15,1),'hunt');
+assert.equal(wildlifeRigClip('Wolf','Flee',0,1),'idle');
+assert.equal(wildlifeRigClip('FreshwaterFish','Swim',0,1),'swim');
+assert(wildlifeVisualTravelMultiplier('Flee')>wildlifeVisualTravelMultiplier('Hunt'));
+assert(wildlifeVisualTravelMultiplier('Hunt')>wildlifeVisualTravelMultiplier('Roam'));
+assert(wildlifeVisualTravelMultiplier('Forage')<wildlifeVisualTravelMultiplier('Roam'));
+
 
 const {NATIVE_WILDLIFE_SOURCES:pins}=await source('render/native-wildlife-manifest.ts');
 const root=resolve(import.meta.dirname,'../../..');
