@@ -49,6 +49,10 @@ for(let i=0;i<24;i++)blendFrame(huntPose,1/60);
 const blendActor=blendPool.actors.get(blendPose.id);
 assert.equal([...blendActor.actions.values()].filter(a=>a.isRunning()).length,1,'Finished blends must release outgoing animation work');
 assert.equal(blendActor.current,'hunt');
+blendFrame({...walkPose,behavior:'Flee',speed:.18},.05);
+assert.equal(blendActor.current,'run','real Core flee movement must use the existing 47-bone tiger run clip');
+blendFrame({...walkPose,behavior:'Flee',speed:0},.05);
+assert.equal(blendActor.current,'idle','stationary tiger must not run on the spot');
 blendPool.dispose();
 console.log('PASS actual source skin continuity for rest/walk/hunt transitions');
 
