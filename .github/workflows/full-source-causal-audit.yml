@@ -1,0 +1,87 @@
+name: LifeLens Full-Source Causal Audit
+
+on:
+  push:
+    branches:
+      - audit/full-source-causal-20261017
+  pull_request:
+    branches: [main]
+    paths:
+      - Tools/full_source_audit.py
+      - Tools/tests/test_full_source_audit.py
+      - .github/workflows/full-source-causal-audit.yml
+      - docs/audits/FULL_SOURCE_CAUSAL_AUDIT_2026-10-17.md
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Scanner self-tests
+        run: python3 -m unittest discover -s Tools/tests -p 'test_full_source_audit.py' -v
+      - name: Capture exact head and all tracked source evidence
+        run: |
+          mkdir -p full-source-audit
+          git rev-parse HEAD > full-source-audit/head-sha.txt
+          python3 Tools/full_source_audit.py --out full-source-audit
+      - name: Preserve evidence, including when investigation fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-source-static-evidence
+          path: full-source-audit/
+          if-no-files-found: warn
+          retention-days: 30
+
+  core-causal-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure authoritative Core in Release mode
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build selected real-runtime and invariants
+        run: cmake --build build --target ll_balance_audit test_determinism test_snapshot_codec test_simulation_social_loop test_production_new_game --parallel 2
+      - name: Execute deterministic, persistence, social and new-game regressions
+        run: ctest --test-dir build --output-on-failure -R 'test_determinism|test_snapshot_codec|test_simulation_social_loop|test_production_new_game'
+      - name: Execute actual NEW GAME 7-day causal smoke for both baseline seeds
+        run: |
+          mkdir -p full-source-smoke
+          git rev-parse HEAD > full-source-smoke/head-sha.txt
+          for seed in 874213954 4242001; do
+            ./build/ll_balance_audit --days 7 --checkpoints 1,7 --seed "$seed" > "full-source-smoke/seed-$seed.log"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          logs = sorted(Path('full-source-smoke').glob('seed-*.log'))
+          output = []
+          for log in logs:
+              text = log.read_text(encoding='utf-8')
+              checkpoints = [line for line in text.splitlines() if line.startswith('CHECKPOINT ')]
+              events = [line for line in text.splitlines() if line.startswith('EVENTS ')]
+              if len(checkpoints) < 2 or len(events) < 2:
+                  raise SystemExit(f'missing causal evidence: {log}')
+              output.append({'seed': log.stem, 'checkpoints': checkpoints, 'events': events})
+          Path('full-source-smoke/summary.json').write_text(
+              json.dumps(output, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(output, indent=2))
+          PY
+      - name: Preserve real Core causal smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-source-core-causal-smoke
+          path: full-source-smoke/
+          if-no-files-found: warn
+          retention-days: 30
