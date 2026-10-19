@@ -914,12 +914,58 @@ bool Simulation::advanceNavigation(
         }
     }
 
+    syncDependentEscort(moverId,r);
     if(gridWithinRadius(r.pos,target,radius)){
         r.navigationArrived=true;
         return true;
     }
 
     return false;
+}
+
+void Simulation::syncDependentEscort(CharacterId actor,Runtime& runtime)
+{
+    auto& escort=runtime.dependentEscort;
+    if(!escort.active())return;
+    const auto childRuntime=runtime_.find(escort.child);
+    const auto* child=findFamilyCharacter(world_,escort.child);
+    const auto* caregiver=findFamilyCharacter(world_,actor);
+    if(childRuntime==runtime_.end() ||!child ||!child->alive
+       ||!caregiver ||!caregiver->alive){
+        escort.clear();
+        return;
+    }
+    childRuntime->second.pos=runtime.pos;
+}
+
+bool Simulation::resumeDependentEscort(Character& actor,Runtime& runtime)
+{
+    auto& escort=runtime.dependentEscort;
+    if(!escort.active() ||runtime.pendingContext.active() ||!runtime.plan.empty())
+        return false;
+    syncDependentEscort(actor.id,runtime);
+    if(!escort.active())return false;
+    // Interrupted outbound care becomes a safe return, never invented site use.
+    escort.returning=true;
+    if(sameGridPos(runtime.pos,escort.origin)){
+        escort.clear();
+        return true;
+    }
+    PendingContextAction pending;
+    pending.token=issueContextActionToken();
+    pending.kind=ContextActionKind::Parenting;
+    pending.issuedMinute=world_.minute;
+    pending.parentingAction=ParentingAction::ToiletAssist;
+    pending.parentingTarget=escort.child;
+    pending.sanitationSiteId=escort.site;
+    pending.civilization.hasFacilityTarget=true;
+    pending.civilization.facilityTargetPos=escort.origin;
+    pending.civilization.quantity=2;
+    pending.hasSpatialTarget=true;
+    pending.targetPos=escort.origin;
+    runtime.pendingContext=pending;
+    clearNavigation(runtime);
+    return true;
 }
 
 bool Simulation::resumeTradeJourney(
@@ -1059,6 +1105,7 @@ bool Simulation::advancePendingContext(
         if(arrived){
             emit(actor.name+" returned "+child->name+
                  " safely from assisted sanitation care");
+            runtime.dependentEscort.clear();
             pending.clear();
             clearNavigation(runtime);
         }
@@ -1182,6 +1229,13 @@ bool Simulation::advancePendingContext(
                         world_.primitiveSanitationSites,
                         pending.sanitationSiteId);
                 if(site==nullptr || !site->active){
+                    if(runtime.dependentEscort.active()){
+                        runtime.dependentEscort.returning=true;
+                        pending.civilization.quantity=2;
+                        pending.targetPos=runtime.dependentEscort.origin;
+                        clearNavigation(runtime);
+                        return false;
+                    }
                     pending.sanitationSiteId=0;
                     pending.hasSpatialTarget=true;
                     pending.targetPos=childRuntime->second.pos;
@@ -1255,6 +1309,8 @@ bool Simulation::advancePendingContext(
                 pending.civilization.hasFacilityTarget=true;
                 pending.civilization.facilityTargetPos=childRuntime->second.pos;
                 pending.civilization.quantity=0;
+                runtime.dependentEscort={pending.parentingTarget,
+                    childRuntime->second.pos,site->id,world_.minute,false};
                 pending.hasSpatialTarget=true;
                 pending.targetPos=site->pos;
                 // Start a fresh bounded movement phase after the child pickup.
@@ -1442,6 +1498,7 @@ void Simulation::cancelRuntimeActivityForCriticalReplan(
     r.consecutiveFailures=0;
     r.penaltyUntilMinute=std::min(r.penaltyUntilMinute,world_.minute);
     r.pendingContext.clear();
+    if(r.dependentEscort.active())r.dependentEscort.returning=true;
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
@@ -1811,6 +1868,7 @@ void Simulation::advanceHouseholdMigration()
         if(urgentNeed>=ruleset_.utilityAI.urgentThreshold
            || runtime.pendingContext.active()
            || runtime.tradeJourney.active
+           || runtime.dependentEscort.active()
            || (!runtime.plan.empty() && runtime.goal!=Goal::Idle)){
             return;
         }
@@ -2884,6 +2942,10 @@ void Simulation::advanceDependentCare()
 
     for(auto& child:world_.characters){
         if(!child.alive || !isDependentStage(child.lifeStage)) continue;
+        bool escorted=false;
+        for(const auto& item:runtime_)
+            if(item.second.dependentEscort.child==child.id){escorted=true;break;}
+        if(escorted)continue;
 
         const double maxPhysicalNeed=std::max({
             child.needs.hunger,child.needs.thirst,child.needs.sleep,
@@ -2938,6 +3000,7 @@ void Simulation::advanceDependentCare()
         const auto caregiverCanInterruptCurrentWork=
             [&](Character& caregiver,Runtime& runtime)
             {
+                if(runtime.dependentEscort.active())return false;
                 const bool busy=
                     runtime.pendingContext.active()
                     || !runtime.plan.empty();
@@ -3798,10 +3861,12 @@ void Simulation::step(){
     for(auto& c:world_.characters){
         Runtime& r=runtime_[c.id];
         if(!c.alive){
+            r.dependentEscort.clear();
             clearRuntimeActivity(r);
             continue;
         }
 
+        syncDependentEscort(c.id,r);
         c.needs.decay(ruleset_.needs,c.metabolism,c.sleepTendency);
         c.needs.apply(healthNeedsPressurePerMinute(c.health));
         advanceEmotionOneMinute(c);
@@ -3859,6 +3924,11 @@ void Simulation::step(){
             c.needs.bladder,
             c.needs.hygiene
         });
+        if(!criticalPreempted &&r.dependentEscort.active()
+           &&!r.pendingContext.active() &&r.plan.empty()
+           &&journeyUrgentNeed<ruleset_.utilityAI.urgentThreshold){
+            resumeDependentEscort(c,r);
+        }
         const bool tradeJourneyReadyToResume=
             !criticalPreempted
             && r.tradeJourney.active

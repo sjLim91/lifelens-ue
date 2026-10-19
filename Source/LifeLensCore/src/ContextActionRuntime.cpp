@@ -183,6 +183,31 @@ bool Simulation::completeContextAction(
     if(pending.hasSpatialTarget && !contextActionNearTarget(resolvedPosition,pending.targetPos,1))
         return false;
 
+    // Return ACK completes transport only; it must never apply toilet care twice.
+    if(pending.kind==ContextActionKind::Parenting
+       &&pending.parentingAction==ParentingAction::ToiletAssist
+       &&pending.sanitationSiteId!=0 &&pending.civilization.quantity==2){
+        auto child=runtime_.find(pending.parentingTarget);
+        if(child==runtime_.end() ||!sameGridPosition(resolvedPosition,pending.targetPos))
+            return false;
+        const auto* dependent=findContextCharacter(world_,pending.parentingTarget);
+        if(!dependent ||!dependent->alive)return false;
+        runtime.pos=resolvedPosition;
+        child->second.pos=resolvedPosition;
+        runtime.dependentEscort.clear();
+        pending.clear();
+        clearNavigation(runtime);
+        return true;
+    }
+    if(pending.kind==ContextActionKind::Parenting){
+        for(const auto& entry:runtime_){
+            if(entry.first!=actor.id
+               &&entry.second.dependentEscort.child==pending.parentingTarget){
+                pending.clear();
+                return false;
+            }
+        }
+    }
     bool completed=false;
 
     switch(pending.kind){
@@ -851,6 +876,11 @@ bool Simulation::completeContextAction(
         && pending.civilization.quantity==0;
     if(sanitationNeedsPhysicalReturn){
         pending.civilization.quantity=2;
+        if(!runtime.dependentEscort.active())
+            runtime.dependentEscort={pending.parentingTarget,
+                pending.civilization.facilityTargetPos,pending.sanitationSiteId,
+                world_.minute,true};
+        runtime.dependentEscort.returning=true;
         pending.hasSpatialTarget=true;
         pending.targetPos=pending.civilization.facilityTargetPos;
         pending.issuedMinute=world_.minute;
@@ -866,6 +896,7 @@ bool Simulation::completeContextAction(
     runtime.socialActive=false;
     runtime.socialIntent=SocialIntent::None;
     runtime.socialTarget=0;
+    syncDependentEscort(actor.id,runtime);
     return true;
 }
 
