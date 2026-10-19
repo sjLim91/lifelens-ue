@@ -161,7 +161,7 @@ static bool runCognitiveTeachingPreferenceScenario()
     }
 
     CHECK(sim.restoreSnapshot(snapshot));
-    const Character& liveTeacher=sim.world().characters.front();
+    Character& liveTeacher=sim.world().characters.front();
     CHECK(registerTechniqueOrigin(
         sim.socialKnowledge(),liveTeacher,TechniqueId::SharpFlake,
         sim.world().minute,CivilizationEventType::Crafted,
