@@ -328,7 +328,12 @@ inline CognitiveRequest buildCognitiveRequest(
             // increasing its bounded eight-memory budget or claiming that
             // a witnessed encounter proves an attack occurred.
             ||m.tags.front()=="predator_encounter"
-            ||m.tags.front()=="predator_contact_injury";
+            ||m.tags.front()=="predator_contact_injury"
+            // A genuinely completed close-range care provision is a
+            // firsthand social/economic outcome for BOTH giver and receiver.
+            // Local reasoning can remember aid given or received without
+            // converting a transfer into claimed nutrition or instant healing.
+            ||m.tags.front()=="injury_care_provision";
     };
     if(memoryLimit>0 &&memories.size()>memoryLimit){
         const std::size_t selected=memoryLimit;
