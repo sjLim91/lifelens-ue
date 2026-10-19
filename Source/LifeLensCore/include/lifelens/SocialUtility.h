@@ -232,7 +232,11 @@ inline double scoreComfortIntent(
         target.emotion.sadness,
         target.emotion.grief,
         target.emotion.anxiety,
-        target.emotion.fear
+        target.emotion.fear,
+        // Observable injury creates a real reason to offer comfort, but
+        // compassion, relationship and survival competing utility still
+        // decide whether the resident actually helps.
+        0.72*target.health.injurySeverity
     });
     if (distress < 0.15) return 0.0;
 

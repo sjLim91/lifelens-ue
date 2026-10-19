@@ -2,6 +2,7 @@
 #include "lifelens/EmotionRuntime.h"
 #include "lifelens/AutonomousSocialOutcomeLearning.h"
 #include "lifelens/ResidentCivilizationOutcomeLearning.h"
+#include "lifelens/ResidentInjuryProvisionCare.h"
 #include "lifelens/ToolEffectiveness.h"
 #include "lifelens/SocietyEconomy.h"
 
@@ -250,6 +251,18 @@ bool Simulation::completeContextAction(
             }
             if(result.generatedSocialEvent){
                 recordSocialEvent(result.socialEvent);
+            }
+            // Only a Core-confirmed, physically co-located Comfort may give
+            // provisions. Target consumes them in a later real survival action;
+            // no free Need relief, instant healing, or imaginary care.
+            if(pending.social.intent==SocialIntent::Comfort){
+                const auto given=provideInjuryRecoveryProvisions(
+                    actor,*target,world_.minute);
+                if(given!=InjuryProvisionGift::None){
+                    emit(actor.name+" 실제 생존 물품 "
+                        +injuryProvisionGiftName(given)+" 1개를 다친 "
+                        +target->name+"에게 전달");
+                }
             }
 
             int cooldown=20;
