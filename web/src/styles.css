@@ -1503,3 +1503,24 @@ button:disabled { opacity: .33; cursor: default; }
     font-size: .71rem;
   }
 }
+
+/* Exact offline Core replay, not a simulated clock display. */
+.offline-world-banner {
+  position: absolute;
+  z-index: 9;
+  left: 50%;
+  top: 92px;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 24px));
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: rgba(18, 34, 27, .96);
+  border: 1px solid rgba(174, 217, 186, .45);
+  color: #e5f6e8;
+  font: 600 .78rem/1.5 system-ui, sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+@media (max-width: 800px) {
+  .offline-world-banner { top: 78px; font-size: .72rem; }
+}
