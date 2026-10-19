@@ -2000,7 +2000,7 @@ bool Simulation::trySocialDecision(
         it!=acceptedCognitiveDecisions_.rend();++it){
         if(it->actor!=c.id) continue;
         modelPreferredSocialTarget=it->minute<=world_.minute
-            &&world_.minute-it->minute<=96
+            &&world_.minute-it->minute<=ResidentAgencyGoalHorizonMinutes
             &&it->priority>=0.50
             &&it->target==decision.social.target
             &&((it->intent==CognitiveIntentKind::CooperateWithResident
