@@ -1,4 +1,5 @@
 #include "lifelens/NaturalEcologyValidation.h"
+#include "lifelens/DependentEscortSnapshotCodec.h"
 #include "lifelens/AutonomousGoalActionLinkSnapshotCodec.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
@@ -26,6 +27,7 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
         return false;
     };
 
+    if(!validDependentEscorts(snapshot))return fail("invalid dependent escort state");
     if(snapshot.version!=SimulationSnapshotVersion) return fail("unsupported snapshot version");
     if(!validSimulationRuleset(snapshot.ruleset)) return fail("snapshot contains invalid simulation ruleset");
     if(snapshot.world.seed==0) return fail("snapshot world seed must be nonzero");
@@ -284,6 +286,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
         target.tradeJourney=source.tradeJourney;
+        target.dependentEscort=source.dependentEscort;
         target.navigationRoute=source.navigationRoute;
         target.navigationRouteIndex=source.navigationRouteIndex;
         target.navigationTarget=source.navigationTarget;
@@ -328,6 +331,33 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
         target.tradeJourney=source.tradeJourney;
+        target.dependentEscort=source.dependentEscort;
+        const auto& legacy=source.pendingContext;
+        const auto legacyChild=snapshot.runtime.find(legacy.parentingTarget);
+        bool unclaimed=true;
+        for(const auto& other:snapshot.runtime){
+            if(other.first==item.first)continue;
+            const auto& otherPending=other.second.pendingContext;
+            if(other.second.dependentEscort.child==legacy.parentingTarget
+               ||(other.first<item.first
+                   &&otherPending.kind==ContextActionKind::Parenting
+                   &&otherPending.parentingAction==ParentingAction::ToiletAssist
+                   &&otherPending.parentingTarget==legacy.parentingTarget
+                   &&otherPending.sanitationSiteId!=0
+                   &&otherPending.civilization.hasFacilityTarget))
+                unclaimed=false;
+        }
+        if(!target.dependentEscort.active()
+           &&legacy.kind==ContextActionKind::Parenting
+           &&legacy.parentingAction==ParentingAction::ToiletAssist
+           &&legacy.sanitationSiteId!=0 &&legacy.civilization.hasFacilityTarget
+           &&legacyChild!=snapshot.runtime.end() &&unclaimed
+           &&legacyChild->second.pos.x==source.pos.x
+           &&legacyChild->second.pos.y==source.pos.y){
+            target.dependentEscort={legacy.parentingTarget,
+                legacy.civilization.facilityTargetPos,legacy.sanitationSiteId,
+                legacy.issuedMinute,legacy.civilization.quantity==2};
+        }
         target.navigationRoute=source.navigationRoute;
         target.navigationRouteIndex=source.navigationRouteIndex;
         target.navigationTarget=source.navigationTarget;

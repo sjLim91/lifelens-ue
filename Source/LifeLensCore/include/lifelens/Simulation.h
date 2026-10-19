@@ -1,4 +1,5 @@
 #pragma once
+#include "DependentEscort.h"
 #include <algorithm>
 #include <cstdint>
 #include <functional>
@@ -287,6 +288,7 @@ private:
         CharacterId socialTarget=0;
         PendingContextAction pendingContext{};
         TradeJourneyState tradeJourney{};
+        DependentEscortState dependentEscort{};
 
         // Headless/Core-owned locomotion continuation state. Save/restore
         // persists this because route choice/index affects deterministic future
@@ -380,6 +382,8 @@ private:
     void clearNavigation(Runtime& r);
     bool advanceNavigation(CharacterId moverId,Runtime& r,GridPos target,int arrivalRadius);
     bool advancePendingContext(Character& actor,Runtime& runtime);
+    void syncDependentEscort(CharacterId actor,Runtime& runtime);
+    bool resumeDependentEscort(Character& actor,Runtime& runtime);
     bool resumeTradeJourney(Character& actor,Runtime& runtime);
     void transitionTradeJourneyToReturn(
         Character& actor,
@@ -538,6 +542,7 @@ inline bool Simulation::completeExternalPhysicalAction(
     // at the actual acknowledged world-grid position rather than independently
     // choosing a second position that could disagree with what the player saw.
     runtime.pos=resolvedPosition;
+    syncDependentEscort(id,runtime);
     if(runtime.goal==Goal::UseToilet && (emergencyFallback || primitiveSanitation)){
         // #79 compatibility contract: recordDesignatedSanitationSiteUse remains
         // the designated-area wrapper; the generalized path below accepts both

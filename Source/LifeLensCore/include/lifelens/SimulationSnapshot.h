@@ -1,4 +1,5 @@
 #pragma once
+#include "DependentEscort.h"
 
 #include <cstdint>
 #include <string>
@@ -36,6 +37,7 @@ struct SimulationRuntimeSnapshot {
     CharacterId socialTarget=0;
     PendingContextAction pendingContext{};
     TradeJourneyState tradeJourney{};
+        DependentEscortState dependentEscort{};
     std::vector<GridPos> navigationRoute;
     std::size_t navigationRouteIndex=0;
     GridPos navigationTarget{};
