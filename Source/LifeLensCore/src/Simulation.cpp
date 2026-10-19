@@ -3005,7 +3005,9 @@ void Simulation::advanceDependentCare()
                 }
 
                 ParentingDecision decision=chooseParentingAction(
-                    *caregiver,child,caregiverToChild,context);
+                    *caregiver,child,caregiverToChild,context,
+                    dailyDevelopmentWindow,
+                    urgentDistress ||dailyDevelopmentWindow);
                 if(!decision.valid) return;
                 if(!dailyDevelopmentWindow
                    && isRoutineDevelopmentalCare(decision.action)){

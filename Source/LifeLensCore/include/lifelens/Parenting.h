@@ -178,7 +178,9 @@ inline ParentingDecision chooseParentingAction(
     const Character& caregiver,
     const Character& child,
     const Relationship& caregiverToChild,
-    const ParentingContext& context)
+    const ParentingContext& context,
+    bool allowRoutineDevelopment=true,
+    bool allowSoothing=true)
 {
     ParentingDecision best;
     best.utility=-std::numeric_limits<double>::infinity();
@@ -197,6 +199,15 @@ inline ParentingDecision chooseParentingAction(
     };
 
     for(ParentingAction action:actions){
+        // Filter the currently legal action set BEFORE ranking. Choosing an
+        // out-of-window lesson and discarding it later must not hide feeding.
+        if(!allowRoutineDevelopment
+           &&(action==ParentingAction::Play
+              ||action==ParentingAction::Educate
+              ||action==ParentingAction::Discipline)) continue;
+        if(!allowSoothing
+           &&(action==ParentingAction::Hold
+              ||action==ParentingAction::Comfort)) continue;
         const double score=parentingUtility(action,caregiver,child,caregiverToChild,context);
         if(score>best.utility){
             best.action=action;
