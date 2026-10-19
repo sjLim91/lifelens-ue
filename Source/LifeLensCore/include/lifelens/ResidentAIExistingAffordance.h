@@ -5,6 +5,7 @@
 #include "CognitiveDecisionJournal.h"
 #include "CivilizationDecision.h"
 #include "ResidentCivilizationOutcomeLearning.h"
+#include "ResidentAICompletedPlanGuard.h"
 
 namespace lifelens {
 
@@ -213,7 +214,8 @@ inline CivilizationUtilityDecision chooseResidentAIToolPrerequisite(
     const World& world,
     const Character& resident,
     GridPos position,
-    const SettlementPopulation* population=nullptr)
+    const SettlementPopulation* population=nullptr,
+    const AcceptedCognitiveDecision* thought=nullptr)
 {
     CivilizationUtilityDecision best;
     for(const TechnologyDefinition& technology:TechnologyRegistry){
@@ -253,7 +255,12 @@ inline CivilizationUtilityDecision chooseResidentAIToolPrerequisite(
         if((next.intent==CivilizationIntent::Gather
              ||next.intent==CivilizationIntent::Experiment)
            &&std::isfinite(next.utility)
-           &&next.utility>=0.14 &&next.utility<=1.0)
+           &&next.utility>=0.14 &&next.utility<=1.0
+           // A goal's next action must not be the already-attempted failed
+           // experiment/source. Search the SAME legal Core catalog for a
+           // fresh possible step, without fabricating success or a recipe.
+           &&(thought==nullptr ||!residentAIPlanAlreadyAttempted(
+               resident,*thought,next,world.minute)))
             considerCivilizationDecision(best,next);
     }
     return best;
@@ -338,9 +345,11 @@ chooseResidentAIExistingCivilizationAffordance(
             // it is not authorization for a model's personal tool goal.
             if(candidate.intent!=CivilizationIntent::Craft
                ||candidate.facilityAction!=FacilityBuildAction::None
-               ||!residentAIToolOutputNeeded(actor,candidate.technique))
+               ||!residentAIToolOutputNeeded(actor,candidate.technique)
+               ||residentAIPlanAlreadyAttempted(
+                   actor,thought,candidate,world.minute))
                 candidate=chooseResidentAIToolPrerequisite(
-                    world,actor,actorPosition,settlementPopulation);
+                    world,actor,actorPosition,settlementPopulation,&thought);
             // A missing tool may require collecting a REAL ingredient or a
             // Core experiment, not a magical craft on this same tick.
             if(candidate.intent!=CivilizationIntent::Craft

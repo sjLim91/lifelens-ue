@@ -34,8 +34,20 @@ inline bool residentAIPlanAlreadyAttempted(
            ||entry.tags[0]!="action_experience"
            ||entry.tags[1]!=key)
             continue;
-        if(entry.tags[2]=="success" ||entry.tags[2]=="failure")
-            return true;
+        if(entry.tags[2]!="success" &&entry.tags[2]!="failure")
+            continue;
+        if(candidate.intent==CivilizationIntent::Gather
+           &&candidate.resourceNode!=0){
+            const std::string source="resource-node:"
+                +std::to_string(candidate.resourceNode);
+            // An attempt at node A says nothing about actually attempting B.
+            // Legacy recollections without a source stay conservatively
+            // protected, rather than assigning an invented source ID.
+            if(entry.where.rfind("resource-node:",0)==0
+               &&entry.where!=source)
+                continue;
+        }
+        return true;
     }
     return false;
 }

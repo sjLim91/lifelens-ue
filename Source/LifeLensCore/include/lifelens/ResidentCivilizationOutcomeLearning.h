@@ -137,7 +137,13 @@ inline void rememberCivilizationAttemptOutcome(
            &&decision.intent==CivilizationIntent::Gather)
             memory.what+=" (직접 확인한 원인: "+
                 std::string(residentGatherFailureCauseName(cause))+")";
-        memory.where="내가 직접 시도한 행동";
+        // Provenance for the actual resource source. Aggregate learning
+        // still uses the stable material action key, but a different REAL
+        // node must not be mistaken for replaying the failed old source.
+        memory.where=decision.intent==CivilizationIntent::Gather
+            &&decision.resourceNode!=0
+            ? "resource-node:"+std::to_string(decision.resourceNode)
+            : "내가 직접 시도한 행동";
         memory.sourceCharacter=actor.id;
         return;
     }
