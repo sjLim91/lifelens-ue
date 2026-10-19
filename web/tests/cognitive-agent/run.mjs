@@ -8,6 +8,11 @@ const {
 }=await source('cognition/cognitive-contract.ts');
 const { parseAutonomousGoalPreview } = await source('cognition/autonomous-goal-preview.ts');
 const {
+  BrowserCognitionProvider, createBrowserResidentCognition,
+  BUILTIN_RESIDENT_MODEL,
+}=await source('cognition/browser-cognition-provider.ts');
+
+const {
   LocalCognitionProvider,
   discoverLocalCognitionModels,
   discoverAutomaticLocalCognition,
@@ -136,6 +141,38 @@ await test('automatic model discovery uses only bounded free loopback services',
   assert.equal(await discoverAutomaticLocalCognition(
     AbortSignal.abort(),async()=>{throw Error('never called');},
   ),null);
+});
+
+await test('embedded WebGPU model can reason locally with no server or cloud key',async()=>{
+  const req=request('7',120,['ImproveFoodSecurity']);
+  assert.equal(await createBrowserResidentCognition(()=>false,async()=>{
+    throw Error('load must not run without WebGPU');
+  }),null);
+  let loadedModel='';
+  let observed;
+  const provider=await createBrowserResidentCognition(()=>true,async model=>{
+    loadedModel=model;
+    return {chat:{completions:{create:async input=>{
+      observed=input;
+      return {choices:[{message:{content:JSON.stringify(proposal(req))}}]};
+    }}}};
+  });
+  assert.equal(loadedModel,BUILTIN_RESIDENT_MODEL);
+  assert(provider instanceof BrowserCognitionProvider);
+  const actual=await provider.reason(req,new AbortController().signal);
+  assert.equal(actual.intent,'ImproveFoodSecurity');
+  assert.equal(observed.temperature,0);
+  assert.equal(observed.response_format.type,'json_object');
+  assert(!JSON.stringify(observed).includes('api.openai.com'));
+  assert.equal((await createBrowserResidentCognition(()=>true,
+    async()=>{throw Error('GPU out of memory');})),null);
+  const bad=new BrowserCognitionProvider({chat:{completions:{
+    create:async()=>({choices:[{message:{content:JSON.stringify({
+      ...proposal(req), intent:'CreateFoodFromNothing',
+    })}}]}),
+  }}});
+  await assert.rejects(bad.reason(req,new AbortController().signal),
+    /violated the Core contract/);
 });
 
 await test('Core bridge reads optional cognitive ABI and fails closed on corrupt or old runtime',()=>{
