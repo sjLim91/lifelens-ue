@@ -183,6 +183,16 @@ console.log('PASS same-ID species replacement does not reuse a stale native body
   camera.position.set(x+dx*5.25,y+1.68,z+dz*5.25);camera.lookAt(x,y+.798,z);
   let actor;for(let i=0;i<80;i++){layer.update(.02,camera);actor=layer.group.getObjectByName('LifeLensNativeAnimal:'+subject.id);if(actor)break;await settle();}
   assert(actor,'Visible deer starved by other skins in '+name+' view');assert.equal(actor.userData.tier,'near');
+  // The production Observer can refresh observations between render updates.
+  // setTerrain renders without receiving a camera; it must retain this view's
+  // allocation rather than spending the skin budget in observation order.
+  for(let refresh=0;refresh<3;refresh++){
+   layer.setTerrain(terrain);
+   const refreshed=layer.group.getObjectByName('LifeLensNativeAnimal:'+subject.id);
+   assert(refreshed,'Observation refresh evicted the visible deer in '+name+' view');
+   assert.equal(refreshed.userData.tier,'near','Observation refresh changed the visible deer tier');
+   assert(layer.renderedCoreIds.has(subject.id));
+  }
   const near=[];layer.group.traverse(o=>{if(o.name.startsWith('LifeLensNativeAnimal:')&&o.userData.tier==='near')near.push(o);});assert(near.length<=4);
  }
  assert.equal(JSON.stringify(terrain),before);layer.dispose();

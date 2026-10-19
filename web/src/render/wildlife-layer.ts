@@ -263,8 +263,11 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
     // Spend bounded skins on the current view. Close animals behind the camera
     // must not exhaust the budget before the animal being observed.
     const visible=[...this.animals.values()];
-    if(camera){
-      this.viewProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+    if(camera)this.viewProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+    // Observation refreshes also render without a camera argument. Keep the
+    // last view's priority so a refresh cannot evict its subject from the skin
+    // budget between update() and the actual frame submission.
+    if(this.hasCamera){
       this.renderPriority.clear();
       for(const pose of visible){
         const x=pose.x-offsetX,z=pose.z-offsetZ;
