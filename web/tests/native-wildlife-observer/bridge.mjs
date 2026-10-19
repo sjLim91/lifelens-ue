@@ -7,7 +7,7 @@ import {ResidentGroundSurface} from '../../src/render/resident-grounding.ts';
 import {NativeWildlifePool} from '../../src/render/native-wildlife.ts';
 import {WildlifeLayer} from '../../src/render/wildlife-layer.ts';
 import {WORLD_GRID_CONTRACT as grid} from '../../src/runtime/lifelens-contract.ts';
-import {Box3,Vector3,Matrix4,Mesh,Raycaster,FrontSide} from 'three';
+import {Box3,Vector3,Matrix4,Mesh,Raycaster} from 'three';
 const qa=window.__nativeWildlifeObserver={store:observerStore,actions:observerActions,id:null,view:'quarter',baseline:false,choices:{},world:null,renderer:null,candidateIds:[],renderedIds:[]};
 const updateWildlife=WildlifeLayer.prototype.update;
 WildlifeLayer.prototype.update=function(...args){updateWildlife.apply(this,args);qa.candidateIds=[...this.candidateCoreIds];qa.renderedIds=[...this.renderedCoreIds];};
@@ -23,12 +23,15 @@ function choose(scene,actor,view,camera){
  if(box.isEmpty()){qa.cameraDiagnostic={status:'EMPTY_SKIN_BOUNDS'};return null;}
  const target=box.getCenter(new Vector3()),extent=box.getSize(new Vector3()).length(),points=[target.clone()];
  for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z])points.push(new Vector3(x,y,z));
+ // Evaluate both bark and double-sided foliage. Excluding DoubleSide leaves
+ // falsely reports clear views while the actual Observer frame is obscured.
+ scene.updateMatrixWorld(true);
  const colliders=[],matrix=new Matrix4(),origin=actor.position.clone();
- scene.traverse(o=>{if(!o.isInstancedMesh||!o.geometry.getAttribute('llLeafRank')||o.material.side!==FrontSide)return;
+ scene.traverse(o=>{if(!o.isInstancedMesh||!o.geometry.getAttribute('llLeafRank'))return;
   for(let i=0;i<o.count;i++){o.getMatrixAt(i,matrix);matrix.premultiply(o.matrixWorld);const point=new Vector3().setFromMatrixPosition(matrix);
    if(Math.hypot(point.x-origin.x,point.z-origin.z)>10)continue;const copy=new Mesh(o.geometry,o.material);copy.matrixAutoUpdate=false;copy.matrixWorld.copy(matrix);colliders.push(copy);}});
  const yaw=actor.rotation.y+({front:0,side:-Math.PI/2,quarter:-Math.PI/4,back:Math.PI}[view]??0),probe=camera.clone(),ray=new Raycaster();let best=null;
- for(const d of [0,-.25,.25])for(const r of [1.4,2,2.7,3.5])for(const h of [.5,.9,1.3]){
+ for(const d of [0,-.25,.25,-.5,.5])for(const r of [1.1,1.4,2,2.7,3.5])for(const h of [.3,.5,.9,1.3]){
   const radius=Math.max(.20,extent)*r,position=origin.clone().add(new Vector3(Math.sin(yaw+d)*radius,Math.max(.12,extent*h),Math.cos(yaw+d)*radius));
   probe.position.copy(position);probe.lookAt(target);probe.updateMatrixWorld(true);
   if(points.some(v=>{const n=v.clone().project(probe);return Math.abs(n.x)>.9||Math.abs(n.y)>.9||n.z< -1||n.z>1;}))continue;
