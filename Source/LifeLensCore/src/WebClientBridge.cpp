@@ -161,6 +161,10 @@ void appendCognitiveRequestJson(
 {
     out << "{";
     out << "\"actor\":\"" << request.actor << "\",";
+    out << "\"worldSeed\":\"" << request.worldSeed << "\",";
+    out << "\"populationSeed\":\"" << request.populationSeed << "\",";
+    out << "\"generationVersion\":" << request.generationVersion << ",";
+    out << "\"contextFingerprint\":\"" << cognitiveRequestFingerprint(request) << "\",";
     out << "\"minute\":" << request.minute << ",";
     out << "\"trigger\":\"" << cognitiveTriggerName(request.trigger) << "\",";
 
@@ -2000,7 +2004,7 @@ std::string WebClientBridge::cognitiveRequestJson(
     }
 
     const CognitiveRequest request=
-        simulation_->observeCognitiveRequest(residentId,trigger);
+        simulation_->issueCognitiveRequest(residentId,trigger);
     if(request.actor==0 || request.trigger==CognitiveTriggerKind::None){
         return "null";
     }
@@ -2018,12 +2022,13 @@ bool WebClientBridge::submitLocalCognitiveProposal(
     double priority,
     const std::string& targetResidentText,
     const std::string& rationaleDigest,
-    const std::string& observedTriggerText)
+    const std::string& observedTriggerText,
+    const std::string& observedFingerprintText)
 {
     if(!simulation_ || observedMinute<0
        || observedWorldSeed!=std::to_string(simulation_->world().seed)
        || observedMinute>simulation_->world().minute
-       || simulation_->world().minute-observedMinute>96
+       || simulation_->world().minute-observedMinute>ObservedCognitiveRequestMaxAgeMinutes
        || rationaleDigest.empty()
        || rationaleDigest.size()>MaxCognitionIdentityBytes)
         return false;
@@ -2074,8 +2079,11 @@ bool WebClientBridge::submitLocalCognitiveProposal(
     proposal.intent=intent;
     proposal.priority=priority;
     proposal.targetResident=target;
-    return simulation_->acceptCognitiveProposal(
-        current,proposal,"local-shared-model",rationaleDigest);
+    const auto fingerprint=parseUnsigned64(observedFingerprintText,0);
+    if(fingerprint==0)return false;
+    return simulation_->acceptObservedCognitiveProposal(
+        actor,observedMinute,fingerprint,trigger,proposal,
+        "local-shared-model",rationaleDigest);
 }
 
 std::string WebClientBridge::autonomousGoalCandidatesJson(

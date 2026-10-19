@@ -1021,6 +1021,7 @@ export interface RuntimeClient {
     actor: string, observedMinute: number, worldSeed: string,
     intent: string, priority: number, targetResident: string,
     rationaleDigest: string, observedTrigger: string,
+    observedFingerprint: string,
   ) => boolean;
   autonomousGoalCandidatesJson?: (residentId: string, trigger: string) => string;
   dynamicEnvironmentJson?: (x: number, y: number) => string;

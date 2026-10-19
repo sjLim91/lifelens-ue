@@ -75,6 +75,10 @@ export interface CognitiveRelationshipDto {
 }
 
 export interface CognitiveRequestDto {
+  worldSeed?: string;
+  populationSeed?: string;
+  generationVersion?: number;
+  contextFingerprint?: string;
   actor: string;
   minute: number;
   trigger: CognitiveTrigger;
@@ -146,6 +150,25 @@ export function parseCognitiveRequest(
     || !COGNITIVE_TRIGGERS.includes(candidate.trigger as CognitiveTrigger)
   ) {
     throw new Error('cognitive request trigger is invalid');
+  }
+
+  // Legacy read-only snapshots remain inspectable. Live submission requires
+  // the complete Core-issued identity and fingerprint, never rounded Numbers.
+  const hasReceipt = ['worldSeed', 'populationSeed', 'generationVersion', 'contextFingerprint']
+    .some((key) => candidate[key] !== undefined);
+  if (hasReceipt) {
+    for (const key of ['worldSeed', 'populationSeed', 'contextFingerprint']) {
+      const value = candidate[key];
+      if (typeof value !== 'string' || !/^[1-9][0-9]{0,19}$/.test(value)
+          || BigInt(value) > 18446744073709551615n) {
+        throw new Error('cognitive request receipt identity is invalid');
+      }
+    }
+    if (!Number.isSafeInteger(candidate.generationVersion)
+        || Number(candidate.generationVersion) < 1
+        || Number(candidate.generationVersion) > 4294967295) {
+      throw new Error('cognitive request generation is invalid');
+    }
   }
 
   const needs = finiteNumericRecord(candidate.needs, 'cognitive request needs');
@@ -227,6 +250,12 @@ export function parseCognitiveRequest(
   }
 
   return {
+    ...(hasReceipt ? {
+      worldSeed: candidate.worldSeed as string,
+      populationSeed: candidate.populationSeed as string,
+      generationVersion: candidate.generationVersion as number,
+      contextFingerprint: candidate.contextFingerprint as string,
+    } : {}),
     actor: candidate.actor,
     minute: candidate.minute,
     trigger: candidate.trigger as CognitiveTrigger,

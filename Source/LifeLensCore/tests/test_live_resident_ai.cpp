@@ -8,6 +8,15 @@
 
 using namespace lifelens;
 
+static std::string receipt(WebClientBridge& bridge,const std::string& actor){
+    const auto json=bridge.cognitiveRequestJson(actor,"Reflection");
+    const std::string key="\"contextFingerprint\":\"";
+    const auto begin=json.find(key);
+    if(begin==std::string::npos)return {};
+    const auto value=begin+key.size();
+    return json.substr(value,json.find('"',value)-value);
+}
+
 int main()
 {
     // Browser-to-Core submission never accepts invented actors, intents,
@@ -17,24 +26,24 @@ int main()
     const std::string actor="1";
     const std::string worldSeed="874213954";
     assert(!bridge.submitLocalCognitiveProposal(
-        actor,480,"another-world","ImproveFoodSecurity",0.75,"","hash"));
+        actor,480,"another-world","ImproveFoodSecurity",0.75,"","hash","Reflection",receipt(bridge,actor)));
     assert(!bridge.submitLocalCognitiveProposal(
-        actor,480,worldSeed,"InventFood",0.75,"","hash"));
+        actor,480,worldSeed,"InventFood",0.75,"","hash","Reflection",receipt(bridge,actor)));
     assert(!bridge.submitLocalCognitiveProposal(
-        actor,480,worldSeed,"CooperateWithResident",0.75,"999999","hash"));
+        actor,480,worldSeed,"CooperateWithResident",0.75,"999999","hash","Reflection",receipt(bridge,actor)));
     assert(!bridge.submitLocalCognitiveProposal(
-        actor,480,worldSeed,"ImproveFoodSecurity",2.0,"","hash"));
+        actor,480,worldSeed,"ImproveFoodSecurity",2.0,"","hash","Reflection",receipt(bridge,actor)));
     assert(bridge.submitLocalCognitiveProposal(
-        actor,480,worldSeed,"ImproveFoodSecurity",0.75,"","hash"));
+        actor,480,worldSeed,"ImproveFoodSecurity",0.75,"","hash","Reflection",receipt(bridge,actor)));
     assert(!bridge.submitLocalCognitiveProposal(
-        actor,480,worldSeed,"ImproveFoodSecurity",0.75,"","hash"));
+        actor,480,worldSeed,"ImproveFoodSecurity",0.75,"","hash","Reflection",receipt(bridge,actor)));
 
     bridge.runMinutes(97);
     assert(!bridge.submitLocalCognitiveProposal(
-        actor,480,worldSeed,"ImproveWaterSecurity",0.75,"","hash"));
+        actor,480,worldSeed,"ImproveWaterSecurity",0.75,"","hash","Reflection",receipt(bridge,actor)));
     WebClientBridge empty;
     assert(!empty.submitLocalCognitiveProposal(
-        actor,480,worldSeed,"ImproveFoodSecurity",0.75,"","hash"));
+        actor,480,worldSeed,"ImproveFoodSecurity",0.75,"","hash","Reflection",receipt(bridge,actor)));
 
     // AI can choose WHOM to approach in real Core planning, despite stronger
     // optional competitors. The two simulations differ by one accepted,

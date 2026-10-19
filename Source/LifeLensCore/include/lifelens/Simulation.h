@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
+#include <deque>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -157,7 +158,7 @@ public:
            || requiresDirectCare(character->lifeStage)){
             return CognitiveRequest{};
         }
-        return buildCognitiveRequest(
+        CognitiveRequest request=buildCognitiveRequest(
             *character,
             relationships_,
             world_.minute,
@@ -166,7 +167,17 @@ public:
             DefaultCognitiveMemoryContextLimit,
             DefaultCognitiveBeliefContextLimit,
             DefaultCognitiveRelationshipContextLimit);
+        request.worldSeed=world_.seed;
+        request.populationSeed=world_.populationSeed;
+        request.generationVersion=world_.generationVersion;
+        return request;
     }
+    // Model transport receipt; does not mutate simulation/RNG or saved truth.
+    CognitiveRequest issueCognitiveRequest(CharacterId id,CognitiveTriggerKind trigger);
+    bool acceptObservedCognitiveProposal(
+        CharacterId actor,int observedMinute,std::uint64_t observedFingerprint,
+        CognitiveTriggerKind trigger,const CognitiveProposal& proposal,
+        const std::string& backendIdentity,const std::string& rationaleDigest);
     MigrationPressureObservation observeResidentMigrationPressure(
         CharacterId id) const {
         const auto runtimeIt=runtime_.find(id);
@@ -314,6 +325,20 @@ private:
     BirthBook births_;
     SocialKnowledgeBook socialKnowledge_;
     std::vector<AcceptedCognitiveDecision> acceptedCognitiveDecisions_;
+    struct CognitiveRequestReceipt {
+        CharacterId actor=0;
+        WorldSeed worldSeed=0;
+        PopulationSeed populationSeed=0;
+        WorldGenerationVersion generationVersion=0;
+        int minute=0;
+        CognitiveTriggerKind trigger=CognitiveTriggerKind::None;
+        std::uint64_t fingerprint=0;
+    };
+    std::deque<CognitiveRequestReceipt> issuedCognitiveRequests_;
+    bool recordAcceptedCognitiveProposal(
+        const CognitiveRequest& current,const CognitiveProposal& proposal,
+        const std::string& backendIdentity,const std::string& rationaleDigest,
+        int observedMinute,std::uint64_t observedFingerprint);
     std::unordered_map<CharacterId,Runtime> runtime_;
     // Health fatalities are computed and consumed inside the same daily Core
     // transition. They are runtime transition state, never a second save truth.

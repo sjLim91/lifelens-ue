@@ -24,9 +24,14 @@ struct AcceptedCognitiveDecision {
     double priority=0.0;
     CharacterId target=0;
     std::string rationaleDigest;
+    // The model may answer a previously issued Core view within a bounded
+    // async window. Never relabel that old view as current firsthand context.
+    int observedMinute=-1;
+    std::uint64_t observedContextFingerprint=0;
 };
 
 inline constexpr std::size_t MaxAcceptedCognitiveDecisions=1024;
+inline constexpr int ObservedCognitiveRequestMaxAgeMinutes=96;
 inline constexpr std::size_t MaxCognitionIdentityBytes=128;
 
 // Stable, platform-independent stream of IEEE754 binary64 values and bytes.
@@ -49,6 +54,9 @@ inline std::uint64_t cognitiveRequestFingerprint(const CognitiveRequest& r)
         for(unsigned char c:s) byte(c);
     };
     integer(r.actor);
+    integer(r.worldSeed);
+    integer(r.populationSeed);
+    integer(r.generationVersion);
     integer(static_cast<std::uint64_t>(r.minute));
     integer(static_cast<std::uint64_t>(r.trigger));
     for(double v:{r.needs.hunger,r.needs.thirst,r.needs.sleep,
@@ -108,6 +116,11 @@ inline bool validAcceptedCognitiveDecision(
        || d.rationaleDigest.empty()
        || d.rationaleDigest.size()>MaxCognitionIdentityBytes)
         return false;
+    if(d.observedMinute!=-1 ||d.observedContextFingerprint!=0){
+        if(d.observedMinute<0 ||d.observedMinute>d.minute
+           ||d.minute-d.observedMinute>ObservedCognitiveRequestMaxAgeMinutes
+           ||d.observedContextFingerprint==0) return false;
+    }
     switch(d.trigger){
         case CognitiveTriggerKind::RepeatedFailure:
         case CognitiveTriggerKind::ResourceScarcity:

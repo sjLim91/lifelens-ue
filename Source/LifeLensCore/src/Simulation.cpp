@@ -233,40 +233,109 @@ Simulation::Simulation(
     SimulationRuleset ruleset)
     :ruleset_(ruleset),world_(worldSeed,populationSeed,generationVersion){}
 
-bool Simulation::acceptCognitiveProposal(
-    const CognitiveRequest& request,
-    const CognitiveProposal& proposal,
-    const std::string& backendIdentity,
-    const std::string& rationaleDigest)
+bool Simulation::recordAcceptedCognitiveProposal(
+    const CognitiveRequest& current,const CognitiveProposal& proposal,
+    const std::string& backendIdentity,const std::string& rationaleDigest,
+    int observedMinute,std::uint64_t observedFingerprint)
 {
-    // The caller cannot re-submit a previously valid request after the world
-    // has changed, or manufacture its own Need/Memory/Belief context.
-    if(request.actor==0 || request.minute!=world_.minute
-       || request.trigger==CognitiveTriggerKind::None)
-        return false;
-    const CognitiveRequest current=
-        observeCognitiveRequest(request.actor,request.trigger);
-    if(current.actor!=request.actor
-       || cognitiveRequestFingerprint(request)
-            !=cognitiveRequestFingerprint(current)
-       || !validateCognitiveProposal(world_,current,proposal).accepted)
-        return false;
+    if(!validateCognitiveProposal(world_,current,proposal).accepted)return false;
     AcceptedCognitiveDecision event;
-    event.actor=request.actor;
+    event.actor=current.actor;
     event.minute=world_.minute;
-    event.trigger=request.trigger;
+    event.trigger=current.trigger;
     event.contextFingerprint=cognitiveRequestFingerprint(current);
     event.backendIdentity=backendIdentity;
     event.intent=proposal.intent;
     event.priority=proposal.priority;
     event.target=proposal.targetResident;
     event.rationaleDigest=rationaleDigest;
-    return appendAcceptedCognitiveDecision(
+    // Synchronous receipts keep the byte-exact original v1 journal encoding.
+    if(observedMinute!=current.minute
+       ||observedFingerprint!=event.contextFingerprint){
+        event.observedMinute=observedMinute;
+        event.observedContextFingerprint=observedFingerprint;
+    }
+    const bool accepted=appendAcceptedCognitiveDecision(
         acceptedCognitiveDecisions_,event,world_);
+    if(accepted){
+        issuedCognitiveRequests_.erase(std::remove_if(
+            issuedCognitiveRequests_.begin(),issuedCognitiveRequests_.end(),
+            [&](const CognitiveRequestReceipt& receipt){
+                return receipt.actor==current.actor
+                    &&receipt.minute==observedMinute
+                    &&receipt.fingerprint==observedFingerprint;
+            }),issuedCognitiveRequests_.end());
+    }
+    return accepted;
+}
+
+bool Simulation::acceptCognitiveProposal(
+    const CognitiveRequest& request,const CognitiveProposal& proposal,
+    const std::string& backendIdentity,const std::string& rationaleDigest)
+{
+    if(request.actor==0 ||request.minute!=world_.minute
+       ||request.trigger==CognitiveTriggerKind::None)return false;
+    const auto current=observeCognitiveRequest(request.actor,request.trigger);
+    if(current.actor!=request.actor
+       ||cognitiveRequestFingerprint(request)!=cognitiveRequestFingerprint(current))
+        return false;
+    return recordAcceptedCognitiveProposal(current,proposal,backendIdentity,
+        rationaleDigest,request.minute,cognitiveRequestFingerprint(request));
+}
+
+CognitiveRequest Simulation::issueCognitiveRequest(
+    CharacterId actor,CognitiveTriggerKind trigger)
+{
+    const auto request=observeCognitiveRequest(actor,trigger);
+    if(request.actor==0)return request;
+    const auto fingerprint=cognitiveRequestFingerprint(request);
+    for(const auto& accepted:acceptedCognitiveDecisions_){
+        if(accepted.actor!=actor)continue;
+        if((accepted.minute==request.minute
+                &&accepted.contextFingerprint==fingerprint)
+           ||(accepted.observedMinute==request.minute
+                &&accepted.observedContextFingerprint==fingerprint))
+            return request; // consumed receipts cannot be reissued
+    }
+    for(const auto& receipt:issuedCognitiveRequests_)
+        if(receipt.actor==actor &&receipt.minute==request.minute
+           &&receipt.trigger==trigger &&receipt.fingerprint==fingerprint)
+            return request;
+    issuedCognitiveRequests_.push_back({
+        actor,world_.seed,world_.populationSeed,world_.generationVersion,
+        request.minute,trigger,fingerprint});
+    while(issuedCognitiveRequests_.size()>64)
+        issuedCognitiveRequests_.pop_front();
+    return request;
+}
+
+bool Simulation::acceptObservedCognitiveProposal(
+    CharacterId actor,int observedMinute,std::uint64_t observedFingerprint,
+    CognitiveTriggerKind trigger,const CognitiveProposal& proposal,
+    const std::string& backendIdentity,const std::string& rationaleDigest)
+{
+    if(actor==0 ||observedMinute<0 ||observedMinute>world_.minute
+       ||world_.minute-observedMinute>ObservedCognitiveRequestMaxAgeMinutes
+       ||observedFingerprint==0)return false;
+    bool issued=false;
+    for(const auto& receipt:issuedCognitiveRequests_)
+        if(receipt.actor==actor &&receipt.minute==observedMinute
+           &&receipt.fingerprint==observedFingerprint &&receipt.trigger==trigger
+           &&receipt.worldSeed==world_.seed
+           &&receipt.populationSeed==world_.populationSeed
+           &&receipt.generationVersion==world_.generationVersion){
+            issued=true;break;
+        }
+    if(!issued)return false;
+    const auto current=observeCognitiveRequest(actor,trigger);
+    if(current.actor!=actor)return false;
+    return recordAcceptedCognitiveProposal(current,proposal,backendIdentity,
+        rationaleDigest,observedMinute,observedFingerprint);
 }
 
 void Simulation::setupDemo(){
     acceptedCognitiveDecisions_.clear();
+    issuedCognitiveRequests_.clear();
     nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
     Character c; c.id=1; c.name="DevResident"; c.personality=Personality::generate(world_.rng);
@@ -286,6 +355,7 @@ void Simulation::setupDemo(){
 
 void Simulation::setupSocialDemo(){
     acceptedCognitiveDecisions_.clear();
+    issuedCognitiveRequests_.clear();
     nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
 
@@ -327,6 +397,7 @@ void Simulation::setupSocialDemo(){
 
 void Simulation::setupNewGame(){
     acceptedCognitiveDecisions_.clear();
+    issuedCognitiveRequests_.clear();
     nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear();
     world_.objects.clear();
