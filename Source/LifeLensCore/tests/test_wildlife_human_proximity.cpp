@@ -73,6 +73,77 @@ int main()
     // No false deer kill / meat gain because the wild tiger fled a person.
     assert(day.animals.size()==2);
 
+    // Hungry v4 predators can take a REAL single-cell risk toward people;
+    // satiated predators still retreat. The deterministic pursuit cannot
+    // cross a water cell, leave its authoritative chunk or alter humans.
+    {
+        auto hungry=testHabitat();
+        hungry.animals.resize(1);
+        auto& hunter=hungry.animals.front();
+        hunter.species=WildlifeSpecies::Tiger;
+        hunter.hunger01=0.84;
+        const auto hydro=deriveHydrologyFacts(
+            makeWorldGenesisIdentity(hungry.worldSeed,0,4),
+            hungry.habitat.coord);
+        GridPos start{},human{};
+        bool found=false;
+        for(int x=6;x<25 &&!found;++x)
+            for(int y=6;y<25 &&!found;++y){
+                const GridPos a{x,y},step{x+1,y},b{x+2,y};
+                if(surfaceWaterGroundContainsGrid(hydro,a)
+                   ||surfaceWaterGroundContainsGrid(hydro,step)
+                   ||surfaceWaterGroundContainsGrid(hydro,b))
+                    continue;
+                start=a;human=b;found=true;
+            }
+        assert(found);
+        hunter.position=start;
+        const std::vector<GridPos> people={human};
+        assert(wildlifeBehavior(hungry,hunter,people)
+            ==WildlifeBehavior::Hunt);
+        auto again=hungry;
+        assert(stepWildlifeHour(hungry,8,people)==1);
+        assert(stepWildlifeHour(again,8,people)==1);
+        const auto& moved=hungry.animals.front();
+        assert(moved.position.x==start.x+1);
+        assert(moved.position.y==start.y);
+        assert(sameGridPos(moved.position,again.animals.front().position));
+        assert(wildlifeNearestResidentDistance(moved.position,people)==1);
+        // No extra attack can be manufactured by a movement step itself.
+        // A baseline hungry-but-not-starving tiger remains wary.
+        auto wary=testHabitat();
+        wary.animals.resize(1);
+        wary.animals.front().position=start;
+        wary.animals.front().hunger01=0.80;
+        assert(wildlifeBehavior(wary,wary.animals.front(),people)
+            ==WildlifeBehavior::Flee);
+        assert(stepWildlifeHour(wary,8,people)==1);
+        assert(wildlifeNearestResidentDistance(
+            wary.animals.front().position,people)>2);
+        // Original v3 saved worlds retain their historical avoidance.
+        auto legacy=hungry;
+        legacy.generationVersion=3;
+        legacy.animals.front().position=start;
+        assert(wildlifeBehavior(legacy,legacy.animals.front(),people)
+            ==WildlifeBehavior::Flee);
+        assert(stepWildlifeHour(legacy,9,people)==1);
+        assert(wildlifeNearestResidentDistance(
+            legacy.animals.front().position,people)>2);
+        // Wolves use a distinct drive threshold; herbivores never pursue.
+        auto wolves=again;
+        wolves.animals.front().species=WildlifeSpecies::Wolf;
+        wolves.animals.front().position=start;
+        wolves.animals.front().hunger01=0.80;
+        assert(stepWildlifeHour(wolves,9,people)==1);
+        assert(wildlifeNearestResidentDistance(
+            wolves.animals.front().position,people)==1);
+        wolves.animals.front().species=WildlifeSpecies::Deer;
+        wolves.animals.front().position=start;
+        wolves.animals.front().hunger01=1.0;
+        assert(!wildlifeHungryHumanPursuitReady(
+            wolves,wolves.animals.front(),people));
+    }
+
     // The original isolated wildlife contract remains exactly unchanged
     // when there is no human runtime data (legacy/standalone fixtures).
     auto original=testHabitat(),emptyInput=testHabitat();
