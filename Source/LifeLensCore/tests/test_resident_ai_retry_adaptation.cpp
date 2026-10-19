@@ -133,6 +133,71 @@ int main()
     assert(!residentAIHasRecentRepeatedGatherFailure(
         borrowed,MaterialKind::PlantFood,world.minute));
 
+    // Core source memory distinguishes a repeatedly failing REAL node A
+    // from a different living source B of the same material. A is still
+    // stocked and ranked first, so simple material-based retry guards would
+    // keep selecting A (or needlessly explore), instead of choosing B.
+    World sources(606002);
+    sources.minute=484;
+    sources.resourceNodes.clear();
+    ResourceNode sourceA=food;
+    sourceA.id=301;
+    sources.resourceNodes.push_back(sourceA);
+    ResourceNode sourceB=food;
+    sourceB.id=302;
+    sourceB.pos={camp.x+4,camp.y};
+    sources.resourceNodes.push_back(sourceB);
+    Character searching=resident;
+    searching.memory=MemoryState{};
+    searching.beliefs=BeliefState{};
+    CivilizationUtilityDecision attemptedA;
+    attemptedA.intent=CivilizationIntent::Gather;
+    attemptedA.material=MaterialKind::PlantFood;
+    attemptedA.resourceNode=301;
+    for(int minute=481;minute<=483;++minute)
+        rememberCivilizationAttemptOutcome(
+            searching,attemptedA,minute,false,
+            ResidentGatherFailureCause::ResourceAccessUnavailable);
+    AcceptedCognitiveDecision sourceThought=thought;
+    sourceThought.minute=480;
+    const auto ranked=bestGatherDecisionAtPosition(
+        sources,searching,camp,nullptr,MaterialKind::PlantFood);
+    assert(ranked.intent==CivilizationIntent::Gather
+        &&ranked.resourceNode==301);
+    assert(residentAIHasRecentRepeatedGatherFailure(
+        searching,MaterialKind::PlantFood,484));
+    assert(residentAIRecentGatherSourceFailed(
+        searching,MaterialKind::PlantFood,301,480,484));
+    assert(!residentAIRecentGatherSourceFailed(
+        searching,MaterialKind::PlantFood,302,480,484));
+    const auto changedSource=chooseResidentAIExistingCivilizationAffordance(
+        sources,searching,camp,sourceThought);
+    assert(changedSource
+        &&changedSource->intent==CivilizationIntent::Gather
+        &&changedSource->resourceNode==302);
+    // The next language-model turn cannot erase personal first-hand
+    // failures. A new thought is NOT a new person or a clean memory.
+    auto freshThought=sourceThought;
+    freshThought.minute=484;
+    const auto stillLearned=chooseResidentAIExistingCivilizationAffordance(
+        sources,searching,camp,freshThought);
+    assert(stillLearned
+        &&stillLearned->intent==CivilizationIntent::Gather
+        &&stillLearned->resourceNode==302);
+    assert(sources.resourceNodes[0].quantity==20
+        &&sources.resourceNodes[1].quantity==20);
+    assert(searching.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)==0);
+    // A later VERIFIED success at A makes it eligible again. Do not
+    // freeze an entire source based on historical failures forever.
+    rememberCivilizationAttemptOutcome(searching,attemptedA,484,true);
+    sources.minute=485;
+    const auto restoredSource=chooseResidentAIExistingCivilizationAffordance(
+        sources,searching,camp,sourceThought);
+    assert(restoredSource
+        &&restoredSource->intent==CivilizationIntent::Gather
+        &&restoredSource->resourceNode==301);
+
     // Actual food is STILL present. Core exploration pressure is zero; do
     // not invent a new frontier or block an accessible gather just because
     // prior attempts were bad.
