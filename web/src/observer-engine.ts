@@ -616,6 +616,7 @@ export function startObserverEngine(): () => void {
     clearFastForwardResult: () => observerStore.clearFastForwardResult(),
     moveObserver: move,
     recenterObserver,
+    recoverRendering: () => enterCanvasFailover('화면이 보이지 않아 수동 복구를 요청했습니다.'),
     selectResident,
     selectHumanTrace,
     selectSettlement,
