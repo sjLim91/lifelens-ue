@@ -50,6 +50,8 @@ struct ResidentAIPairedMetrics {
         opportunityProposalsAttempted{};
     std::array<std::uint64_t,CognitiveOpportunityIntentCount>
         opportunityProposalsAccepted{};
+    std::array<std::uint64_t,CognitiveOpportunityIntentCount>
+        opportunityNoEligibleTarget{};
     std::uint64_t civilizationSuccessEvidence=0;
     std::uint64_t civilizationFailureEvidence=0;
     std::uint64_t firsthandCivilizationMemories=0;
@@ -197,6 +199,14 @@ inline bool residentAIProxyProposal(
             }
         }
     }
+    const std::size_t chosenOpportunity=
+        cognitiveOpportunityIndex(proposal.intent);
+    if(cognitiveIntentTargetsResident(proposal.intent)
+       &&proposal.targetResident==0){
+        if(chosenOpportunity<CognitiveOpportunityIntentCount)
+            ++stats.opportunityNoEligibleTarget[chosenOpportunity];
+        return false;
+    }
     if(!residentAIHasAllowedIntent(request,proposal.intent)) return false;
     for(const auto& memory:request.memories){
         if(memory.source==MemorySource::DirectWitness &&memory.witnessed
@@ -304,7 +314,9 @@ inline void appendResidentAIPairedMetricsJson(
         if(i) out<<",";
         out<<"\""<<CognitiveOpportunityIntentNames[i]<<"\":{"
            <<"\"attempted\":"<<m.opportunityProposalsAttempted[i]
-           <<",\"accepted\":"<<m.opportunityProposalsAccepted[i]<<"}";
+           <<",\"accepted\":"<<m.opportunityProposalsAccepted[i]
+           <<",\"noEligibleTarget\":"<<m.opportunityNoEligibleTarget[i]
+           <<"}";
     }
     out<<"}}";
 }
