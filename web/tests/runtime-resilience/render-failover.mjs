@@ -16,13 +16,14 @@ const rendererCode = ts.transpileModule(
 let lastRenderer = null;
 class TestGPU {
   constructor(options) {
+    this.options = options;
     this.domElement = options.canvas;
     this.contextLost = false;
     this.failNextRender = false;
     this.disposed = false;
     lastRenderer = this;
   }
-  setPixelRatio() {}
+  setPixelRatio(value) { this.pixelRatio = value; }
   setSize() {}
   dispose() { this.disposed = true; }
   getContext() { return { isContextLost: () => this.contextLost }; }
@@ -112,6 +113,20 @@ try {
     });
     assert.equal(failures.length, 1, 'Context loss must fail over exactly once');
     renderer.dispose();
+  }
+
+  {
+    // The target Android/phone configuration must not allocate desktop-size
+    // antialiased buffers for every frame, even on a high-DPR display.
+    globalThis.window.devicePixelRatio = 3;
+    globalThis.window.matchMedia = () => ({ matches: true });
+    const c = canvas(), renderer = new WorldRenderer(c);
+    assert.equal(lastRenderer.pixelRatio, 1.35);
+    assert.equal(lastRenderer.options.antialias, false);
+    assert.equal(lastRenderer.options.powerPreference, 'low-power');
+    renderer.dispose();
+    globalThis.window.devicePixelRatio = 1;
+    delete globalThis.window.matchMedia;
   }
 
   const engineSource = ts.transpileModule(
