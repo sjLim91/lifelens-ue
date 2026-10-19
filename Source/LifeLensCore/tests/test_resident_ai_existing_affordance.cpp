@@ -98,8 +98,10 @@ int main()
         world,actor,{0,0},thought));
     actor.alive=true;
     thought.minute=0;
+    world.minute=ResidentAgencyGoalHorizonMinutes+1;
     assert(!chooseResidentAIExistingCivilizationAffordance(
         world,actor,{0,0},thought));
+    world.minute=480;
 
     // A water request cannot harvest water without a free vessel; if the
     // resident already knows the SimpleContainer craft and holds real clay,
@@ -204,6 +206,25 @@ int main()
     assert(nowGatherWater->material==MaterialKind::Water);
     assert(nowGatherWater->resourceNode==waterSupply.id);
     assert(withClay.resourceNodes.front().quantity==20);
+
+    // One accepted strategy persists across many physical activity slots.
+    // Real clay -> real known recipe -> actual transport vessel -> real water.
+    // No additional model turn, imaginary material, or inventory mutation.
+    World later=withClay;
+    later.minute=1200; // 12 hours after the same personal thought
+    const auto continuedCraft=chooseResidentAIExistingCivilizationAffordance(
+        later,withIngredients,waterPosition,waterThought);
+    assert(continuedCraft &&continuedCraft->intent==CivilizationIntent::Craft);
+    assert(continuedCraft->technique==TechniqueId::SimpleContainer);
+    const auto continuedWater=chooseResidentAIExistingCivilizationAffordance(
+        later,withActualVessel,waterPosition,waterThought);
+    assert(continuedWater &&continuedWater->intent==CivilizationIntent::Gather);
+    assert(continuedWater->material==MaterialKind::Water);
+    assert(later.resourceNodes.front().quantity==20);
+    // Stale cognition never remains a perpetual command.
+    later.minute=waterThought.minute+ResidentAgencyGoalHorizonMinutes+1;
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        later,withActualVessel,waterPosition,waterThought));
 
     // A four-stage Core-only dependency chain also works when the
     // resident has NOT learned to craft a water vessel yet:
