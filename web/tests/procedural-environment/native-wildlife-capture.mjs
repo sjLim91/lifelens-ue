@@ -18,7 +18,16 @@ try{
   const pair=[];
   for(const baseline of [true,false]){
    await page.goto(`${base}/tests/procedural-environment/native-wildlife.html?species=${species}&baseline=${baseline?1:0}`);
-   await page.waitForFunction(()=>!!window.nativeWildlifeReview,{},{timeout:30000});
+   // A fixture must actually evaluate its source before any animal render
+   // assertion. Surface JS/import-map/HTTP errors instead of an opaque timeout.
+   try{
+    await page.waitForFunction(()=>!!window.nativeWildlifeReview,{},{timeout:30000});
+   }catch(error){
+    const status=await page.evaluate(()=>document.querySelector('#status')?.textContent).catch(()=>null);
+    throw Error('Native wildlife fixture initialization failed for '
+      +species+' ('+(baseline?'procedural':'imported')+'): '
+      +JSON.stringify({status,errors})+'; '+String(error));
+   }
    // CI software WebGL decodes the signed, original skinned assets under
    // shared CPU contention. A 30s threshold produced an intermittent false
    // negative even though the fixture and local GLBs were unchanged. Allow
