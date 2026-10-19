@@ -10,6 +10,8 @@ import type { Resident, WorldOverview } from '../runtime/core-types';
 
 // One shared free-local model. Each resident gets a separate, bounded
 // Core-authored personality/Need/memory/belief/relationship context.
+export const BROWSER_MODEL_RETRY_MS = 5 * 60 * 1000;
+
 export const LIVE_AI_BUDGET = Object.freeze({
   maxConcurrent: 1,
   maxQueued: 0,
@@ -208,13 +210,17 @@ export class ResidentAIController {
   private lastMinute = -1;
   private disposed = false;
   private automaticallyRunning = false;
-  private browserModelAttempted = false;
+  private lastBrowserModelAttempt = -Infinity;
   private browserModelLoading = false;
   private lastAutoDiscovery = -Infinity;
   private autoDiscoveryAbort: AbortController | null = null;
   private autoDiscoveryGeneration = 0;
 
-  constructor(private readonly now: () => number = () => Date.now()) {}
+  constructor(
+    private readonly now: () => number = () => Date.now(),
+    private readonly browserReasoningFactory:
+      () => Promise<CognitiveProvider | null> = createBrowserResidentCognition,
+  ) {}
   getSnapshot = (): ResidentAIState => this.state;
   getAuditReport = () => this.sessionAudit.snapshot();
   beginAuditSession(): boolean {
@@ -249,7 +255,7 @@ export class ResidentAIController {
     this.autoDiscoveryAbort?.abort();
     this.autoDiscoveryAbort = null;
     this.autoDiscoveryGeneration += 1;
-    this.browserModelAttempted = false;
+    this.lastBrowserModelAttempt = -Infinity;
     this.browserModelLoading = false;
     this.resetWorld();
     this.source = source;
@@ -300,15 +306,24 @@ export class ResidentAIController {
   }
   private async prepareBrowserReasoning(): Promise<void> {
     if (!this.automaticallyRunning || this.disposed || !this.source
-      || this.scheduler || this.browserModelAttempted) return;
-    this.browserModelAttempted = true;
+      || this.scheduler || this.browserModelLoading
+      || this.now() - this.lastBrowserModelAttempt < BROWSER_MODEL_RETRY_MS)
+      return;
+    // A transient GPU/weight/network error cannot permanently disable the
+    // resident's single reasoning stream. Retry only on subsequent automatic
+    // discovery cycles with a five-minute cooldown; no paid/remote fallback.
+    this.lastBrowserModelAttempt = this.now();
     this.browserModelLoading = true;
     const source = this.source;
+    const generation = this.autoDiscoveryGeneration;
     this.update({ discovering: true });
     try {
-      const provider = await createBrowserResidentCognition();
+      const provider = await this.browserReasoningFactory();
+      // A previous asynchronous download cannot install a model into a
+      // replaced Core/runtime attachment, even if it finishes much later.
       if (provider && !this.disposed && this.automaticallyRunning
-        && this.source === source && !this.scheduler) {
+        && this.source === source && this.autoDiscoveryGeneration === generation
+        && !this.scheduler) {
         this.setProvider(provider);
         this.update({ configuration: {
           baseUrl: 'browser-webgpu', model: BUILTIN_RESIDENT_MODEL,
@@ -317,9 +332,11 @@ export class ResidentAIController {
     } catch {
       // Hardware/weight failures cannot stop physical resident agency.
     } finally {
-      this.browserModelLoading = false;
-      if (!this.autoDiscoveryAbort)
-        this.update({ discovering: false });
+      if (this.source === source && this.autoDiscoveryGeneration === generation){
+        this.browserModelLoading = false;
+        if (!this.autoDiscoveryAbort)
+          this.update({ discovering: false });
+      }
     }
   }
   configure(baseUrl: string, model: string): boolean {
@@ -386,7 +403,7 @@ export class ResidentAIController {
   dispose(): void {
     this.disposed = true;
     this.automaticallyRunning = false;
-    this.browserModelAttempted = false;
+    this.lastBrowserModelAttempt = -Infinity;
     this.autoDiscoveryAbort?.abort();
     this.autoDiscoveryAbort = null;
     this.autoDiscoveryGeneration += 1;

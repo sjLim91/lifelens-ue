@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { source } from './compile.mjs';
 
 const { ResidentAIController, LIVE_AI_BUDGET, liveActionableCognitiveRequest,
-  residentAIObservedTrigger, residentAIExecutionBudget } =
+  residentAIObservedTrigger, residentAIExecutionBudget, BROWSER_MODEL_RETRY_MS } =
   await source('cognition/live-resident-ai.ts');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -20,7 +20,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(native.timeoutMs,LIVE_AI_BUDGET.timeoutMs);
 }
 
-function fixture(provider) {
+function fixture(provider, browserReasoningFactory) {
   let wall = 100;
   const world = {
     worldSeed: '781', populationSeed: '120', generationVersion: 4,
@@ -60,7 +60,7 @@ function fixture(provider) {
       return seed === world.worldSeed;
     },
   };
-  const controller = new ResidentAIController(() => wall);
+  const controller = new ResidentAIController(() => wall, browserReasoningFactory);
   controller.attach(runtime);
   if (provider) controller.setProvider(provider);
   return {
@@ -621,6 +621,76 @@ const provider = {
       'auto-started resident must reason without a manual start button');
     assert.equal(f.submitted[0].proposal.actor,'1');
     assert(seen.every(x=>x.address.includes('127.0.0.1')));
+    f.controller.dispose();
+  } finally {
+    globalThis.fetch=previousFetch;
+  }
+}
+
+{
+  // An initial mobile GPU or cached-model failure must not permanently
+  // strand the single resident mind in 'waiting'. Recovery is automatic,
+  // bounded and does not invent local or paid inference.
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw Error('native model absent'); };
+  try {
+    let loads = 0;
+    const f = fixture(undefined, async () => {
+      loads += 1;
+      return loads === 1 ? null : provider;
+    });
+    f.controller.startAutomatically();
+    await tick();
+    await tick();
+    assert.equal(loads,1,'one initial on-device load attempt');
+    assert.equal(f.controller.getSnapshot().enabled,true);
+    assert.equal(f.controller.getSnapshot().configuration,null);
+    for(let i=0;i<13;++i) f.advance();
+    f.controller.observe(f.world,f.residents);
+    await tick();
+    await tick();
+    assert.equal(loads,1,'no aggressive download retry after one minute');
+    for(let i=0;i<48;++i) f.advance();
+    f.controller.observe(f.world,f.residents);
+    await tick();
+    await tick();
+    assert(BROWSER_MODEL_RETRY_MS>=300000);
+    assert.equal(loads,2,'recover after the bounded cooldown');
+    assert.equal(f.controller.getSnapshot().configuration?.model,
+      'Qwen2.5-0.5B-Instruct-q4f16_1-MLC');
+    assert.equal(f.controller.getSnapshot().automatic,true);
+    f.controller.observe(f.world,f.residents);
+    await tick();
+    assert.equal(f.submitted.length,1,
+      'same resident automatically uses recovered language reasoning');
+    f.controller.dispose();
+  } finally {
+    globalThis.fetch=previousFetch;
+  }
+}
+
+{
+  // A stale, long-running WebGPU load cannot attach its old provider
+  // after a new Core source replaces the previous attachment.
+  const previousFetch=globalThis.fetch;
+  globalThis.fetch=async () => { throw Error('native model absent'); };
+  try {
+    const pending=[];
+    const f=fixture(undefined, () => new Promise(resolve => pending.push(resolve)));
+    f.controller.startAutomatically();
+    await tick();
+    await tick();
+    assert.equal(pending.length,1);
+    f.controller.attach(f.runtime);
+    await tick();
+    await tick();
+    assert.equal(pending.length,2);
+    pending[0](provider);
+    await tick();
+    assert.equal(f.controller.getSnapshot().configuration,null,
+      'old world WebGPU completion cannot install stale model');
+    pending[1](null);
+    await tick();
     f.controller.dispose();
   } finally {
     globalThis.fetch=previousFetch;
