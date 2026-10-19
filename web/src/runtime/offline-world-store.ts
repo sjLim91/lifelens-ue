@@ -41,8 +41,10 @@ function valid(record: unknown): record is PersistedWorld {
     && value.schemaVersion === 1
     && typeof value.worldSeed === 'string'
     && /^\d+$/.test(value.worldSeed)
+    && typeof value.minute === 'number'
     && Number.isSafeInteger(value.minute)
-    && (value.minute ?? -1) >= 0
+    && value.minute >= 0
+    && typeof value.savedAtWallMs === 'number'
     && Number.isSafeInteger(value.savedAtWallMs)
     && (value.savedAtWallMs ?? 0) > 0
     && typeof value.snapshotBase64 === 'string'
