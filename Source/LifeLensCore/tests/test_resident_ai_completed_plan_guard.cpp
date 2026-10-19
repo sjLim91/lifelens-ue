@@ -60,6 +60,32 @@ int main()
     rememberCivilizationAttemptOutcome(failed,food,502,false);
     assert(residentAIPlanAlreadyAttempted(failed,failedThought,food,510));
 
+    // The memory identifies a real source: repeating the SAME exhausted
+    // source is blocked, while a separate real node is NOT the old attempt.
+    Character sourced;
+    sourced.id=24;
+    sourced.alive=true;
+    CivilizationUtilityDecision oldSource=food;
+    oldSource.resourceNode=101;
+    CivilizationUtilityDecision replacement=food;
+    replacement.resourceNode=202;
+    AcceptedCognitiveDecision sourceThought=thought;
+    sourceThought.actor=24;
+    rememberCivilizationAttemptOutcome(
+        sourced,oldSource,503,false,
+        ResidentGatherFailureCause::SourceExhausted);
+    assert(residentAIPlanAlreadyAttempted(
+        sourced,sourceThought,oldSource,504));
+    assert(!residentAIPlanAlreadyAttempted(
+        sourced,sourceThought,replacement,504));
+    // A legacy save with no source identity must remain fail-closed.
+    Character legacy=sourced;
+    for(auto& m:legacy.memory.entries)
+        if(m.tags.size()==3 &&m.tags[1]=="Civilization:Gather:PlantFood")
+            m.where="내가 직접 시도한 행동";
+    assert(residentAIPlanAlreadyAttempted(
+        legacy,sourceThought,replacement,504));
+
     // Snapshot restore preserves the owner/provenance and matches the exact
     // execution key; no new journal or snapshot extension is necessary.
     Simulation sim(8842);
