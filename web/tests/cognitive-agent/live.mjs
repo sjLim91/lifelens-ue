@@ -497,6 +497,73 @@ const provider = {
   f.controller.dispose();
 }
 
+{
+  // The SAME AI reflects when TWO independently witnessed executions of
+  // the same real Core action fail, rather than waiting for a scripted NPC.
+  const failure = {
+    who:'1', source:'DirectWitness', witnessed:true, minute:478,
+    recallScore:.6, confidence:1, importance:.6,
+    emotionValence:-.4,emotionIntensity:.7,
+    what:'실제 문명 행동 Civilization:Gather:PlantFood 수행을 시도했지만 실패했다 (직접 확인한 원인: access-unavailable)',
+    where:'Core 직접 행동',
+    tags:['action_experience','Civilization:Gather:PlantFood','failure'],
+  };
+  const second={...failure,minute:479};
+  const base={actor:'1',minute:480,trigger:'Reflection',
+    allowedIntents:['ExploreOpportunity','ImproveFoodSecurity'],
+    memories:[failure,second]};
+  assert.equal(residentAIObservedTrigger(base),'RepeatedFailure');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[second,failure],
+  }),'RepeatedFailure','memory insertion order does not change evidence');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[failure,{...second,minute:478}],
+  }),'Reflection','duplicate same tick is not two separate attempts');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[failure,{...second,source:'ToldByOther',witnessed:false}],
+  }),'Reflection','secondhand news is not firsthand failure');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[failure,{...second,who:'2'}],
+  }),'Reflection','other residents cannot rewrite this person\'s experience');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[failure,second,{
+      ...second,minute:480,tags:[
+        'action_experience','Civilization:Gather:PlantFood','success',
+      ],what:'실제 문명 행동 Civilization:Gather:PlantFood 수행에 성공했다',
+    }],
+  }),'Reflection','latest real success resets failure streak');
+  assert.equal(residentAIObservedTrigger({...base,minute:2000}),
+    'Reflection','one-day-old attempts expire');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[failure,second,{...second,minute:480,
+      what:'실제 문명 행동 Civilization:Gather:PlantFood 수행을 시도했지만 실패했다 (직접 확인한 원인: source-removed)',
+    }],
+  }),'ResourceScarcity','physically removed source is stronger direct evidence');
+
+  const triggers=[];
+  const f=fixture({name:'learn-from-real-failure',reason:async request=>{
+    triggers.push(request.trigger);
+    return {actor:request.actor,intent:'ExploreOpportunity',priority:.8,
+      targetResident:null,rationale:'직접 실패한 경로 대신 새 접근을 찾는다'};
+  }});
+  const read=f.runtime.cognitiveRequest;
+  f.runtime.cognitiveRequest=(actor,trigger)=>{
+    const context=read(actor);
+    context.trigger=trigger;
+    context.allowedIntents=['ImproveFoodSecurity','ExploreOpportunity'];
+    context.memories=[failure,second];
+    return context;
+  };
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world,f.residents);
+  await tick();
+  assert.deepEqual(triggers,['RepeatedFailure']);
+  assert.equal(f.contexts.length,2,'Core must re-authorize factual reflection');
+  assert.equal(f.submitted[0].request.trigger,'RepeatedFailure');
+  assert.equal(f.submitted[0].proposal.intent,'ExploreOpportunity');
+  f.controller.dispose();
+}
+
 // Production auto-start must require no human click or manual model name.
 // A free localhost model may appear later and joins the SAME resident agency.
 {
