@@ -5,8 +5,88 @@
 
 using namespace lifelens;
 
+// Deliberately simulate an observed token vanishing without supplying a
+// completion event. The audit must never call this success or failure.
+static void verifyStrictTokenProvenance()
+{
+    Simulation sim(525252);
+    sim.setupNewGame();
+    const auto& world=sim.world();
+    assert(world.characters.size()>=3);
+    const auto actor=world.characters[0].id;
+    const auto target=world.characters[1].id;
+    const auto other=world.characters[2].id;
+    AcceptedCognitiveDecision chosen;
+    chosen.actor=actor;
+    chosen.target=target;
+    chosen.intent=CognitiveIntentKind::TeachKnowledge;
+    chosen.trigger=CognitiveTriggerKind::Reflection;
+    chosen.minute=world.minute;
+    chosen.contextFingerprint=123456;
+    chosen.priority=0.9;
+    chosen.backendIdentity="test-audit";
+    chosen.rationaleDigest="test-evidence";
+    std::vector<AcceptedCognitiveDecision> journal;
+    assert(appendAcceptedCognitiveDecision(journal,chosen,world));
+
+    PendingContextActionObservation teaching;
+    teaching.actor=actor;
+    teaching.active=true;
+    teaching.token=913;
+    teaching.issuedMinute=world.minute;
+    teaching.kind=ContextActionKind::KnowledgeTeaching;
+    teaching.targetResident=target;
+    assert(opportunityTokenHasMatchingAcceptedThought(
+        world,journal,actor,teaching));
+
+    OpportunityContextLifecycleObserver observer;
+    OpportunityContextLifecycleCounts counts;
+    observer.observe(actor,teaching,world,journal,counts);
+    observer.observe(actor,teaching,world,journal,counts);
+    assert(counts.observedStarts[0]==1);
+    assert(counts.temporalIntentTargetMatches[0]==1);
+    auto unrelated=teaching;
+    unrelated.targetResident=other;
+    assert(!opportunityTokenHasMatchingAcceptedThought(
+        world,journal,actor,unrelated));
+    // No terminal Core evidence: disappearance must remain UNCLASSIFIED.
+    observer.observe(actor,PendingContextActionObservation{},
+        world,journal,counts);
+    assert(counts.noLongerPendingUnclassified[0]==1);
+    assert(counts.replacedByAnotherToken[0]==0);
+
+    auto trade=teaching;
+    trade.kind=ContextActionKind::Trade;
+    trade.token=914;
+    observer.observe(actor,trade,world,journal,counts);
+    assert(counts.observedStarts[2]==1);
+    assert(counts.temporalIntentTargetMatches[2]==0);
+    auto parenting=teaching;
+    parenting.kind=ContextActionKind::Parenting;
+    parenting.token=915;
+    observer.observe(actor,parenting,world,journal,counts);
+    assert(counts.replacedByAnotherToken[2]==1);
+    assert(counts.noLongerPendingUnclassified[2]==1);
+    assert(counts.observedStarts[1]==1);
+    assert(counts.temporalIntentTargetMatches[1]==0);
+    observer.observe(actor,PendingContextActionObservation{},
+        world,journal,counts);
+    assert(counts.noLongerPendingUnclassified[1]==1);
+
+    // A newer unrelated decision supersedes the older target preference.
+    auto newer=chosen;
+    newer.intent=CognitiveIntentKind::ExploreOpportunity;
+    newer.target=0;
+    journal.push_back(newer);
+    assert(!opportunityTokenHasMatchingAcceptedThought(
+        world,journal,actor,teaching));
+    // No attempt to "infer" MigrateHousehold completion from a context
+    // token; household migration has a separate Core pathway.
+}
+
 int main()
 {
+    verifyStrictTokenProvenance();
     const auto first=runResidentAIPairedAudit(4242001,1);
     assert(first.seed==4242001);
     assert(first.days==1);
@@ -65,6 +145,9 @@ int main()
         !=std::string::npos);
     assert(focusedJson.find("\"observedKnowledgeTeachingPendingStarts\":")
         !=std::string::npos);
+    assert(focusedJson.find("\"tokenLifecycle\":")!=std::string::npos);
+    assert(focusedJson.find("\"temporalIntentTargetMatches\":")!=std::string::npos);
+    assert(focusedJson.find("\"noLongerPendingUnclassified\":")!=std::string::npos);
     assert(residentAIPairedReportJson(runResidentAIPairedAudit(
         4242001,1,ResidentAIPairedPolicy::CoreOpportunityFour))
         ==focusedJson);
