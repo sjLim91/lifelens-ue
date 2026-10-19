@@ -401,7 +401,7 @@ inline CognitiveRequest buildCognitiveRequest(
         }
         // With a tiny budget, never displace an unrelated freshest direct
         // event just to display half a pair: that would prove nothing.
-        if(firstFailure!=missing
+        if(firstFailure!=missing &&selected>=2
            &&(selected>=3 ||newest==firstFailure
                ||newest==secondFailure)){
             required.push_back(firstFailure);
