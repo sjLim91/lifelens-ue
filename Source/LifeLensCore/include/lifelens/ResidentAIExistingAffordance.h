@@ -103,6 +103,69 @@ inline bool residentAIHasConfirmedLostGatherSource(
     return confirmed &&latest>=0 &&minute-latest<=1440;
 }
 
+// A witnessed failure at source A remains part of the resident's personal
+// learning across fresh model turns for one day. It is different from a
+// failure to gather material M anywhere. The Core already records actual node provenance on
+// executed gather outcomes. Never infer a failure for an unseen node, and
+// never interpret a resident's proposed words as real source evidence.
+inline bool residentAIRecentGatherSourceFailed(
+    const Character& actor,MaterialKind material,ResourceNodeId node,
+    int thoughtMinute,int nowMinute)
+{
+    if(!actor.alive ||actor.id==0 ||node==0
+       ||thoughtMinute<0 ||nowMinute<thoughtMinute
+       ||material==MaterialKind::Unknown) return false;
+    CivilizationUtilityDecision gather;
+    gather.intent=CivilizationIntent::Gather;
+    gather.material=material;
+    const std::string key=civilizationActionExperienceKey(gather);
+    const std::string location="resource-node:"+std::to_string(node);
+    int latest=-1;
+    bool failed=false;
+    for(const auto& memory:actor.memory.entries){
+        if(memory.source!=MemorySource::DirectWitness
+           ||!memory.witnessed ||memory.sourceCharacter!=actor.id
+           ||memory.minute<0 ||memory.minute>nowMinute
+           ||nowMinute-memory.minute>ResidentAgencyGoalHorizonMinutes
+           ||memory.where!=location ||memory.tags.size()!=3
+           ||memory.tags[0]!="action_experience"
+           ||memory.tags[1]!=key
+           ||(memory.tags[2]!="success" &&memory.tags[2]!="failure"))
+            continue;
+        if(memory.minute>latest){
+            latest=memory.minute;
+            failed=memory.tags[2]=="failure";
+        }else if(memory.minute==latest &&memory.tags[2]=="success"){
+            failed=false;
+        }
+    }
+    return latest>=0 &&failed;
+}
+
+inline bool residentAIHasRecentSourcedGatherFailure(
+    const Character& actor,MaterialKind material,
+    int thoughtMinute,int nowMinute)
+{
+    if(!actor.alive ||actor.id==0
+       ||thoughtMinute<0 ||nowMinute<thoughtMinute
+       ||material==MaterialKind::Unknown) return false;
+    CivilizationUtilityDecision gather;
+    gather.intent=CivilizationIntent::Gather;
+    gather.material=material;
+    const std::string key=civilizationActionExperienceKey(gather);
+    for(const auto& memory:actor.memory.entries)
+        if(memory.source==MemorySource::DirectWitness &&memory.witnessed
+           &&memory.sourceCharacter==actor.id
+           &&memory.minute>=0 &&memory.minute<=nowMinute
+           &&nowMinute-memory.minute<=ResidentAgencyGoalHorizonMinutes
+           &&memory.tags.size()==3
+           &&memory.tags[0]=="action_experience"
+           &&memory.tags[1]==key &&memory.tags[2]=="failure"
+           &&memory.where.rfind("resource-node:",0)==0)
+            return true;
+    return false;
+}
+
 // A Core recipe can explain the next prerequisite for an AI resident.
 // This only chooses an existing legal raw-material Gather affordance;
 // it never manufactures ingredients, knowledge, water, or new actions.
@@ -369,10 +432,32 @@ chooseResidentAIExistingCivilizationAffordance(
         default:
             return std::nullopt;
     }
-    // After repeated REAL failure to gather this material, consider
-    // exploring for another genuine source instead of prescribing the same
-    // failing gather forever. Exploration must be a valid, same-material
-    // Core affordance; if none exists, retain the normal decision/fallback.
+    // A failed source is not proof that every other source of the same
+    // material has failed. Look for another live Core resource without
+    // mutating the World, preserving the resident's chosen original goal.
+    if(candidate.intent==CivilizationIntent::Gather
+       &&candidate.resourceNode!=0){
+        std::vector<ResourceNodeId> rejected;
+        // The personal memory ring keeps at most four actual attempts for
+        // one material. Bound alternative checks even in huge worlds.
+        for(std::size_t attempt=0;attempt<4;++attempt){
+            if(!residentAIRecentGatherSourceFailed(
+                actor,candidate.material,candidate.resourceNode,
+                thought.minute,world.minute)) break;
+            rejected.push_back(candidate.resourceNode);
+            const auto other=bestGatherDecisionAtPosition(
+                world,actor,actorPosition,settlementPopulation,
+                candidate.material,&rejected);
+            if(other.intent!=CivilizationIntent::Gather
+               ||other.material!=candidate.material)
+                break;
+            candidate=other;
+        }
+    }
+
+    // Only roam after actual repeated material failure when no fresh known
+    // node can satisfy the same material goal. Source-less legacy memories
+    // retain the conservative previous behavior.
     MaterialKind retriedMaterial=MaterialKind::Unknown;
     if(candidate.intent==CivilizationIntent::Gather){
         retriedMaterial=candidate.material;
@@ -381,7 +466,21 @@ chooseResidentAIExistingCivilizationAffordance(
     }else if(thought.intent==CognitiveIntentKind::ImproveWaterSecurity){
         retriedMaterial=MaterialKind::Water;
     }
-    if(retriedMaterial!=MaterialKind::Unknown
+    const bool freshRealSource=candidate.intent==CivilizationIntent::Gather
+        &&candidate.resourceNode!=0
+        &&residentAIHasRecentSourcedGatherFailure(
+            actor,retriedMaterial,thought.minute,world.minute)
+        &&!residentAIRecentGatherSourceFailed(
+            actor,retriedMaterial,candidate.resourceNode,
+            thought.minute,world.minute);
+    const bool freshRealSource=candidate.intent==CivilizationIntent::Gather
+        &&candidate.resourceNode!=0
+        &&residentAIHasRecentSourcedGatherFailure(
+            actor,retriedMaterial,thought.minute,world.minute)
+        &&!residentAIRecentGatherSourceFailed(
+            actor,retriedMaterial,candidate.resourceNode,
+            thought.minute,world.minute);
+    if(retriedMaterial!=MaterialKind::Unknown &&!freshRealSource
        &&(residentAIHasRecentRepeatedGatherFailure(
               actor,retriedMaterial,world.minute)
           ||(candidate.intent!=CivilizationIntent::Gather
