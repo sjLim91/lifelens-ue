@@ -21,7 +21,7 @@ export const LIVE_AI_BUDGET = Object.freeze({
 
 export interface ResidentAISource {
   worldOverview(): WorldOverview;
-  cognitiveRequest(actor: string, trigger: 'Reflection' | 'ResourceScarcity'): CognitiveRequestDto | null;
+  cognitiveRequest(actor: string, trigger: 'Reflection' | 'ResourceScarcity' | 'RepeatedFailure'): CognitiveRequestDto | null;
   submitLocalCognitiveProposal(
     request: CognitiveRequestDto,
     proposal: CognitiveProposalDto,
@@ -54,35 +54,61 @@ export function liveActionableCognitiveRequest(
   };
 }
 
-// Only firsthand, Core-authored source exhaustion/removal evidence can make
-// the live model's strategic *attention* a scarcity event. A local model
-// never sends its own invented trigger or asserted world fact into Core.
+// An autonomous resident's ONE mind must receive a distinct reflection event
+// when its own attempted strategies repeatedly fail. Only actual firsthand
+// Core outcome memories can trigger it; narrated or inferred failure cannot.
+// Source exhaustion/removal remains a higher-priority factual scarcity event.
 export function residentAIObservedTrigger(
   request: CognitiveRequestDto,
-): Extract<CognitiveTrigger, 'Reflection' | 'ResourceScarcity'> {
-  const latest = new Map<string, { minute: number; lost: boolean }>();
+): Extract<CognitiveTrigger, 'Reflection' | 'ResourceScarcity' | 'RepeatedFailure'> {
+  const outcomes = new Map<string, Map<number, 'success' | 'failure'>>();
+  const latestLost = new Map<string, { minute: number; lost: boolean }>();
   for (const memory of request.memories) {
-    if (memory.source !== 'DirectWitness' || memory.witnessed !== true
+    if (memory.who !== request.actor
+      || memory.source !== 'DirectWitness' || memory.witnessed !== true
       || memory.minute < 0 || memory.minute > request.minute
       || request.minute - memory.minute > 1440
       || memory.tags?.length !== 3
       || memory.tags[0] !== 'action_experience'
-      || (memory.tags[1] !== 'Civilization:Gather:PlantFood'
-        && memory.tags[1] !== 'Civilization:Gather:Water')
+      || !memory.tags[1].startsWith('Civilization:')
       || (memory.tags[2] !== 'failure' && memory.tags[2] !== 'success')) continue;
+
     const key = memory.tags[1];
-    const prefix = `실제 문명 행동 ${key} 수행을 시도했지만 실패했다 (직접 확인한 원인: `;
-    const lost = memory.tags[2] === 'failure'
-      && (memory.what === `${prefix}source-exhausted)`
-        || memory.what === `${prefix}source-removed)`);
-    const prior = latest.get(key);
+    const kind = memory.tags[2];
+    let byMinute = outcomes.get(key);
+    if (!byMinute) {
+      byMinute = new Map();
+      outcomes.set(key, byMinute);
+    }
+    // Same-minute success wins independent of memory iteration order.
+    if (kind === 'success' || byMinute.get(memory.minute) !== 'success')
+      byMinute.set(memory.minute, kind);
+
+    if (key !== 'Civilization:Gather:PlantFood'
+      && key !== 'Civilization:Gather:Water') continue;
+    const prefix = '실제 문명 행동 ' + key +
+      ' 수행을 시도했지만 실패했다 (직접 확인한 원인: ';
+    const lost = kind === 'failure'
+      && (memory.what === prefix + 'source-exhausted)'
+        || memory.what === prefix + 'source-removed)');
+    const prior = latestLost.get(key);
     if (!prior || memory.minute > prior.minute
-      || (memory.minute === prior.minute && !lost)) {
-      latest.set(key, { minute: memory.minute, lost });
+      || (memory.minute === prior.minute && (!lost || prior.lost))) {
+      latestLost.set(key, { minute: memory.minute, lost });
     }
   }
-  return [...latest.values()].some(record => record.lost)
-    ? 'ResourceScarcity' : 'Reflection';
+
+  if ([...latestLost.values()].some(item => item.lost))
+    return 'ResourceScarcity';
+
+  for (const byMinute of outcomes.values()) {
+    let consecutiveFailures = 0;
+    for (const [_, outcome] of [...byMinute.entries()].sort((a,b)=>a[0]-b[0])) {
+      consecutiveFailures = outcome === 'success' ? 0 : consecutiveFailures + 1;
+    }
+    if (consecutiveFailures >= 2) return 'RepeatedFailure';
+  }
+  return 'Reflection';
 }
 
 export type ResidentAIDecisionStatus =
@@ -417,13 +443,16 @@ export class ResidentAIController {
     try {
       world = source.worldOverview();
       let observed = source.cognitiveRequest(actor, 'Reflection');
-      if (observed !== null && residentAIObservedTrigger(observed) === 'ResourceScarcity') {
-        const scarcity = source.cognitiveRequest(actor, 'ResourceScarcity');
-        // Both observations must refer to the same authoritative Core tick.
-        // If the world changed between reads, do not invent a new context.
-        if (scarcity && scarcity.actor === observed.actor
-          && scarcity.minute === observed.minute
-          && scarcity.trigger === 'ResourceScarcity') observed = scarcity;
+      if (observed !== null) {
+        const trigger = residentAIObservedTrigger(observed);
+        if (trigger !== 'Reflection') {
+          const context = source.cognitiveRequest(actor, trigger);
+          // Core must re-authorize the same resident, simulation minute and
+          // factual trigger. A model never chooses its own retrospective proof.
+          if (context && context.actor === observed.actor
+            && context.minute === observed.minute
+            && context.trigger === trigger) observed = context;
+        }
       }
       request = observed === null ? null : liveActionableCognitiveRequest(observed);
     } catch {
