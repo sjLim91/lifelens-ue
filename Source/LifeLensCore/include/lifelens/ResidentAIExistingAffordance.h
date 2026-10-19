@@ -8,6 +8,11 @@
 
 namespace lifelens {
 
+// One personally chosen strategy may outlive a short inference interval.
+// Subsequent Core steps must still satisfy the live world, prerequisites,
+// personal outcome evidence and normal bodily survival at every tick.
+inline constexpr int ResidentAgencyGoalHorizonMinutes=1440;
+
 // A model's proposed strategy is not evidence. Require at least three
 // firsthand failed Core attempts, a worse-than-neutral accumulated belief,
 // and the actor's most recent firsthand outcome for the SAME material being
@@ -196,7 +201,7 @@ chooseResidentAIExistingCivilizationAffordance(
        ||actor.civilization.character!=actor.id
        ||thought.actor!=actor.id
        ||thought.minute>world.minute
-       ||world.minute-thought.minute>96
+       ||world.minute-thought.minute>ResidentAgencyGoalHorizonMinutes
        ||thought.priority<0.55
        ||thought.target!=0
        ||!std::isfinite(thought.priority))
