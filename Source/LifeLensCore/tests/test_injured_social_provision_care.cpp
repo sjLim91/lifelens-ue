@@ -3,6 +3,7 @@
 
 #include "lifelens/ResidentInjuryProvisionCare.h"
 #include "lifelens/SocialUtility.h"
+#include "lifelens/Simulation.h"
 
 using namespace lifelens;
 
@@ -145,5 +146,36 @@ int main()
     quietPatient.health.injurySeverity=0.0;
     assert(scoreComfortIntent(compassionate,quietPatient,relations)==0.0);
     assert(withInjury>0.0);
+
+    // Integration: utility chooses Comfort, Core brings the helper into
+    // physical range and COMPLETES it before any real supply is transferred.
+    // Two identical seeds must have the same transactions and logs.
+    auto setup=[&](Simulation& sim){
+        sim.setupSocialDemo();
+        auto& provider=sim.world().characters[0];
+        auto& patient=sim.world().characters[1];
+        provider.civilization.inventory.add({
+            ItemKind::RawMaterial,MaterialKind::PlantFood,3,0.7,0.95});
+        patient.health.injurySeverity=0.75;
+        patient.needs.hunger=0.56;
+        patient.emotion.sadness=0.98;
+        patient.emotion.refreshSummary();
+    };
+    Simulation live(777),againLive(777);
+    setup(live);
+    setup(againLive);
+    live.runMinutes(40);
+    againLive.runMinutes(40);
+    assert(live.logs()==againLive.logs());
+    bool witnessedCare=false;
+    for(const auto& m:live.world().characters[1].memory.entries){
+        if(m.tags.size()==3
+           &&m.tags[0]=="injury_care_provision"
+           &&m.tags[1]=="PlantFood"
+           &&m.tags[2]=="received") witnessedCare=true;
+    }
+    assert(witnessedCare && "live Social Comfort must physically transfer food");
+    assert(live.world().characters[0].civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)<=2);
     return 0;
 }
