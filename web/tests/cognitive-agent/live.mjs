@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { source } from './compile.mjs';
 
 const { ResidentAIController, LIVE_AI_BUDGET, liveActionableCognitiveRequest,
-  residentAIObservedTrigger, residentAIExecutionBudget, BROWSER_MODEL_RETRY_MS } =
+  residentAIObservedTrigger, residentAIExecutionBudget, BROWSER_MODEL_RETRY_MS,
+  INFERENCE_RECOVERY_FAILURE_THRESHOLD } =
   await source('cognition/live-resident-ai.ts');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -731,6 +732,129 @@ const provider = {
   } finally {
     globalThis.fetch=previousFetch;
   }
+}
+
+{
+  // A transient provider error is not a reason to restart the whole person.
+  // A valid provider response also resets the provider failure streak even
+  // if the authoritative Core rejects its proposed social action.
+  let attempts=0;
+  const f=fixture({
+    name:'resident-browser-webgpu',
+    async reason(request){
+      attempts++;
+      if(attempts===1 || attempts===2 || attempts===4 || attempts===5)
+        throw Error('temporary GPU inference failure');
+      return {actor:request.actor,intent:'CooperateWithResident',
+        targetResident:request.actor==='1'?'2':'1',
+        priority:.8,rationale:'실제 관계 확인'};
+    },
+  });
+  f.runtime.submitLocalCognitiveProposal=()=>false;
+  f.controller.startAutomatically();
+  for(let i=0;i<6;++i){
+    if(i>0) f.advance();
+    f.controller.observe(f.world,f.residents);
+    await tick();
+  }
+  assert.equal(attempts,6,
+    'nonconsecutive errors and Core rejections must not recycle one provider');
+  assert.equal(f.controller.getSnapshot().automatic,true);
+  f.controller.dispose();
+}
+
+{
+  // Runtime GPU failure -> one provider recycled, Core people intact,
+  // 5-minute GPU cooldown, then the SAME single AI returns automatically.
+  const previousFetch=globalThis.fetch;
+  globalThis.fetch=async () => {throw Error('localhost model absent');};
+  try{
+    let loads=0;
+    let failures=0;
+    const broken={name:'resident-browser-webgpu',async reason(){
+      failures++;
+      throw Error('GPU inference crashed');
+    }};
+    const f=fixture(undefined,async ()=>{
+      loads++;
+      return loads===1?broken:provider;
+    });
+    f.controller.startAutomatically();
+    await tick();await tick();
+    assert.equal(loads,1);
+    assert.equal(f.controller.getSnapshot().configuration?.baseUrl,'browser-webgpu');
+    for(let i=0;i<INFERENCE_RECOVERY_FAILURE_THRESHOLD;++i){
+      if(i>0) f.advance();
+      f.controller.observe(f.world,f.residents);
+      await tick();
+    }
+    assert.equal(failures,INFERENCE_RECOVERY_FAILURE_THRESHOLD);
+    assert.equal(f.controller.getSnapshot().configuration,null,
+      'three real provider faults disconnect only the broken reasoning engine');
+    assert.equal(f.controller.getSnapshot().enabled,true,
+      'Core resident AI remains automatically active during recovery');
+    assert.equal(f.submitted.length,0,'broken model cannot invent a decision');
+    f.advance();
+    f.controller.observe(f.world,f.residents);
+    await tick();await tick();
+    assert.equal(loads,1,'GPU must not be reloaded immediately');
+    for(let i=0;i<61;++i) f.advance();
+    f.controller.observe(f.world,f.residents);
+    await tick();await tick();
+    assert.equal(loads,2,'retry after runtime failure respects cooldown');
+    assert.equal(f.controller.getSnapshot().configuration?.baseUrl,'browser-webgpu');
+    f.controller.observe(f.world,f.residents);
+    await tick();
+    assert.equal(f.submitted.length,1,
+      'recovered single resident mind submits one real Core proposal');
+    f.controller.dispose();
+  }finally{globalThis.fetch=previousFetch;}
+}
+
+{
+  // A native free loopback model that starts returning HTTP failures should
+  // be rediscovered without paid API fallback or human on/off controls.
+  const previousFetch=globalThis.fetch;
+  let postAttempts=0,discoveryCount=0;
+  globalThis.fetch=async (url,init)=>{
+    assert(String(url).startsWith('http://127.0.0.1:'));
+    if(init?.method==='GET'){
+      discoveryCount++;
+      return new Response(JSON.stringify({data:[{id:'local-free-model'}]}),
+        {status:200});
+    }
+    postAttempts++;
+    if(postAttempts<=INFERENCE_RECOVERY_FAILURE_THRESHOLD)
+      return new Response('unavailable',{status:503});
+    const req=JSON.parse(JSON.parse(init.body).messages[1].content);
+    return new Response(JSON.stringify({choices:[{message:{
+      content:JSON.stringify({actor:req.actor,intent:'CooperateWithResident',
+        targetResident:req.actor==='1'?'2':'1',priority:.8,rationale:'관계'}),
+    }}]}),{status:200});
+  };
+  try{
+    const f=fixture();
+    assert.equal(f.controller.configure('http://127.0.0.1:11434',
+      'local-free-model'),true);
+    f.controller.startAutomatically();
+    for(let i=0;i<INFERENCE_RECOVERY_FAILURE_THRESHOLD;++i){
+      if(i>0)f.advance();
+      f.controller.observe(f.world,f.residents);
+      await tick();
+    }
+    assert.equal(postAttempts,INFERENCE_RECOVERY_FAILURE_THRESHOLD);
+    assert.equal(f.controller.getSnapshot().configuration,null);
+    f.advance();
+    f.controller.observe(f.world,f.residents);
+    await tick();await tick();
+    assert(discoveryCount>=1);
+    assert.equal(f.controller.getSnapshot().configuration?.model,'local-free-model');
+    f.controller.observe(f.world,f.residents);
+    await tick();
+    assert.equal(f.submitted.length,1);
+    assert.equal(f.controller.getSnapshot().automatic,true);
+    f.controller.dispose();
+  }finally{globalThis.fetch=previousFetch;}
 }
 
 console.log('Live Resident AI: independent actor context, Core handoff, cancellation PASS');
