@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "lifelens/Simulation.h"
+#include "lifelens/ResidentAIContextLifecycleAudit.h"
 
 namespace lifelens {
 
@@ -44,6 +45,7 @@ struct ResidentAIPairedMetrics {
     std::uint64_t observedKnowledgeTeachingPendingStarts=0;
     std::uint64_t observedTradePendingStarts=0;
     std::uint64_t observedParentingPendingStarts=0;
+    OpportunityContextLifecycleCounts opportunityTokenLifecycle{};
     // Proposals are not actions. These counts show input acceptances only,
     // never credit successful instruction, childcare, exchange or migration.
     std::array<std::uint64_t,CognitiveOpportunityIntentCount>
@@ -265,6 +267,7 @@ inline ResidentAIPairedReport runResidentAIPairedAudit(
         throw std::runtime_error("paired New Game initialization mismatch");
 
     std::map<CharacterId,std::uint64_t> baseTokens,scriptTokens;
+    OpportunityContextLifecycleObserver baselineLifecycle,proxyLifecycle;
     const int totalMinutes=days*1440;
     std::uint64_t slot=0;
     for(int i=0;i<totalMinutes;++i){
@@ -276,6 +279,10 @@ inline ResidentAIPairedReport runResidentAIPairedAudit(
             baseline,report.baseline,baseTokens);
         observeResidentAIPendingStarts(
             scripted,report.proxy,scriptTokens);
+        baselineLifecycle.observeSimulation(
+            baseline,report.baseline.opportunityTokenLifecycle);
+        proxyLifecycle.observeSimulation(
+            scripted,report.proxy.opportunityTokenLifecycle);
     }
     collectResidentAIPairedEvidence(baseline,report.baseline);
     collectResidentAIPairedEvidence(scripted,report.proxy);
@@ -316,6 +323,20 @@ inline void appendResidentAIPairedMetricsJson(
            <<"\"attempted\":"<<m.opportunityProposalsAttempted[i]
            <<",\"accepted\":"<<m.opportunityProposalsAccepted[i]
            <<",\"noEligibleTarget\":"<<m.opportunityNoEligibleTarget[i]
+           <<"}";
+    }
+    out<<"},\"tokenLifecycle\":{";
+    for(std::size_t i=0;i<ObservedOpportunityContextCount;++i){
+        if(i) out<<",";
+        out<<"\""<<ObservedOpportunityContextNames[i]<<"\":{"
+           <<"\"observedStarts\":"
+           <<m.opportunityTokenLifecycle.observedStarts[i]
+           <<",\"temporalIntentTargetMatches\":"
+           <<m.opportunityTokenLifecycle.temporalIntentTargetMatches[i]
+           <<",\"noLongerPendingUnclassified\":"
+           <<m.opportunityTokenLifecycle.noLongerPendingUnclassified[i]
+           <<",\"replacedByAnotherToken\":"
+           <<m.opportunityTokenLifecycle.replacedByAnotherToken[i]
            <<"}";
     }
     out<<"}}";
