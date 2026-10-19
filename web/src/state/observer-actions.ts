@@ -8,6 +8,7 @@ export interface ObserverActionHandlers {
   clearFastForwardResult: () => void;
   moveObserver: (dx: number, dy: number) => void;
   recenterObserver: () => void;
+  recoverRendering: () => void;
   selectResident: (residentId: string | null) => void;
   selectHumanTrace: (id: string | null, focus?: boolean) => void;
   selectSettlement: (id: string | null, focus?: boolean) => void;
@@ -52,6 +53,10 @@ class ObserverActions {
 
   recenterObserver(): void {
     this.handlers?.recenterObserver();
+  }
+
+  recoverRendering(): void {
+    this.handlers?.recoverRendering();
   }
 
   selectResident(residentId: string | null): void {
