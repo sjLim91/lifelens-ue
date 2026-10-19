@@ -9,6 +9,7 @@ import csv
 import hashlib
 import json
 import pathlib
+import os
 import re
 import subprocess
 import sys
@@ -122,10 +123,54 @@ def percentages(checkpoint):
     }
 
 
+MEMORY_COUNT_FIELDS = (
+    "entries", "utf8_text_bytes", "exact_duplicate_entries",
+    "witnessed_direct_entries", "future_entries", "direct_witness_entries",
+    "told_by_other_entries", "inferred_entries", "age_lt_1d_entries",
+    "age_1to7d_entries", "age_7to30d_entries", "age_30to365d_entries",
+    "age_365d_plus_entries",
+)
+
+
+def aggregate_memory_attribution(records):
+    """One final row per resident at ONE checkpoint; no cross-resident dedup."""
+    latest = {str(record["id"]): record for record in records}
+    covered = [record["memory_attribution"] for record in latest.values()
+               if isinstance(record.get("memory_attribution"), dict)]
+    result = {
+        "available": bool(covered),
+        "complete_coverage": bool(latest) and len(covered) == len(latest),
+        "covered_residents": len(covered), "reported_residents": len(latest),
+        "totals": {key: sum(row.get(key, 0) for row in covered)
+                   for key in MEMORY_COUNT_FIELDS} if covered else None,
+        "primary_tags": {},
+    }
+    for row in covered:
+        for tag, values in row.get("primary_tags", {}).items():
+            total = result["primary_tags"].setdefault(tag, {"entries": 0, "utf8_text_bytes": 0})
+            total["entries"] += values["entries"]
+            total["utf8_text_bytes"] += values["utf8_text_bytes"]
+    return result
+
+
+def publish_report(directory):
+    """Expose existing read-only evidence in logs and the optional Actions summary."""
+    path = directory / "summary.md"
+    if not path.is_file():
+        return
+    report = path.read_text(encoding="utf-8")
+    print(f"REPORT {directory.name}\n{report}", flush=True)
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        with pathlib.Path(summary_path).open("a", encoding="utf-8") as stream:
+            stream.write(f"\n## Audit {directory.name}\n\n{report}\n")
+
+
 def summarize(directory):
     checkpoints, first_signals, invariants, completions = [], [], [], []
     latest = {}
     resident_needs = {}
+    resident_memory = {}
     with (directory / "metrics.csv").open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
         writer.writerow(["seed", "day", "minute", "scope", "entity", "metric", "value"])
@@ -136,6 +181,8 @@ def summarize(directory):
                                  "unavailable" if value is None else value])
             if record["type"] == "resident":
                 resident_needs[(record["day"], record["id"])] = record["needs"]
+                resident_memory[(record["day"], record["id"])] = {
+                    "id": record["id"], "memory_attribution": record.get("memory_attribution")}
             if record["type"] == "checkpoint":
                 derived = {**record, "activity_percent": percentages(record)}
                 if checkpoints:
@@ -164,6 +211,7 @@ def summarize(directory):
         "schema_version": 1, "checkpoints": checkpoints, "first_signals": first_signals,
         "invariants": invariants, "complete": bool(completions), "latest_entities": list(latest.values()),
         "measurement_limits": {
+            "memory_attribution": "last row per checkpoint/resident, including dead residents; exact duplicates are within each resident only; text bytes exclude containers, record fields and allocator overhead; no memory deletion or causal behavioral claim",
             "critical_band": "0.90 is Core critical provision threshold; other Needs use same observational band, not an AI threshold change",
             "activity": "exclusive active Core commitment category; retained completed-result presentation is excluded and final active tick included; independent romance/family/institution/economy actions are not separable",
             "activity_precision": "post-tick active commitment with pre-tick fallback for completion/failure; planning/preemption inside a tick is not a sub-minute profiler",
@@ -189,6 +237,9 @@ def summarize(directory):
                 "critical_entries": sum(item[name]["critical_entries"] for item in observations),
                 "longest_critical_streak": max(item[name]["longest_critical_streak"] for item in observations)}
                 for name, value in checkpoint["needs"].items()}
+    for checkpoint in checkpoints:
+        checkpoint["memory_attribution"] = aggregate_memory_attribution(
+            record for (day, _), record in resident_memory.items() if day == checkpoint["day"])
     final_day = checkpoints[-1]["day"] if checkpoints else None
     summary["current_entities"] = [record for record in latest.values() if record.get("day") == final_day]
     legacy = []
@@ -219,6 +270,27 @@ def summarize(directory):
         p = c["activity_percent"]
         lines.append(f"| {c['day']} | {c['living']}/{c['total']} | {c['births']} | {c['generation_depth']} | {c['chunks']} | {c['facilities']} | " +
                      " | ".join(str(p[key]) for key in ("survival", "social", "family", "civilization", "idle", "failed_retry")) + " |")
+    lines += ["", "## 기억 출처·중복·텍스트 계측", "",
+              "같은 day/주민의 마지막 기록만 집계. 사망자를 포함한 보고 주민 기준이며, 중복은 주민 내부 완전 동일 기록 수다.",
+              "UTF-8 본문·장소·태그 바이트는 전체 heap 또는 save 크기가 아니다. 자료가 없는 기존 결과는 0으로 추정하지 않는다.", "",
+              "| day | coverage | entries | UTF-8 bytes | exact duplicates | direct / told / inferred |",
+              "|---:|---:|---:|---:|---:|---:|"]
+    for checkpoint in checkpoints:
+        memory = checkpoint["memory_attribution"]
+        coverage = f"{memory['covered_residents']}/{memory['reported_residents']}"
+        totals = memory["totals"]
+        if totals is None:
+            lines.append(f"| {checkpoint['day']} | {coverage} | unavailable | unavailable | unavailable | unavailable |")
+            continue
+        sources = " / ".join(str(totals[key]) for key in
+                             ("direct_witness_entries", "told_by_other_entries", "inferred_entries"))
+        lines.append(f"| {checkpoint['day']} | {coverage} | {totals['entries']} | {totals['utf8_text_bytes']} | {totals['exact_duplicate_entries']} | {sources} |")
+        top = sorted(memory["primary_tags"].items(), key=lambda item: (-item[1]["utf8_text_bytes"], item[0]))[:8]
+        if top:
+            # JSON quoting keeps arbitrary observed tags from becoming table markup.
+            lines += ["", f"Day {checkpoint['day']} largest text categories: " +
+                      ", ".join(json.dumps(tag, ensure_ascii=False) + f" ({values['entries']} entries / {values['utf8_text_bytes']} bytes)"
+                                for tag, values in top), ""]
     lines += ["", "## 관측 한계", ""]
     lines += [f"- `{name}`: {value}" for name, value in summary["measurement_limits"].items()]
     (directory / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -240,6 +312,7 @@ def run_one(executable, directory, seed, days, checkpoints, resume):
             if intact:
                 summary = summarize(directory)
             if intact and summary["complete"] and not summary["invariants"]:
+                publish_report(directory)
                 print(f"RESUME_SKIP {seed} {directory}", flush=True)
                 return prior
     state = {"identity": identity, "status": "running", "started_utc_epoch": time.time()}
@@ -265,6 +338,7 @@ def run_one(executable, directory, seed, days, checkpoints, resume):
         atomic_json(manifest_path, state)
         raise
     atomic_json(manifest_path, state)
+    publish_report(directory)
     print(f"FINISH {seed} {state['status']} {state['runtime_seconds']:.2f}s", flush=True)
     return state
 
@@ -289,6 +363,7 @@ def main():
     args = parser.parse_args()
     if args.command == "summarize":
         summarize(args.directory)
+        publish_report(args.directory)
         return 0
     if args.command == "compare":
         return 0 if compare(args.first, args.second)["passed"] else 2

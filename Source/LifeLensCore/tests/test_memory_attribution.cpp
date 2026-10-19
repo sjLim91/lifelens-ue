@@ -25,6 +25,33 @@ int main(){
         +a.tags[0].size()+a.tags[1].size()));
     for(std::size_t i=0;i<before.size();++i)
         assert(sameMemoryRecord(before[i],memory.entries[i]));
+    // Unique social fact IDs must not exhaust the bounded category budget
+    // and hide the provenance of the dominant social-record growth.
+    MemoryState facts;
+    for(int i=0;i<100;++i){
+        auto fact=a;fact.tags={"fact:"+std::to_string(i+1),"direct-witness"};
+        facts.add(fact);
+    }
+    auto told=a;told.tags={"fact:101","rumor"};
+    told.source=MemorySource::ToldByOther;told.witnessed=false;facts.add(told);
+    auto environment=a;environment.tags={"environment"};facts.add(environment);
+    const auto originalFacts=facts.entries;
+    const auto grouped=observeMemoryAttribution(facts,1000);
+    assert(grouped.primaryTags.size()==3);
+    assert(grouped.primaryTags.at("social_fact:direct").entries==100);
+    assert(grouped.primaryTags.at("social_fact:told").entries==1);
+    assert(grouped.primaryTags.at("environment").entries==1);
+    assert(grouped.exactDuplicates==0);
+    std::uint64_t categoryEntries=0,categoryBytes=0;
+    for(const auto& group:grouped.primaryTags){
+        categoryEntries+=group.second.entries;
+        categoryBytes+=group.second.textBytes;
+    }
+    assert(categoryEntries==grouped.entries &&categoryBytes==grouped.textBytes);
+    for(std::size_t i=0;i<originalFacts.size();++i)
+        assert(sameMemoryRecord(originalFacts[i],facts.entries[i]));
+    auto malformed=a;malformed.tags={"fact:not-an-id"};
+    assert(memoryAttributionCategoryName(malformed)=="fact:not-an-id");
     auto altered=a;altered.emotionIntensity=0.25;
     assert(!sameMemoryRecord(a,altered));
 }
