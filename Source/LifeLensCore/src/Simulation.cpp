@@ -4,6 +4,7 @@
 #include "lifelens/AutonomousSocialGoalRouting.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/ResidentAICompletedPlanGuard.h"
+#include "lifelens/ResidentUnifiedAgency.h"
 #include "lifelens/ResidentPredatorResponse.h"
 #include "lifelens/CoreNavigation.h"
 #include "lifelens/CultivationProgression.h"
@@ -2237,74 +2238,27 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         sharedCadenceDecision=&cadenceDecision;
     }
 
-    // A resident's accepted long-term provision/technology/exploration
-    // preference may select only an EXISTING legal Core civilization
-    // affordance. Ordinary survival, pending context, spatial execution,
-    // inventory and resource exhaustion stay under the original Core path.
-    if(sharedCadenceDecision!=nullptr && !hasUrgentPhysicalNeed
-       &&lifeStageProfile(c.lifeStage).canWork){
-        for(auto it=acceptedCognitiveDecisions_.rbegin();
-            it!=acceptedCognitiveDecisions_.rend();++it){
-            if(it->actor!=c.id) continue;
-            const SettlementPopulation residentAIPopulation=settlementPopulation();
-            const auto candidate=chooseResidentAIExistingCivilizationAffordance(
-                world_,c,r.pos,*it,&residentAIPopulation);
-            if(candidate
-               &&!residentAIPlanAlreadyAttempted(
-                   c,*it,*candidate,world_.minute)
-               &&!(cadenceDecision.kind==UnifiedDecisionKind::Civilization
-                    &&cadenceDecision.civilization.intent==CivilizationIntent::Craft
-                    &&cadenceDecision.civilization.facilityAction
-                        !=FacilityBuildAction::None)){
-                cadenceDecision.kind=UnifiedDecisionKind::Civilization;
-                cadenceDecision.civilization=*candidate;
-                cadenceDecision.utility=candidate->utility;
-            }
-            break;
-        }
-    }
-
-    // First live resident-AI action lane: an accepted, snapshot-backed
-    // resident preference can win ONE normal social planning slot over
-    // optional civilization. The model never executes actions, shortcuts
-    // travel, changes Need thresholds, or creates a relationship. Core
-    // re-scores the chosen target and checks life, locality and safety.
+    // One resident, one optional cognition choice. The offline embodied
+    // planner provides survival continuity and a legal fallback; it is NOT
+    // a second agent racing the model on the civilization/social lanes.
+    // Preserve the existing urgent-Need and physical preemption gates.
     if(sharedCadenceDecision!=nullptr && !hasUrgentPhysicalNeed){
+        const AcceptedCognitiveDecision* newest=nullptr;
         for(auto it=acceptedCognitiveDecisions_.rbegin();
             it!=acceptedCognitiveDecisions_.rend();++it){
-            if(it->actor!=c.id) continue;
-            if(it->minute>world_.minute
-               ||world_.minute-it->minute>96) break;
-            if(it->priority<0.50) break;
-            const bool cooperate=
-                it->intent==CognitiveIntentKind::CooperateWithResident;
-            const bool repair=
-                it->intent==CognitiveIntentKind::ResolveConflict;
-            if(!cooperate && !repair) break;
-            // A Core-selected avoidance or urgent comfort event is more
-            // important than an optional model-generated social preference.
-            if(cadenceDecision.kind==UnifiedDecisionKind::Social
-               && (cadenceDecision.social.intent==SocialIntent::Avoid
-                   ||cadenceDecision.social.intent==SocialIntent::Comfort))
-                break;
-            const Character* target=findCharacter(world_,it->target);
-            const auto targetRuntime=runtime_.find(it->target);
-            if(target==nullptr ||!target->alive
-               ||targetRuntime==runtime_.end()
-               ||manhattan(r.pos,targetRuntime->second.pos)
-                   >SettlementServiceRadiusGrid)
-                break;
-            const SocialIntent selectedIntent=
-                repair?SocialIntent::Repair:SocialIntent::Approach;
-            const double score=repair
-                ?scoreRepairIntent(c,it->target,relationships_)
-                :scoreApproachIntent(world_,c,it->target,relationships_);
-            if(score<0.18) break;
-            cadenceDecision.kind=UnifiedDecisionKind::Social;
-            cadenceDecision.social={selectedIntent,it->target,score};
-            cadenceDecision.utility=score;
-            break;
+            if(it->actor==c.id){ newest=&*it; break; }
         }
+        std::optional<GridPos> targetPosition;
+        if(newest!=nullptr &&newest->target!=0){
+            const auto targetRuntime=runtime_.find(newest->target);
+            if(targetRuntime!=runtime_.end())
+                targetPosition=targetRuntime->second.pos;
+        }
+        const SettlementPopulation residentPopulation=settlementPopulation();
+        const auto agency=chooseSingleResidentAgencyDecision(
+            world_,c,r.pos,relationships_,cadenceDecision,newest,
+            &residentPopulation,targetPosition,hasUrgentPhysicalNeed);
+        cadenceDecision=agency.decision;
     }
 
     // Survival needs that can be satisfied immediately pre-empt settlement
