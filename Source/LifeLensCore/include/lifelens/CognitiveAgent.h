@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -337,30 +338,98 @@ inline CognitiveRequest buildCognitiveRequest(
     };
     if(memoryLimit>0 &&memories.size()>memoryLimit){
         const std::size_t selected=memoryLimit;
-        std::size_t newest=memories.size();
+        const std::size_t missing=memories.size();
+        std::size_t newest=missing;
         for(std::size_t i=0;i<memories.size();++i){
             if(!directActionEvidence(memories[i])) continue;
-            if(newest==memories.size()
+            if(newest==missing
                ||memories[i].minute>memories[newest].minute
                ||(memories[i].minute==memories[newest].minute
                   &&memories[i].recallScore>memories[newest].recallScore))
                 newest=i;
         }
-        if(newest>=selected &&newest<memories.size()){
-            // The freshest direct experience is not among the normal top
-            // memories. Replace only the weakest selected slot, keeping the
-            // same overall memory budget, ranking, and deterministic order.
-            memories[selected-1]=std::move(memories[newest]);
-            std::sort(memories.begin(),memories.begin()+selected,
-                [](const CognitiveMemoryEvidence& x,
-                   const CognitiveMemoryEvidence& y){
-                    if(x.recallScore!=y.recallScore)
-                        return x.recallScore>y.recallScore;
-                    if(x.minute!=y.minute) return x.minute>y.minute;
-                    if(x.who!=y.who) return x.who<y.who;
-                    return x.what<y.what;
-                });
+        // Retain the latest firsthand event even if vivid older memories
+        // fill the normal context window (unchanged existing contract).
+        std::vector<std::size_t> required;
+        if(newest!=missing) required.push_back(newest);
+
+        // Two independent Core failures of the SAME resident/action must
+        // reach the one local mind together. Preserving a chronological
+        // history in World alone is insufficient if the context truncates
+        // the older failed attempt and RepeatedFailure never triggers.
+        std::map<std::string,std::vector<std::size_t>> byAction;
+        for(std::size_t i=0;i<memories.size();++i){
+            const auto& m=memories[i];
+            if(m.who!=actor.id ||m.source!=MemorySource::DirectWitness
+               ||!m.witnessed ||m.minute<0 ||m.minute>currentMinute
+               ||currentMinute-m.minute>1440 ||m.tags.size()!=3
+               ||m.tags[0]!="action_experience"
+               ||m.tags[1].rfind("Civilization:",0)!=0
+               ||(m.tags[2]!="success" &&m.tags[2]!="failure"))
+                continue;
+            byAction[m.tags[1]].push_back(i);
         }
+        std::size_t firstFailure=missing,secondFailure=missing;
+        for(auto& group:byAction){
+            auto& attempts=group.second;
+            std::sort(attempts.begin(),attempts.end(),
+                [&](std::size_t a,std::size_t b){
+                    if(memories[a].minute!=memories[b].minute)
+                        return memories[a].minute>memories[b].minute;
+                    // A success in the same minute defeats a failure
+                    // regardless of source memory iteration order.
+                    if(memories[a].tags[2]!=memories[b].tags[2])
+                        return memories[a].tags[2]=="success";
+                    return a<b;
+                });
+            const std::size_t newestAttempt=attempts.front();
+            if(memories[newestAttempt].tags[2]!="failure") continue;
+            std::size_t priorAttempt=missing;
+            for(const std::size_t i:attempts)
+                if(memories[i].minute<memories[newestAttempt].minute){
+                    priorAttempt=i;
+                    break;
+                }
+            if(priorAttempt==missing
+               ||memories[priorAttempt].tags[2]!="failure") continue;
+            if(firstFailure==missing
+               ||memories[newestAttempt].minute
+                   >memories[firstFailure].minute){
+                firstFailure=newestAttempt;
+                secondFailure=priorAttempt;
+            }
+        }
+        // With a tiny budget, never displace an unrelated freshest direct
+        // event just to display half a pair: that would prove nothing.
+        if(firstFailure!=missing &&selected>=2
+           &&(selected>=3 ||newest==firstFailure
+               ||newest==secondFailure)){
+            required.push_back(firstFailure);
+            required.push_back(secondFailure);
+        }
+
+        std::vector<std::size_t> indices;
+        indices.reserve(selected);
+        for(std::size_t i=0;i<selected;++i) indices.push_back(i);
+        for(const std::size_t include:required){
+            if(std::find(indices.begin(),indices.end(),include)
+               !=indices.end()) continue;
+            for(std::size_t slot=indices.size();slot>0;--slot){
+                if(std::find(required.begin(),required.end(),
+                             indices[slot-1])!=required.end())
+                    continue;
+                indices[slot-1]=include;
+                break;
+            }
+        }
+        // The input order remains ranked by deterministic recall score,
+        // and the same 8-memory budget is preserved without fake events.
+        std::sort(indices.begin(),indices.end());
+        std::vector<CognitiveMemoryEvidence> chosen;
+        chosen.reserve(indices.size());
+        for(const auto i:indices)
+            chosen.push_back(std::move(memories[i]));
+        memories=std::move(chosen);
     }
     if(memories.size()>memoryLimit) memories.resize(memoryLimit);
     request.memories=std::move(memories);

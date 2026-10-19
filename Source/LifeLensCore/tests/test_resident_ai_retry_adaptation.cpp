@@ -52,6 +52,60 @@ int main()
 
     for(int i=0;i<2;++i)
         rememberCivilizationAttemptOutcome(resident,gather,480+i,false);
+    // The Core actually retains TWO different failure timestamps.
+    // The model's RepeatedFailure trigger must not rely on synthetic tests
+    // that add memories which live gameplay would have overwritten.
+    int directFailures=0;
+    for(const auto& memory:resident.memory.entries){
+        if(memory.tags.size()==3
+           &&memory.tags[0]=="action_experience"
+           &&memory.tags[1]==key
+           &&memory.tags[2]=="failure"){
+            ++directFailures;
+            assert(memory.source==MemorySource::DirectWitness);
+            assert(memory.witnessed);
+            assert(memory.who==resident.id);
+            assert(memory.sourceCharacter==resident.id);
+            assert(memory.minute==480 ||memory.minute==481);
+        }
+    }
+    assert(directFailures==2);
+
+    // Even among many emotionally vivid unrelated memories, the REAL
+    // two-attempt history must reach the local resident's eight-slot mind.
+    Character crowded=resident;
+    for(int i=0;i<12;++i){
+        MemoryRecord vivid;
+        vivid.who=crowded.id;
+        vivid.minute=482;
+        vivid.what="unrelated vivid event "+std::to_string(i);
+        vivid.importance=1.0;
+        vivid.confidence=1.0;
+        vivid.emotionIntensity=1.0;
+        vivid.tags={"unrelated_event"};
+        crowded.memory.add(vivid);
+    }
+    RelationshipBook relationships;
+    auto context=buildCognitiveRequest(
+        crowded,relationships,482,CognitiveTriggerKind::Reflection,
+        {CognitiveIntentKind::ImproveFoodSecurity},8,8,8);
+    assert(context.memories.size()==8);
+    int visibleFailures=0;
+    for(const auto& memory:context.memories){
+        if(memory.tags.size()==3 &&memory.tags[1]==key
+           &&memory.tags[2]=="failure"){
+            ++visibleFailures;
+            assert(memory.who==resident.id);
+        }
+    }
+    assert(visibleFailures==2);
+    const auto originalFingerprint=cognitiveRequestFingerprint(context);
+    std::reverse(crowded.memory.entries.begin(),crowded.memory.entries.end());
+    context=buildCognitiveRequest(
+        crowded,relationships,482,CognitiveTriggerKind::Reflection,
+        {CognitiveIntentKind::ImproveFoodSecurity},8,8,8);
+    assert(cognitiveRequestFingerprint(context)==originalFingerprint);
+
     world.minute=482;
     thought.minute=482;
     assert(!residentAIHasRecentRepeatedGatherFailure(
@@ -64,6 +118,21 @@ int main()
     rememberCivilizationAttemptOutcome(resident,gather,482,false);
     assert(residentAIHasRecentRepeatedGatherFailure(
         resident,MaterialKind::PlantFood,world.minute));
+    directFailures=0;
+    for(const auto& memory:resident.memory.entries)
+        if(memory.tags.size()==3 &&memory.tags[1]==key
+           &&memory.tags[2]=="failure") ++directFailures;
+    assert(directFailures==3);
+
+    // A transplanted memory of another person's action is not firsthand
+    // evidence even if a negative belief was copied alongside it.
+    Character borrowed=resident;
+    for(auto& memory:borrowed.memory.entries)
+        if(memory.tags.size()==3 &&memory.tags[1]==key)
+            memory.sourceCharacter=999;
+    assert(!residentAIHasRecentRepeatedGatherFailure(
+        borrowed,MaterialKind::PlantFood,world.minute));
+
     // Actual food is STILL present. Core exploration pressure is zero; do
     // not invent a new frontier or block an accessible gather just because
     // prior attempts were bad.
@@ -111,6 +180,28 @@ int main()
     thought.minute=483;
     assert(!residentAIHasRecentRepeatedGatherFailure(
         resident,MaterialKind::PlantFood,world.minute));
+
+    // The action-specific trace is bounded even under persistent failure.
+    // Crucially the last four true timestamps survive without unbounded
+    // snapshot growth, and a recorded success is not mistaken for a failure.
+    Character bounded=resident;
+    for(int attempt=484;attempt<=490;++attempt)
+        rememberCivilizationAttemptOutcome(bounded,gather,attempt,false);
+    int retained=0;
+    for(const auto& memory:bounded.memory.entries)
+        if(memory.tags.size()==3 &&memory.tags[1]==key){
+            ++retained;
+            assert(memory.minute>=487 &&memory.minute<=490);
+            assert(memory.sourceCharacter==bounded.id);
+        }
+    assert(retained==4);
+    const auto beliefBeforeDuplicate=bounded.beliefs.find(
+        0,actionExperienceProposition(key.c_str()))->contradictionCount;
+    rememberCivilizationAttemptOutcome(bounded,gather,490,false);
+    assert(bounded.beliefs.find(
+        0,actionExperienceProposition(key.c_str()))->contradictionCount
+        ==beliefBeforeDuplicate);
+    assert(bounded.memory.entries.size()==4);
 
     // An old failure must not drive exploration forever.
     world.minute=1924;

@@ -37,7 +37,7 @@ inline bool residentAIHasRecentRepeatedGatherFailure(
     bool latestFailed=false;
     for(const MemoryRecord& memory:actor.memory.entries){
         if(memory.source!=MemorySource::DirectWitness
-           ||!memory.witnessed
+           ||!memory.witnessed ||memory.sourceCharacter!=actor.id
            ||memory.minute<0 ||memory.minute>minute
            ||memory.tags.size()!=3
            ||memory.tags[0]!="action_experience"
