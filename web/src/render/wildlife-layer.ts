@@ -56,6 +56,8 @@ export class WildlifeLayer {
   private readonly cameraAbsolute=new THREE.Vector3();
   private readonly screenPosition=new THREE.Vector3();
   private readonly viewProjection=new THREE.Matrix4();
+  private viewOriginX=0;
+  private viewOriginZ=0;
   private readonly renderPriority=new Map<string,number>();
   private hasCamera=false;
   private readonly tigers:ImportedTigerPool;
@@ -263,7 +265,10 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
     // Spend bounded skins on the current view. Close animals behind the camera
     // must not exhaust the budget before the animal being observed.
     const visible=[...this.animals.values()];
-    if(camera)this.viewProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+    if(camera){
+      this.viewProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+      this.viewOriginX=offsetX;this.viewOriginZ=offsetZ;
+    }
     // Observation refreshes also render without a camera argument. Keep the
     // last view's priority so a refresh cannot evict its subject from the skin
     // budget between update() and the actual frame submission.
@@ -272,7 +277,9 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
       for(const pose of visible){
         const x=pose.x-offsetX,z=pose.z-offsetZ;
         const y=(this.ground.height(x,z)??0)+(pose.fish?.02:.6*pose.scale);
-        this.screenPosition.set(x,y,z).applyMatrix4(this.viewProjection);
+        // The cached camera matrix uses its original local origin, even when
+        // this observation window rebases before the next camera update.
+        this.screenPosition.set(pose.x-this.viewOriginX,y,pose.z-this.viewOriginZ).applyMatrix4(this.viewProjection);
         const p=this.screenPosition,distance=Math.hypot(x-this.cameraPosition.x,z-this.cameraPosition.z);
         const inView=p.z>=-1&&p.z<=1&&Math.abs(p.x)<=1.15&&Math.abs(p.y)<=1.15;
         this.renderPriority.set(pose.id,inView?distance*(1+2*Math.hypot(p.x,p.y)):1e6+distance);

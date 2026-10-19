@@ -193,6 +193,14 @@ console.log('PASS same-ID species replacement does not reuse a stale native body
    assert.equal(refreshed.userData.tier,'near','Observation refresh changed the visible deer tier');
    assert(layer.renderedCoreIds.has(subject.id));
   }
+  const rebased={...terrain,centerChunkX:terrain.centerChunkX+1,centerChunkY:terrain.centerChunkY-1};
+  layer.setTerrain(rebased);
+  const afterRebase=layer.group.getObjectByName('LifeLensNativeAnimal:'+subject.id);
+  assert(afterRebase,'Observation origin rebase evicted the visible deer in '+name+' view');
+  assert.equal(afterRebase.userData.tier,'near');
+  const rebasedXZ=[x-grid.worldUnitsPerChunk,z+grid.worldUnitsPerChunk];
+  assert.deepEqual([afterRebase.position.x,afterRebase.position.z],rebasedXZ);
+  layer.setTerrain(terrain);
   const near=[];layer.group.traverse(o=>{if(o.name.startsWith('LifeLensNativeAnimal:')&&o.userData.tier==='near')near.push(o);});assert(near.length<=4);
  }
  assert.equal(JSON.stringify(terrain),before);layer.dispose();
