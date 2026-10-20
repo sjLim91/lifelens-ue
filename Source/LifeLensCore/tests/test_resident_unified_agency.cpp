@@ -85,6 +85,53 @@ int main()
     assert(socialDecision.decision.social.target==10);
     assert(socialDecision.decision.social.intent==SocialIntent::Approach);
 
+    // Personal Core-completed self-mood is a REAL planning influence, not
+    // merely an informational shadow proposal. Learn it in the SAME mind,
+    // partner and actual approach lane, preserving Core physical authority.
+    World welcomed=world;
+    assert(rememberExperiencedSocialMoodOutcome(
+        welcomed.characters[0],10,SocialIntent::Approach,479,0.10,0.18));
+    const auto welcomedChoice=chooseSingleResidentAgencyDecision(
+        welcomed,welcomed.characters.front(),{0,0},relations,
+        baseline,&thought,nullptr,GridPos{1,0},false);
+    assert(welcomedChoice.authority==ResidentAgencyAuthority::ResidentCognition);
+    assert(welcomedChoice.decision.social.intent==SocialIntent::Approach);
+    assert(welcomedChoice.decision.utility>socialDecision.decision.utility);
+
+    World hurt=world;
+    assert(rememberExperiencedSocialMoodOutcome(
+        hurt.characters[0],10,SocialIntent::Approach,479,0.12,0.04));
+    const auto hurtChoice=chooseSingleResidentAgencyDecision(
+        hurt,hurt.characters.front(),{0,0},relations,
+        baseline,&thought,nullptr,GridPos{1,0},false);
+    assert(hurtChoice.authority==ResidentAgencyAuthority::ResidentCognition);
+    assert(hurtChoice.decision.utility<socialDecision.decision.utility);
+    assert(hurtChoice.decision.utility>0.0);
+    assert(world.characters.front().beliefs.beliefs.empty());
+
+    // A partner's own private mood cannot become the first resident's
+    // firsthand learning. Reported memories alone cannot fabricate a
+    // Core-proven self-mood belief either.
+    World otherMind=world;
+    assert(rememberExperiencedSocialMoodOutcome(
+        otherMind.characters[1],9,SocialIntent::Approach,479,0.12,0.04));
+    const auto independent=chooseSingleResidentAgencyDecision(
+        otherMind,otherMind.characters.front(),{0,0},relations,
+        baseline,&thought,nullptr,GridPos{1,0},false);
+    assert(independent.decision.utility==socialDecision.decision.utility);
+    World hearsayOnly=world;
+    MemoryRecord rumour;
+    rumour.who=10;
+    rumour.minute=479;
+    rumour.what="Someone said that meeting was harmful";
+    rumour.source=MemorySource::ToldByOther;
+    rumour.tags={"social_self_outcome","Approach","worsened","direct"};
+    hearsayOnly.characters[0].memory.add(rumour);
+    const auto rejectedRumour=chooseSingleResidentAgencyDecision(
+        hearsayOnly,hearsayOnly.characters.front(),{0,0},relations,
+        baseline,&thought,nullptr,GridPos{1,0},false);
+    assert(rejectedRumour.decision.utility==socialDecision.decision.utility);
+
     // Genuinely urgent bodily survival outranks optional cognition while
     // the thinking identity remains that SAME resident.
     assert(chooseSingleResidentAgencyDecision(
