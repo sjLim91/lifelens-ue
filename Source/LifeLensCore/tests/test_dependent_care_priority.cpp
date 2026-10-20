@@ -128,10 +128,28 @@ static int cognitiveCareChoiceTests()
         *liveChild)>0.0);
 
     const double hungerBefore=liveChild->needs.hunger;
+    std::vector<CoreContextOutcomeEvent> verified;
+    selected.onCoreContextOutcome([&](const CoreContextOutcomeEvent& event){
+        verified.push_back(event);
+    });
+    CHECK(!selected.completeExternalContextAction(
+        chosen,pending.token+1,home));
+    CHECK(verified.empty()); // Wrong token cannot invent a result.
     CHECK(selected.completeExternalContextAction(chosen,pending.token,home));
     CHECK(replay.completeExternalContextAction(chosen,pending.token,home));
     CHECK(findResident(selected,child.id)->needs.hunger<hungerBefore);
+    CHECK(verified.size()==1);
+    CHECK(verified.front().actor==chosen);
+    CHECK(verified.front().target==child.id);
+    CHECK(verified.front().token==pending.token);
+    CHECK(verified.front().kind==ContextActionKind::Parenting);
+    CHECK(verified.front().code==CoreContextOutcomeCode::ParentingPerformed);
+    CHECK(coreContextOutcomeActualSuccess(verified.front().code));
+    CHECK(!coreContextOutcomeActualFailure(verified.front().code));
     CHECK(!selected.completeExternalContextAction(chosen,pending.token,home));
+    CHECK(verified.size()==1); // No double credit for stale ACK.
+    CHECK(selected.captureSnapshot().world.minute
+        ==replay.captureSnapshot().world.minute);
 
     // The same person's newer unrelated idea cannot silently keep their
     // old preferred dependent target forever.
