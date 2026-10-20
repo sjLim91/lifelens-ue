@@ -5,6 +5,7 @@
 
 #include "ResidentAIExistingAffordance.h"
 #include "ResidentAICompletedPlanGuard.h"
+#include "AutonomousSocialOutcomeLearning.h"
 #include "SocialUtility.h"
 
 namespace lifelens {
@@ -79,9 +80,18 @@ inline ResidentAgencyChoice chooseSingleResidentAgencyDecision(
             thought.intent==CognitiveIntentKind::CooperateWithResident;
         const SocialIntent intent=cooperate
             ?SocialIntent::Approach:SocialIntent::Repair;
-        const double score=cooperate
+        const double baseScore=cooperate
             ?scoreApproachIntent(world,actor,thought.target,relationships)
             :scoreRepairIntent(actor,thought.target,relationships);
+        // The SAME resident's already recorded firsthand self-mood outcome
+        // now influences its REAL optional social choice, not just a
+        // read-only hypothetical plan. Other minds and proposed words cannot
+        // improve that actor's utility. This never grants a blocked action,
+        // bypasses care/avoidance, or overrides urgent survival.
+        const double personalDisposition=learnedSocialMoodDisposition(
+            actor,thought.target,intent);
+        const double score=std::clamp(
+            baseScore*(1.0+0.25*personalDisposition),0.0,1.0);
         if(score<0.18) return answer;
 
         UnifiedUtilityDecision next=fallback;
