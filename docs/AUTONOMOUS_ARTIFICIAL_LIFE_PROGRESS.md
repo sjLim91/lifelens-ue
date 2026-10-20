@@ -29,8 +29,8 @@
 |---|---|---|---|---|
 | [x] | **M0-01** | #816 교역 양측 기억 exact-head·병합·메인 재검증 | ✅ 완료 | [PR #816](https://github.com/sjLim91/lifelens-ue/pull/816) · main e6061967 · Core/WASM/Web/인지 5 CI PASS |
 | [x] | **M0-02** | #814 사냥/식생 소모 코어 PR 충돌·검증 분리 | ✅ 완료 | [PR #814](https://github.com/sjLim91/lifelens-ue/pull/814) · 9 CI PASS · main 22ccf7a1 · Draft 해제 후 병합 |
-| [ ] | **M0-03** | #790 14개 의도 전수 지표: offered→accepted→pending→completed/failed/unsupported | 🚧 진행 | [이슈 #790](https://github.com/sjLim91/lifelens-ue/issues/790) · [PR #820](https://github.com/sjLim91/lifelens-ue/pull/820) 실제 Core token/accepted input 상관 감사 CI 진행; 전체 14 intent는 미완 |
-| [ ] | **M0-04** | #669 메모리 source/tag/byte·중복·부정합 장기 감사 | 🚧 진행 | [이슈 #669](https://github.com/sjLim91/lifelens-ue/issues/669) · [PR #819](https://github.com/sjLim91/lifelens-ue/pull/819) 행동 기억 출처·종류별 분석 CI 진행; 장기 seed 감사 미완 |
+| [ ] | **M0-03** | #790 14개 의도 전수 지표: offered→accepted→pending→completed/failed/unsupported | 🚧 진행 | [#820](https://github.com/sjLim91/lifelens-ue/pull/820) main `04a9a477` 토큰·결과 감사 병합(4 CI PASS). [#824](https://github.com/sjLim91/lifelens-ue/pull/824) 14개 의도별 제공·거절/승인 전수 검사 CI 진행. 전체 장기·원인 분류 미완 |
+| [ ] | **M0-04** | #669 메모리 source/tag/byte·중복·부정합 장기 감사 | 🚧 진행 | [#819](https://github.com/sjLim91/lifelens-ue/pull/819) main `ac1f3b1a` 행동 기억 종류·출처/바이트 감사 병합(4 CI PASS). 여러 seed 100/365/1000일 스냅샷 성장 원인 분석 미완 |
 | [ ] | **M0-05** | baseline CI·저장 포맷·Ruleset·핵심 회귀 테스트 계약 동결 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 
 ### M1 — 지각/기억
@@ -173,6 +173,8 @@
 
 | 날짜 | 단위 | 이전→현재 | 검증/조치 |
 |---|---|---|---|
+| 2026-10-20 | M0-03 | 🚧 진행 유지 | #820 exact-head 4 CI PASS→main 04a9a477. 후속 #824 전체 14개 전략 순회 감사 CI 검증 중; 단위 전체 완료 아님 |
+| 2026-10-20 | M0-04 | 🚧 진행 유지 | #819 exact-head 4 CI PASS→main ac1f3b1a. 장기 100/365/1000일 시드별 분석 전까지 미완 |
 | 2026-10-20 | M1-01 | 미완→🚧 진행 | [#822](https://github.com/sjLim91/lifelens-ue/pull/822) 시각 인과 경계 회귀 구현/CI 검증 중. 공간/지각 모델 미완 |
 | 2026-10-20 | M0-02 | 🔎 병합 검토→✅ 완료 | #814 HEAD 81fa7aca CI 9개 PASS, Draft 해제·main 22ccf7a1 |
 | 2026-10-20 | M6-01 | 미완→✅ 완료 | 같은 #814: 초식 실제 먹이 소모/사냥/현장 식사; 가죽·뼈·육류 보관은 M6-05 후속 |
