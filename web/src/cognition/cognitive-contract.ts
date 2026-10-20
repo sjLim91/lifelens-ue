@@ -74,7 +74,26 @@ export interface CognitiveRelationshipDto {
   grudge: number;
 }
 
+export interface CoreLocalResourceDto {
+  nodeId: string;
+  material: string;
+  distanceCells: number;
+  abundance: 'Scarce' | 'Present';
+}
+
+export interface CoreLocalPerceptionDto {
+  source: 'CoreRuntimeProximity';
+  proximityOnly: true;
+  observerX: number;
+  observerY: number;
+  radiusCells: number;
+  resources: CoreLocalResourceDto[];
+}
+
 export interface CognitiveRequestDto {
+  // Absent/null means no Core runtime position was available. Never
+  // reinterpret it as evidence that there are no resources in the world.
+  localPerception?: CoreLocalPerceptionDto | null;
   worldSeed?: string;
   populationSeed?: string;
   generationVersion?: number;
@@ -236,6 +255,34 @@ export function parseCognitiveRequest(
   validateEntries(beliefs, ['subject', 'proposition'], ['stance', 'confidence', 'lastUpdatedMinute']);
   validateEntries(relationships, ['target'], ['socialBond', 'affection', 'trust', 'respect', 'conflict', 'fear', 'grudge']);
 
+  let localPerception: CoreLocalPerceptionDto | null = null;
+  if (candidate.localPerception !== undefined && candidate.localPerception !== null) {
+    const local = record(candidate.localPerception);
+    if (local.source !== 'CoreRuntimeProximity' || local.proximityOnly !== true
+      || !Number.isSafeInteger(local.observerX)
+      || !Number.isSafeInteger(local.observerY)
+      || !Number.isSafeInteger(local.radiusCells)
+      || (local.radiusCells as number) < 1 || (local.radiusCells as number) > 8
+      || !Array.isArray(local.resources) || local.resources.length > 12) {
+      throw new Error('Core local perception has invalid provenance or limits');
+    }
+    for (const entry of local.resources) {
+      const fact = record(entry);
+      if (typeof fact.nodeId !== 'string'
+        || !/^[1-9][0-9]*$/.test(fact.nodeId)
+        || fact.nodeId.length > 20
+        || typeof fact.material !== 'string'
+        || fact.material.length < 1 || fact.material.length > 24
+        || !Number.isSafeInteger(fact.distanceCells)
+        || (fact.distanceCells as number) < 0
+        || (fact.distanceCells as number) > (local.radiusCells as number)
+        || (fact.abundance !== 'Scarce' && fact.abundance !== 'Present')) {
+        throw new Error('Core local resource observation is invalid');
+      }
+    }
+    localPerception = local as unknown as CoreLocalPerceptionDto;
+  }
+
   if (
     !Array.isArray(candidate.allowedIntents)
     || candidate.allowedIntents.length > COGNITIVE_INTENTS.length
@@ -265,6 +312,7 @@ export function parseCognitiveRequest(
     memories,
     beliefs,
     relationships,
+    ...(candidate.localPerception !== undefined ? { localPerception } : {}),
     allowedIntents: candidate.allowedIntents as CognitiveIntent[],
   };
 }

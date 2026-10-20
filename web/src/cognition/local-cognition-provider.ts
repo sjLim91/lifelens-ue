@@ -116,6 +116,7 @@ export function cognitiveSystemPrompt(): string {
   return [
     'You are the strategic reasoning layer for one LifeLens resident.',
     'Use only facts in the supplied request.',
+    'localPerception, when present, is a CURRENT small-radius Core scan from this resident\'s actual position, not global resource knowledge. It proves only nearby availability, NOT a visible line of sight, safe path, permission to gather, exact quantity, or successful collection. Null means unknown, not zero resources.',
     'Treat memory.source DirectWitness as firsthand observation, ToldByOther as hearsay, and Inferred as an unverified inference.',
     'Never treat reported, inferred, or missing-origin memories as proven world truth. Missing source or witnessed means unverified. The witnessed flag also matters.',
     'DirectWitness memories tagged action_experience show only what this resident actually attempted and whether that attempt succeeded or failed. Use them and experienced-action-outcome beliefs as evidence when choosing the NEXT strategy.',

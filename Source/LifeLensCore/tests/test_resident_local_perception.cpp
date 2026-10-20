@@ -88,5 +88,37 @@ int main()
     assert(observed.actor==1 &&observed.nearbyResources.size()==1);
     assert(observed.nearbyResources[0].nodeId==122);
     assert(sim.observeResidentLocalPerception(999,3).actor==0);
+
+    const auto current=sim.observeCognitiveRequest(
+        1,CognitiveTriggerKind::Reflection);
+    assert(current.actor==1 &&current.localProximityObserved);
+    assert(current.localRadiusCells==6);
+    assert(current.localObserverPosition.x==pos.x);
+    assert(current.localObserverPosition.y==pos.y);
+    assert(current.localResources.size()==1);
+    assert(current.localResources[0].nodeId==122);
+    const auto legitimateFingerprint=cognitiveRequestFingerprint(current);
+    auto fake=current;
+    fake.localResources[0].nodeId=666;
+    assert(cognitiveRequestFingerprint(fake)!=legitimateFingerprint);
+    CognitiveProposal harmless;
+    harmless.actor=1;
+    harmless.intent=CognitiveIntentKind::ImproveWaterSecurity;
+    harmless.priority=0.80;
+    assert(!sim.acceptCognitiveProposal(
+        fake,harmless,"local-mind","test-forged-proximity"));
+    assert(sim.acceptCognitiveProposal(
+        current,harmless,"local-mind","test-verified-proximity"));
+    // Once the Core node is removed in the SAME minute, the observed
+    // receipt changes and any unsubmitted stale response must be rejected.
+    const auto refreshed=sim.observeCognitiveRequest(
+        1,CognitiveTriggerKind::Reflection);
+    assert(refreshed.localResources.size()==1);
+    actual.clear();
+    const auto depleted=sim.observeCognitiveRequest(
+        1,CognitiveTriggerKind::Reflection);
+    assert(depleted.localProximityObserved);
+    assert(depleted.localResources.empty());
+    assert(cognitiveRequestFingerprint(depleted)!=legitimateFingerprint);
     return 0;
 }
