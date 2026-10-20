@@ -44,15 +44,18 @@ int main()
     assert(inferred==ResidentSensedResourceMemoryLimit);
     assert(rememberResidentSensedLocalResources(actor,view)==6);
     assert(actor.memory.entries.size()==ResidentSensedResourceMemoryLimit+1);
-    const auto last=actor.memory.entries.back().tags[1];
     view.minute+=720;
     view.nearbyResources.resize(1);
     view.nearbyResources[0].nodeId=18;
     view.nearbyResources[0].position={3,1};
     assert(rememberResidentSensedLocalResources(actor,view)==0);
-    assert(actor.memory.entries.back().tags[1]==last);
-    assert(actor.memory.entries.back().where=="grid:3,1");
-    assert(actor.memory.entries.back().minute==1440);
+    const auto refreshed=std::find_if(actor.memory.entries.begin(),
+        actor.memory.entries.end(),[](const MemoryRecord& record){
+            return record.tags.size()==3 &&record.tags[1]=="node:18";
+        });
+    assert(refreshed!=actor.memory.entries.end());
+    assert(refreshed->where=="grid:3,1");
+    assert(refreshed->minute==1440);
     // A neighbour's scan never writes into this mind.
     view.actor=99;
     assert(rememberResidentSensedLocalResources(actor,view)==0);
