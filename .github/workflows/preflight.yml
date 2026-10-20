@@ -26,6 +26,11 @@ jobs:
       - name: Validate SimulationRuleset contract
         run: python Tools/validate_simulation_ruleset.py
 
+      - name: Validate canonical autonomous life milestone tracking
+        run: |
+          python -m unittest Tools.tests.test_masterplan_tracking
+          python Tools/validate_masterplan_tracking.py
+
       - name: Validate memory checkpoint report and missing-day safety
         run: python -m unittest Tools.tests.test_memory_checkpoint_analysis
 
