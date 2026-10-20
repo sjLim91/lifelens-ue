@@ -179,6 +179,60 @@ int main()
         world,relationships,request,goal,budget).status
         ==AutonomousExperimentStatus::InvalidBudget);
 
+    // The SAME resident learns personal self-mood from a real prior Core
+    // social completion, already persisted as an actor-specific belief.
+    // This differentiates safe ways to pursue one goal WITHOUT changing
+    // resources, target permissions, the world RNG or physical outcomes.
+    const auto preferenceFor=[](
+        const AutonomousExperimentOptions& candidates,SocialIntent intent){
+        for(const auto& option:candidates.alternatives){
+            if(option.steps.size()==1
+               &&option.steps.front().socialIntent==intent)
+                return option.preferenceScore;
+        }
+        return -1.0;
+    };
+    const double neutralApproach=preferenceFor(options,SocialIntent::Approach);
+    const double neutralRepair=preferenceFor(options,SocialIntent::Repair);
+    assert(neutralApproach>0.0 &&neutralRepair>0.0);
+    World benefited=world;
+    auto& positiveBelief=benefited.characters.front().beliefs.getOrCreate(
+        22,socialMoodExperienceProposition(SocialIntent::Approach));
+    positiveBelief.applyEvidence(true,2.0,benefited.minute-1);
+    const auto benefitedRequest=observe(benefited,relationships,11);
+    const auto benefitedOptions=composeAutonomousExperimentOptions(
+        benefited,relationships,benefitedRequest,trustGoal(benefitedRequest,22));
+    assert(benefitedOptions.status==AutonomousExperimentStatus::CandidatesOnly);
+    assert(preferenceFor(benefitedOptions,SocialIntent::Approach)
+        >neutralApproach);
+    assert(std::abs(preferenceFor(benefitedOptions,SocialIntent::Repair)
+        -neutralRepair)<1e-12);
+
+    World harmed=world;
+    auto& negativeBelief=harmed.characters.front().beliefs.getOrCreate(
+        22,socialMoodExperienceProposition(SocialIntent::Approach));
+    negativeBelief.applyEvidence(false,2.0,harmed.minute-1);
+    const auto harmedRequest=observe(harmed,relationships,11);
+    const auto harmedOptions=composeAutonomousExperimentOptions(
+        harmed,relationships,harmedRequest,trustGoal(harmedRequest,22));
+    assert(harmedOptions.status==AutonomousExperimentStatus::CandidatesOnly);
+    assert(preferenceFor(harmedOptions,SocialIntent::Approach)
+        <neutralApproach);
+    assert(std::abs(preferenceFor(harmedOptions,SocialIntent::Repair)
+        -neutralRepair)<1e-12);
+    assert(world.rng==initialRng);
+    assert(world.characters.front().beliefs.beliefs.empty());
+    // Another resident's experience is not credited to this resident.
+    World otherMind=world;
+    otherMind.characters[1].beliefs.getOrCreate(
+        11,socialMoodExperienceProposition(SocialIntent::Approach))
+        .applyEvidence(false,2.0,otherMind.minute-1);
+    const auto otherRequest=observe(otherMind,relationships,11);
+    const auto otherOptions=composeAutonomousExperimentOptions(
+        otherMind,relationships,otherRequest,trustGoal(otherRequest,22));
+    assert(std::abs(preferenceFor(otherOptions,SocialIntent::Approach)
+        -neutralApproach)<1e-12);
+
     // Without an actual conflict, Core has no Repair affordance.
     relation.conflict=0.0;
     const auto oneMethod=composeAutonomousExperimentOptions(
