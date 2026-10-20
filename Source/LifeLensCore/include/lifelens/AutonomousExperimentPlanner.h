@@ -228,6 +228,29 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
                 ++socialSteps;
             }else if(step.kind
                 ==AutonomousAffordanceKind::ExistingCivilizationGather){
+                // Candidate-only budget accounting must use THIS thought's
+                // typed local evidence. Distance is an effort/risk proxy,
+                // never an estimate of actual traversal minutes or a permit.
+                const auto sensed=std::find_if(
+                    request.localResources.begin(),request.localResources.end(),
+                    [&](const ObservedLocalResource& observed){
+                        return observed.nodeId==step.resourceNode
+                            &&observed.material==step.material
+                            &&observed.distanceCells>=0
+                            &&observed.distanceCells<=request.localRadiusCells
+                            &&perceptionGridDistance(
+                                request.localObserverPosition,observed.position)
+                                ==observed.distanceCells;
+                    });
+                if(!request.localProximityObserved
+                   ||sensed==request.localResources.end()){
+                    valid=false;
+                    break;
+                }
+                option.effortUnits+=static_cast<std::size_t>(
+                    (sensed->distanceCells+1)/2);
+                option.riskProxy+=0.025*static_cast<double>(
+                    sensed->distanceCells);
                 // Introducing this typed candidate must NOT make Gather an
                 // unvalidated "other" action. Check the exact Core resource
                 // ledger every time the read-only alternative is composed.

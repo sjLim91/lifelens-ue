@@ -317,6 +317,49 @@ int main()
     assert(gather.size()==1);
     assert(gather[0].kind==AutonomousAffordanceKind::ExistingCivilizationGather);
     assert(gather[0].resourceNode==localRequest.localResources[0].nodeId);
+    // M2-08: a more distant (but genuinely observed) resource consumes
+    // more hypothetical exploration effort and risk budget. No Core action
+    // occurs, and small budgets reject the speculative alternative.
+    World distantWorld=world;
+    const auto nearPos=distantWorld.resourceNodes.front().pos;
+    auto distantNode=distantWorld.resourceNodes.front();
+    distantNode.id=std::numeric_limits<ResourceNodeId>::max()-1;
+    distantNode.pos={nearPos.x+4,nearPos.y};
+    distantNode.quantity=10;
+    distantWorld.resourceNodes.push_back(distantNode);
+    auto distantRequest=observe(distantWorld,relationships,11);
+    const auto distantView=observeLocalResourceProximity(
+        distantWorld,11,nearPos,6);
+    const auto distantFact=std::find_if(
+        distantView.nearbyResources.begin(),
+        distantView.nearbyResources.end(),
+        [&](const ObservedLocalResource& fact){
+            return fact.nodeId==distantNode.id;
+        });
+    assert(distantFact!=distantView.nearbyResources.end());
+    distantRequest.localProximityObserved=true;
+    distantRequest.localObserverPosition=distantView.observerPosition;
+    distantRequest.localRadiusCells=distantView.radiusCells;
+    distantRequest.localResources={*distantFact};
+    auto distantGoal=materialGoal;
+    distantGoal.desiredState.front().material=distantNode.material;
+    distantGoal.evidence={{AutonomousGoalEvidenceKind::ObservedLocalResource,0}};
+    const auto distantOptions=composeAutonomousExperimentOptions(
+        distantWorld,relationships,distantRequest,distantGoal);
+    assert(distantOptions.status==AutonomousExperimentStatus::CandidatesOnly);
+    assert(distantOptions.alternatives.size()==1);
+    assert(distantOptions.alternatives.front().effortUnits==3);
+    assert(distantOptions.alternatives.front().riskProxy>realCandidate.alternatives.front().riskProxy);
+    AutonomousExperimentBudget tooLittleEffort;
+    tooLittleEffort.maxEffortUnits=2;
+    const auto blockedEffort=composeAutonomousExperimentOptions(
+        distantWorld,relationships,distantRequest,distantGoal,tooLittleEffort);
+    assert(blockedEffort.status==AutonomousExperimentStatus::NoSafeCandidate);
+    AutonomousExperimentBudget tooMuchRisk;
+    tooMuchRisk.maxRiskProxy=0.05;
+    const auto blockedRisk=composeAutonomousExperimentOptions(
+        distantWorld,relationships,distantRequest,distantGoal,tooMuchRisk);
+    assert(blockedRisk.status==AutonomousExperimentStatus::NoSafeCandidate);
     auto differentNode=gather;
     differentNode[0].resourceNode+=1;
     assert(!identicalAutonomousExperimentSteps(gather,differentNode));
