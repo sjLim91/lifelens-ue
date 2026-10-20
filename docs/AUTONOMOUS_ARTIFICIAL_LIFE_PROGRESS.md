@@ -17,8 +17,8 @@
 
 - 완료: **3/86** (M0-01, M0-02, M6-01). 단순 계획 단위 완료 지표이지 전체 시뮬레이션 구현률이 아니다.
 - 검증 완료·병합 검토: **0** (현재 표시 기준).
-- 진행: **5** (M0-03 #790/#820/#824, M0-04 #669/#819, M0-05 #826, M1-01 #822/#828, M2-07 #830).
-- 미완 또는 미검증: **78**.
+- 진행: **7** (M0-03 #790/#820/#824/#836, M0-04 #669/#819/#839, M0-05 #826, M1-01 #822/#828/#832, M1-03 #841, M1-05 #841, M2-07 #830/#835/#838).
+- 미완 또는 미검증: **76**.
 - **병렬 트랙:** AI 실행·인지 감사(M0-03, M1-01, M2-01), 메모리/장기 감사(M0-04, M11-04), 야생/생태(M0-02, M6-01), 시간 지속성(M9-01/02)은 파일 소유 영역을 분리한다. 실제 기능 구현/테스트 착수 전에는 신규 병렬 트랙을 완료·진행으로 미리 올리지 않는다.
 
 ## 전체 단위별 진행 장부
@@ -30,18 +30,18 @@
 | [x] | **M0-01** | #816 교역 양측 기억 exact-head·병합·메인 재검증 | ✅ 완료 | [PR #816](https://github.com/sjLim91/lifelens-ue/pull/816) · main e6061967 · Core/WASM/Web/인지 5 CI PASS |
 | [x] | **M0-02** | #814 사냥/식생 소모 코어 PR 충돌·검증 분리 | ✅ 완료 | [PR #814](https://github.com/sjLim91/lifelens-ue/pull/814) · 9 CI PASS · main 22ccf7a1 · Draft 해제 후 병합 |
 | [ ] | **M0-03** | #790 14개 의도 전수 지표: offered→accepted→pending→completed/failed/unsupported | 🚧 진행 | [#820](https://github.com/sjLim91/lifelens-ue/pull/820) main `04a9a477` 의도↔실제 token 증거 감사, [#824](https://github.com/sjLim91/lifelens-ue/pull/824) 14개 intent offered/submitted/accepted/rejected exact-head 4 CI PASS→main `eac1f47a`. [#836](https://github.com/sjLim91/lifelens-ue/pull/836) 14개 의도별 Core validation 단계 vs commit 거절 원인 분해 CI 진행. 100/365/1000일 다중 seed 근거·완전한 차단 원인 분석 미완 |
-| [ ] | **M0-04** | #669 메모리 source/tag/byte·중복·부정합 장기 감사 | 🚧 진행 | [#819](https://github.com/sjLim91/lifelens-ue/pull/819) main `ac1f3b1a` 개인 action 기억 출처별 집계. [#839](https://github.com/sjLim91/lifelens-ue/pull/839) 실제 100/365/1000일 seed별 memory/snapshot delta 분석 CI 진행. 여러 실측 seed 결과·원인 해석 미완 |
+| [ ] | **M0-04** | #669 메모리 source/tag/byte·중복·부정합 장기 감사 | 🚧 진행 | [#819](https://github.com/sjLim91/lifelens-ue/pull/819) main `ac1f3b1a` 개인 action 기억 출처별 집계. [#839](https://github.com/sjLim91/lifelens-ue/pull/839) 메모리/스냅샷 증감 분석 새 단위테스트 Preflight·Web PASS→main `1f3d560d`. 여러 실측 seed 결과·원인 해석 미완 |
 | [ ] | **M0-05** | baseline CI·저장 포맷·Ruleset·핵심 회귀 테스트 계약 동결 | 🚧 진행 | [#826](https://github.com/sjLim91/lifelens-ue/pull/826) Preflight/Web Checks PASS→main `8e2aac8b`, pinned 자산 timeout 재시도/원본 hash 검증 보존. 전체 baseline·저장·Ruleset 동결 미완 |
 
 ### M1 — 지각/기억
 
 | 완료 | 단위 | 계획에 정의된 작업 | 상태 | 근거 / 후속 |
 |---|---|---|---|---|
-| [ ] | **M1-01** | Core \`PerceptionFact\`: 시야/거리/가림/흔적·청각 채널·시각별 관측 근거 | 🚧 진행 | [#822](https://github.com/sjLim91/lifelens-ue/pull/822) main `0f30df41` 현재 시각 경계; [#828](https://github.com/sjLim91/lifelens-ue/pull/828) 9개 exact-head CI PASS→main `82c43e0f` 주민 실제 Core 위치에서 근접 자원 감지; [#832](https://github.com/sjLim91/lifelens-ue/pull/832) 단일 AI 인지 DTO·fingerprint 연결 CI 진행. 가림·청각·움직임/실행 검증 미완 |
+| [ ] | **M1-01** | Core \`PerceptionFact\`: 시야/거리/가림/흔적·청각 채널·시각별 관측 근거 | 🚧 진행 | [#822](https://github.com/sjLim91/lifelens-ue/pull/822) main `0f30df41` 현재 시각 경계; [#828](https://github.com/sjLim91/lifelens-ue/pull/828) 9개 exact-head CI PASS→main `82c43e0f` 주민 실제 Core 위치에서 근접 자원 감지; [#832](https://github.com/sjLim91/lifelens-ue/pull/832) 10개 exact-head CI PASS→main `9a9883e3` Core 근접 감지를 단일 AI 인지 DTO/fingerprint로 연결. 가림·청각·움직임/실행 검증 미완 |
 | [ ] | **M1-02** | \`ResidentMind\` 통합 인터페이스: Needs/Emotion/Personality/Belief/Relation/Goal/Plan 하나의 decision slot | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M1-03** | 개인 기억 출처: DirectWitness/ToldByOther/Inferred와 사건·대상·공간·시간 일관화 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
+| [ ] | **M1-03** | 개인 기억 출처: DirectWitness/ToldByOther/Inferred와 사건·대상·공간·시간 일관화 | 🚧 진행 | [#841](https://github.com/sjLim91/lifelens-ue/pull/841) Core 근접 자원 신호 기억을 시각적 DirectWitness가 아니라 Inferred/sourceCharacter/time/site로 보수적 표기·12개 상한 CI 검증 중. 모든 인지/소통 사건의 근거 일관화는 미완 |
 | [ ] | **M1-04** | 에피소드→요약 기억→핵심 신념의 계층적 저장/회상(근거 ID 보존) | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M1-05** | 장소·위험·자원·사람·도구 개인 경험 맵 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
+| [ ] | **M1-05** | 장소·위험·자원·사람·도구 개인 경험 맵 | 🚧 진행 | [#828](https://github.com/sjLim91/lifelens-ue/pull/828)/[#832](https://github.com/sjLim91/lifelens-ue/pull/832) 실 위치·근접 자원 관측 main. [#841](https://github.com/sjLim91/lifelens-ue/pull/841) 자원 위치·시간의 한정된 개인 추론 기억 CI 중; 위험·사람·도구 맵과 정확한 LOS/경로는 미완 |
 | [ ] | **M1-06** | 호기심·습관·애착·위험감수·상대 신뢰의 동적 갱신 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M1-07** | 자동 무료 로컬 추론: browser WebGPU/loopback provider·스케줄러·신형 Core context 정합 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 
@@ -176,6 +176,10 @@
 | 2026-10-20 | M1-01 | 🚧 진행 유지 | #828 정확한 HEAD Core/Preflight/WASM/Web 및 야생/지구 감사 PASS, main 82c43e0f. #832 Core-bound perceived-resource DTO·fingerprint CI 진행 중; M1 전체 미완 |
 | 2026-10-20 | M1-01 | 🚧 진행 유지 | #822 exact-head 4 CI PASS, main 0f30df41. 시간 인과 유입 차단 병합; 공간/시야 지각 전체 미완 |
 | 2026-10-20 | M0-05 | 미완→🚧 진행 | #826 캐릭터 리소스 다운로드 일시 timeout/503만 제한 재시도, 404/hash/size는 fail-closed. 검증 진행 중 |
+| 2026-10-20 | M1-03 | ⬜ 미완→🚧 진행 | #841 감지 근접 자원을 '직접 목격'으로 오판하지 않게 Inferred provenance·시각·좌표를 저장; CI 중 |
+| 2026-10-20 | M1-05 | ⬜ 미완→🚧 진행 | #828/#832 Core 위치 검증 센서 main, #841 개인 자원 경험 장소 메모리 CI 중. 위험·사람·도구 맵 미완 |
+| 2026-10-20 | M0-04 | 🚧 진행 유지 | #839 실제 오프라인 메모리 100/365/1000일 집계 분석 기능 단위테스트/Preflight/Web PASS→main 1f3d560d. 다중 seed 실측 미완 |
+| 2026-10-20 | M1-01 | 🚧 진행 유지 | #832 exact-head CI 전부 PASS→main 9a9883e3. LOS·청각·온전한 개인 지각 계약 미완 |
 | 2026-10-20 | M0-04 | 🚧 진행 유지 | #839 오프라인 실제 100/365/1000일 개인 기억·스냅샷 증가율 대조 툴/회귀 검증 중; 없는 날짜를 완료 표시하지 않음 |
 | 2026-10-20 | M2-07 | 🚧 진행 유지 | #838 주민 지각 센서를 가진 인지 요청의 합법적 read-only Core 목표 후보 거절 회귀 수정 CI 진행; 실제 집행 권한은 Core 별도 |
 | 2026-10-20 | M2-07 | 🚧 진행 유지 | #835 실전 Core unified social action choice까지 firsthand actor/partner-specific outcome feedback 반영, exact-head CI 진행 |
