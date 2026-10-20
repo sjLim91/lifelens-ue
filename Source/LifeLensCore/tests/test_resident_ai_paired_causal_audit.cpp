@@ -232,6 +232,46 @@ int main()
     assert(focusedOther.seed!=focused.seed);
     assert(focusedOther.matchedInitialResidents);
 
+    // Coverage for the entire publicly advertised Core cognitive catalog.
+    // These 14 proxy selections are diagnostic INPUTS, not successful
+    // executed plans. Unsupported/untargetable cases retain their reasons.
+    const auto all=runResidentAIPairedAudit(
+        4242001,1,ResidentAIPairedPolicy::CatalogFourteen);
+    assert(all.policy==ResidentAIPairedPolicy::CatalogFourteen);
+    assert(all.matchedInitialResidents);
+    assert(all.baseline.proposalsAccepted==0);
+    const auto fourteen=cognitiveStrategicIntentCatalog();
+    assert(fourteen.size()==FullCognitiveCatalogCount);
+    std::uint64_t selected=0,submitted=0,accepted=0,rejected=0;
+    for(std::size_t i=0;i<fourteen.size();++i){
+        assert(all.proxy.catalogSelected[i]>0);
+        selected+=all.proxy.catalogSelected[i];
+        submitted+=all.proxy.catalogSubmitted[i];
+        accepted+=all.proxy.catalogAccepted[i];
+        rejected+=all.proxy.catalogRejected[i];
+        assert(all.proxy.catalogSubmitted[i]
+            ==all.proxy.catalogAccepted[i]
+                +all.proxy.catalogRejected[i]);
+        assert(all.proxy.catalogSelected[i]
+            ==all.proxy.catalogNotOffered[i]
+                +all.proxy.catalogNoEligibleTarget[i]
+                +all.proxy.catalogSubmitted[i]);
+    }
+    assert(selected>0);
+    assert(submitted==all.proxy.proposalsAttempted);
+    assert(accepted==all.proxy.proposalsAccepted);
+    assert(rejected==all.proxy.proposalsRejected);
+    const std::string allJson=residentAIPairedReportJson(all);
+    assert(allJson.find("\"all-fourteen-core-catalog\"")
+        !=std::string::npos);
+    assert(allJson.find("\"catalogIntentInputs\":{")
+        !=std::string::npos);
+    for(const auto intent:fourteen)
+        assert(allJson.find(std::string("\"")+cognitiveIntentName(intent)
+            +"\":{")!=std::string::npos);
+    assert(residentAIPairedReportJson(runResidentAIPairedAudit(
+        4242001,1,ResidentAIPairedPolicy::CatalogFourteen))==allJson);
+
     bool invalidRejected=false;
     try{ (void)runResidentAIPairedAudit(0,1); }
     catch(const std::invalid_argument&){invalidRejected=true;}
