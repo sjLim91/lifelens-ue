@@ -35,6 +35,18 @@ def compare_audit(content, baseline):
         'totalSleepSaturationResidentMinutes': sum(int(row['sleepSatMin']) for row in rows),
         'livingResidents': sum(int(row['alive']) for row in rows),
     }
+    # Read-only diagnosis: show which actual residents contributed to the
+    # cumulative saturation regression. This is NOT a relaxed acceptance
+    # criterion and does not alter any World/Simulation gameplay threshold.
+    offenders = sorted(
+        ({
+            'residentId': row['id'],
+            'saturationMinutes': int(row['sleepSatMin']),
+            'longestContinuousMinutes': int(row['sleepLongestSat']),
+            'alive': int(row['alive']) == 1,
+        } for row in rows),
+        key=lambda item: (-item['saturationMinutes'], item['residentId']))
+    result['topSleepSaturationResidents'] = offenders[:5]
     failures = []
     if result['longestSleepSaturationMinutes'] >= MAX_CONTINUOUS_SLEEP_SATURATION_MINUTES:
         failures.append('continuous fatigue starvation')
@@ -59,6 +71,13 @@ def main(arguments):
         try:
             result, failures = compare_audit(path.read_text(), baseline)
             results.append(result)
+            if failures:
+                worst = result['topSleepSaturationResidents']
+                details = ', '.join(
+                    f"id={p['residentId']}:total={p['saturationMinutes']}:"
+                    f"longest={p['longestContinuousMinutes']}"
+                    for p in worst)
+                errors.append(f'{path}: largest sleep-saturation residents: {details}')
             errors.extend(f'{path}: {failure}' for failure in failures)
         except (ValueError, KeyError) as error:
             errors.append(f'{path}: {error}')

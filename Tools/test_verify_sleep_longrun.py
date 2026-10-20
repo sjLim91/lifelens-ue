@@ -33,6 +33,28 @@ class SleepLongrunAcceptanceTest(unittest.TestCase):
         failures = compare_audit(self.audit(item, values), self.baseline)[1]
         self.assertIn('continuous fatigue starvation', failures)
 
+    def test_diagnostic_ranks_exact_contributors_without_changing_gate(self):
+        reference = self.baseline['results'][1]
+        rows = (
+            f"RESIDENT seed={reference['seed']} day=365 id=5 alive=1 "
+            "sleepLongestSat=45 sleepSatMin=12\n"
+            f"RESIDENT seed={reference['seed']} day=365 id=2 alive=0 "
+            "sleepLongestSat=80 sleepSatMin=40000\n"
+            f"RESIDENT seed={reference['seed']} day=365 id=3 alive=1 "
+            "sleepLongestSat=31 sleepSatMin=40000\n"
+            f"AUDIT_COMPLETE seed={reference['seed']} days=365\n"
+        )
+        result, failures = compare_audit(rows, self.baseline)
+        self.assertTrue(any("totalSleepSaturation" in f for f in failures))
+        self.assertEqual(
+            [v["residentId"] for v in result["topSleepSaturationResidents"]],
+            ["2", "3", "5"])
+        self.assertEqual(result["topSleepSaturationResidents"][0]
+                         ["saturationMinutes"], 40000)
+        self.assertFalse(result["topSleepSaturationResidents"][0]["alive"])
+        self.assertEqual(result["longestSleepSaturationMinutes"], 80)
+        self.assertEqual(result["totalSleepSaturationResidentMinutes"], 80012)
+
     def test_trajectory_tolerance_and_missing_completion(self):
         item = self.baseline['results'][1]
         values = {**item['main'], 'totalSleepSaturationResidentMinutes': 14900}
