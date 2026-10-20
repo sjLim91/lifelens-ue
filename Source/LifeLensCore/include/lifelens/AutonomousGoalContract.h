@@ -139,7 +139,15 @@ inline bool autonomousGoalEvidenceValid(
                 &&request.localResources[ref.index].nodeId!=0
                 &&request.localResources[ref.index].distanceCells>=0
                 &&request.localResources[ref.index].distanceCells
-                    <=request.localRadiusCells;
+                    <=request.localRadiusCells
+                // A reported "nearby" node also needs spatially consistent
+                // coordinates. A forged distance of 0 for a far-away source
+                // must not become local goal evidence, even in shadow mode.
+                // Core's own sensor uses this exact Manhattan metric.
+                &&perceptionGridDistance(
+                    request.localObserverPosition,
+                    request.localResources[ref.index].position)
+                        ==request.localResources[ref.index].distanceCells;
         default: return false;
     }
 }

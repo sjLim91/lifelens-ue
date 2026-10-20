@@ -171,6 +171,20 @@ int main()
     assert(validateAutonomousGoalCandidate(
         world,inventedSensor,*materialGoal).issue
             ==AutonomousGoalIssue::InvalidEvidence);
+    // The same REAL Core node cannot be portrayed as local by forging a
+    // shorter observed distance or moving the fictitious observer origin.
+    auto impossibleDistance=exploratory;
+    const auto localIndex=materialGoal->evidence[0].index;
+    impossibleDistance.localResources[localIndex].distanceCells
+        +=1;
+    assert(validateAutonomousGoalCandidate(
+        world,impossibleDistance,*materialGoal).issue
+            ==AutonomousGoalIssue::InvalidEvidence);
+    auto falseOrigin=exploratory;
+    falseOrigin.localObserverPosition.x+=100;
+    assert(validateAutonomousGoalCandidate(
+        world,falseOrigin,*materialGoal).issue
+            ==AutonomousGoalIssue::InvalidEvidence);
     // A formerly real node disappearing also invalidates the proposal.
     const auto linkedIndex=materialGoal->evidence[0].index;
     const auto nodeId=exploratory.localResources[linkedIndex].nodeId;
