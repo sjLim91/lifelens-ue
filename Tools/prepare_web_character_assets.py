@@ -4,6 +4,8 @@ import hashlib
 import json
 import struct
 import urllib.request
+import urllib.error
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,11 +20,26 @@ def git_digest(data):
     return hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
 
 def download(url):
-    with urllib.request.urlopen(url, timeout=40) as response:
-        data = response.read(20 * 1024 * 1024 + 1)
-    if len(data) > 20 * 1024 * 1024:
-        raise ValueError('asset exceeds download budget')
-    return data
+    # A transient raw.githubusercontent.com read timeout must not fail an
+    # otherwise unrelated Core/AI pull request. Never skip the pinned blob
+    # verification below, and never retry missing (404) or invalid assets.
+    last_error = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(url, timeout=40) as response:
+                data = response.read(20 * 1024 * 1024 + 1)
+            if len(data) > 20 * 1024 * 1024:
+                raise ValueError('asset exceeds download budget')
+            return data
+        except urllib.error.HTTPError as error:
+            if error.code not in (429, 500, 502, 503, 504):
+                raise
+            last_error = error
+        except OSError as error:
+            last_error = error
+        if attempt < 2:
+            time.sleep(attempt + 1)
+    raise last_error
 
 def glb_document(data):
     magic, version, length = struct.unpack_from('<4sII', data)
