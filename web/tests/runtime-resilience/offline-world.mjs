@@ -90,6 +90,18 @@ try {
   await writePersistedWorld(later);
   assert.deepEqual(await readPersistedWorld(), later,
     'newer Core snapshot must atomically supersede the older checkpoint');
+  // Competing tabs cannot silently claim different Core truth for the very
+  // same minute and wall timestamp. Exact repeats are harmless.
+  await writePersistedWorld({ ...later });
+  const divergentBytes = {
+    ...later, snapshotBase64: 'RkFLRS1DT1JFLVNOQVBTSE9ULURBVEE=',
+  };
+  await assert.rejects(writePersistedWorld(divergentBytes), /충돌/);
+  await assert.rejects(writePersistedWorld({
+    ...later, earthOrigin: { latitudeDeg: 10, longitudeDeg: 20 },
+  }), /충돌/);
+  assert.deepEqual(await readPersistedWorld(), later,
+    'rejected same-instant divergent snapshot must preserve prior Core truth');
   // Two browser tabs may capture the same seed at different minutes. An
   // earlier write must never roll back a durable later Core checkpoint.
   const staleMinute = { ...later, minute: later.minute - 1,
