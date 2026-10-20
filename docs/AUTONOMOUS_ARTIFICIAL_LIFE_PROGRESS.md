@@ -39,9 +39,9 @@
 |---|---|---|---|---|
 | [ ] | **M1-01** | Core \`PerceptionFact\`: 시야/거리/가림/흔적·청각 채널·시각별 관측 근거 | 🚧 진행 | [#822](https://github.com/sjLim91/lifelens-ue/pull/822) main `0f30df41` 현재 시각 경계; [#828](https://github.com/sjLim91/lifelens-ue/pull/828) 9개 exact-head CI PASS→main `82c43e0f` 주민 실제 Core 위치에서 근접 자원 감지; [#832](https://github.com/sjLim91/lifelens-ue/pull/832) 10개 exact-head CI PASS→main `9a9883e3` Core 근접 감지를 단일 AI 인지 DTO/fingerprint로 연결. 가림·청각·움직임/실행 검증 미완 |
 | [ ] | **M1-02** | \`ResidentMind\` 통합 인터페이스: Needs/Emotion/Personality/Belief/Relation/Goal/Plan 하나의 decision slot | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M1-03** | 개인 기억 출처: DirectWitness/ToldByOther/Inferred와 사건·대상·공간·시간 일관화 | 🚧 진행 | [#841](https://github.com/sjLim91/lifelens-ue/pull/841) Core 근접 자원 신호 기억을 시각적 DirectWitness가 아니라 Inferred/sourceCharacter/time/site로 보수적 표기·12개 상한 회귀 실패 수정 커밋 `4ca19aad` Core 재검증 중. 모든 인지/소통 사건의 근거 일관화는 미완 |
+| [ ] | **M1-03** | 개인 기억 출처: DirectWitness/ToldByOther/Inferred와 사건·대상·공간·시간 일관화 | 🚧 진행 | [#841](https://github.com/sjLim91/lifelens-ue/pull/841) 기존 실패 테스트 수정 후 exact-head 9 CI PASS→main `ca0b5a6a`, 근접 자원 신호 추론 기억 및 반복 관측 중복 제한. 소문/사회/도구 전체 기억 출처 불변성은 미완 |
 | [ ] | **M1-04** | 에피소드→요약 기억→핵심 신념의 계층적 저장/회상(근거 ID 보존) | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M1-05** | 장소·위험·자원·사람·도구 개인 경험 맵 | 🚧 진행 | [#828](https://github.com/sjLim91/lifelens-ue/pull/828)/[#832](https://github.com/sjLim91/lifelens-ue/pull/832) 실 위치·근접 자원 관측 main. [#841](https://github.com/sjLim91/lifelens-ue/pull/841) 자원 위치·시간의 한정된 개인 추론 기억 CI 중; 위험·사람·도구 맵과 정확한 LOS/경로는 미완 |
+| [ ] | **M1-05** | 장소·위험·자원·사람·도구 개인 경험 맵 | 🚧 진행 | [#828](https://github.com/sjLim91/lifelens-ue/pull/828)/[#832](https://github.com/sjLim91/lifelens-ue/pull/832) 실제 Core 개인 근접 센서 main, [#841](https://github.com/sjLim91/lifelens-ue/pull/841) 9 CI PASS→main `ca0b5a6a` 공간/시간 추론 기억. 위험·사람·도구 지도와 LOS·경로는 미완 |
 | [ ] | **M1-06** | 호기심·습관·애착·위험감수·상대 신뢰의 동적 갱신 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M1-07** | 자동 무료 로컬 추론: browser WebGPU/loopback provider·스케줄러·신형 Core context 정합 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 
@@ -49,12 +49,12 @@
 
 | 완료 | 단위 | 계획에 정의된 작업 | 상태 | 근거 / 후속 |
 |---|---|---|---|---|
-| [ ] | **M2-01** | Core \`NeedGap/Opportunity\` 감지: 생존 위험·자원·관계·호기심·반복 실패 | 🚧 진행 | [#844](https://github.com/sjLim91/lifelens-ue/pull/844) 주민의 Core 근접 센서 기반 개인 재료 확보·호기심 목표 후보 생성, 고갈/가짜 node 기각 Core 테스트 CI 진행. 실제 자율 GoalSpec 집행·계획·물리 완료 검증 미완 |
+| [ ] | **M2-01** | Core \`NeedGap/Opportunity\` 감지: 생존 위험·자원·관계·호기심·반복 실패 | 🚧 진행 | [#844](https://github.com/sjLim91/lifelens-ue/pull/844) Core/Preflight/WASM/Web 4 CI PASS→main `277b8c6a`: 주민별 근접 관측 기반 호기심/물자 목표 후보, 가짜/고갈된 source 무효화. 실제 GoalSpec 실행/다단계 인과 미완 |
 | [ ] | **M2-02** | Core \`GoalSpec\`: 목표 조건·대상·기한·비용·근거·중단 조건 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M2-03** | 주민별 경쟁 목표 후보 생성/순위: 개인 동기·불확실성·환경 증거 | 🚧 진행 | [#844](https://github.com/sjLim91/lifelens-ue/pull/844) 주민의 Core 근접 센서 기반 개인 재료 확보·호기심 목표 후보 생성, 고갈/가짜 node 기각 Core 테스트 CI 진행. 실제 자율 GoalSpec 집행·계획·물리 완료 검증 미완 |
+| [ ] | **M2-03** | 주민별 경쟁 목표 후보 생성/순위: 개인 동기·불확실성·환경 증거 | 🚧 진행 | [#844](https://github.com/sjLim91/lifelens-ue/pull/844) Core/Preflight/WASM/Web 4 CI PASS→main `277b8c6a`: 주민별 근접 관측 기반 호기심/물자 목표 후보, 가짜/고갈된 source 무효화. 실제 GoalSpec 실행/다단계 인과 미완 |
 | [ ] | **M2-04** | \`Hypothesis\` 후보: 원인 추정·대안 방법·확신과 반증 조건 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M2-05** | 실세계 \`Affordance\` primitive 목록: Observe/Move/Approach/Pick/Carry/Transfer/Combine/Work/Talk 등 구현별 capability | 🚧 진행 | [#846](https://github.com/sjLim91/lifelens-ue/pull/846) 실제 가까이 감지된 물자 목표를 Core Gather read-only 후보로 연결. #844 선행 PR 위에 구현했고 Core path/소비/실제 실행 전권·다단계 계획 및 후속 CI 검증 미완 |
-| [ ] | **M2-06** | \`PlanCandidate\` 조합 검색: 순서·전제 조건·자원/거리·우회·포기 | 🚧 진행 | [#846](https://github.com/sjLim91/lifelens-ue/pull/846) 실제 가까이 감지된 물자 목표를 Core Gather read-only 후보로 연결. #844 선행 PR 위에 구현했고 Core path/소비/실제 실행 전권·다단계 계획 및 후속 CI 검증 미완 |
+| [ ] | **M2-05** | 실세계 \`Affordance\` primitive 목록: Observe/Move/Approach/Pick/Carry/Transfer/Combine/Work/Talk 등 구현별 capability | 🚧 진행 | [#846](https://github.com/sjLim91/lifelens-ue/pull/846) 실제 가까이 감지된 물자 목표를 Core Gather read-only 후보로 연결. #844 main 이후 정확히 변경 파일만 재기반, Core Gather 후보 원격 CI 검증 중. 경로·소비·실제 실행 전권·다단계 계획 미완 |
+| [ ] | **M2-06** | \`PlanCandidate\` 조합 검색: 순서·전제 조건·자원/거리·우회·포기 | 🚧 진행 | [#846](https://github.com/sjLim91/lifelens-ue/pull/846) 실제 가까이 감지된 물자 목표를 Core Gather read-only 후보로 연결. #844 main 이후 정확히 변경 파일만 재기반, Core Gather 후보 원격 CI 검증 중. 경로·소비·실제 실행 전권·다단계 계획 미완 |
 | [ ] | **M2-07** | 경쟁 계획 평가: 예상 효율·위험·소요/이동·과거 개인 성공률 | 🚧 진행 | [#830](https://github.com/sjLim91/lifelens-ue/pull/830) 개인 경험 기반 read-only 대안 순위 main `d8c09fd2`; [#835](https://github.com/sjLim91/lifelens-ue/pull/835) 같은 주민·상대·사회 행동의 개인 Core 경험을 실제 unified agency 선택에 반영 4 CI PASS→main `cc4df1b9`; [#838](https://github.com/sjLim91/lifelens-ue/pull/838) Core/Preflight/WASM/Web 4 CI PASS→main `d40e1521` 지각 컨텍스트/목표 계획 호환. 물리 거리/다단계 자율 실행·인과 검증 미완 |
 | [ ] | **M2-08** | \`ExperimentBudget\`: 한시적 탐색·안전한 실험·자원 제한/긴급 생존 선점 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M2-09** | 실패/환경변화 시 부분 재계획·가설 수정·기존 목표 유지/포기 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
@@ -177,6 +177,8 @@
 | 2026-10-20 | M1-01 | 🚧 진행 유지 | #822 exact-head 4 CI PASS, main 0f30df41. 시간 인과 유입 차단 병합; 공간/시야 지각 전체 미완 |
 | 2026-10-20 | M0-05 | 미완→🚧 진행 | #826 캐릭터 리소스 다운로드 일시 timeout/503만 제한 재시도, 404/hash/size는 fail-closed. 검증 진행 중 |
 | 2026-10-20 | M0-03 | 🚧 진행 유지 | #836 validator·commit 거절 단계별 14 intent 입력 구분 exact-head 4 CI PASS→main b30d40d6; 전체 완료 아님 |
+| 2026-10-20 | M1-03/M1-05 | 🚧 진행 유지 | #841 fixed HEAD 4ca19aad의 9개 CI PASS 후 main ca0b5a6a. 개인 근접 추론 기억·12개 제한·동일 스캔 중 중복 재발견 회귀 해결 |
+| 2026-10-20 | M2-01/M2-03 | 🚧 진행 유지 | #844 fixed HEAD 33d6d51f 4 CI PASS, main 277b8c6a. 실제 Core 주변 신호 기반 개인 자원 호기심/물자 목표 후보. 실전 실행 여전히 별도 |
 | 2026-10-20 | M2-05/M2-06 | ⬜ 미완→🚧 진행 | #846 (선행 #844) 실제 감지 자원 목표를 현재 Core 재료 노드 Gather 후보로 형상화·차단 회귀 CI 준비; 이동/집행 성공이나 전체 primitive 조합 완료 아님 |
 | 2026-10-20 | M2-07 | 🚧 진행 유지 | #838 exact-head CI 4개 PASS 후 main d40e1521에 Core 감지 컨텍스트/목표 계획 검증 호환 패치 병합. GoalSpec 실행 루프 미완 |
 | 2026-10-20 | M1-03 | 🚧 진행 유지 | #841 Core 157개 중 메모리 크기 순환 테스트 1개 실패 원인 진단, 스캔 안 재발견 중복 제거 커밋 4ca19aad 재검증 진행 |
