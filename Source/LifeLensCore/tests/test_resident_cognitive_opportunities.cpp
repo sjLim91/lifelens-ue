@@ -6,6 +6,7 @@
 
 #include "lifelens/ResidentCognitivePreference.h"
 #include "lifelens/ResidentContextOutcomeLearning.h"
+#include "lifelens/ResidentContextOutcomeLearning.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
@@ -146,6 +147,40 @@ static void localTradeChoice()
     assert(units(preferred,requested,MaterialKind::Stone)==9);
     assert(units(preferred,b,MaterialKind::Wood)==0);
     assert(societyExchangeFactCount(preferred.socialKnowledge())==1);
+    // Real immediate trade now informs BOTH residents; the actor should
+    // learn that this partner cooperated, and the recipient witnessed the
+    // very same physical exchange. No pending-context token was issued.
+    const auto* actorAfter=cognitiveCharacter(preferred.world(),a);
+    const auto* partnerAfter=cognitiveCharacter(preferred.world(),requested);
+    assert(actorAfter &&partnerAfter);
+    const auto verifiesLocalTrade=[&](const Character& resident,
+                                     CharacterId counterpart){
+        int matches=0;
+        for(const MemoryRecord& memory:resident.memory.entries){
+            if(memory.tags.size()!=3
+               ||memory.tags[1]!="CoreContext:Trade"
+               ||memory.tags[2]!="success") continue;
+            assert(memory.source==MemorySource::DirectWitness);
+            assert(memory.witnessed);
+            assert(memory.sourceCharacter==resident.id);
+            assert(memory.who==counterpart);
+            assert(memory.where.rfind("core-local-exchange-fact:",0)==0);
+            ++matches;
+        }
+        assert(matches==1);
+        assert(learnedActionDisposition(resident,"CoreContext:Trade")>1.0);
+        assert(std::abs(residentCognitivePartnerExperienceFactor(
+            resident,counterpart,"CoreContext:Trade",
+            preferred.world().minute)-1.04)<1e-12);
+    };
+    verifiesLocalTrade(*actorAfter,requested);
+    verifiesLocalTrade(*partnerAfter,a);
+    // The unrelated resident received no personal knowledge of a trade.
+    const auto* bystander=cognitiveCharacter(preferred.world(),b);
+    assert(bystander);
+    assert(residentCognitivePartnerExperienceFactor(
+        *bystander,requested,"CoreContext:Trade",
+        preferred.world().minute)==1.0);
     assert(units(replay,requested,MaterialKind::Wood)==1);
     std::vector<std::uint8_t> left,right;
     assert(encodeSimulationSnapshot(preferred.captureSnapshot(),left));
