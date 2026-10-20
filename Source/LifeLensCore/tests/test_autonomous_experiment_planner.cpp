@@ -124,10 +124,10 @@ int main()
     assert(revalidateAutonomousExperimentChoice(
         world,relationships,request,goal,options,selected)
         ==AutonomousExperimentRevalidation::CurrentCandidate);
-    auto forged=selected;
-    forged.effortUnits++;
+    auto forgedOption=selected;
+    forgedOption.effortUnits++;
     assert(revalidateAutonomousExperimentChoice(
-        world,relationships,request,goal,options,forged)
+        world,relationships,request,goal,options,forgedOption)
         ==AutonomousExperimentRevalidation::NoLongerAdmissible);
     auto forgedUtility=selected;
     forgedUtility.preferenceScore=std::numeric_limits<double>::quiet_NaN();
