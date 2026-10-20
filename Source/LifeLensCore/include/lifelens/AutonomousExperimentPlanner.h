@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "AutonomousAffordancePlanner.h"
+#include "AutonomousSocialOutcomeLearning.h"
 
 namespace lifelens {
 
@@ -213,7 +214,16 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
                     valid=false;
                     break;
                 }
-                totalUtility+=std::clamp(utility,0.0,1.0);
+                // This ONE resident's personally felt result from a
+                // previously completed Core social action may distinguish
+                // two otherwise valid ways to reach the same relationship
+                // goal. It does not predict success or bypass Core gates.
+                const double personalMood=
+                    learnedSocialMoodDisposition(
+                        *actor,step.target,step.socialIntent);
+                const double personalPreference=std::clamp(
+                    utility*(1.0+0.25*personalMood),0.0,1.0);
+                totalUtility+=personalPreference;
                 ++socialSteps;
             }else{
                 valid=false;
