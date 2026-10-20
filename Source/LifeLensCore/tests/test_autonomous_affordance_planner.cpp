@@ -200,6 +200,11 @@ int main()
     assert(world.characters[0].civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood)==1);
 
+    // Evaluate a normal low-risk material goal independently of the
+    // deliberate 0.99 hunger emergency tested above. The real Core should
+    // always block optional collection while survival is urgent.
+    world.characters[0].needs.hunger=0.30;
+    request=currentRequest(world,relationships,11);
     // Material goals require an observed resource location and verified
     // Gather/Explore route, not an imaginary item creation primitive.
     auto materialGoal=foodGoal;
@@ -214,6 +219,70 @@ int main()
     assert(unavailable.status==AutonomousAffordancePlanStatus::Unsupported);
     assert(unavailable.reason==AutonomousAffordanceReason::UnsupportedMetric);
     assert(unavailable.proposedSteps.empty());
+
+    // One personally sensed source may justify a GATHER CANDIDATE for
+    // a new material goal, but does not execute it or grant an inventory item.
+    world.characters[0].needs.hunger=0.30;
+    const ResourceNode actual=world.resourceNodes.front();
+    auto sensedRequest=currentRequest(world,relationships,11);
+    const auto proximity=observeLocalResourceProximity(
+        world,11,actual.pos,3);
+    assert(proximity.actor==11 &&!proximity.nearbyResources.empty());
+    sensedRequest.localProximityObserved=true;
+    sensedRequest.localObserverPosition=proximity.observerPosition;
+    sensedRequest.localRadiusCells=proximity.radiusCells;
+    sensedRequest.localResources=proximity.nearbyResources;
+    AutonomousGoalPredicate rawCount;
+    rawCount.metric=AutonomousGoalMetric::ActorRawMaterialCount;
+    rawCount.material=sensedRequest.localResources[0].material;
+    rawCount.comparison=AutonomousGoalCompare::AtLeast;
+    rawCount.threshold=1;
+    auto sensedGoal=goalFor(sensedRequest);
+    sensedGoal.desiredState={rawCount};
+    sensedGoal.evidence={{AutonomousGoalEvidenceKind::ObservedLocalResource,0}};
+    const auto sensedGather=draftAutonomousAffordancePlan(
+        world,relationships,sensedRequest,sensedGoal);
+    assert(sensedGather.status==AutonomousAffordancePlanStatus::CandidateOnly);
+    assert(sensedGather.proposedSteps.size()==1);
+    assert(sensedGather.proposedSteps[0].kind
+        ==AutonomousAffordanceKind::ExistingCivilizationGather);
+    assert(sensedGather.proposedSteps[0].material==rawCount.material);
+    assert(sensedGather.proposedSteps[0].resourceNode
+        ==sensedRequest.localResources[0].nodeId);
+    assert(sensedGather.contextFingerprint
+        ==cognitiveRequestFingerprint(sensedRequest));
+    const auto noSense=currentRequest(world,relationships,11);
+    assert(draftAutonomousAffordancePlan(
+        world,relationships,noSense,sensedGoal).status
+        ==AutonomousAffordancePlanStatus::RejectedGoal);
+    auto forgedPerception=sensedRequest;
+    forgedPerception.localResources[0].nodeId=999999;
+    assert(draftAutonomousAffordancePlan(
+        world,relationships,forgedPerception,sensedGoal).status
+        ==AutonomousAffordancePlanStatus::RejectedGoal);
+    auto laterWorld=world;
+    for(auto& node:laterWorld.resourceNodes)
+        if(node.id==sensedRequest.localResources[0].nodeId)
+            node.quantity=0;
+    assert(draftAutonomousAffordancePlan(
+        laterWorld,relationships,sensedRequest,sensedGoal).status
+        ==AutonomousAffordancePlanStatus::RejectedGoal);
+    // A strong survival emergency outranks speculative material pursuits.
+    auto emergencyWorld=world;
+    emergencyWorld.characters.front().needs.hunger=0.99;
+    auto emergencyRequest=currentRequest(emergencyWorld,relationships,11);
+    emergencyRequest.localProximityObserved=true;
+    emergencyRequest.localObserverPosition=proximity.observerPosition;
+    emergencyRequest.localRadiusCells=proximity.radiusCells;
+    emergencyRequest.localResources=proximity.nearbyResources;
+    assert(draftAutonomousAffordancePlan(
+        emergencyWorld,relationships,emergencyRequest,sensedGoal).status
+        ==AutonomousAffordancePlanStatus::Blocked);
+    world.characters[0].needs.hunger=0.99;
+    // The earlier nonurgent material fixture intentionally changed the
+    // actor's hunger; rebuild this actual Core request before validating
+    // unrelated self-harm / no-op goal routes.
+    request=currentRequest(world,relationships,11);
 
     // Never implement a physiological self-harm increase as a normal
     // goal-to-action route, despite it being a well-typed B3 predicate.

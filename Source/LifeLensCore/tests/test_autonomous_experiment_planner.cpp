@@ -284,6 +284,51 @@ int main()
     assert(sleep.alternatives[0].steps[0].physicalGoal==Goal::Sleep);
     assert(sleep.alternatives[0].steps[0].target==0);
 
+    // A resident's current observed material goal can be compared as ONE
+    // read-only Core Gather alternative. Actual extraction is not a model
+    // effect, and the node identity must participate in candidate equality.
+    auto localRequest=observe(world,relationships,11);
+    const auto localSource=observeLocalResourceProximity(
+        world,11,world.resourceNodes.front().pos,3);
+    assert(localSource.actor==11 &&!localSource.nearbyResources.empty());
+    localRequest.localProximityObserved=true;
+    localRequest.localObserverPosition=localSource.observerPosition;
+    localRequest.localRadiusCells=localSource.radiusCells;
+    localRequest.localResources=localSource.nearbyResources;
+    AutonomousGoalCandidate materialGoal;
+    materialGoal.actor=11;
+    materialGoal.createdMinute=world.minute;
+    materialGoal.expiresMinute=world.minute+1440;
+    materialGoal.priority=0.7;
+    AutonomousGoalPredicate raw;
+    raw.metric=AutonomousGoalMetric::ActorRawMaterialCount;
+    raw.material=localRequest.localResources[0].material;
+    raw.comparison=AutonomousGoalCompare::AtLeast;
+    raw.threshold=1.0;
+    materialGoal.desiredState={raw};
+    materialGoal.evidence={{
+        AutonomousGoalEvidenceKind::ObservedLocalResource,0
+    }};
+    const auto realCandidate=composeAutonomousExperimentOptions(
+        world,relationships,localRequest,materialGoal);
+    assert(realCandidate.status==AutonomousExperimentStatus::CandidatesOnly);
+    assert(realCandidate.alternatives.size()==1);
+    const auto& gather=realCandidate.alternatives.front().steps;
+    assert(gather.size()==1);
+    assert(gather[0].kind==AutonomousAffordanceKind::ExistingCivilizationGather);
+    assert(gather[0].resourceNode==localRequest.localResources[0].nodeId);
+    auto differentNode=gather;
+    differentNode[0].resourceNode+=1;
+    assert(!identicalAutonomousExperimentSteps(gather,differentNode));
+    auto emptySource=world;
+    for(auto& node:emptySource.resourceNodes){
+        if(node.id==gather[0].resourceNode) node.quantity=0;
+    }
+    const auto noInventedStock=composeAutonomousExperimentOptions(
+        emptySource,relationships,localRequest,materialGoal);
+    assert(noInventedStock.status==AutonomousExperimentStatus::RejectedGoal);
+    assert(noInventedStock.alternatives.empty());
+
     // Completed desired state never triggers unnecessary experiments.
     world.characters[0].needs.sleep=0.1;
     const auto rested=observe(world,relationships,11);

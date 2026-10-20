@@ -92,7 +92,8 @@ inline bool identicalAutonomousExperimentSteps(
         const auto& b=second[i];
         if(a.kind!=b.kind ||a.physicalGoal!=b.physicalGoal
            ||a.socialIntent!=b.socialIntent ||a.target!=b.target
-           ||a.goalPredicateIndex!=b.goalPredicateIndex)
+           ||a.goalPredicateIndex!=b.goalPredicateIndex
+           ||a.material!=b.material ||a.resourceNode!=b.resourceNode)
             return false;
     }
     return true;
@@ -225,6 +226,23 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
                     utility*(1.0+0.25*personalMood),0.0,1.0);
                 totalUtility+=personalPreference;
                 ++socialSteps;
+            }else if(step.kind
+                ==AutonomousAffordanceKind::ExistingCivilizationGather){
+                // Introducing this typed candidate must NOT make Gather an
+                // unvalidated "other" action. Check the exact Core resource
+                // ledger every time the read-only alternative is composed.
+                const auto live=std::find_if(world.resourceNodes.begin(),
+                    world.resourceNodes.end(),[&](const ResourceNode& node){
+                        return node.id==step.resourceNode
+                            &&node.material==step.material
+                            &&node.quantity>0;
+                    });
+                if(step.resourceNode==0
+                   ||step.material==MaterialKind::Unknown
+                   ||live==world.resourceNodes.end()){
+                    valid=false;
+                    break;
+                }
             }else{
                 valid=false;
                 break;

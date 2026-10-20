@@ -40,7 +40,10 @@ enum class AutonomousAffordanceReason {
 
 enum class AutonomousAffordanceKind {
     ExistingPhysicalGoal,
-    ExistingSocialIntent
+    ExistingSocialIntent,
+    // Read-only suggestion for the EXISTING Core Gather executor, NOT
+    // permission to collect, move, create resources or bypass its checks.
+    ExistingCivilizationGather
 };
 
 struct AutonomousAffordanceStep {
@@ -49,6 +52,8 @@ struct AutonomousAffordanceStep {
     SocialIntent socialIntent=SocialIntent::None;
     CharacterId target=0;
     std::size_t goalPredicateIndex=0;
+    MaterialKind material=MaterialKind::Unknown;
+    ResourceNodeId resourceNode=0;
 };
 
 struct AutonomousAffordancePlan {
@@ -147,7 +152,7 @@ inline AutonomousAffordancePlan draftAutonomousAffordancePlan(
         return fail(AutonomousAffordancePlanStatus::RejectedContext,
                     AutonomousAffordanceReason::StaleOrForgedContext);
 
-    if(!validateAutonomousGoalCandidate(world,authoritative,goal).accepted)
+    if(!validateAutonomousGoalCandidate(world,request,goal).accepted)
         return fail(AutonomousAffordancePlanStatus::RejectedGoal,
                     AutonomousAffordanceReason::InvalidGoal);
 
@@ -225,7 +230,62 @@ inline AutonomousAffordancePlan draftAutonomousAffordancePlan(
             // B4a does not pretend to know a resource location merely because
             // an inventory goal mentions a material; or that a resident's
             // continued survival can be commanded as an executable action.
-            case AutonomousGoalMetric::ActorRawMaterialCount:
+            case AutonomousGoalMetric::ActorRawMaterialCount: {
+                // Only a typed local Core perception reference may produce a
+                // gathering candidate, and only for that SAME material.
+                // This remains a proposal: normal actual Core civilization
+                // routing verifies distance/path, stock, inventory and life
+                // safety again before any physical work is performed.
+                if(condition.comparison!=AutonomousGoalCompare::AtLeast)
+                    return fail(AutonomousAffordancePlanStatus::Unsupported,
+                                AutonomousAffordanceReason::UnsupportedDirection);
+                const int held=actor->civilization.inventory.count(
+                    ItemKind::RawMaterial,condition.material);
+                if(held>=condition.threshold) break;
+                if(survivalUrgent)
+                    return fail(AutonomousAffordancePlanStatus::Blocked,
+                                AutonomousAffordanceReason::UrgentSurvival);
+                if(!request.localProximityObserved)
+                    return fail(AutonomousAffordancePlanStatus::Unsupported,
+                                AutonomousAffordanceReason::UnsupportedMetric);
+                const ObservedLocalResource* matching=nullptr;
+                for(const auto& evidence:goal.evidence){
+                    if(evidence.kind
+                        !=AutonomousGoalEvidenceKind::ObservedLocalResource
+                       ||evidence.index>=request.localResources.size())
+                        continue;
+                    const auto& hint=request.localResources[evidence.index];
+                    if(hint.material!=condition.material
+                       ||hint.nodeId==0
+                       ||perceptionGridDistance(
+                           request.localObserverPosition,hint.position)
+                            >request.localRadiusCells)
+                        continue;
+                    const auto node=std::find_if(world.resourceNodes.begin(),
+                        world.resourceNodes.end(),[&](const ResourceNode& n){
+                            return n.id==hint.nodeId
+                                &&n.material==hint.material
+                                &&n.pos.x==hint.position.x
+                                &&n.pos.y==hint.position.y
+                                &&n.quantity>0;
+                        });
+                    if(node==world.resourceNodes.end()) continue;
+                    if(matching==nullptr
+                       ||hint.distanceCells<matching->distanceCells
+                       ||(hint.distanceCells==matching->distanceCells
+                          &&hint.nodeId<matching->nodeId))
+                        matching=&hint;
+                }
+                if(matching==nullptr)
+                    return fail(AutonomousAffordancePlanStatus::Blocked,
+                                AutonomousAffordanceReason::MissingProvision);
+                plan.proposedSteps.push_back({
+                    AutonomousAffordanceKind::ExistingCivilizationGather,
+                    Goal::Idle,SocialIntent::None,0,i,
+                    condition.material,matching->nodeId
+                });
+                break;
+            }
             case AutonomousGoalMetric::KnownResidentAlive:
             default:
                 return fail(AutonomousAffordancePlanStatus::Unsupported,
