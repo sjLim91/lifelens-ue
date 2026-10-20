@@ -12,6 +12,7 @@
 #include "Character.h"
 #include "Parenting.h"
 #include "Relationship.h"
+#include "ResidentLocalPerception.h"
 #include "World.h"
 
 namespace lifelens {
@@ -179,6 +180,13 @@ struct CognitiveRequest {
     Personality personality{};
     EmotionState emotion{};
     std::vector<CognitiveMemoryEvidence> memories;
+    // Optional CURRENT Core proximity scan. Not an invented memory, target
+    // location promise, path reachability proof or line-of-sight claim.
+    // Absent in legacy requests; never persisted into a resident's history.
+    bool localProximityObserved=false;
+    GridPos localObserverPosition{};
+    int localRadiusCells=0;
+    std::vector<ObservedLocalResource> localResources;
     std::vector<CognitiveBeliefEvidence> beliefs;
     std::vector<CognitiveRelationshipEvidence> relationships;
     std::vector<CognitiveIntentKind> allowedIntents;

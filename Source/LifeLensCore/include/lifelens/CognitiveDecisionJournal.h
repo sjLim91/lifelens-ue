@@ -86,6 +86,29 @@ inline std::uint64_t cognitiveRequestFingerprint(const CognitiveRequest& r)
         integer(m.tags.size());
         for(const auto& tag:m.tags) str(tag);
     }
+    if(r.localProximityObserved){
+        // Domain separator preserves old fingerprints for legacy/shadow
+        // requests that have no Core runtime sensor. Real new observations
+        // are receipt-bound: an altered/moved/removed nearby resource makes
+        // a previously issued model response stale rather than truthful.
+        integer(0x4c4f43414c505258ULL);
+        integer(static_cast<std::uint64_t>(
+            static_cast<std::int64_t>(r.localObserverPosition.x)));
+        integer(static_cast<std::uint64_t>(
+            static_cast<std::int64_t>(r.localObserverPosition.y)));
+        integer(static_cast<std::uint64_t>(r.localRadiusCells));
+        integer(r.localResources.size());
+        for(const auto& fact:r.localResources){
+            integer(fact.nodeId);
+            integer(static_cast<std::uint64_t>(fact.material));
+            integer(static_cast<std::uint64_t>(
+                static_cast<std::int64_t>(fact.position.x)));
+            integer(static_cast<std::uint64_t>(
+                static_cast<std::int64_t>(fact.position.y)));
+            integer(static_cast<std::uint64_t>(fact.distanceCells));
+            integer(static_cast<std::uint64_t>(fact.abundance));
+        }
+    }
     integer(r.beliefs.size());
     for(const auto& b:r.beliefs){
         integer(b.subject);str(b.proposition);

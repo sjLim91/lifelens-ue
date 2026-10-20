@@ -235,6 +235,49 @@ void appendCognitiveRequestJson(
     }
     out << "],";
 
+    out << "\"localPerception\":";
+    if(!request.localProximityObserved){
+        out << "null,";
+    }else{
+        out << "{\"source\":\"CoreRuntimeProximity\",";
+        out << "\"proximityOnly\":true,";
+        out << "\"observerX\":"<<request.localObserverPosition.x<<",";
+        out << "\"observerY\":"<<request.localObserverPosition.y<<",";
+        out << "\"radiusCells\":"<<request.localRadiusCells<<",";
+        out << "\"resources\":[";
+        bool firstResource=true;
+        for(const auto& resource:request.localResources){
+            if(!firstResource) out << ",";
+            firstResource=false;
+            const char* material="Unknown";
+            switch(resource.material){
+                case MaterialKind::Stone: material="Stone"; break;
+                case MaterialKind::Flint: material="Flint"; break;
+                case MaterialKind::Wood: material="Wood"; break;
+                case MaterialKind::Fiber: material="Fiber"; break;
+                case MaterialKind::Clay: material="Clay"; break;
+                case MaterialKind::Water: material="Water"; break;
+                case MaterialKind::PlantFood: material="PlantFood"; break;
+                case MaterialKind::Bone: material="Bone"; break;
+                case MaterialKind::Hide: material="Hide"; break;
+                case MaterialKind::CopperOre: material="CopperOre"; break;
+                case MaterialKind::TinOre: material="TinOre"; break;
+                case MaterialKind::IronOre: material="IronOre"; break;
+                case MaterialKind::Charcoal: material="Charcoal"; break;
+                case MaterialKind::CopperMetal: material="CopperMetal"; break;
+                case MaterialKind::TinMetal: material="TinMetal"; break;
+                case MaterialKind::Bronze: material="Bronze"; break;
+                default: break;
+            }
+            out << "{\"nodeId\":\""<<resource.nodeId<<"\",";
+            out << "\"material\":\""<<material<<"\",";
+            out << "\"distanceCells\":"<<resource.distanceCells<<",";
+            out << "\"abundance\":\""
+                <<(resource.abundance==ObservedResourceAbundance::Scarce
+                       ?"Scarce":"Present")<<"\"}";
+        }
+        out << "]},";
+    }
     out << "\"beliefs\":[";
     first=true;
     for(const CognitiveBeliefEvidence& belief:request.beliefs){

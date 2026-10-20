@@ -184,6 +184,16 @@ public:
             DefaultCognitiveMemoryContextLimit,
             DefaultCognitiveBeliefContextLimit,
             DefaultCognitiveRelationshipContextLimit);
+        // The same resident's current Core runtime position is the ONLY
+        // source for local resource hints. If no runtime position exists,
+        // report unknown, not a fabricated empty or world-wide scan.
+        const auto local=observeResidentLocalPerception(id);
+        if(local.actor==id){
+            request.localProximityObserved=true;
+            request.localObserverPosition=local.observerPosition;
+            request.localRadiusCells=local.radiusCells;
+            request.localResources=local.nearbyResources;
+        }
         request.worldSeed=world_.seed;
         request.populationSeed=world_.populationSeed;
         request.generationVersion=world_.generationVersion;

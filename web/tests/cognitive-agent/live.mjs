@@ -5,7 +5,38 @@ const { ResidentAIController, LIVE_AI_BUDGET, liveActionableCognitiveRequest,
   residentAIObservedTrigger, residentAIExecutionBudget, BROWSER_MODEL_RETRY_MS,
   INFERENCE_RECOVERY_FAILURE_THRESHOLD } =
   await source('cognition/live-resident-ai.ts');
+const { parseCognitiveRequest } = await source('cognition/cognitive-contract.ts');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+{
+  const base = {
+    actor: '1', minute: 480, trigger: 'Reflection',
+    needs: { thirst: .3 }, personality: { curiosity: .5 },
+    emotion: { joy: .2 }, memories: [], beliefs: [], relationships: [],
+    allowedIntents: ['ImproveWaterSecurity'],
+  };
+  const localPerception = {
+    source: 'CoreRuntimeProximity', proximityOnly: true,
+    observerX: 8, observerY: -5, radiusCells: 6,
+    resources: [{ nodeId: '123', material: 'Water', distanceCells: 2,
+      abundance: 'Present' }],
+  };
+  const request = parseCognitiveRequest({ ...base, localPerception });
+  assert.deepEqual(request.localPerception, localPerception);
+  assert.equal(parseCognitiveRequest(base).localPerception, undefined);
+  assert.equal(parseCognitiveRequest({ ...base, localPerception: null }).localPerception, null);
+  assert.throws(() => parseCognitiveRequest({
+    ...base, localPerception: { ...localPerception, radiusCells: 999 },
+  }), /local perception/);
+  assert.throws(() => parseCognitiveRequest({
+    ...base, localPerception: { ...localPerception,
+      resources: [{ ...localPerception.resources[0], distanceCells: 9 }] },
+  }), /local resource/);
+  assert.throws(() => parseCognitiveRequest({
+    ...base, localPerception: { ...localPerception, source: 'UntrustedBrowser' },
+  }), /local perception/);
+}
+
 
 {
   const browser=residentAIExecutionBudget({name:'resident-browser-webgpu'});
