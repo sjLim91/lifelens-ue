@@ -67,7 +67,8 @@ struct ResidentAIPairedMetrics {
     // Selection/availability/acceptance cannot be mistaken for execution.
     std::array<std::uint64_t,FullCognitiveCatalogCount>
         catalogSelected{},catalogNotOffered{},catalogNoEligibleTarget{},
-        catalogSubmitted{},catalogAccepted{},catalogRejected{};
+        catalogSubmitted{},catalogAccepted{},catalogRejected{},
+        catalogRejectedByValidator{},catalogRejectedAfterValidator{};
     std::uint64_t civilizationSuccessEvidence=0;
     std::uint64_t civilizationFailureEvidence=0;
     std::uint64_t firsthandCivilizationMemories=0;
@@ -272,6 +273,12 @@ inline bool residentAIProxyProposal(
     if(opportunity<CognitiveOpportunityIntentCount)
         ++stats.opportunityProposalsAttempted[opportunity];
     // Never supply resources, move a resident, change Needs or forge a memory.
+    // Record the actual Core validator issue, without masquerading a
+    // syntactically valid input as a pending action or achieved outcome.
+    // Duplicate, journal-limit, stale or conflicting proposal rejections
+    // AFTER a valid request remain a distinct opaque Core commit gate.
+    const auto validation=validateCognitiveProposal(
+        sim.world(),request,proposal);
     const bool accepted=sim.acceptCognitiveProposal(
         request,proposal,"deterministic-audit-proxy","audit-proxy-v1");
     if(accepted){
@@ -281,7 +288,12 @@ inline bool residentAIProxyProposal(
             ++stats.opportunityProposalsAccepted[opportunity];
     }else{
         ++stats.proposalsRejected;
-        if(catalogPolicy) ++stats.catalogRejected[catalogSlot];
+        if(catalogPolicy){
+            ++stats.catalogRejected[catalogSlot];
+            if(validation.accepted)
+                ++stats.catalogRejectedAfterValidator[catalogSlot];
+            else ++stats.catalogRejectedByValidator[catalogSlot];
+        }
     }
     return accepted;
 }
@@ -408,7 +420,11 @@ inline void appendResidentAIPairedMetricsJson(
            <<",\"noEligibleTarget\":"<<m.catalogNoEligibleTarget[i]
            <<",\"submitted\":"<<m.catalogSubmitted[i]
            <<",\"accepted\":"<<m.catalogAccepted[i]
-           <<",\"rejected\":"<<m.catalogRejected[i]<<"}";
+           <<",\"rejected\":"<<m.catalogRejected[i]
+           <<",\"rejectedByValidator\":"
+           <<m.catalogRejectedByValidator[i]
+           <<",\"rejectedAfterValidator\":"
+           <<m.catalogRejectedAfterValidator[i]<<"}";
     }
     out<<"},\"verifiedCoreOutcomes\":{";
     for(std::size_t i=0;i<ObservedOpportunityContextCount;++i){
