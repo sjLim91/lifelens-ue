@@ -15,10 +15,10 @@
 
 ## 현재 계획 완료 집계
 
-- 완료: **1/86** (M0-01). 단순 계획 단위 완료 지표이지 전체 시뮬레이션 구현률이 아니다.
-- 검증 완료·병합 검토: **1** (M0-02 / PR #814).
+- 완료: **3/86** (M0-01, M0-02, M6-01). 단순 계획 단위 완료 지표이지 전체 시뮬레이션 구현률이 아니다.
+- 검증 완료·병합 검토: **0** (현재 표시 기준).
 - 진행: **2** (M0-03 #790, M0-04 #669).
-- 미완 또는 미검증: **82**.
+- 미완 또는 미검증: **81**.
 - **병렬 트랙:** AI 실행·인지 감사(M0-03, M1-01, M2-01), 메모리/장기 감사(M0-04, M11-04), 야생/생태(M0-02, M6-01), 시간 지속성(M9-01/02)은 파일 소유 영역을 분리한다. 실제 기능 구현/테스트 착수 전에는 신규 병렬 트랙을 완료·진행으로 미리 올리지 않는다.
 
 ## 전체 단위별 진행 장부
@@ -28,9 +28,9 @@
 | 완료 | 단위 | 계획에 정의된 작업 | 상태 | 근거 / 후속 |
 |---|---|---|---|---|
 | [x] | **M0-01** | #816 교역 양측 기억 exact-head·병합·메인 재검증 | ✅ 완료 | [PR #816](https://github.com/sjLim91/lifelens-ue/pull/816) · main e6061967 · Core/WASM/Web/인지 5 CI PASS |
-| [ ] | **M0-02** | #814 사냥/식생 소모 코어 PR 충돌·검증 분리 | 🔎 병합 검토 | [PR #814](https://github.com/sjLim91/lifelens-ue/pull/814) · 9 CI PASS · main 미병합 (초기 Draft) |
-| [ ] | **M0-03** | #790 14개 의도 전수 지표: offered→accepted→pending→completed/failed/unsupported | 🚧 진행 | [이슈 #790](https://github.com/sjLim91/lifelens-ue/issues/790) · 의도별 evidence/차단 사유 감사 |
-| [ ] | **M0-04** | #669 메모리 source/tag/byte·중복·부정합 장기 감사 | 🚧 진행 | [이슈 #669](https://github.com/sjLim91/lifelens-ue/issues/669) · 장기 메모리 감사 |
+| [x] | **M0-02** | #814 사냥/식생 소모 코어 PR 충돌·검증 분리 | ✅ 완료 | [PR #814](https://github.com/sjLim91/lifelens-ue/pull/814) · 9 CI PASS · main 22ccf7a1 · Draft 해제 후 병합 |
+| [ ] | **M0-03** | #790 14개 의도 전수 지표: offered→accepted→pending→completed/failed/unsupported | 🚧 진행 | [이슈 #790](https://github.com/sjLim91/lifelens-ue/issues/790) · [PR #820](https://github.com/sjLim91/lifelens-ue/pull/820) 실제 Core token/accepted input 상관 감사 CI 진행; 전체 14 intent는 미완 |
+| [ ] | **M0-04** | #669 메모리 source/tag/byte·중복·부정합 장기 감사 | 🚧 진행 | [이슈 #669](https://github.com/sjLim91/lifelens-ue/issues/669) · [PR #819](https://github.com/sjLim91/lifelens-ue/pull/819) 행동 기억 출처·종류별 분석 CI 진행; 장기 seed 감사 미완 |
 | [ ] | **M0-05** | baseline CI·저장 포맷·Ruleset·핵심 회귀 테스트 계약 동결 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 
 ### M1 — 지각/기억
@@ -98,7 +98,7 @@
 
 | 완료 | 단위 | 계획에 정의된 작업 | 상태 | 근거 / 후속 |
 |---|---|---|---|---|
-| [ ] | **M6-01** | #814 사냥/초식 실제 식생 소비의 Core 합치기 및 자원 ledger | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
+| [x] | **M6-01** | #814 사냥/초식 실제 식생 소비의 Core 합치기 및 자원 ledger | ✅ 완료 | [PR #814](https://github.com/sjLim91/lifelens-ue/pull/814) · Core 유한 먹이·사냥/현장 식사 성공·실패/실행 토큰/저장 회귀 · main 22ccf7a1 |
 | [ ] | **M6-02** | 종별 지각·허기·영역·경계/도주/추적·독립 생물 agent | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M6-03** | 포식자/피식자 추격·실제 접촉·부상·사망·먹이 섭취 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M6-04** | 주민 위협 지각→회피/보호/치료, 포식자도 위험·스트레스·기아 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
@@ -173,6 +173,10 @@
 
 | 날짜 | 단위 | 이전→현재 | 검증/조치 |
 |---|---|---|---|
+| 2026-10-20 | M0-02 | 🔎 병합 검토→✅ 완료 | #814 HEAD 81fa7aca CI 9개 PASS, Draft 해제·main 22ccf7a1 |
+| 2026-10-20 | M6-01 | 미완→✅ 완료 | 같은 #814: 초식 실제 먹이 소모/사냥/현장 식사; 가죽·뼈·육류 보관은 M6-05 후속 |
+| 2026-10-20 | M0-03 | 🚧 진행 유지 | AI 승인→실제 Core 결과 read-only evidence [#820](https://github.com/sjLim91/lifelens-ue/pull/820) 검증 중 |
+| 2026-10-20 | M0-04 | 🚧 진행 유지 | 행동 기억 출처/byte별 성장 [#819](https://github.com/sjLim91/lifelens-ue/pull/819) 검증 중 |
 | 2026-10-20 | M0-01 | 검증 중→✅ 완료 | #816 Core+WASM+Web+인지+Preflight 전체 통과, main e6061967 |
 | 2026-10-20 | M0-02 | 진행→🔎 병합 검토 | #814 기존 정확한 head의 9개 CI 통과, Draft/후속 main 통합 검토 필요 |
 | 2026-10-20 | M0-03 | 미완→🚧 진행 | #790 기존 통합 AI 실행 공백 감사 이슈, 14개 intent 측정으로 확장 예정 |
