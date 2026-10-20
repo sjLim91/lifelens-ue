@@ -1,0 +1,84 @@
+#pragma once
+
+#include <string>
+
+#include "ActionExperienceLearning.h"
+#include "CoreContextOutcomeEvidence.h"
+
+namespace lifelens {
+
+// Personal trial evidence comes only from a real Core context execution.
+// These fixed keys bound belief growth per resident; target and token remain
+// provenance in the individual memory, not separate permanent belief keys.
+inline const char* coreContextExperienceKey(ContextActionKind kind)
+{
+    switch(kind){
+        case ContextActionKind::KnowledgeTeaching: return "CoreContext:Teaching";
+        case ContextActionKind::Parenting: return "CoreContext:Parenting";
+        case ContextActionKind::Trade: return "CoreContext:Trade";
+        default: return nullptr;
+    }
+}
+
+inline bool consistentCoreContextExperience(const CoreContextOutcomeEvent& event)
+{
+    switch(event.kind){
+        case ContextActionKind::KnowledgeTeaching:
+            return event.code==CoreContextOutcomeCode::TeachingAdvanced
+                ||event.code==CoreContextOutcomeCode::TeachingComprehensionFailed
+                ||event.code==CoreContextOutcomeCode::TeachingClarityFailed
+                ||event.code==CoreContextOutcomeCode::TeachingRejected;
+        case ContextActionKind::Parenting:
+            return event.code==CoreContextOutcomeCode::ParentingPerformed
+                ||event.code==CoreContextOutcomeCode::ParentingRejected;
+        case ContextActionKind::Trade:
+            return event.code==CoreContextOutcomeCode::TradeExchanged
+                ||event.code==CoreContextOutcomeCode::TradeExchangeRejected;
+        default: return false;
+    }
+}
+
+// Called by Simulation only after the actual action's authoritative outcome.
+// Trade RETURN is transport, not another exchange success. No model statement,
+// cancelled pending token, or mere proposal grants a lived experience.
+inline void rememberCoreContextExperience(
+    Character& actor,const CoreContextOutcomeEvent& event)
+{
+    if(!actor.alive ||actor.id==0 ||event.actor!=actor.id
+       ||event.target==0 ||event.target==actor.id
+       ||event.token==0 ||event.minute<0
+       ||!consistentCoreContextExperience(event)) return;
+    const bool success=coreContextOutcomeActualSuccess(event.code);
+    if(!success &&!coreContextOutcomeActualFailure(event.code)) return;
+    const char* key=coreContextExperienceKey(event.kind);
+    if(key==nullptr) return;
+
+    const std::string proposition=actionExperienceProposition(key);
+    const BeliefRecord* prior=actor.beliefs.find(0,proposition);
+    const std::size_t priorCount=prior
+        ?prior->supportCount+prior->contradictionCount:0;
+    // Same action and same minute are not independent evidence; snapshot
+    // stores this guard even if an external completion acknowledgement retries.
+    rememberActionOutcome(actor,key,event.minute,success,true);
+    const BeliefRecord* recorded=actor.beliefs.find(0,proposition);
+    if(recorded==nullptr
+       ||recorded->supportCount+recorded->contradictionCount==priorCount)
+        return;
+
+    const std::string resultTag=success?"success":"failure";
+    for(MemoryRecord& memory:actor.memory.entries){
+        if(memory.minute!=event.minute ||memory.tags.size()!=3
+           ||memory.tags[0]!="action_experience"
+           ||memory.tags[1]!=key ||memory.tags[2]!=resultTag
+           ||memory.sourceCharacter!=actor.id
+           ||memory.source!=MemorySource::DirectWitness) continue;
+        memory.who=event.target;
+        memory.where="core-context-token:"+std::to_string(event.token);
+        memory.what="실제 행동 "+std::string(key)+" 대상 "
+            +std::to_string(event.target)+" 결과: "
+            +coreContextOutcomeCodeName(event.code);
+        return;
+    }
+}
+
+} // namespace lifelens

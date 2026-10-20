@@ -3,6 +3,7 @@
 #include <string>
 
 #include "lifelens/LifeStage.h"
+#include "lifelens/ActionExperienceLearning.h"
 #include "lifelens/Simulation.h"
 
 using namespace lifelens;
@@ -239,6 +240,20 @@ int main()
         CHECK(findCharacter(sim,child.id)->needs.bladder<bladderBefore);
         CHECK(sim.world().environmentalResidues.all().size()==residueBefore+1);
         CHECK(!sim.observePendingContextAction(pending.actor).active);
+
+        // Real context completion, without any audit subscriber, must become
+        // the caregiver's own durable experience. A second ACK is not another
+        // lived success, and care remains authoritative rather than learned
+        // away by a failed optional cognitive preference.
+        Character* caregiver=findCharacter(sim,pending.actor);
+        CHECK(caregiver!=nullptr);
+        const double learned=learnedActionDisposition(
+            *caregiver,"CoreContext:Parenting");
+        CHECK(learned>1.0);
+        CHECK(!sim.completeExternalContextAction(
+            pending.actor,pending.token,childPos));
+        CHECK(learnedActionDisposition(
+            *caregiver,"CoreContext:Parenting")==learned);
     }
 
     std::cout << "context action completion acknowledgement passed\n";
