@@ -45,3 +45,31 @@ ll_resident_ai_paired_audit --seed 874213954 --days 1000 --policy opportunities
 원하는 행동의 **미지원 사유별 분류와 승인된 특정 인지 입력→
 실제 완료/실패 토큰 귀속**은 이 감사만으로 입증되지 않는다.
 미완성 항목을 #790에서 계속 추적한다.
+
+## 마스터플랜 M0-03: 14개 전체 Core 의도 입력 범위 검사
+
+기존 `original` 및 `opportunities` 정책은 유지하면서, Core가 선언한
+**전체 14개** 의도를 균등 순환시키는 `catalog` 정책을 추가한다.
+
+```sh
+ll_resident_ai_paired_audit --seed 4242001 --days 100 --policy catalog
+ll_resident_ai_paired_audit --seed 874213954 --days 365 --policy catalog
+ll_resident_ai_paired_audit --seed 4242001 --days 1000 --policy catalog
+```
+
+`catalogIntentInputs`에 각 의도의 `selected`(감사 입력 후보),
+`notOffered`(Core 인지 요청이 해당 의도를 제공하지 않음),
+`noEligibleTarget`(실제 대상 생존/부양 조건 미충족),
+`submitted`(Core 검증에 실제 제출),
+`accepted`/`rejected`(입력 판정)을 별개로 기록한다.
+`selected == notOffered + noEligibleTarget + submitted` 및
+`submitted == accepted + rejected` 보존을 검사한다.
+
+아직 해당 인지 요청을 어떤 물리/사회 행동이 실제로 따랐는지
+**모든 14개 의도별로** 입증하는 보고서는 아니다.
+교역·교육·돌봄의 실제 Core terminal event는 별도의
+`acceptedIntentToVerifiedOutcome`에서만 시점/actor/target/token
+기준의 보수적인 상관으로 집계하고, 일반 가족 이주와 문명 행동은
+별도 수명주기 근거가 필요하다. 장기 100/365/1000일 실행 결과는
+실제로 검증된 이후에만 수치로 남긴다. 단일 주민 AI의 제안은
+Core에 없는 행동을 허가하지 않는다.
