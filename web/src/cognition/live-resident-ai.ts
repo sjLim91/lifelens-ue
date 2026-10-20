@@ -93,7 +93,13 @@ export function residentAIObservedTrigger(
     // must never trigger another reflection as if we performed the action.
     const livedContext = (key === 'CoreContext:Teaching'
       || key === 'CoreContext:Trade' || key === 'CoreContext:Parenting')
-      && memory.where.startsWith('core-context-token:');
+      && (memory.where.startsWith('core-context-token:')
+        // The Core also executes immediate local barter without a pending
+        // context token. Its registered exchange fact is a distinct honest
+        // successful outcome, not a fabricated pending action.
+        || (key === 'CoreContext:Trade'
+          && memory.tags[2] === 'success'
+          && memory.where.startsWith('core-local-exchange-fact:')));
     if ((!livedContext && memory.who !== request.actor)
       || memory.source !== 'DirectWitness' || memory.witnessed !== true
       || memory.minute < 0 || memory.minute > request.minute
