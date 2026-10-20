@@ -18,6 +18,7 @@
 #include "DecisionExecution.h"
 #include "EmotionRuntime.h"
 #include "EnvironmentalExposure.h"
+#include "ResidentLocalPerception.h"
 #include "EnvironmentalResidue.h"
 #include "MigrationPressure.h"
 #include "SettlementNetwork.h"
@@ -66,6 +67,16 @@ public:
         if(it==runtime_.end()) return false;
         outPosition=it->second.pos;
         return true;
+    }
+    // Private read-only proximity observation: MUST use the resident's
+    // authoritative Core runtime position, never the browser camera or
+    // an arbitrary client-provided coordinate. Does not mutate memory.
+    ResidentLocalPerception observeResidentLocalPerception(
+        CharacterId id,int radiusCells=6) const {
+        GridPos position{};
+        if(!runtimePosition(id,position)) return {};
+        return observeLocalResourceProximity(
+            world_,id,position,radiusCells);
     }
     // Exact living human positions owned by Core runtime. Wildlife must not
     // infer people from observer camera, buildings or random coordinates.
