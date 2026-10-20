@@ -482,6 +482,9 @@ bool Simulation::completeContextAction(
                    <<" returned from inter-settlement trade to settlement "
                    <<trade.originSettlement;
                 emit(log.str());
+                emitCoreContextOutcome(
+                    actor,pending,trade.partner,
+                    CoreContextOutcomeCode::TradeReturned);
                 if(journey!=nullptr) journey->clear();
                 completed=true;
                 break;
@@ -490,6 +493,9 @@ bool Simulation::completeContextAction(
             Character* partner=findContextCharacter(
                 world_,trade.partner);
             if(partner==nullptr || !partner->alive || partner->id==actor.id){
+                emitCoreContextOutcome(
+                    actor,pending,trade.partner,
+                    CoreContextOutcomeCode::TradeExchangeRejected);
                 if(journey!=nullptr){
                     transitionTradeJourneyToReturn(
                         actor,runtime,"trade partner unavailable at destination");
@@ -521,6 +527,9 @@ bool Simulation::completeContextAction(
             if(!exchange.valid()
                || exchange.first!=actor.id
                || exchange.second!=partner->id){
+                emitCoreContextOutcome(
+                    actor,pending,partner->id,
+                    CoreContextOutcomeCode::TradeExchangeRejected);
                 if(journey!=nullptr){
                     transitionTradeJourneyToReturn(
                         actor,runtime,"agreed exchange is no longer valid");
@@ -544,6 +553,9 @@ bool Simulation::completeContextAction(
             }
             if(trade.utility<InterSettlementTradeMissionThreshold
                || !executeMutualExchange(actor,*partner,exchange)){
+                emitCoreContextOutcome(
+                    actor,pending,partner->id,
+                    CoreContextOutcomeCode::TradeExchangeRejected);
                 if(journey!=nullptr){
                     transitionTradeJourneyToReturn(
                         actor,runtime,"agreed exchange could not execute");
@@ -553,6 +565,9 @@ bool Simulation::completeContextAction(
                 return false;
             }
 
+            emitCoreContextOutcome(
+                actor,pending,partner->id,
+                CoreContextOutcomeCode::TradeExchanged);
             registerSocietyExchangeFact(
                 socialKnowledge_,actor,*partner,exchange,
                 world_.minute,world_.seed);
@@ -625,6 +640,9 @@ bool Simulation::completeContextAction(
         case ContextActionKind::KnowledgeTeaching: {
             Character* learner=findContextCharacter(world_,pending.knowledgeTeachingTarget);
             if(learner==nullptr || !learner->alive || learner->id==actor.id){
+                emitCoreContextOutcome(
+                    actor,pending,pending.knowledgeTeachingTarget,
+                    CoreContextOutcomeCode::TeachingRejected);
                 pending.clear();
                 return false;
             }
@@ -642,6 +660,9 @@ bool Simulation::completeContextAction(
                     technique,KnowledgeLevel::Reproducible)
                || bestTechniqueFactForTeaching(
                     socialKnowledge_,actor.id,learner->id,technique)==nullptr){
+                emitCoreContextOutcome(
+                    actor,pending,learner->id,
+                    CoreContextOutcomeCode::TeachingRejected);
                 pending.clear();
                 return false;
             }
@@ -655,6 +676,9 @@ bool Simulation::completeContextAction(
                || outcome.result==TechniqueTeachingResult::NoFact
                || outcome.result==TechniqueTeachingResult::DuplicateOrLoop
                || outcome.result==TechniqueTeachingResult::AlreadyKnown){
+                emitCoreContextOutcome(
+                    actor,pending,learner->id,
+                    CoreContextOutcomeCode::TeachingRejected);
                 pending.clear();
                 return false;
             }
@@ -687,6 +711,13 @@ bool Simulation::completeContextAction(
                 log<<" apprenticeship";
             }
             emit(log.str());
+            emitCoreContextOutcome(
+                actor,pending,learner->id,
+                outcome.result==TechniqueTeachingResult::Advanced
+                    ?CoreContextOutcomeCode::TeachingAdvanced
+                    :(outcome.result==TechniqueTeachingResult::ComprehensionFailed
+                        ?CoreContextOutcomeCode::TeachingComprehensionFailed
+                        :CoreContextOutcomeCode::TeachingClarityFailed));
             completed=true;
             break;
         }
@@ -718,6 +749,9 @@ bool Simulation::completeContextAction(
                 || orphanCommunityCaregiver;
             if(child==nullptr || !child->alive
                || (!biologicalParent && !fallbackCaregiver)){
+                emitCoreContextOutcome(
+                    actor,pending,pending.parentingTarget,
+                    CoreContextOutcomeCode::ParentingRejected);
                 pending.clear();
                 return false;
             }
@@ -766,6 +800,9 @@ bool Simulation::completeContextAction(
                 actor,*child,parentToChild,childToParent,
                 pending.parentingAction,context,fallbackCaregiver);
             if(result!=ParentingResult::Performed){
+                emitCoreContextOutcome(
+                    actor,pending,child->id,
+                    CoreContextOutcomeCode::ParentingRejected);
                 pending.clear();
                 return false;
             }
@@ -856,6 +893,9 @@ bool Simulation::completeContextAction(
             emit(actor.name+" cared for "+child->name+" -> "+
                  std::string(contextParentingActionName(pending.parentingAction))
                  +(nursing ? " nursing" : ""));
+            emitCoreContextOutcome(
+                actor,pending,child->id,
+                CoreContextOutcomeCode::ParentingPerformed);
             completed=true;
             break;
         }

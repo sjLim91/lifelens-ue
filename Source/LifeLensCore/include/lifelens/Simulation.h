@@ -13,6 +13,7 @@
 #include "CivilizationObserverReadModel.h"
 #include "CognitiveAgent.h"
 #include "ContextAction.h"
+#include "CoreContextOutcomeEvidence.h"
 #include "Death.h"
 #include "DecisionExecution.h"
 #include "EmotionRuntime.h"
@@ -39,6 +40,8 @@ namespace lifelens {
 class Simulation {
 public:
     using EventCallback=std::function<void(const std::string&)>;
+    using CoreContextOutcomeCallback=
+        std::function<void(const CoreContextOutcomeEvent&)>;
     explicit Simulation(
         WorldSeed worldSeed=1,
         PopulationSeed populationSeed=0,
@@ -111,6 +114,8 @@ public:
         std::uint64_t token,
         GridPos resolvedPosition);
     void onEvent(EventCallback cb);
+    // Unsaved, authoritative Core execution evidence. Never a model proposal.
+    void onCoreContextOutcome(CoreContextOutcomeCallback cb);
     SimulationStateSnapshot captureSnapshot() const;
     bool restoreSnapshot(const SimulationStateSnapshot& snapshot,std::string* error=nullptr);
     World& world(){return world_;}
@@ -346,12 +351,18 @@ private:
     // transition. They are runtime transition state, never a second save truth.
     std::unordered_map<CharacterId,HealthFatalCause> pendingHealthFatality_;
     std::vector<EventCallback> callbacks_;
+    std::vector<CoreContextOutcomeCallback> contextOutcomeCallbacks_;
     std::vector<std::string> logs_;
     std::vector<SocialCommunicationObservation> recentSocialEvents_;
     std::uint64_t nextContextActionToken_=InitialContextActionToken;
     std::uint64_t nextSocialEventSequence_=1;
     static constexpr std::size_t MaxRecentSocialEvents=64;
     void emit(const std::string& message);
+    void emitCoreContextOutcome(
+        const Character& actor,
+        const PendingContextAction& action,
+        CharacterId target,
+        CoreContextOutcomeCode code);
     void recordSocialEvent(const SocialEvent& event){
         if(event.actor==0 || event.recipient==0) return;
         recentSocialEvents_.push_back(

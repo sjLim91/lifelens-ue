@@ -86,6 +86,40 @@ static void verifyStrictTokenProvenance()
 
 int main()
 {
+    // A real Core result is authoritative; a proposed intent, pending token
+    // disappearing, or an attempted double ACK is never counted as success.
+    ResidentAIPairedMetrics verified;
+    const auto evidence=[&](ContextActionKind kind,
+                            CoreContextOutcomeCode code,
+                            std::uint64_t token=11){
+        observeResidentAIVerifiedCoreOutcome(
+            CoreContextOutcomeEvent{1,2,token,60,kind,code},verified);
+    };
+    evidence(ContextActionKind::Parenting,
+        CoreContextOutcomeCode::ParentingPerformed);
+    evidence(ContextActionKind::KnowledgeTeaching,
+        CoreContextOutcomeCode::TeachingAdvanced);
+    evidence(ContextActionKind::KnowledgeTeaching,
+        CoreContextOutcomeCode::TeachingComprehensionFailed);
+    evidence(ContextActionKind::Trade,
+        CoreContextOutcomeCode::TradeExchanged);
+    evidence(ContextActionKind::Trade,
+        CoreContextOutcomeCode::TradeExchangeRejected);
+    evidence(ContextActionKind::Trade,
+        CoreContextOutcomeCode::TradeReturned);
+    evidence(ContextActionKind::Trade,
+        CoreContextOutcomeCode::TradeExchanged,0); // Invalid empty token.
+    assert(verified.verifiedCoreSuccesses[0]==1);
+    assert(verified.verifiedCoreFailures[0]==1);
+    assert(verified.verifiedCoreSuccesses[1]==1);
+    assert(verified.verifiedCoreFailures[1]==0);
+    assert(verified.verifiedCoreSuccesses[2]==1);
+    assert(verified.verifiedCoreFailures[2]==1);
+    assert(verified.verifiedTradeJourneyReturns==1);
+    std::ostringstream json;
+    appendResidentAIPairedMetricsJson(json,verified);
+    assert(json.str().find("\"verifiedCoreOutcomes\":")!=std::string::npos);
+    assert(json.str().find("\"tradeJourneyReturns\":1")!=std::string::npos);
     verifyStrictTokenProvenance();
     const auto first=runResidentAIPairedAudit(4242001,1);
     assert(first.seed==4242001);

@@ -104,6 +104,25 @@ static bool runTeachingWindowScenario(
         CHECK(pending.kind==ContextActionKind::KnowledgeTeaching);
         CHECK(pending.targetResident==learnerId);
         CHECK(pending.technique==TechniqueId::SharpFlake);
+        // The selection alone was not a lesson. Only the Core's physical
+        // completion can report actual learning or a real learning failure.
+        std::vector<CoreContextOutcomeEvent> evidence;
+        sim.onCoreContextOutcome([&](const CoreContextOutcomeEvent& event){
+            evidence.push_back(event);
+        });
+        sim.setExternalPhysicalExecution(true);
+        CHECK(sim.completeExternalContextAction(
+            teacherId,pending.token,{0,0}));
+        CHECK(evidence.size()==1);
+        CHECK(evidence.front().actor==teacherId);
+        CHECK(evidence.front().target==learnerId);
+        CHECK(evidence.front().token==pending.token);
+        CHECK(evidence.front().kind==ContextActionKind::KnowledgeTeaching);
+        CHECK(coreContextOutcomeActualSuccess(evidence.front().code)
+              ||coreContextOutcomeActualFailure(evidence.front().code));
+        CHECK(!sim.completeExternalContextAction(
+            teacherId,pending.token,{0,0}));
+        CHECK(evidence.size()==1);
     }else{
         CHECK(
             !pending.active
