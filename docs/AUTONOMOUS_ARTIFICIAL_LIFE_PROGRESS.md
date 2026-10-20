@@ -37,7 +37,7 @@
 
 | 완료 | 단위 | 계획에 정의된 작업 | 상태 | 근거 / 후속 |
 |---|---|---|---|---|
-| [ ] | **M1-01** | Core \`PerceptionFact\`: 시야/거리/가림/흔적·청각 채널·시각별 관측 근거 | 🚧 진행 | [#822](https://github.com/sjLim91/lifelens-ue/pull/822) main `0f30df41` 현재 시각 경계; [#828](https://github.com/sjLim91/lifelens-ue/pull/828) 9개 exact-head CI PASS→main `82c43e0f` 주민 실제 Core 위치에서 근접 자원 감지; [#832](https://github.com/sjLim91/lifelens-ue/pull/832) 10개 exact-head CI PASS→main `9a9883e3` Core 근접 감지를 단일 AI 인지 DTO/fingerprint로 연결. [#849](https://github.com/sjLim91/lifelens-ue/pull/849) 실제 관측자 위치/거리 상호 일치 여부 검증 CI 중. 가림·청각·움직임/실행 검증 미완 |
+| [ ] | **M1-01** | Core \`PerceptionFact\`: 시야/거리/가림/흔적·청각 채널·시각별 관측 근거 | 🚧 진행 | [#822](https://github.com/sjLim91/lifelens-ue/pull/822) main `0f30df41` 현재 시각 경계; [#828](https://github.com/sjLim91/lifelens-ue/pull/828) 9개 exact-head CI PASS→main `82c43e0f` 주민 실제 Core 위치에서 근접 자원 감지; [#832](https://github.com/sjLim91/lifelens-ue/pull/832) 10개 exact-head CI PASS→main `9a9883e3` Core 근접 감지를 단일 AI 인지 DTO/fingerprint로 연결. [#849](https://github.com/sjLim91/lifelens-ue/pull/849) 실제 관측자 위치/거리 일치 검사 4 CI PASS→main `01c1e12b`. 가림·청각·움직임/실행 검증 미완 |
 | [ ] | **M1-02** | \`ResidentMind\` 통합 인터페이스: Needs/Emotion/Personality/Belief/Relation/Goal/Plan 하나의 decision slot | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M1-03** | 개인 기억 출처: DirectWitness/ToldByOther/Inferred와 사건·대상·공간·시간 일관화 | 🚧 진행 | [#841](https://github.com/sjLim91/lifelens-ue/pull/841) 기존 실패 테스트 수정 후 exact-head 9 CI PASS→main `ca0b5a6a`, 근접 자원 신호 추론 기억 및 반복 관측 중복 제한. 소문/사회/도구 전체 기억 출처 불변성은 미완 |
 | [ ] | **M1-04** | 에피소드→요약 기억→핵심 신념의 계층적 저장/회상(근거 ID 보존) | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
@@ -180,7 +180,7 @@
 | 2026-10-20 | M1-03/M1-05 | 🚧 진행 유지 | #841 fixed HEAD 4ca19aad의 9개 CI PASS 후 main ca0b5a6a. 개인 근접 추론 기억·12개 제한·동일 스캔 중 중복 재발견 회귀 해결 |
 | 2026-10-20 | M2-01/M2-03 | 🚧 진행 유지 | #844 fixed HEAD 33d6d51f 4 CI PASS, main 277b8c6a. 실제 Core 주변 신호 기반 개인 자원 호기심/물자 목표 후보. 실전 실행 여전히 별도 |
 | 2026-10-20 | M0-04 | 🚧 진행 유지 | #850 독립 seed별 100/365/1000일 메모리·snapshot 실측 누락/범위 비교·오프라인 테스트 Preflight PASS 후 main 6495ad56. 실제 seed 장기 측정 원인 해석 미완 |
-| 2026-10-20 | M1-01 | 🚧 진행 유지 | #849 동일 Core node ID로 관측 거리/관측자 위치 위조 시 goal evidence 거절 CI 검증 중. LOS·청각 종단 구현 미완 |
+| 2026-10-20 | M1-01 | 🚧 진행 유지 | #849 동일 Core node ID로 관측 거리/관측자 위치 위조 시 goal evidence 거절, 4 CI PASS→main 01c1e12b. LOS·청각 종단 구현 미완 |
 | 2026-10-20 | M2-05/M2-06 | ⬜ 미완→🚧 진행 | #846 (선행 #844) 실제 감지 자원 목표를 현재 Core 재료 노드 Gather 후보로 형상화·차단 회귀 CI 준비; 이동/집행 성공이나 전체 primitive 조합 완료 아님 |
 | 2026-10-20 | M2-07 | 🚧 진행 유지 | #838 exact-head CI 4개 PASS 후 main d40e1521에 Core 감지 컨텍스트/목표 계획 검증 호환 패치 병합. GoalSpec 실행 루프 미완 |
 | 2026-10-20 | M1-03 | 🚧 진행 유지 | #841 Core 157개 중 메모리 크기 순환 테스트 1개 실패 원인 진단, 스캔 안 재발견 중복 제거 커밋 4ca19aad 재검증 진행 |
