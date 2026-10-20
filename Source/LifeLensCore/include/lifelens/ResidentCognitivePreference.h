@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "CognitiveDecisionJournal.h"
-#include "ResidentContextOutcomeLearning.h"
+#include "ActionExperienceLearning.h"
 
 namespace lifelens {
 
@@ -37,10 +37,9 @@ inline double residentCognitiveIntentPreference(
         // success/failure. Critical childcare and survival remain protected.
         const char* experienceKey=nullptr;
         if(intent==CognitiveIntentKind::TeachKnowledge)
-            experienceKey=coreContextExperienceKey(
-                ContextActionKind::KnowledgeTeaching);
+            experienceKey="CoreContext:Teaching";
         else if(intent==CognitiveIntentKind::TradeWithResident)
-            experienceKey=coreContextExperienceKey(ContextActionKind::Trade);
+            experienceKey="CoreContext:Trade";
         if(experienceKey!=nullptr)
             preference=std::min(0.12,preference*
                 learnedActionDisposition(*resident,experienceKey));
