@@ -512,6 +512,23 @@ public:
                 categories.raw(category.first,item.str());
             }
             memory.raw("primary_tags",categories.str());
+            Json actions;
+            for(const auto& action:attribution.actionKinds){
+                Json item;
+                item.add("entries",action.second.entries);
+                item.add("successful",action.second.successful);
+                item.add("failed",action.second.failed);
+                item.add("witnessed_direct",action.second.witnessedDirect);
+                item.add("indirect_or_unverified",
+                    action.second.indirectOrUnverified);
+                item.add("claimed_core_tokens",
+                    action.second.claimedContextTokens);
+                item.add("claimed_local_exchange_facts",
+                    action.second.claimedLocalExchangeFacts);
+                item.add("utf8_text_bytes",action.second.utf8TextBytes);
+                actions.raw(action.first,item.str());
+            }
+            memory.raw("action_experiences_by_key",actions.str());
             x.raw("memory_attribution",memory.str());
             Json b;for(int i=0;i<22;++i)b.add(BudgetNames[i],r.budget[i]);x.raw("activity_minutes",b.str());
             Json ns;for(int i=0;i<5;++i)ns.raw(NeedNames[i],r.needs[i].json());x.raw("needs",ns.str());
