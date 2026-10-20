@@ -254,7 +254,8 @@ const provider = {
   ];
   const safe = liveActionableCognitiveRequest(original);
   assert.deepEqual(safe.allowedIntents, [
-    'ImproveFoodSecurity', 'CooperateWithResident', 'ResolveConflict',
+    'ImproveFoodSecurity', 'TradeWithResident', 'CareForDependent',
+    'CooperateWithResident', 'ResolveConflict',
   ]);
   assert.equal(original.allowedIntents.length, 6,
     'the authoritative Core request must not be modified in place');
@@ -262,8 +263,8 @@ const provider = {
 }
 
 {
-  // A free local model must not receive journal-only strategies that appear
-  // to make progress but can never execute a Core action.
+  // A free local model sees all FOUR real Core opportunities alongside
+  // previously executable intentions; the request stays Core-authored.
   const received = [];
   const f = fixture({
     name: 'local-only-executable',
@@ -288,7 +289,10 @@ const provider = {
   f.controller.setEnabled(true);
   f.controller.observe(f.world, f.residents);
   await tick();
-  assert.deepEqual(received, [['ImproveFoodSecurity']]);
+  assert.deepEqual(received, [[
+    'TeachKnowledge', 'TradeWithResident', 'MigrateHousehold',
+    'ImproveFoodSecurity', 'CareForDependent',
+  ]]);
   assert.equal(f.submitted.length, 1);
   assert.equal(f.submitted[0].proposal.intent, 'ImproveFoodSecurity');
   assert.deepEqual(f.contexts[0].allowedIntents, [
@@ -298,8 +302,8 @@ const provider = {
 }
 
 {
-  // When Core advertises ONLY future, non-executable intents, refuse to
-  // make a costly model call. Shadow can still study them read-only.
+  // Unsupported intents without a bounded live Core execution lane must
+  // still be excluded; avoid an expensive model invocation for a false goal.
   let calls = 0;
   const f = fixture({
     name: 'inert-intents',
@@ -311,7 +315,7 @@ const provider = {
   const read = f.runtime.cognitiveRequest;
   f.runtime.cognitiveRequest = (actor) => ({
     ...read(actor),
-    allowedIntents: ['TeachKnowledge', 'MigrateHousehold', 'ImproveShelter'],
+    allowedIntents: ['ImproveShelter', 'ImproveSanitation'],
   });
   f.controller.setEnabled(true);
   f.controller.observe(f.world, f.residents);
@@ -577,6 +581,43 @@ const provider = {
   assert.equal(f.submitted[0].request.trigger,'RepeatedFailure');
   assert.equal(f.submitted[0].proposal.intent,'ExploreOpportunity');
   f.controller.dispose();
+}
+
+{
+  // Newly connected Core education, parenting and exchange outcomes carry
+  // their real counterpart in "who" and the Core-issued execution token in
+  // "where". This is still this resident's firsthand attempt, not hearsay.
+  const attempt = {
+    who:'2', source:'DirectWitness', witnessed:true, minute:478,
+    recallScore:.6, confidence:1, importance:.42,
+    emotionValence:-.28, emotionIntensity:.38,
+    what:'실제 행동 CoreContext:Trade 대상 2 결과: trade-core-rejected',
+    where:'core-context-token:501',
+    tags:['action_experience','CoreContext:Trade','failure'],
+  };
+  const next = {...attempt, minute:479, where:'core-context-token:502'};
+  const base = {actor:'1', minute:480, trigger:'Reflection',
+    allowedIntents:['TradeWithResident','TeachKnowledge','CareForDependent'],
+    memories:[attempt,next]};
+  assert.equal(residentAIObservedTrigger(base),'RepeatedFailure');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[next,attempt],
+  }),'RepeatedFailure','reordered Core token history preserves reflection');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,{...next,source:'ToldByOther',witnessed:false}],
+  }),'Reflection','secondhand trade claims cannot become our failures');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,{...next,where:'elsewhere'}],
+  }),'Reflection','missing Core execution token is not firsthand proof');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,{...next,minute:478}],
+  }),'Reflection','same-minute records count as only one attempt');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,next,{...next,minute:480,
+      where:'core-context-token:503',
+      tags:['action_experience','CoreContext:Trade','success'],
+    }],
+  }),'Reflection','actual later exchange success clears failure streak');
 }
 
 // Production auto-start must require no human click or manual model name.
