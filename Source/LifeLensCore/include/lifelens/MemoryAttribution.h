@@ -13,6 +13,19 @@ struct MemoryAttributionCategory {
     std::uint64_t entries=0;
     std::uint64_t textBytes=0;
 };
+// Read-only breakdown of action memories for long-run #669 audits. This
+// classifies tags, not actual execution results: provenance text alone never
+// proves that an action was performed or that a model earned credit.
+struct MemoryActionAttribution {
+    std::uint64_t entries=0;
+    std::uint64_t successful=0;
+    std::uint64_t failed=0;
+    std::uint64_t witnessedDirect=0;
+    std::uint64_t indirectOrUnverified=0;
+    std::uint64_t claimedContextTokens=0;
+    std::uint64_t claimedLocalExchangeFacts=0;
+    std::uint64_t utf8TextBytes=0;
+};
 struct MemoryAttribution {
     std::uint64_t entries=0;
     std::uint64_t textBytes=0;
@@ -22,6 +35,7 @@ struct MemoryAttribution {
     std::array<std::uint64_t,3> sources{};
     std::array<std::uint64_t,5> ageBuckets{};
     std::map<std::string,MemoryAttributionCategory> primaryTags;
+    std::map<std::string,MemoryActionAttribution> actionKinds;
 };
 
 inline std::uint64_t memoryNumberBits(double number)
@@ -90,6 +104,30 @@ inline MemoryAttribution observeMemoryAttribution(
             category="(other tags)";
         auto& group=out.primaryTags[category];
         ++group.entries;group.textBytes+=text;
+
+        // Split the huge "action_experience" group by actual recorded action
+        // key and source, without changing or pruning authoritative memory.
+        // Do not label missing provenance as verified direct experience.
+        if(m.tags.size()==3 &&m.tags[0]=="action_experience"
+           &&(m.tags[2]=="success" ||m.tags[2]=="failure")){
+            std::string action=m.tags[1].empty()?"(missing key)":m.tags[1];
+            if(out.actionKinds.size()>=64
+               &&out.actionKinds.count(action)==0)
+                action="(other action kinds)";
+            auto& entry=out.actionKinds[action];
+            ++entry.entries;
+            entry.utf8TextBytes+=text;
+            if(m.tags[2]=="success")++entry.successful;
+            else ++entry.failed;
+            if(m.source==MemorySource::DirectWitness
+               &&m.witnessed &&m.sourceCharacter!=0)
+                ++entry.witnessedDirect;
+            else ++entry.indirectOrUnverified;
+            if(m.where.rfind("core-context-token:",0)==0)
+                ++entry.claimedContextTokens;
+            if(m.where.rfind("core-local-exchange-fact:",0)==0)
+                ++entry.claimedLocalExchangeFacts;
+        }
 
         auto& bucket=seen[memoryRecordFingerprint(m)];
         bool duplicate=false;
