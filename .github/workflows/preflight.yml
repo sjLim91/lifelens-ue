@@ -26,6 +26,9 @@ jobs:
       - name: Validate SimulationRuleset contract
         run: python Tools/validate_simulation_ruleset.py
 
+      - name: Validate memory checkpoint report and missing-day safety
+        run: python -m unittest Tools.tests.test_memory_checkpoint_analysis
+
       - name: Validate civilization observer read contract
         run: python Tools/validate_civilization_observer.py
 
