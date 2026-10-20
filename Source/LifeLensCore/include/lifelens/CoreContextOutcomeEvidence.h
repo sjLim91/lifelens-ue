@@ -6,9 +6,11 @@
 
 namespace lifelens {
 
-// A read-only, unsaved notification of an ACTUAL Core execution result,
-// not a model proposal, an issued pending token, or an invented Web action.
-// The gameplay state and canonical binary snapshot format are unchanged.
+// An unsaved observation of an ACTUAL Core execution result, never a
+// model proposal, a pending token, or an invented Web action. Subscribers
+// only observe evidence; the authoritative executor may separately record
+// firsthand experience in the actor's existing saved memory/belief state.
+// This event introduces no new binary snapshot fields.
 enum class CoreContextOutcomeCode {
     TeachingAdvanced,
     TeachingComprehensionFailed,
