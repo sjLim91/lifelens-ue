@@ -626,6 +626,25 @@ const provider = {
       tags:['action_experience','CoreContext:Trade','success'],
     }],
   }),'Reflection','actual later exchange success clears failure streak');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,next,{...next,minute:480,
+      where:'core-local-exchange-fact:911',
+      tags:['action_experience','CoreContext:Trade','success'],
+    }],
+  }),'Reflection','confirmed local barter success clears remote failure streak');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,next,{...next,minute:480,
+      where:'core-local-exchange-fact:911',
+      tags:['action_experience','CoreContext:Trade','failure'],
+    }],
+  }),'RepeatedFailure','local barter fact cannot claim a failed context token');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,next,{...next,minute:480,
+      where:'core-local-exchange-fact:911',
+      source:'ToldByOther',witnessed:false,
+      tags:['action_experience','CoreContext:Trade','success'],
+    }],
+  }),'RepeatedFailure','indirect rumors cannot erase firsthand repeated failures');
 }
 
 // Production auto-start must require no human click or manual model name.

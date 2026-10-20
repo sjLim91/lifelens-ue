@@ -81,4 +81,43 @@ inline void rememberCoreContextExperience(
     }
 }
 
+
+    
+// Immediate C5/C6 local barter has no PendingContextAction token. It must
+// never masquerade as a completed context token. The ONLY provenance for this
+// different Core execution path is an actual registered exchange fact.
+// This is called after executeMutualExchange succeeds and the Core has added
+// that fact. Both physically present adults experienced the exchange, so both
+// may learn; no model proposal or attempted exchange is counted as success.
+inline void rememberVerifiedLocalExchangeExperience(
+    Character& resident,CharacterId counterpart,int minute,
+    std::uint64_t registeredExchangeFactId)
+{
+    if(!resident.alive ||resident.id==0 ||counterpart==0
+       ||counterpart==resident.id ||minute<0
+       ||registeredExchangeFactId==0) return;
+    constexpr const char* action="CoreContext:Trade";
+    const std::string proposition=actionExperienceProposition(action);
+    const BeliefRecord* before=resident.beliefs.find(0,proposition);
+    const std::size_t beforeCount=before
+        ?before->supportCount+before->contradictionCount:0;
+    rememberActionOutcome(resident,action,minute,true,true);
+    const BeliefRecord* after=resident.beliefs.find(0,proposition);
+    if(after==nullptr
+       ||after->supportCount+after->contradictionCount==beforeCount) return;
+    for(MemoryRecord& memory:resident.memory.entries){
+        if(memory.minute!=minute ||memory.tags.size()!=3
+           ||memory.tags[0]!="action_experience"
+           ||memory.tags[1]!=action ||memory.tags[2]!="success"
+           ||memory.source!=MemorySource::DirectWitness
+           ||memory.sourceCharacter!=resident.id) continue;
+        memory.who=counterpart;
+        memory.where="core-local-exchange-fact:"
+            +std::to_string(registeredExchangeFactId);
+        memory.what="실제 지역 교역 대상 "+std::to_string(counterpart)
+            +" 물품 교환 완료 (Core exchange fact)";
+        return;
+    }
+}
+
 } // namespace lifelens
