@@ -97,6 +97,7 @@ int main()
 
     // Care evidence is observed but never used to suppress essential care
     // preference; only optional teaching and trade get a bounded adjustment.
+    sim.world().minute=11;
     rememberCoreContextExperience(resident,{actor,target,999,11,
         ContextActionKind::Parenting,CoreContextOutcomeCode::ParentingRejected});
     assert(learnedActionDisposition(resident,"CoreContext:Parenting")<1.0);
