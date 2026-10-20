@@ -6,8 +6,8 @@ from collections import Counter
 from pathlib import Path
 import re
 
-PLAN_ROW = re.compile(r"^\\|\\s*(M\\d+-\\d+)\\s*\\|")
-TRACK_ROW = re.compile(r"^\\|\\s*\\[([ x])\\]\\s*\\|\\s*\\*\\*(M\\d+-\\d+)\\*\\*\\s*\\|")
+PLAN_ROW = re.compile(r"^\|\s*(M\d+-\d+)\s*\|")
+TRACK_ROW = re.compile(r"^\|\s*\[([ x])\]\s*\|\s*\*\*(M\d+-\d+)\*\*\s*\|")
 DONE = "✅ 완료"
 IN_REVIEW = "🔎 병합 검토"
 IN_PROGRESS = "🚧 진행"
@@ -63,11 +63,11 @@ def verify_masterplan_ledger(masterplan: str, progress: str):
         "total": len(plan_ids),
     }
     expected = {
-        "complete": _single_count(progress, r"^- 완료:\\s*\\*\\*(\\d+)/\\d+\\*\\*", "complete"),
-        "review": _single_count(progress, r"^- 검증 완료·병합 검토:\\s*\\*\\*(\\d+)\\*\\*", "review"),
-        "in_progress": _single_count(progress, r"^- 진행:\\s*\\*\\*(\\d+)\\*\\*", "in progress"),
-        "unfinished": _single_count(progress, r"^- 미완 또는 미검증:\\s*\\*\\*(\\d+)\\*\\*", "unfinished"),
-        "total": _single_count(progress, r"^- 완료:\\s*\\*\\*\\d+/(\\d+)\\*\\*", "total"),
+        "complete": _single_count(progress, r"^- 완료:\s*\*\*(\d+)/\d+\*\*", "complete"),
+        "review": _single_count(progress, r"^- 검증 완료·병합 검토:\s*\*\*(\d+)\*\*", "review"),
+        "in_progress": _single_count(progress, r"^- 진행:\s*\*\*(\d+)\*\*", "in progress"),
+        "unfinished": _single_count(progress, r"^- 미완 또는 미검증:\s*\*\*(\d+)\*\*", "unfinished"),
+        "total": _single_count(progress, r"^- 완료:\s*\*\*\d+/(\d+)\*\*", "total"),
     }
     if actual != expected:
         raise ValueError(f"roadmap summary mismatch: actual={actual} declared={expected}")
