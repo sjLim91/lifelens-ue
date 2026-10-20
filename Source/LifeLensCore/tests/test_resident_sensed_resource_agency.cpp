@@ -66,6 +66,17 @@ int main()
     assert(world.rng==rng &&world.minute==480);
     assert(!*autonomousGoalSatisfiedByTruth(world,relationships,*selected.personalGoal));
 
+    // A real scarcity Explore with slightly stronger intrinsic utility must
+    // not be displaced by the personal resource curiosity bonus alone.
+    auto shortageExplore=fallback;
+    shortageExplore.decision.utility=selected.agency.decision.utility+0.03;
+    assert(shortageExplore.decision.utility<1.0);
+    const auto retainedExplore=chooseResidentSensedResourceGoal(
+        world,world.characters[0],position,relationships,shortageExplore,nullptr,false);
+    assert(!retainedExplore.personalGoal);
+    assert(retainedExplore.agency.decision.civilization.intent
+        ==CivilizationIntent::Explore);
+
     // The neighbour cannot use the first resident's scan. Current personal
     // position is rescanned instead of accepting another mind's request.
     const auto remote=chooseResidentSensedResourceGoal(
@@ -119,6 +130,12 @@ int main()
     assert(!chooseResidentSensedResourceGoal(
         world,actor,position,relationships,fallback,nullptr,false).personalGoal);
     actor.needs.thirst=0.05;
+    // Ordinary nonurgent sleep pressure must also preserve a recovery
+    // opportunity instead of starting optional curiosity travel.
+    actor.needs.sleep=0.56;
+    assert(!chooseResidentSensedResourceGoal(
+        world,actor,position,relationships,fallback,nullptr,false).personalGoal);
+    actor.needs.sleep=0.05;
     actor.lifeStage=LifeStage::Child;
     assert(!chooseResidentSensedResourceGoal(
         world,actor,position,relationships,fallback,nullptr,false).personalGoal);
