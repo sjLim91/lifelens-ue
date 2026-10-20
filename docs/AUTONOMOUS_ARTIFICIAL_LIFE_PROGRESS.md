@@ -55,7 +55,7 @@
 | [ ] | **M2-04** | \`Hypothesis\` 후보: 원인 추정·대안 방법·확신과 반증 조건 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M2-05** | 실세계 \`Affordance\` primitive 목록: Observe/Move/Approach/Pick/Carry/Transfer/Combine/Work/Talk 등 구현별 capability | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M2-06** | \`PlanCandidate\` 조합 검색: 순서·전제 조건·자원/거리·우회·포기 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M2-07** | 경쟁 계획 평가: 예상 효율·위험·소요/이동·과거 개인 성공률 | 🚧 진행 | [PR #830](https://github.com/sjLim91/lifelens-ue/pull/830) 사회적 계획의 개인 직접 경험 기반 순위 보정·회귀 테스트 CI 중. 실제 이동/소요·다단계 계획·실행 인과 검증 미완 |
+| [ ] | **M2-07** | 경쟁 계획 평가: 예상 효율·위험·소요/이동·과거 개인 성공률 | 🚧 진행 | [PR #830](https://github.com/sjLim91/lifelens-ue/pull/830) Core/Preflight/WASM/Web 4 CI PASS→main `d8c09fd2` 주민-상대-행동별 개인 실경험 반영 대안 계획 점수. 실제 거리·효율·다단계 실행·인과 검증 미완 |
 | [ ] | **M2-08** | \`ExperimentBudget\`: 한시적 탐색·안전한 실험·자원 제한/긴급 생존 선점 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M2-09** | 실패/환경변화 시 부분 재계획·가설 수정·기존 목표 유지/포기 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 
@@ -176,6 +176,7 @@
 | 2026-10-20 | M1-01 | 🚧 진행 유지 | #828 정확한 HEAD Core/Preflight/WASM/Web 및 야생/지구 감사 PASS, main 82c43e0f. #832 Core-bound perceived-resource DTO·fingerprint CI 진행 중; M1 전체 미완 |
 | 2026-10-20 | M1-01 | 🚧 진행 유지 | #822 exact-head 4 CI PASS, main 0f30df41. 시간 인과 유입 차단 병합; 공간/시야 지각 전체 미완 |
 | 2026-10-20 | M0-05 | 미완→🚧 진행 | #826 캐릭터 리소스 다운로드 일시 timeout/503만 제한 재시도, 404/hash/size는 fail-closed. 검증 진행 중 |
+| 2026-10-20 | M2-07 | 🚧 진행 유지 | #830 exact-head Core 장기 검증 포함 4 CI PASS→main d8c09fd2. Core personal mood outcome 기반 read-only 계획 순위 조정 검증; 전체 목표 실행/계획 동작 미완 |
 | 2026-10-20 | M2-07 | ⬜ 미완→🚧 진행 | [#830](https://github.com/sjLim91/lifelens-ue/pull/830) 직접 경험에 따른 사회적 계획 경쟁 순위 수정·CI 검증 중. 범용 효율/시간/이동·실제 실행은 미완 |
 | 2026-10-20 | M0-03 | 🚧 진행 유지 | #824 14개 의도 입력 범위 감사 exact-head 4 CI PASS (Web 네트워크 timeout job 재실행 성공), main eac1f47a. 전체 100/365/1000일 근거는 별도 |
 | 2026-10-20 | M0-05 | 🚧 진행 유지 | #826 pinned 리소스 다운로드 일시적 네트워크 실패 retry, hash/size fail closed: Web/Preflight CI PASS, main 8e2aac8b |
