@@ -46,6 +46,13 @@ struct ResidentAIPairedMetrics {
     std::uint64_t observedTradePendingStarts=0;
     std::uint64_t observedParentingPendingStarts=0;
     OpportunityContextLifecycleCounts opportunityTokenLifecycle{};
+    // These counters come exclusively from Core's actual execution paths,
+    // never inferred from a disappearing pending token or accepted AI goal.
+    std::array<std::uint64_t,ObservedOpportunityContextCount>
+        verifiedCoreSuccesses{};
+    std::array<std::uint64_t,ObservedOpportunityContextCount>
+        verifiedCoreFailures{};
+    std::uint64_t verifiedTradeJourneyReturns=0;
     // Proposals are not actions. These counts show input acceptances only,
     // never credit successful instruction, childcare, exchange or migration.
     std::array<std::uint64_t,CognitiveOpportunityIntentCount>
@@ -116,6 +123,21 @@ inline void observeResidentAIPendingStarts(
             default: break;
         }
     }
+}
+
+inline void observeResidentAIVerifiedCoreOutcome(
+    const CoreContextOutcomeEvent& event,
+    ResidentAIPairedMetrics& totals)
+{
+    if(event.actor==0 ||event.token==0 ||event.minute<0) return;
+    const auto index=observedOpportunityContextIndex(event.kind);
+    if(index>=ObservedOpportunityContextCount) return;
+    if(coreContextOutcomeActualSuccess(event.code))
+        ++totals.verifiedCoreSuccesses[index];
+    else if(coreContextOutcomeActualFailure(event.code))
+        ++totals.verifiedCoreFailures[index];
+    else if(event.code==CoreContextOutcomeCode::TradeReturned)
+        ++totals.verifiedTradeJourneyReturns;
 }
 
 inline void collectResidentAIPairedEvidence(
@@ -266,6 +288,14 @@ inline ResidentAIPairedReport runResidentAIPairedAudit(
     if(!report.matchedInitialResidents)
         throw std::runtime_error("paired New Game initialization mismatch");
 
+    baseline.onCoreContextOutcome(
+        [&](const CoreContextOutcomeEvent& event){
+            observeResidentAIVerifiedCoreOutcome(event,report.baseline);
+        });
+    scripted.onCoreContextOutcome(
+        [&](const CoreContextOutcomeEvent& event){
+            observeResidentAIVerifiedCoreOutcome(event,report.proxy);
+        });
     std::map<CharacterId,std::uint64_t> baseTokens,scriptTokens;
     OpportunityContextLifecycleObserver baselineLifecycle,proxyLifecycle;
     const int totalMinutes=days*1440;
@@ -325,7 +355,16 @@ inline void appendResidentAIPairedMetricsJson(
            <<",\"noEligibleTarget\":"<<m.opportunityNoEligibleTarget[i]
            <<"}";
     }
-    out<<"},\"tokenLifecycle\":{";
+    out<<"},\"verifiedCoreOutcomes\":{";
+    for(std::size_t i=0;i<ObservedOpportunityContextCount;++i){
+        if(i) out<<",";
+        out<<"\""<<ObservedOpportunityContextNames[i]<<"\":{"
+           <<"\"success\":"<<m.verifiedCoreSuccesses[i]
+           <<",\"failure\":"<<m.verifiedCoreFailures[i]<<"}";
+    }
+    out<<",\"tradeJourneyReturns\":"
+       <<m.verifiedTradeJourneyReturns
+       <<"},\"tokenLifecycle\":{";
     for(std::size_t i=0;i<ObservedOpportunityContextCount;++i){
         if(i) out<<",";
         out<<"\""<<ObservedOpportunityContextNames[i]<<"\":{"
