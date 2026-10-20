@@ -171,12 +171,10 @@
 
 ## 출하 변경 기록
 
-| 2026-10-20 | M0-04 | 🚧 진행 유지 | #853 실제 checkpoint 주민·기억 총합과 resident 개별 기록 불일치 실패 검증, Preflight PASS→main d66da8f5 |
-| 2026-10-20 | M11-03 | ⬜ 미완→🚧 진행 | #852 실제 365일 시드 수면 포화 회귀로 main 차단. #854 주민별 기여 원인 분석 신규 PR CI 중, 허용 임계치 불변 |
-
-
 | 날짜 | 단위 | 이전→현재 | 검증/조치 |
 |---|---|---|---|
+| 2026-10-20 | M0-04 | 🚧 진행 유지 | #853 실제 checkpoint 주민·기억 총합과 resident 개별 기록 불일치 실패 검증, Preflight PASS→main d66da8f5 |
+| 2026-10-20 | M11-03 | ⬜ 미완→🚧 진행 | #852 실제 365일 시드 수면 포화 회귀로 main 차단. #854 주민별 기여 원인 분석 신규 PR CI 중, 허용 임계치 불변 |
 | 2026-10-20 | M1-01 | 🚧 진행 유지 | #828 정확한 HEAD Core/Preflight/WASM/Web 및 야생/지구 감사 PASS, main 82c43e0f. #832 Core-bound perceived-resource DTO·fingerprint CI 진행 중; M1 전체 미완 |
 | 2026-10-20 | M1-01 | 🚧 진행 유지 | #822 exact-head 4 CI PASS, main 0f30df41. 시간 인과 유입 차단 병합; 공간/시야 지각 전체 미완 |
 | 2026-10-20 | M0-05 | 미완→🚧 진행 | #826 캐릭터 리소스 다운로드 일시 timeout/503만 제한 재시도, 404/hash/size는 fail-closed. 검증 진행 중 |
