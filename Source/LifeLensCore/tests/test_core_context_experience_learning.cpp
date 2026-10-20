@@ -66,8 +66,8 @@ int main()
     assert(belief &&belief->contradictionCount==4);
     assert(resident.memory.entries.size()==originalMemories+4);
     assert(learnedActionDisposition(resident,"CoreContext:Trade")<1.0);
-    assert(std::abs(residentCognitivePartnerExperienceFactor(
-        resident,target,"CoreContext:Trade",sim.world().minute)-0.92)<1e-12);
+    assert(residentCognitivePartnerExperienceFactor(
+        resident,target,"CoreContext:Trade",sim.world().minute)==0.0);
     // Failing with one actual person must NOT count as failure against a
     // different person or a different activity such as teaching.
     assert(residentCognitivePartnerExperienceFactor(
@@ -77,7 +77,10 @@ int main()
     const double discouraged=residentCognitiveIntentPreference(
         sim.world(),sim.acceptedCognitiveDecisions(),actor,
         CognitiveIntentKind::TradeWithResident,target);
-    assert(discouraged<neutral &&discouraged>0.0);
+    assert(discouraged==0.0);
+    // The accepted thought remains in the journal; only its optional
+    // preference for a repeatedly failing partner is temporarily released.
+    assert(sim.acceptedCognitiveDecisions().size()==1);
 
     // Same Core intent can still be considered after failure; real later
     // success repairs confidence rather than permanently banning exchange.
