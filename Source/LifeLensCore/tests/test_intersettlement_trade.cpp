@@ -404,6 +404,12 @@ int main()
     std::string error;
     CHECK(simulation.restoreSnapshot(snapshot,&error));
     CHECK(error.empty());
+    std::vector<CoreContextOutcomeEvent> coreTradeOutcomes;
+    simulation.onCoreContextOutcome(
+        [&](const CoreContextOutcomeEvent& event){
+            if(event.actor==firstId &&event.kind==ContextActionKind::Trade)
+                coreTradeOutcomes.push_back(event);
+        });
 
     const SettlementNetworkObservation runtimeNetworkBefore=
         simulation.observeSettlementNetwork();
@@ -638,6 +644,12 @@ int main()
                 runtimeOriginSettlement,
                 runtimeDestinationSettlement)>0){
             exchanged=true;
+            CHECK(std::count_if(
+                coreTradeOutcomes.begin(),coreTradeOutcomes.end(),
+                [&](const CoreContextOutcomeEvent& e){
+                    return e.code==CoreContextOutcomeCode::TradeExchanged
+                        &&e.target==secondId &&e.token!=0;
+                })==1);
             CHECK(
                 simulation.world().characters[0]
                     .civilization.inventory.count(
@@ -758,6 +770,16 @@ int main()
     CHECK(exchanged);
     CHECK(returningObserved);
     CHECK(returned);
+    CHECK(std::count_if(
+        coreTradeOutcomes.begin(),coreTradeOutcomes.end(),
+        [&](const CoreContextOutcomeEvent& e){
+            return e.code==CoreContextOutcomeCode::TradeExchanged;
+        })==1);
+    CHECK(std::count_if(
+        coreTradeOutcomes.begin(),coreTradeOutcomes.end(),
+        [&](const CoreContextOutcomeEvent& e){
+            return e.code==CoreContextOutcomeCode::TradeReturned;
+        })==1);
 
     const SettlementTradeNetworkObservation runtimeTradeNetwork=
         simulation.observeSettlementTradeNetwork();
