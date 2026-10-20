@@ -179,6 +179,24 @@ int main()
         world,relationships,request,goal,budget).status
         ==AutonomousExperimentStatus::InvalidBudget);
 
+    // A rising-but-not-yet-urgent body need must defer optional experiment
+    // methods. It must not block a genuine Core Sleep relief candidate.
+    World tiredWorld=world;
+    tiredWorld.characters.front().needs.sleep=0.56;
+    const auto tiredRequest=observe(tiredWorld,relationships,11);
+    const auto tiredSocial=trustGoal(tiredRequest,22);
+    assert(composeAutonomousExperimentOptions(
+        tiredWorld,relationships,tiredRequest,tiredSocial).status
+        ==AutonomousExperimentStatus::NoSafeCandidate);
+    const auto tiredRest=restGoal(tiredRequest);
+    const auto recovery=composeAutonomousExperimentOptions(
+        tiredWorld,relationships,tiredRequest,tiredRest);
+    assert(recovery.status==AutonomousExperimentStatus::CandidatesOnly);
+    assert(recovery.alternatives.size()==1);
+    assert(recovery.alternatives[0].steps.front().physicalGoal==Goal::Sleep);
+    assert(tiredWorld.minute==world.minute);
+    assert(tiredWorld.rng==world.rng);
+
     // The SAME resident learns personal self-mood from a real prior Core
     // social completion, already persisted as an actor-specific belief.
     // This differentiates safe ways to pursue one goal WITHOUT changing

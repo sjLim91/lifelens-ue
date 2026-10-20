@@ -146,6 +146,24 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
         result.status=AutonomousExperimentStatus::RejectedContext;
         return result;
     }
+    // Only optional social/gather experimentation yields to rising bodily
+    // pressure. A plan consisting of real Core self-care steps (e.g. Sleep)
+    // remains available. These are read-only candidates: actual emergency
+    // work always belongs to the single authoritative Core decision slot.
+    constexpr double DiscretionaryExperimentNeedLimit=0.55;
+    const double highestNeed=std::max({
+        actor->needs.hunger,actor->needs.thirst,actor->needs.sleep,
+        actor->needs.bladder,actor->needs.hygiene
+    });
+    const bool optionalWork=std::any_of(
+        base.proposedSteps.begin(),base.proposedSteps.end(),
+        [](const AutonomousAffordanceStep& step){
+            return step.kind!=AutonomousAffordanceKind::ExistingPhysicalGoal;
+        });
+    if(optionalWork &&highestNeed>=DiscretionaryExperimentNeedLimit){
+        result.status=AutonomousExperimentStatus::NoSafeCandidate;
+        return result;
+    }
 
     // Branch only on ACTUALLY supported social methods (Approach/Repair).
     // Every other proposed physical action remains unchanged; there is no
