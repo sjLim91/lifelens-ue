@@ -148,6 +148,30 @@ int main()
     assert(!chooseResidentSensedResourceGoal(
         world,actor,position,relationships,fallback,nullptr,false).personalGoal);
 
+    // Optional curiosity must not retry the same genuinely inaccessible
+    // source endlessly. The resident's native fallback remains untouched.
+    world.minute=495; // legal 15-minute decision boundary
+    rememberCivilizationAttemptOutcome(
+        actor,decision,495,false,ResidentGatherFailureCause::ResourceAccessUnavailable);
+    const auto failedAgency=chooseResidentSensedResourceGoal(
+        world,actor,position,relationships,fallback,nullptr,false);
+    assert(!failedAgency.personalGoal);
+    assert(failedAgency.agency.authority==fallback.authority);
+    assert(world.resourceNodes.front().quantity==12);
+    // Another actor has not witnessed this access failure.
+    const auto independent=chooseResidentSensedResourceGoal(
+        world,world.characters[1],position,relationships,fallback,nullptr,false);
+    assert(independent.personalGoal);
+    assert(independent.agency.decision.civilization.resourceNode==101);
+    // Real later success resets the personal source exclusion, without any
+    // invented World resource regeneration or a stored cooldown flag.
+    world.minute=510;
+    rememberCivilizationAttemptOutcome(actor,decision,510,true);
+    const auto recovered=chooseResidentSensedResourceGoal(
+        world,actor,position,relationships,fallback,nullptr,false);
+    assert(recovered.personalGoal);
+    assert(recovered.agency.decision.civilization.resourceNode==101);
+
     // Production one-slot planning -> pending actual Gather -> binary resume ->
     // single output. No external model/accepted cognition is required.
     Simulation sim(77,0,4);

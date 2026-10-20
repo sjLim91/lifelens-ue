@@ -111,6 +111,20 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
             const auto candidate=bestGatherDecisionAtPosition(
                 world,actor,actualPosition,population,material,&excluded,&sourceOutcomes,&allowed);
             if(candidate.intent!=CivilizationIntent::Gather) break;
+            // A directly witnessed source-exhausted/access-denied failure is
+            // stronger evidence than an optional curiosity preference. Skip
+            // that exact source for this goal window, but NEVER suppress the
+            // native Core survival Gather/Explore fallback. A later verified
+            // success or the bounded 1-day memory expiry restores eligibility.
+            const auto history=sourceOutcomes.find(
+                candidate.resourceNode,
+                std::string("Civilization:Gather:")+materialName(candidate.material));
+            if(history.hasEvidence &&!history.succeeded
+               &&(history.reason==ResidentResourceOutcomeReason::SourceUnavailable
+                   ||history.reason==ResidentResourceOutcomeReason::AccessUnavailable)){
+                excluded.push_back(candidate.resourceNode);
+                continue;
+            }
             GridPos access{};
             std::vector<GridPos> route;
             if(!resolveCivilizationResourceAccessGridPosition(
