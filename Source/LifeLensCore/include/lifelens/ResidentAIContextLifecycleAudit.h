@@ -77,6 +77,81 @@ struct OpportunityContextLifecycleCounts {
     std::array<std::uint64_t,ObservedOpportunityContextCount> replacedByAnotherToken{};
 };
 
+// Read-only relationship between an *observed* Core pending token, the
+// latest accepted actor/intent/target at issuance, and the actual terminal
+// Core outcome callback. A temporal match is NOT proof of model causation;
+// missing evidence stays explicitly unknown instead of claiming completion.
+struct OpportunityAcceptedOutcomeCounts {
+    std::array<std::uint64_t,ObservedOpportunityContextCount> matchedSuccesses{};
+    std::array<std::uint64_t,ObservedOpportunityContextCount> matchedFailures{};
+    std::array<std::uint64_t,ObservedOpportunityContextCount> observedWithoutMatch{};
+    std::array<std::uint64_t,ObservedOpportunityContextCount> noObservedToken{};
+};
+
+class OpportunityAcceptedOutcomeObserver {
+public:
+    void observePending(
+        CharacterId actor,const PendingContextActionObservation& pending,
+        const World& world,
+        const std::vector<AcceptedCognitiveDecision>& accepted)
+    {
+        if(!pending.active ||pending.token==0 ||pending.actor!=actor){
+            live_.erase(actor);
+            return;
+        }
+        const auto previous=live_.find(actor);
+        if(previous!=live_.end() &&previous->second.token==pending.token)
+            return;
+        live_[actor]={
+            pending.token,pending.targetResident,pending.kind,
+            opportunityTokenHasMatchingAcceptedThought(
+                world,accepted,actor,pending)
+        };
+    }
+
+    void observeSimulation(const Simulation& sim)
+    {
+        for(const auto& resident:sim.world().characters)
+            observePending(resident.id,
+                sim.observePendingContextAction(resident.id),
+                sim.world(),sim.acceptedCognitiveDecisions());
+    }
+
+    void observeOutcome(const CoreContextOutcomeEvent& event,
+                        OpportunityAcceptedOutcomeCounts& counts)
+    {
+        const auto index=observedOpportunityContextIndex(event.kind);
+        if(index>=ObservedOpportunityContextCount ||event.actor==0
+           ||event.token==0 ||event.minute<0
+           ||(!coreContextOutcomeActualSuccess(event.code)
+               &&!coreContextOutcomeActualFailure(event.code)))
+            return; // trade return is NOT a second exchange
+        const auto it=live_.find(event.actor);
+        if(it==live_.end() ||it->second.token!=event.token
+           ||it->second.kind!=event.kind
+           ||it->second.target!=event.target){
+            ++counts.noObservedToken[index];
+            return;
+        }
+        if(it->second.matched){
+            if(coreContextOutcomeActualSuccess(event.code))
+                ++counts.matchedSuccesses[index];
+            else ++counts.matchedFailures[index];
+        }else{
+            ++counts.observedWithoutMatch[index];
+        }
+        live_.erase(it); // One observed terminal outcome per token
+    }
+private:
+    struct Live {
+        std::uint64_t token=0;
+        CharacterId target=0;
+        ContextActionKind kind=ContextActionKind::None;
+        bool matched=false;
+    };
+    std::map<CharacterId,Live> live_;
+};
+
 class OpportunityContextLifecycleObserver {
 public:
     void observe(
