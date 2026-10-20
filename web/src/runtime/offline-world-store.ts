@@ -78,16 +78,51 @@ export async function readPersistedWorld(): Promise<PersistedWorld | null> {
   }
 }
 
+// Existing and incoming Core checkpoints are compared under the SAME
+// IndexedDB readwrite transaction, avoiding a separate read/write TOCTOU.
+// This only guards stale same-seed writes; it is NOT a multi-tab writer lease.
+export function assertCheckpointProgress(
+  existing: PersistedWorld | null,
+  incoming: PersistedWorld,
+): void {
+  if (existing === null) return;
+  if (!valid(existing)) {
+    throw Error('기존 월드 기록이 손상되어 새 저장본으로 덮어쓰지 않습니다.');
+  }
+  if (existing.worldSeed !== incoming.worldSeed) return;
+  if (incoming.minute < existing.minute
+      || incoming.savedAtWallMs < existing.savedAtWallMs) {
+    throw Error('더 오래된 월드 체크포인트가 최신 저장본을 덮어쓰지 못하도록 차단했습니다.');
+  }
+}
+
 export async function writePersistedWorld(record: PersistedWorld): Promise<void> {
   if (!valid(record)) throw Error('유효하지 않은 월드 저장 요청입니다.');
   const db = await database();
   try {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
       tx.oncomplete = () => resolve();
       tx.onabort = () => reject(tx.error ?? Error('월드 저장이 취소됐습니다.'));
       tx.onerror = () => reject(tx.error ?? Error('월드 저장에 실패했습니다.'));
-      tx.objectStore(STORE_NAME).put(record);
+      const get = store.get(PRIMARY_KEY);
+      get.onerror = () => {
+        reject(get.error ?? Error('기존 월드 기록을 확인하지 못했습니다.'));
+        tx.abort();
+      };
+      get.onsuccess = () => {
+        try {
+          assertCheckpointProgress(
+            get.result === undefined ? null : get.result as PersistedWorld,
+            record,
+          );
+          store.put(record);
+        } catch (error) {
+          reject(error);
+          tx.abort();
+        }
+      };
     });
   } finally {
     db.close();
