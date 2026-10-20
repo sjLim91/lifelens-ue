@@ -87,8 +87,29 @@ def analyze_file(path: Path) -> dict[str, Any]:
                     raise ValueError(f"{path}: bad action memory entry")
                 for metric in per_action[key]:
                     per_action[key][metric] += _nonnegative(value.get(metric), metric)
+        # The authoritative Core audit writes a checkpoint summary before
+        # all residents of that day. A truncated JSONL may look convincing if
+        # we only total whichever resident records survived the truncation.
+        # Reconcile against Core's independently written checkpoint totals.
+        summary_population = cp.get("total")
+        summary_memory = cp.get("memory_entries")
+        if summary_population is not None:
+            summary_population = _nonnegative(summary_population, "checkpoint.total")
+            if summary_population != len(residents[day]):
+                raise ValueError(
+                    f"{path}: day {day} checkpoint residents {summary_population} "
+                    f"!= resident records {len(residents[day])}")
+        if summary_memory is not None:
+            summary_memory = _nonnegative(summary_memory, "checkpoint.memory_entries")
+            if summary_memory != total["entries"]:
+                raise ValueError(
+                    f"{path}: day {day} checkpoint memories {summary_memory} "
+                    f"!= resident memories {total['entries']}")
         points.append({
             "day": day, "resident_count": len(residents[day]),
+            "checkpoint_reconciliation": (
+                "verified" if summary_population is not None
+                and summary_memory is not None else "summary_fields_missing"),
             "snapshot_bytes": total_bytes, "memory": total,
             "sources": sources,
             "action_experiences_by_key": dict(sorted(per_action.items())),
