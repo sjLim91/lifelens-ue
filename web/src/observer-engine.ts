@@ -4,6 +4,7 @@ import { CharacterLayer } from './character-layer';
 import { LifeLensCoreBridge } from './runtime/core-bridge';
 import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
 import { SimulationClock } from './runtime/simulation-clock';
+import { acquireWorldWriterLease, type WorldWriterLease } from './runtime/world-writer-lease';
 import { elapsedOfflineMinutes, readPersistedWorld, wallTimeAfterAdvance,
   writePersistedWorld, type PersistedWorld } from './runtime/offline-world-store';
 import {
@@ -153,6 +154,7 @@ export function startObserverEngine(): () => void {
   let offlineBanner: HTMLDivElement | null = null;
   let catchupFailed = false;
   let storageFailed = false;
+  let worldWriterLease: WorldWriterLease | null = null;
 
   function offlineStatus(message: string | null): void {
     if (stopped) return;
@@ -167,7 +169,7 @@ export function startObserverEngine(): () => void {
   }
 
   function saveCheckpoint(savedAtWallMs: number): Promise<void> {
-    if (!worldSession || stopped || !ownedCore) return Promise.resolve();
+    if (!worldSession || stopped || !ownedCore || !worldWriterLease?.active) return Promise.resolve();
     let checkpoint: PersistedWorld;
     try {
       const overview = ownedCore.worldOverview();
@@ -769,6 +771,11 @@ export function startObserverEngine(): () => void {
     observerStore.setRuntime('loading');
   
     try {
+      // Exclusive, non-stealable same-origin writer authority is acquired
+      // BEFORE loading/restoring Core, creating a world, or scheduling ticks.
+      const lease = await acquireWorldWriterLease();
+      if (stopped) { lease.release(); return; }
+      worldWriterLease = lease;
       const core = await LifeLensCoreBridge.connect();
       if (stopped) { core.dispose(); return; }
       ownedCore = core;
@@ -805,6 +812,8 @@ export function startObserverEngine(): () => void {
       startSimulationClock();
       if (saved) await resumeOfflineWorld();
     } catch (error) {
+      worldWriterLease?.release();
+      worldWriterLease = null;
       if (stopped) return;
       const message = error instanceof Error ? error.message : String(error);
       console.error('LifeLensCore boot failed', error);
@@ -829,6 +838,11 @@ export function startObserverEngine(): () => void {
     document.removeEventListener('visibilitychange', onWorldVisibility);
     window.removeEventListener('pagehide', onWorldPageHide);
     stopped = true;
+    // Flush already-captured checkpoint writes before another tab may
+    // acquire Core authority; no new writes after stopped becomes true.
+    const lease = worldWriterLease;
+    worldWriterLease = null;
+    void pendingSaves.finally(() => lease?.release());
     shadowObserver.dispose();
     residentAI.dispose();
     simulationClock?.stop();
