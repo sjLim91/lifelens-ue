@@ -1,4 +1,5 @@
 #include "lifelens/Simulation.h"
+#include "lifelens/ResidentContextOutcomeLearning.h"
 #include "lifelens/SocietyEconomy.h"
 #include "lifelens/ResidentCognitivePreference.h"
 
@@ -121,9 +122,18 @@ void Simulation::advanceSocietyExchange()
                 return false;
             }
 
-            registerSocietyExchangeFact(
+            const SocialFact* completedExchange=registerSocietyExchangeFact(
                 socialKnowledge_,first,second,exchange,
                 world_.minute,world_.seed);
+            // This is a separate executed local barter lane, not a pending
+            // context token. Both participants physically exchanged goods.
+            // Learn only when the durable Core exchange fact is registered.
+            if(completedExchange!=nullptr){
+                rememberVerifiedLocalExchangeExperience(
+                    first,second.id,world_.minute,completedExchange->id);
+                rememberVerifiedLocalExchangeExperience(
+                    second,first.id,world_.minute,completedExchange->id);
+            }
             const bool hadPartnership=
                 hasSocietyTradePartnership(
                     socialKnowledge_,first.id,second.id);
