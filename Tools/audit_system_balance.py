@@ -122,10 +122,58 @@ def percentages(checkpoint):
     }
 
 
+
+MEMORY_SOURCE_KEYS = (
+    "entries", "utf8_text_bytes", "exact_duplicate_entries",
+    "direct_witness_entries", "told_by_other_entries", "inferred_entries",
+)
+
+
+def aggregate_checkpoint_memory(records):
+    """Last resident row wins per checkpoint; missing is not a zero."""
+    latest = {str(row["id"]): row for row in records}
+    present = [row["memory_attribution"] for row in latest.values()
+               if isinstance(row.get("memory_attribution"), dict)]
+    complete = bool(latest) and len(present) == len(latest)
+    result = {
+        "covered_residents": len(present),
+        "reported_residents": len(latest),
+        "complete_coverage": complete,
+        "totals": None,
+        "dominant_categories": [],
+    }
+    if not present:
+        return result
+    if any(any(type(item.get(key)) is not int or item[key] < 0
+               for key in MEMORY_SOURCE_KEYS) for item in present):
+        raise ValueError("malformed Core memory attribution count")
+    totals = {key: sum(row[key] for row in present) for key in MEMORY_SOURCE_KEYS}
+    categories = {}
+    for row in present:
+        tags = row.get("primary_tags", {})
+        if not isinstance(tags, dict):
+            raise ValueError("malformed Core memory category evidence")
+        for tag, stats in tags.items():
+            if (not isinstance(tag, str) or not isinstance(stats, dict)
+                or type(stats.get("entries")) is not int
+                or type(stats.get("utf8_text_bytes")) is not int
+                or stats["entries"] < 0 or stats["utf8_text_bytes"] < 0):
+                raise ValueError("malformed Core memory category evidence")
+            entry = categories.setdefault(tag, {"entries": 0, "utf8_text_bytes": 0})
+            entry["entries"] += stats["entries"]
+            entry["utf8_text_bytes"] += stats["utf8_text_bytes"]
+    result["totals"] = totals
+    result["dominant_categories"] = sorted(
+        ({"category": tag, **stats} for tag, stats in categories.items()),
+        key=lambda row: (-row["utf8_text_bytes"], row["category"]))[:8]
+    return result
+
+
 def summarize(directory):
     checkpoints, first_signals, invariants, completions = [], [], [], []
     latest = {}
     resident_needs = {}
+    resident_memory = {}
     with (directory / "metrics.csv").open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
         writer.writerow(["seed", "day", "minute", "scope", "entity", "metric", "value"])
@@ -136,6 +184,8 @@ def summarize(directory):
                                  "unavailable" if value is None else value])
             if record["type"] == "resident":
                 resident_needs[(record["day"], record["id"])] = record["needs"]
+                resident_memory[(record["day"], record["id"])] = {
+                    "id": record["id"], "memory_attribution": record.get("memory_attribution")}
             if record["type"] == "checkpoint":
                 derived = {**record, "activity_percent": percentages(record)}
                 if checkpoints:
@@ -164,6 +214,7 @@ def summarize(directory):
         "schema_version": 1, "checkpoints": checkpoints, "first_signals": first_signals,
         "invariants": invariants, "complete": bool(completions), "latest_entities": list(latest.values()),
         "measurement_limits": {
+            "memory_provenance": "checkpoint resident rows only: primary-tag classes (fact IDs grouped only diagnostically), direct/told/inferred separately; missing coverage is NOT a zero and text bytes are not heap/snapshot size",
             "critical_band": "0.90 is Core critical provision threshold; other Needs use same observational band, not an AI threshold change",
             "activity": "exclusive active Core commitment category; retained completed-result presentation is excluded and final active tick included; independent romance/family/institution/economy actions are not separable",
             "activity_precision": "post-tick active commitment with pre-tick fallback for completion/failure; planning/preemption inside a tick is not a sub-minute profiler",
@@ -189,6 +240,10 @@ def summarize(directory):
                 "critical_entries": sum(item[name]["critical_entries"] for item in observations),
                 "longest_critical_streak": max(item[name]["longest_critical_streak"] for item in observations)}
                 for name, value in checkpoint["needs"].items()}
+    for checkpoint in checkpoints:
+        checkpoint["memory_attribution"] = aggregate_checkpoint_memory(
+            row for (day, _), row in resident_memory.items()
+            if day == checkpoint["day"])
     final_day = checkpoints[-1]["day"] if checkpoints else None
     summary["current_entities"] = [record for record in latest.values() if record.get("day") == final_day]
     legacy = []
@@ -219,6 +274,27 @@ def summarize(directory):
         p = c["activity_percent"]
         lines.append(f"| {c['day']} | {c['living']}/{c['total']} | {c['births']} | {c['generation_depth']} | {c['chunks']} | {c['facilities']} | " +
                      " | ".join(str(p[key]) for key in ("survival", "social", "family", "civilization", "idle", "failed_retry")) + " |")
+    lines += [
+        "", "## 기억 출처·중복·텍스트 계측", "",
+        "각 checkpoint/주민의 마지막 실제 Core 보고만 집계. 누락된 이전 아티팩트는 0으로 간주하지 않는다.",
+        "기억 원문 UTF-8 크기는 전체 메모리(heap)나 스냅샷 크기가 아니다.",
+        "", "| day | 출처 보고 인원 | 완전 관측 | 직접 / 전언 / 추론 | 중복 | UTF-8 bytes |",
+        "|---:|---:|:---:|---:|---:|---:|",
+    ]
+    for checkpoint in checkpoints:
+        memory = checkpoint["memory_attribution"]
+        coverage = str(memory["covered_residents"]) + "/" + str(memory["reported_residents"])
+        totals = memory["totals"]
+        if totals is None:
+            lines.append(f"| {checkpoint['day']} | {coverage} | 아니오 | 자료 없음 | 자료 없음 | 자료 없음 |")
+            continue
+        source = " / ".join(str(totals[name]) for name in (
+            "direct_witness_entries", "told_by_other_entries", "inferred_entries"))
+        lines.append(f"| {checkpoint['day']} | {coverage} | {'예' if memory['complete_coverage'] else '일부'} | "
+                     f"{source} | {totals['exact_duplicate_entries']} | {totals['utf8_text_bytes']} |")
+        for category in memory["dominant_categories"]:
+            lines.append(f"  - {category['category']}: {category['entries']}건 / "
+                         f"{category['utf8_text_bytes']} UTF-8 bytes")
     lines += ["", "## 관측 한계", ""]
     lines += [f"- `{name}`: {value}" for name, value in summary["measurement_limits"].items()]
     (directory / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
