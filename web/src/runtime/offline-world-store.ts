@@ -94,6 +94,17 @@ export function assertCheckpointProgress(
       || incoming.savedAtWallMs < existing.savedAtWallMs) {
     throw Error('더 오래된 월드 체크포인트가 최신 저장본을 덮어쓰지 못하도록 차단했습니다.');
   }
+  // Equal Core time AND equal wall clock must be byte-for-byte idempotent.
+  // A divergent same-instant snapshot implies competing writers or damage,
+  // not a new authoritative world tick. Fail closed rather than overwrite.
+  if (incoming.minute === existing.minute
+      && incoming.savedAtWallMs === existing.savedAtWallMs
+      && (incoming.snapshotBase64 !== existing.snapshotBase64
+          || incoming.earthOrigin?.latitudeDeg !== existing.earthOrigin?.latitudeDeg
+          || incoming.earthOrigin?.longitudeDeg !== existing.earthOrigin?.longitudeDeg
+          || (incoming.earthOrigin === null) !== (existing.earthOrigin === null))) {
+    throw Error('동일 시각의 서로 다른 Core 체크포인트 충돌을 차단했습니다.');
+  }
 }
 
 export async function writePersistedWorld(record: PersistedWorld): Promise<void> {
