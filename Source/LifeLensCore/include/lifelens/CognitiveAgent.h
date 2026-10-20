@@ -276,6 +276,7 @@ inline CognitiveValidationResult validateCognitiveProposal(
 // never escape buildCognitiveRequest and never become persisted memories.
 struct CognitiveMemoryCandidate {
     CharacterId who=0;
+    CharacterId sourceCharacter=0;
     MemorySource source=MemorySource::Inferred;
     bool witnessed=false;
     int minute=0;
@@ -313,6 +314,7 @@ inline CognitiveRequest buildCognitiveRequest(
     for(const MemoryRecord& memory:actor.memory.entries){
         CognitiveMemoryCandidate evidence;
         evidence.who=memory.who;
+        evidence.sourceCharacter=memory.sourceCharacter;
         evidence.source=memory.source;
         evidence.witnessed=memory.witnessed;
         evidence.minute=memory.minute;
@@ -381,14 +383,33 @@ inline CognitiveRequest buildCognitiveRequest(
         std::map<std::string,std::vector<std::size_t>> byAction;
         for(std::size_t i=0;i<memories.size();++i){
             const auto& m=memories[i];
-            if(m.who!=actor.id ||m.source!=MemorySource::DirectWitness
+            if(m.source!=MemorySource::DirectWitness
                ||!m.witnessed ||m.minute<0 ||m.minute>currentMinute
                ||currentMinute-m.minute>1440 ||m.tags->size()!=3
                ||(*m.tags)[0]!="action_experience"
-               ||(*m.tags)[1].rfind("Civilization:",0)!=0
                ||((*m.tags)[2]!="success" &&(*m.tags)[2]!="failure"))
                 continue;
-            byAction[(*m.tags)[1]].push_back(i);
+            const std::string& action=(*m.tags)[1];
+            const bool civilization=m.who==actor.id
+                &&action.rfind("Civilization:",0)==0;
+            // Core execution results record the real partner as "who".
+            // They are still this resident's direct experience only when
+            // Core's source character and execution token prove the origin.
+            const bool partnerContext=m.who!=0 &&m.who!=actor.id
+                &&m.sourceCharacter==actor.id
+                &&(action=="CoreContext:Trade"
+                   ||action=="CoreContext:Teaching"
+                   ||action=="CoreContext:Parenting")
+                &&m.where.rfind("core-context-token:",0)==0
+                &&m.where.size()>19
+                &&std::all_of(m.where.begin()+19,m.where.end(),
+                    [](char ch){return ch>='0' &&ch<='9';});
+            if(!civilization &&!partnerContext) continue;
+            // Two different residents do not constitute two failures
+            // against the same partner. Keep each lived attempt distinct.
+            const std::string group=partnerContext
+                ?action+":target:"+std::to_string(m.who):action;
+            byAction[group].push_back(i);
         }
         std::size_t firstFailure=missing,secondFailure=missing;
         for(auto& group:byAction){
