@@ -23,6 +23,11 @@ globalThis.indexedDB = {
       close() {},
       transaction(_store, mode) {
         const tx = {
+          aborted: false,
+          abort() {
+            this.aborted = true;
+            queueMicrotask(() => this.onabort?.());
+          },
           objectStore() {
             return {
               get(key) {
@@ -36,6 +41,7 @@ globalThis.indexedDB = {
               put(record) {
                 assert.equal(mode, 'readwrite');
                 queueMicrotask(() => {
+                  if (tx.aborted) return;
                   persistent.set(record.key, record);
                   tx.oncomplete?.();
                 });
@@ -60,7 +66,8 @@ try {
     assert.equal(name, './lifelens-contract');
     return { REAL_MS_PER_SIMULATION_MINUTE_AT_1X: actualMinuteMs };
   });
-  const { readPersistedWorld, writePersistedWorld, elapsedOfflineMinutes, wallTimeAfterAdvance } = exports;
+  const { readPersistedWorld, writePersistedWorld, assertCheckpointProgress,
+    elapsedOfflineMinutes, wallTimeAfterAdvance } = exports;
   assert.equal(await readPersistedWorld(), null);
   const t0 = 1790000000000;
   assert.equal(elapsedOfflineMinutes(t0, t0 - 60000), 0,
@@ -83,6 +90,27 @@ try {
   await writePersistedWorld(later);
   assert.deepEqual(await readPersistedWorld(), later,
     'newer Core snapshot must atomically supersede the older checkpoint');
+  // Two browser tabs may capture the same seed at different minutes. An
+  // earlier write must never roll back a durable later Core checkpoint.
+  const staleMinute = { ...later, minute: later.minute - 1,
+    savedAtWallMs: later.savedAtWallMs + 1000 };
+  const staleWall = { ...later, minute: later.minute + 1,
+    savedAtWallMs: later.savedAtWallMs - 1000 };
+  assert.throws(() => assertCheckpointProgress(later, staleMinute), /더 오래된/);
+  assert.throws(() => assertCheckpointProgress(later, staleWall), /더 오래된/);
+  await assert.rejects(writePersistedWorld(staleMinute), /더 오래된/);
+  await assert.rejects(writePersistedWorld(staleWall), /더 오래된/);
+  assert.deepEqual(await readPersistedWorld(), later,
+    'stale same-seed transactions must preserve the newest Core save');
+  const newer = { ...later, minute: later.minute + 1,
+    savedAtWallMs: later.savedAtWallMs + 1000 };
+  await writePersistedWorld(newer);
+  assert.deepEqual(await readPersistedWorld(), newer);
+  // An explicitly different WorldSeed is a new game; leases and multi-tab
+  // authority will be handled separately, not faked by this monotonic check.
+  assert.doesNotThrow(() => assertCheckpointProgress(newer,
+    { ...newer, worldSeed: '44', minute: 0 }));
+
   await assert.rejects(writePersistedWorld({ ...later, minute: -1 }), /유효하지 않은/);
   persistent.set('active-world', { ...later, snapshotBase64: '' });
   await assert.rejects(readPersistedWorld(), /손상/);
