@@ -112,6 +112,31 @@ class TestMemoryCheckpointAnalysis(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "duplicate checkpoint"):
                 analyze_file(path)
 
+    def test_core_summary_reconciles_all_residents_and_memory(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "audit.jsonl"
+            correct = {**checkpoint(100, 3000), "total": 1,
+                       "memory_entries": 4}
+            write_rows(path, [correct, resident(100, 4)])
+            point = analyze_file(path)["checkpoints"][0]
+            self.assertEqual(point["checkpoint_reconciliation"], "verified")
+            self.assertEqual(point["memory"]["entries"], 4)
+            write_rows(path, [{**correct, "total": 2}, resident(100, 4)])
+            with self.assertRaisesRegex(ValueError, "checkpoint residents"):
+                analyze_file(path)
+            write_rows(path, [{**correct, "memory_entries": 5}, resident(100, 4)])
+            with self.assertRaisesRegex(ValueError, "checkpoint memories"):
+                analyze_file(path)
+            write_rows(path, [{**correct, "memory_entries": -1}, resident(100, 4)])
+            with self.assertRaisesRegex(ValueError, "checkpoint.memory_entries"):
+                analyze_file(path)
+            # A legacy fixture lacking summary fields is identifiable as
+            # unverifiable instead of being falsely marked reconciled.
+            write_rows(path, [checkpoint(100, 3000), resident(100, 4)])
+            self.assertEqual(analyze_file(path)["checkpoints"][0]
+                             ["checkpoint_reconciliation"],
+                             "summary_fields_missing")
+
     def test_missing_real_snapshot_never_accepted(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "audit.jsonl"
