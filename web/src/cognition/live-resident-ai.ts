@@ -56,6 +56,13 @@ const EXECUTABLE_RESIDENT_AI_INTENTS: ReadonlySet<CognitiveIntent> = new Set([
   'ExploreOpportunity',
   'CooperateWithResident',
   'ResolveConflict',
+  // #798 introduced real Core opportunities for these four intentions.
+  // They still require actual eligible residents, resources, locations and
+  // completion evidence; the local model never grants success itself.
+  'TeachKnowledge',
+  'CareForDependent',
+  'TradeWithResident',
+  'MigrateHousehold',
 ]);
 
 export function liveActionableCognitiveRequest(
@@ -79,16 +86,23 @@ export function residentAIObservedTrigger(
   const outcomes = new Map<string, Map<number, 'success' | 'failure'>>();
   const latestLost = new Map<string, { minute: number; lost: boolean }>();
   for (const memory of request.memories) {
-    if (memory.who !== request.actor
+    const key = memory.tags?.[1];
+    // Core context attempts reference the real TARGET in "who", unlike
+    // self-targeted civilization attempts. Their exact token provenance,
+    // firsthand source and fixed Core action key are all required; hearsay
+    // must never trigger another reflection as if we performed the action.
+    const livedContext = (key === 'CoreContext:Teaching'
+      || key === 'CoreContext:Trade' || key === 'CoreContext:Parenting')
+      && memory.where.startsWith('core-context-token:');
+    if ((!livedContext && memory.who !== request.actor)
       || memory.source !== 'DirectWitness' || memory.witnessed !== true
       || memory.minute < 0 || memory.minute > request.minute
       || request.minute - memory.minute > 1440
       || memory.tags?.length !== 3
       || memory.tags[0] !== 'action_experience'
-      || !memory.tags[1].startsWith('Civilization:')
+      || (!livedContext && !key?.startsWith('Civilization:'))
       || (memory.tags[2] !== 'failure' && memory.tags[2] !== 'success')) continue;
 
-    const key = memory.tags[1];
     const kind = memory.tags[2];
     let byMinute = outcomes.get(key);
     if (!byMinute) {
