@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <cstddef>
+#include <set>
 #include <string>
 #include <utility>
 
@@ -37,6 +38,15 @@ inline std::size_t rememberResidentSensedLocalResources(
        ||view.radiusCells>ResidentLocalPerceptionMaxRadius)
         return 0;
     std::size_t newlyRemembered=0;
+    // Capture known node IDs BEFORE inserting or evicting anything. A test
+    // fixture (or future observer) may hand us more than the 12 normal sensor
+    // facts. Evicting an early record must not make that SAME fact look like
+    // a new discovery later in this scan.
+    std::set<std::string> seenInThisScan;
+    for(const auto& memory:actor.memory.entries){
+        if(isResidentSensedResourceMemory(memory,actor.id))
+            seenInThisScan.insert(memory.tags[1]);
+    }
     for(const auto& source:view.nearbyResources){
         if(source.nodeId==0 ||source.material==MaterialKind::Unknown
            ||source.distanceCells<0
@@ -65,6 +75,8 @@ inline std::size_t rememberResidentSensedLocalResources(
             }
             continue;
         }
+        if(seenInThisScan.count(nodeTag)) continue;
+        seenInThisScan.insert(nodeTag);
         // Only this specific inference-memory class is subject to eviction;
         // never erase real executed action successes, loss or private bonds.
         std::size_t count=0;
