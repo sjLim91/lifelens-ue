@@ -15,9 +15,9 @@ def resident(attempts=0, accepted=0, actual=0, alive=True):
         "knownTechniqueRecords": 0,
         "alive": alive,
         "verifiedCoreOutcomes": {
-            "KnowledgeTeaching": {"success": actual, "failure": 0}
+            "KnowledgeTeaching": {"success": actual, "failure": 0},
+            "tradeJourneyReturns": 0,
         },
-        "tradeJourneyReturns": 0,
     }
 
 
@@ -108,6 +108,20 @@ class TestPersonalPairedAudit(unittest.TestCase):
             with self.subTest(item=item):
                 with self.assertRaises(ValueError):
                     analyze_paired_residents(item)
+
+    def test_real_core_nested_trade_return_field_contract(self):
+        value = fixture()
+        result = analyze_paired_residents(value)
+        self.assertEqual(result["perResident"]["1"]["proxy"]["tradeJourneyReturns"], 0)
+        bad = fixture()
+        bad["proxy"]["residents"]["1"]["verifiedCoreOutcomes"].pop("tradeJourneyReturns")
+        with self.assertRaises(ValueError):
+            analyze_paired_residents(bad)
+        bad = fixture()
+        bad["proxy"]["residents"]["1"]["tradeJourneyReturns"] = 1
+        result = analyze_paired_residents(bad)
+        self.assertEqual(result["perResident"]["1"]["proxy"]["tradeJourneyReturns"], 0)
+        # Core source of truth is nested; sibling cannot invent a return.
 
     def test_absent_new_birth_never_fabricated(self):
         value = fixture()
