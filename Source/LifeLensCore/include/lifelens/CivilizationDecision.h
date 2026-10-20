@@ -23,6 +23,7 @@
 #include "SettlementProduction.h"
 #include "SocietyEconomy.h"
 #include "World.h"
+#include "ResidentResourceOutcomePreference.h"
 #include "WildlifeSubsistence.h"
 #include "CoreNavigation.h"
 
@@ -1147,7 +1148,9 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
     GridPos authoritativePosition,
     const SettlementPopulation* population=nullptr,
     MaterialKind requestedMaterial=MaterialKind::Unknown,
-    const std::vector<ResourceNodeId>* excludedResourceNodes=nullptr)
+    const std::vector<ResourceNodeId>* excludedResourceNodes=nullptr,
+    const ResidentResourceOutcomeIndex* personalSourceOutcomes=nullptr,
+    const std::vector<ResourceNodeId>* allowedResourceNodes=nullptr)
 {
     struct GatherMaterialEvaluation {
         bool initialized=false;
@@ -1254,9 +1257,20 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
         return evaluation;
     };
 
+    // Only the resident's own validated PERSONAL goal-planning pass may
+    // supply firsthand source preference. Baseline Core survival/gathering
+    // decisions must retain their established deterministic utility order.
+    // Never rescan memories on unrelated native Gather calls.
+    const bool usePersonalSourceOutcomes=personalSourceOutcomes!=nullptr
+        &&personalSourceOutcomes->actor==self.id
+        &&personalSourceOutcomes->currentMinute==world.minute;
     CivilizationUtilityDecision best;
     for(const auto& node:world.resourceNodes){
         if(node.id==0
+           || (allowedResourceNodes!=nullptr
+               &&std::find(allowedResourceNodes->begin(),
+                            allowedResourceNodes->end(),node.id)
+                    ==allowedResourceNodes->end())
            || (excludedResourceNodes!=nullptr
                &&std::find(excludedResourceNodes->begin(),
                             excludedResourceNodes->end(),node.id)
@@ -1326,7 +1340,14 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Gather;
-        candidate.utility=score;
+        // Lived source preference only participates in the resident's
+        // current personal-goal comparison, not global Core gather ranking.
+        const double firsthandBias=usePersonalSourceOutcomes
+            ?personalSourceOutcomes->find(
+                node.id,std::string("Civilization:Gather:")+
+                    materialName(node.material)).utilityAdjustment
+            :0.0;
+        candidate.utility=clampCivilization01(score+firsthandBias);
         candidate.resourceNode=node.id;
         candidate.material=node.material;
         candidate.item=ItemKind::RawMaterial;

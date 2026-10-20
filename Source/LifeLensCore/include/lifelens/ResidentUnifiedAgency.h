@@ -17,7 +17,8 @@ namespace lifelens {
 // No entity, inventory, relationship, RNG or simulation state is mutated.
 enum class ResidentAgencyAuthority {
     EmbodiedFallback,
-    ResidentCognition
+    ResidentCognition,
+    PersonalGoal
 };
 
 struct ResidentAgencyChoice {

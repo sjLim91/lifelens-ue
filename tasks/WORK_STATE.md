@@ -1,3 +1,14 @@
+## 2026-10-20 WAITING_CI — 최우선 주민 자율 AI 개인 자원 실행·경험·인과 검증
+
+- 기준 main `01c1e12b1039fcb34b14768c2701ff2a0ecf3abc`; PR [#852](https://github.com/sjLim91/lifelens-ue/pull/852), 브랜치 `codex/resident-personal-resource-loop-20261020`.
+- 사용자 지시대로 클론 없이 GitHub 연결, 실행 연결/개인 경험/주민별 인과 감사 3개 트랙 병렬 구현.
+- 실제 Core 근접 자원 목표를 같은 주민 단일 cadence 행동 슬롯의 native Gather에 연결. 기존 cognition·긴급생존·돌봄/사회·시설·신체 행동 보호. 기존 Core 성격/역할/협력 점수 척도를 맞추고 원격→근접 실제 선택 차이 회귀 추가.
+- 본인의 실제 source별 성공/원인별 실패만 다음 실제 Gather 순위에 bounded 반영, 계획당 희소 기억 index 재사용.
+- 개인별 감사 합계와 시간/kind/token 검증·중복 callback 방지, 실제 실행 및 binary 재개 회귀 추가. 병렬 리뷰에서 지적한 전체 node 제외목록 O(N²)를 최대12 관측 node 허용목록으로 수정.
+- 열린 #846의 read-only Affordance/Experiment 파일은 변경하지 않음. main 병합/배포 안 함. 필수 원격 CI 확인 전 PASS/마스터플랜 단위 전체 완료 표시 금지.
+- 첫 HEAD `31179b74`의 원격 Core build 성공/CTest 157/159: 새 실행 fixture의 모든 재료 고갈→탐색 우선과 기존 재시도 fixture의 이전 native 무학습 전제를 확인. 실제 공유 비식량 재고·수원으로 다른 부족을 통제하고 전체 unified baseline→개인 목표→실제 실행 인과를 단언. 실패 전후 source301→302 및 전략층 이중 감점 없음 회귀로 갱신. 제품 우선순위·실행 권한은 완화하지 않음. 수정 HEAD 전체 CI 재확인 대기.
+- 상세: `docs/RESIDENT_PERSONAL_RESOURCE_LOOP_2026-10-20.md`.
+
 ## 2026-10-20 WAITING_CI — 실제 식물 소비와 주민 야생동물 사냥·현장 식사
 
 - 기준 main `3162b2debd9e4d54148a9710662808b496c3d994`; PR [#814](https://github.com/sjLim91/lifelens-ue/pull/814), 브랜치 `codex/wildlife-subsistence-20261020`.
