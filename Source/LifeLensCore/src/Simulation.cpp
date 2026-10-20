@@ -1578,6 +1578,7 @@ bool Simulation::preemptForCriticalSurvival(
         const bool activeProvisionIntent=
             active.intent==CivilizationIntent::Explore
             || active.intent==CivilizationIntent::Gather
+            || active.intent==CivilizationIntent::Hunt
             || active.intent==CivilizationIntent::Retrieve;
         const bool activeFood=
             activeProvisionIntent

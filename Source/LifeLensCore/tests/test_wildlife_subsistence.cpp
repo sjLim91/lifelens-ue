@@ -207,6 +207,30 @@ int main()
         world.wildlifePopulations[0].animals.clear();
     }
 
+    // Production handoff uses real resources too, not only standalone tests.
+    // Fixture starts one minute before the authoritative daily boundary.
+    {
+        Simulation sim(77,0,4);
+        sim.setupNewGame();
+        auto& w=sim.world();
+        for(auto& resident:w.characters){
+            resident.alive=false;
+            resident.deathMinute=w.minute;
+        }
+        w.minute=1439;
+        const auto coord=w.initialStartRegionCoord;
+        const auto origin=chunkOriginGrid(coord);
+        const GridPos plantPos{origin.x+5,origin.y+5};
+        auto grazers=population(w.seed,coord);
+        addHare(grazers,plantPos);
+        w.wildlifePopulations={grazers};
+        w.resourceNodes={{1,MaterialKind::Fiber,5,5,false,0,plantPos}};
+        sim.step();
+        assert(w.minute==1440);
+        assert(w.resourceNodes[0].quantity==4);
+        assert(w.wildlifePopulations[0].dayIndex==1);
+    }
+
     // Actual Simulation scheduling -> pending token -> early/remote/stale ACK
     // rejection -> elapsed work -> single result, with binary continuation.
     {
@@ -220,7 +244,7 @@ int main()
             if(resident.id!=id){resident.alive=false;resident.deathMinute=w.minute;}
         }
         auto& hunter=w.characters.front();
-        hunter.needs.hunger=0.9;
+        hunter.needs.hunger=0.98;
         hunter.civilization.inventory=Inventory{};
         for(auto& node:w.resourceNodes){
             Inventory discarded;
@@ -238,6 +262,9 @@ int main()
         assert(pending.active &&pending.civilizationIntent==CivilizationIntent::Hunt);
         assert(!sim.completeExternalContextAction(id,pending.token,from)); // too early
         sim.runMinutes(20);
+        // Critical hunger must preserve the same food-acquisition token,
+        // rather than cancel/reissue it every minute before work can finish.
+        assert(sim.observePendingContextAction(id).token==pending.token);
         assert(!sim.completeExternalContextAction(id,pending.token+1,from));
         const auto saved=sim.captureSnapshot();
         std::vector<std::uint8_t> bytes;

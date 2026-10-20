@@ -599,9 +599,9 @@ inline WildlifeStepResult stepWildlifeDay(
                     -0.28*static_cast<double>(eaten)/required);
                 if(eaten>0) ++report.foraged;
             }else{
-            const double chance=fish?0.68:std::clamp(
-                0.15+0.68*state.habitat.forage01,0.0,0.90);
-            ate=wildlifeRoll(state,animal.id,targetDay,0x464f52414745ULL)<chance;
+                const double chance=fish?0.68:std::clamp(
+                    0.15+0.68*state.habitat.forage01,0.0,0.90);
+                ate=wildlifeRoll(state,animal.id,targetDay,0x464f52414745ULL)<chance;
             }
         }
         if(ate){
