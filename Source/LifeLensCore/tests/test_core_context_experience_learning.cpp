@@ -21,6 +21,7 @@ int main()
 {
     Simulation sim(790205);
     sim.setupNewGame();
+    const int initialMinute=sim.world().minute;
     const CharacterId actor=sim.world().characters[0].id;
     const CharacterId target=sim.world().characters[1].id;
     const auto request=sim.observeCognitiveRequest(
@@ -41,18 +42,18 @@ int main()
     const std::size_t originalMemories=resident.memory.entries.size();
 
     // A disappearing token and journey return do not forge trade outcomes.
-    rememberCoreContextExperience(resident,{actor,target,101,0,
+    rememberCoreContextExperience(resident,{actor,target,101,initialMinute,
         ContextActionKind::Trade,CoreContextOutcomeCode::TradeReturned});
     assert(resident.memory.entries.size()==originalMemories);
     // Inconsistent action kind/code is discarded instead of teaching fiction.
-    rememberCoreContextExperience(resident,{actor,target,102,0,
+    rememberCoreContextExperience(resident,{actor,target,102,initialMinute,
         ContextActionKind::Trade,CoreContextOutcomeCode::TeachingAdvanced});
     assert(resident.memory.entries.size()==originalMemories);
 
     for(int minute=1;minute<=4;++minute){
-        sim.world().minute=minute;
+        sim.world().minute=initialMinute+minute;
         const CoreContextOutcomeEvent failed{
-            actor,target,static_cast<std::uint64_t>(200+minute),minute,
+            actor,target,static_cast<std::uint64_t>(200+minute),sim.world().minute,
             ContextActionKind::Trade,CoreContextOutcomeCode::TradeExchangeRejected
         };
         rememberCoreContextExperience(resident,failed);
@@ -71,9 +72,9 @@ int main()
     // Same Core intent can still be considered after failure; real later
     // success repairs confidence rather than permanently banning exchange.
     for(int minute=5;minute<=10;++minute){
-        sim.world().minute=minute;
+        sim.world().minute=initialMinute+minute;
         rememberCoreContextExperience(resident,{actor,target,
-            static_cast<std::uint64_t>(200+minute),minute,
+            static_cast<std::uint64_t>(200+minute),sim.world().minute,
             ContextActionKind::Trade,CoreContextOutcomeCode::TradeExchanged});
     }
     assert(belief->supportCount==6);
@@ -97,8 +98,8 @@ int main()
 
     // Care evidence is observed but never used to suppress essential care
     // preference; only optional teaching and trade get a bounded adjustment.
-    sim.world().minute=11;
-    rememberCoreContextExperience(resident,{actor,target,999,11,
+    sim.world().minute=initialMinute+11;
+    rememberCoreContextExperience(resident,{actor,target,999,sim.world().minute,
         ContextActionKind::Parenting,CoreContextOutcomeCode::ParentingRejected});
     assert(learnedActionDisposition(resident,"CoreContext:Parenting")<1.0);
 
