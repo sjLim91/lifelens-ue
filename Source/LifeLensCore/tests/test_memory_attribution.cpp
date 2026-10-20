@@ -27,4 +27,51 @@ int main(){
         assert(sameMemoryRecord(before[i],memory.entries[i]));
     auto altered=a;altered.emotionIntensity=0.25;
     assert(!sameMemoryRecord(a,altered));
+
+    // Long-run action_experience has several different sources; primaryTag
+    // counts alone cannot identify which Core learning lane grew.
+    MemoryState attempts;
+    MemoryRecord remote=a;
+    remote.tags={"action_experience","CoreContext:Trade","failure"};
+    remote.where="core-context-token:451";
+    remote.minute=990;
+    attempts.add(remote);
+    MemoryRecord local=remote;
+    local.tags[2]="success";
+    local.where="core-local-exchange-fact:98";
+    local.minute=995;
+    attempts.add(local);
+    MemoryRecord report=remote;
+    report.tags[1]="CoreContext:Teaching";
+    report.source=MemorySource::ToldByOther;
+    report.witnessed=false;
+    report.sourceCharacter=2;
+    attempts.add(report);
+    MemoryRecord oldSource=remote;
+    oldSource.tags[1]="Civilization:Gather:Water";
+    oldSource.sourceCharacter=0;
+    oldSource.where="personal experience";
+    attempts.add(oldSource);
+    const auto pristine=attempts.entries;
+    const auto audit=observeMemoryAttribution(attempts,1000);
+    assert(audit.entries==4);
+    assert(audit.primaryTags.at("action_experience").entries==4);
+    assert(audit.actionKinds.size()==3);
+    const auto& trade=audit.actionKinds.at("CoreContext:Trade");
+    assert(trade.entries==2 &&trade.successful==1 &&trade.failed==1);
+    assert(trade.witnessedDirect==2 &&trade.indirectOrUnverified==0);
+    assert(trade.claimedContextTokens==1
+        &&trade.claimedLocalExchangeFacts==1);
+    assert(trade.utf8TextBytes>0);
+    const auto& reported=audit.actionKinds.at("CoreContext:Teaching");
+    assert(reported.entries==1 &&reported.failed==1);
+    assert(reported.witnessedDirect==0
+        &&reported.indirectOrUnverified==1);
+    const auto& legacy=audit.actionKinds.at("Civilization:Gather:Water");
+    assert(legacy.witnessedDirect==0
+        &&legacy.indirectOrUnverified==1);
+    assert(legacy.claimedContextTokens==0);
+    assert(attempts.entries.size()==pristine.size());
+    for(std::size_t i=0;i<pristine.size();++i)
+        assert(sameMemoryRecord(attempts.entries[i],pristine[i]));
 }
