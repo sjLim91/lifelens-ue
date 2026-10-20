@@ -31,6 +31,9 @@ jobs:
           python -m unittest Tools.tests.test_masterplan_tracking
           python Tools/validate_masterplan_tracking.py
 
+      - name: Validate read-only resident AI paired evidence report
+        run: python -m unittest Tools.tests.test_analyze_resident_ai_paired
+
       - name: Validate memory checkpoint report and missing-day safety
         run: python -m unittest Tools.tests.test_memory_checkpoint_analysis
 
