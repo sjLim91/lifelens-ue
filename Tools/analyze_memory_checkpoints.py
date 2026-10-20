@@ -125,15 +125,68 @@ def analyze_file(path: Path) -> dict[str, Any]:
     }
 
 
+def compare_independent_seeds(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compare ACTUAL runs by day, never merge absent/duplicate seed evidence.
+
+    Means are averages of per-seed totals, not pooled resident samples.
+    Explicit missing seeds keep incomplete long-run audits visible.
+    """
+    by_seed: dict[str, dict[str, Any]] = {}
+    for run in runs:
+        seed = run["seed"]
+        if seed in by_seed:
+            raise ValueError(f"duplicate independent seed: {seed}")
+        by_seed[seed] = run
+    days: dict[str, Any] = {}
+    for day in DAYS:
+        measured = {
+            seed: next((point for point in run["checkpoints"]
+                        if point["day"] == day), None)
+            for seed, run in by_seed.items()
+        }
+        known = {seed: point for seed, point in measured.items()
+                 if point is not None}
+        missing = sorted(seed for seed, point in measured.items()
+                         if point is None)
+        def stats(values: list[int]) -> dict[str, Any] | None:
+            if not values:
+                return None
+            return {
+                "min_per_seed": min(values),
+                "max_per_seed": max(values),
+                "mean_per_seed": sum(values) / len(values),
+            }
+        days[str(day)] = {
+            "verified_seed_count": len(known),
+            "missing_seeds": missing,
+            "snapshot_bytes": stats([x["snapshot_bytes"]
+                                     for x in known.values()]),
+            "memory_entries": stats([x["memory"]["entries"]
+                                     for x in known.values()]),
+            "memory_utf8_text_bytes": stats(
+                [x["memory"]["utf8_text_bytes"]
+                 for x in known.values()]),
+        }
+    return {
+        "total_independent_seeds": len(by_seed),
+        "complete_independent_seeds": sum(
+            1 for run in by_seed.values() if run["is_complete"]),
+        "by_day": days,
+        "note": "No inferred/missing checkpoints; per-seed means are not population-weighted.",
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("audit_jsonl", nargs="+", type=Path)
     parser.add_argument("--output", type=Path,
                         help="Write JSON report, otherwise print it")
     args = parser.parse_args()
+    runs = [analyze_file(path) for path in args.audit_jsonl]
     report = {
         "schema": "lifelens-memory-checkpoint-audit-v1",
-        "runs": [analyze_file(path) for path in args.audit_jsonl],
+        "runs": runs,
+        "seed_comparison": compare_independent_seeds(runs),
     }
     data = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if args.output:

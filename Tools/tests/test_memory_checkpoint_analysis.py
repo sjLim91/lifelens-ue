@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from Tools.analyze_memory_checkpoints import analyze_file
+from Tools.analyze_memory_checkpoints import analyze_file, compare_independent_seeds
 
 
 def checkpoint(day, size, seed="99"):
@@ -55,6 +55,37 @@ class TestMemoryCheckpointAnalysis(unittest.TestCase):
         self.assertEqual(report["intervals"][0]["action_entries_delta"]
                          ["CoreContext:Trade"], 2)
         self.assertEqual(report["intervals"][1]["snapshot_bytes_delta"], 1700)
+
+    def test_cross_seed_comparison_counts_missing_evidence(self):
+        with tempfile.TemporaryDirectory() as temp:
+            first = Path(temp) / "first.jsonl"
+            second = Path(temp) / "second.jsonl"
+            write_rows(first, [
+                checkpoint(100, 1000), resident(100, 2, 1),
+                checkpoint(365, 1200), resident(365, 5, 1),
+                checkpoint(1000, 1800), resident(1000, 8, 2),
+            ])
+            write_rows(second, [
+                checkpoint(100, 3000, seed="200"),
+                resident(100, 6, 3, seed="200"),
+                checkpoint(1000, 4000, seed="200"),
+                resident(1000, 10, 5, seed="200"),
+            ])
+            runs = [analyze_file(first), analyze_file(second)]
+            summary = compare_independent_seeds(runs)
+        self.assertEqual(summary["total_independent_seeds"], 2)
+        self.assertEqual(summary["complete_independent_seeds"], 1)
+        self.assertEqual(summary["by_day"]["100"]["verified_seed_count"], 2)
+        self.assertEqual(summary["by_day"]["100"]["memory_entries"]
+                         ["mean_per_seed"], 4.0)
+        self.assertEqual(summary["by_day"]["365"]["verified_seed_count"], 1)
+        self.assertEqual(summary["by_day"]["365"]["missing_seeds"], ["200"])
+        self.assertEqual(summary["by_day"]["365"]["snapshot_bytes"]
+                         ["max_per_seed"], 1200)
+        self.assertEqual(summary["by_day"]["1000"]["memory_entries"]
+                         ["mean_per_seed"], 9.0)
+        with self.assertRaisesRegex(ValueError, "duplicate independent seed"):
+            compare_independent_seeds([runs[0], runs[0]])
 
     def test_no_invented_middle_checkpoint(self):
         with tempfile.TemporaryDirectory() as temp:
