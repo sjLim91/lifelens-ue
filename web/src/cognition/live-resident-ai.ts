@@ -104,10 +104,14 @@ export function residentAIObservedTrigger(
       || (memory.tags[2] !== 'failure' && memory.tags[2] !== 'success')) continue;
 
     const kind = memory.tags[2];
-    let byMinute = outcomes.get(key);
+    // Actual Core social/economic attempts name the OTHER resident in
+    // "who". Failed attempts with two different partners must not be
+    // misreported as repeatedly failing with the same counterpart.
+    const experienceGroup = livedContext ? `${key}:target:${memory.who}` : key;
+    let byMinute = outcomes.get(experienceGroup);
     if (!byMinute) {
       byMinute = new Map();
-      outcomes.set(key, byMinute);
+      outcomes.set(experienceGroup, byMinute);
     }
     // Same-minute success wins independent of memory iteration order.
     if (kind === 'success' || byMinute.get(memory.minute) !== 'success')

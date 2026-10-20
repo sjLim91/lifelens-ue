@@ -613,6 +613,14 @@ const provider = {
     ...base,memories:[attempt,{...next,minute:478}],
   }),'Reflection','same-minute records count as only one attempt');
   assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,{...next,who:'3'}],
+  }),'Reflection','different partners are not two failures with one person');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,{...next,who:'3'},{
+      ...next,who:'3',minute:480,where:'core-context-token:504',
+    }],
+  }),'RepeatedFailure','independent repeated failures with partner 3 still count');
+  assert.equal(residentAIObservedTrigger({
     ...base,memories:[attempt,next,{...next,minute:480,
       where:'core-context-token:503',
       tags:['action_experience','CoreContext:Trade','success'],
