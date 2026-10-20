@@ -23,6 +23,7 @@
 #include "SettlementProduction.h"
 #include "SocietyEconomy.h"
 #include "World.h"
+#include "ResidentResourceOutcomePreference.h"
 #include "WildlifeSubsistence.h"
 #include "CoreNavigation.h"
 
@@ -1147,7 +1148,9 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
     GridPos authoritativePosition,
     const SettlementPopulation* population=nullptr,
     MaterialKind requestedMaterial=MaterialKind::Unknown,
-    const std::vector<ResourceNodeId>* excludedResourceNodes=nullptr)
+    const std::vector<ResourceNodeId>* excludedResourceNodes=nullptr,
+    const ResidentResourceOutcomeIndex* personalSourceOutcomes=nullptr,
+    const std::vector<ResourceNodeId>* allowedResourceNodes=nullptr)
 {
     struct GatherMaterialEvaluation {
         bool initialized=false;
@@ -1254,9 +1257,22 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
         return evaluation;
     };
 
+    // Build once, or reuse the SAME actor/minute planning-pass view.
+    const bool reuseSourceOutcomes=personalSourceOutcomes!=nullptr
+        &&personalSourceOutcomes->actor==self.id
+        &&personalSourceOutcomes->currentMinute==world.minute;
+    const auto ownedSourceOutcomes=reuseSourceOutcomes
+        ?ResidentResourceOutcomeIndex{}
+        :buildResidentResourceOutcomeIndex(self,world.minute);
+    const auto& sourceOutcomes=reuseSourceOutcomes
+        ?*personalSourceOutcomes:ownedSourceOutcomes;
     CivilizationUtilityDecision best;
     for(const auto& node:world.resourceNodes){
         if(node.id==0
+           || (allowedResourceNodes!=nullptr
+               &&std::find(allowedResourceNodes->begin(),
+                            allowedResourceNodes->end(),node.id)
+                    ==allowedResourceNodes->end())
            || (excludedResourceNodes!=nullptr
                &&std::find(excludedResourceNodes->begin(),
                             excludedResourceNodes->end(),node.id)
@@ -1326,7 +1342,11 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Gather;
-        candidate.utility=score;
+        // Bounded firsthand preference, never a resource/path permission
+        // or suppression of urgent survival. Lookup does not scan memories.
+        candidate.utility=clampCivilization01(score+
+            sourceOutcomes.find(node.id,std::string("Civilization:Gather:")+
+                materialName(node.material)).utilityAdjustment);
         candidate.resourceNode=node.id;
         candidate.material=node.material;
         candidate.item=ItemKind::RawMaterial;

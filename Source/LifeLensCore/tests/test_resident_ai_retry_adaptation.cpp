@@ -134,9 +134,10 @@ int main()
         borrowed,MaterialKind::PlantFood,world.minute));
 
     // Core source memory distinguishes a repeatedly failing REAL node A
-    // from a different living source B of the same material. A is still
-    // stocked and ranked first, so simple material-based retry guards would
-    // keep selecting A (or needlessly explore), instead of choosing B.
+    // from a different living source B of the same material. Before personal
+    // experience, equally stocked provision sources preserve vector order.
+    // The native chooser now learns this source preference too; language-model
+    // continuation must preserve that choice instead of penalizing B again.
     World sources(606002);
     sources.minute=484;
     sources.resourceNodes.clear();
@@ -154,6 +155,10 @@ int main()
     attemptedA.intent=CivilizationIntent::Gather;
     attemptedA.material=MaterialKind::PlantFood;
     attemptedA.resourceNode=301;
+    const auto neutralSource=bestGatherDecisionAtPosition(
+        sources,searching,camp,nullptr,MaterialKind::PlantFood);
+    assert(neutralSource.intent==CivilizationIntent::Gather
+        &&neutralSource.resourceNode==301);
     for(int minute=481;minute<=483;++minute)
         rememberCivilizationAttemptOutcome(
             searching,attemptedA,minute,false,
@@ -163,7 +168,10 @@ int main()
     const auto ranked=bestGatherDecisionAtPosition(
         sources,searching,camp,nullptr,MaterialKind::PlantFood);
     assert(ranked.intent==CivilizationIntent::Gather
-        &&ranked.resourceNode==301);
+        &&ranked.resourceNode==302);
+    // B has no personal failed-source evidence, so its utility stays neutral.
+    // Learning about A must not add an unrelated material-wide penalty to B.
+    assert(ranked.utility==neutralSource.utility);
     assert(residentAIHasRecentRepeatedGatherFailure(
         searching,MaterialKind::PlantFood,484));
     assert(residentAIRecentGatherSourceFailed(
@@ -175,6 +183,7 @@ int main()
     assert(changedSource
         &&changedSource->intent==CivilizationIntent::Gather
         &&changedSource->resourceNode==302);
+    assert(changedSource->utility==ranked.utility); // no second penalty at the strategy layer
     // The next language-model turn cannot erase personal first-hand
     // failures. A new thought is NOT a new person or a clean memory.
     auto freshThought=sourceThought;
@@ -184,6 +193,7 @@ int main()
     assert(stillLearned
         &&stillLearned->intent==CivilizationIntent::Gather
         &&stillLearned->resourceNode==302);
+    assert(stillLearned->utility==ranked.utility);
     assert(sources.resourceNodes[0].quantity==20
         &&sources.resourceNodes[1].quantity==20);
     assert(searching.civilization.inventory.count(

@@ -3,6 +3,7 @@
 #include "lifelens/WaterSourceExperience.h"
 #include "lifelens/AutonomousSocialGoalRouting.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
+#include "lifelens/ResidentSensedResourceAgency.h"
 #include "lifelens/ResidentAICompletedPlanGuard.h"
 #include "lifelens/ResidentUnifiedAgency.h"
 #include "lifelens/ResidentCognitiveCarePreference.h"
@@ -2434,7 +2435,10 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         const auto agency=chooseSingleResidentAgencyDecision(
             world_,c,r.pos,relationships_,cadenceDecision,newest,
             &residentPopulation,targetPosition,hasUrgentPhysicalNeed);
-        cadenceDecision=agency.decision;
+        const auto embodiedGoal=chooseResidentSensedResourceGoal(
+            world_,c,r.pos,relationships_,agency,&residentPopulation,
+            hasUrgentPhysicalNeed,&socialKnowledge_,&households_);
+        cadenceDecision=embodiedGoal.agency.decision;
     }
 
     // Survival needs that can be satisfied immediately pre-empt settlement

@@ -2,6 +2,7 @@
 #include <string>
 
 #include "lifelens/ResidentAIPairedCausalAudit.h"
+#include "lifelens/ResidentCivilizationOutcomeLearning.h"
 
 using namespace lifelens;
 
@@ -122,8 +123,221 @@ static void verifyStrictTokenProvenance()
     // token; household migration has a separate Core pathway.
 }
 
+// Audit inputs are defensive: impossible channel/time provenance cannot
+// become a successful completed action, even if actor/target/token match.
+static void verifyOutcomeAuditGuards()
+{
+    Simulation sim(525252);
+    sim.setupNewGame();
+    const auto& world=sim.world();
+    const auto actor=world.characters[0].id,target=world.characters[1].id;
+    AcceptedCognitiveDecision thought;
+    thought.actor=actor;
+    thought.target=target;
+    thought.intent=CognitiveIntentKind::TeachKnowledge;
+    thought.trigger=CognitiveTriggerKind::Reflection;
+    thought.minute=world.minute;
+    thought.contextFingerprint=123456;
+    thought.priority=0.9;
+    thought.backendIdentity="test-audit";
+    thought.rationaleDigest="test-evidence";
+    std::vector<AcceptedCognitiveDecision> journal;
+    assert(appendAcceptedCognitiveDecision(journal,thought,world));
+    PendingContextActionObservation pending;
+    pending.actor=actor;
+    pending.targetResident=target;
+    pending.active=true;
+    pending.kind=ContextActionKind::KnowledgeTeaching;
+    pending.token=200;
+    pending.issuedMinute=world.minute;
+    OpportunityAcceptedOutcomeObserver observer;
+    OpportunityAcceptedOutcomeCounts counts;
+    observer.observePending(actor,pending,world,journal);
+    observer.observeOutcome({actor,target,pending.token,world.minute,
+        pending.kind,CoreContextOutcomeCode::ParentingPerformed},counts);
+    assert(counts.matchedSuccesses[0]==0);
+    observer.observeOutcome({actor,target,pending.token,world.minute-1,
+        pending.kind,CoreContextOutcomeCode::TeachingAdvanced},counts);
+    assert(counts.matchedSuccesses[0]==0 &&counts.noObservedToken[0]==1);
+    observer.observeOutcome({actor,target,pending.token,world.minute+1,
+        pending.kind,CoreContextOutcomeCode::TeachingAdvanced},counts);
+    assert(counts.matchedSuccesses[0]==0 &&counts.noObservedToken[0]==2);
+    observer.observeOutcome({actor,target,pending.token,world.minute,
+        pending.kind,CoreContextOutcomeCode::TeachingAdvanced},counts);
+    assert(counts.matchedSuccesses[0]==1);
+    observer.observeOutcome({actor,target,pending.token,world.minute,
+        pending.kind,CoreContextOutcomeCode::TeachingAdvanced},counts);
+    assert(counts.matchedSuccesses[0]==1);
+    auto invalid=pending;
+    invalid.token=201;
+    invalid.issuedMinute=world.minute+1;
+    assert(!opportunityTokenHasMatchingAcceptedThought(world,journal,actor,invalid));
+    observer.observePending(actor,invalid,world,journal);
+    observer.observeOutcome({actor,target,invalid.token,world.minute+1,
+        invalid.kind,CoreContextOutcomeCode::TeachingAdvanced},counts);
+    assert(counts.matchedSuccesses[0]==1);
+    OpportunityContextLifecycleObserver lifecycle;
+    OpportunityContextLifecycleCounts starts;
+    lifecycle.observe(actor,invalid,world,journal,starts);
+    invalid=pending;
+    invalid.actor=target; // a target's observation cannot belong to this actor
+    lifecycle.observe(actor,invalid,world,journal,starts);
+    assert(starts.observedStarts[0]==0);
+
+    ResidentAIPairedMetrics metrics;
+    const CoreContextOutcomeEvent success{1,2,100,60,
+        ContextActionKind::KnowledgeTeaching,CoreContextOutcomeCode::TeachingAdvanced};
+    observeResidentAIVerifiedCoreOutcome(success,metrics);
+    observeResidentAIVerifiedCoreOutcome(success,metrics); // duplicate callback
+    auto contradicted=success;
+    contradicted.code=CoreContextOutcomeCode::TeachingRejected;
+    observeResidentAIVerifiedCoreOutcome(contradicted,metrics); // same terminal token
+    assert(metrics.verifiedCoreSuccesses[0]==1 &&metrics.verifiedCoreFailures[0]==0);
+    assert(metrics.residents.at(1).verifiedCoreSuccesses[0]==1);
+    assert(metrics.residents.find(2)==metrics.residents.end()); // target did not act
+    auto independent=contradicted;
+    independent.actor=3;
+    observeResidentAIVerifiedCoreOutcome(independent,metrics);
+    assert(metrics.verifiedCoreFailures[0]==1);
+    assert(metrics.residents.at(1).verifiedCoreFailures[0]==0);
+    assert(metrics.residents.at(3).verifiedCoreFailures[0]==1);
+    auto mismatch=success;
+    mismatch.actor=4;
+    mismatch.kind=ContextActionKind::Parenting;
+    observeResidentAIVerifiedCoreOutcome(mismatch,metrics);
+    assert(metrics.residents.find(4)==metrics.residents.end());
+    auto returning=success;
+    returning.kind=ContextActionKind::Trade;
+    returning.code=CoreContextOutcomeCode::TradeReturned;
+    observeResidentAIVerifiedCoreOutcome(returning,metrics);
+    observeResidentAIVerifiedCoreOutcome(returning,metrics);
+    assert(metrics.verifiedTradeJourneyReturns==1);
+    assert(metrics.verifiedCoreSuccesses[2]==0); // return is not exchange
+    auto missingTarget=success;
+    missingTarget.actor=4;
+    missingTarget.target=0;
+    missingTarget.token=101;
+    observeResidentAIVerifiedCoreOutcome(missingTarget,metrics);
+    assert(metrics.residents.find(4)==metrics.residents.end());
+    missingTarget.code=CoreContextOutcomeCode::TeachingRejected;
+    observeResidentAIVerifiedCoreOutcome(missingTarget,metrics);
+    observeResidentAIVerifiedCoreOutcome(missingTarget,metrics);
+    assert(metrics.verifiedCoreFailures[0]==2);
+    assert(metrics.residents.at(4).verifiedCoreFailures[0]==1);
+}
+
+// Exercise the real writer after an actual Core resource mutation. Belief
+// proposition prefixes are not memory tag prefixes; confusing them silently
+// reports zero firsthand memories even when real learning occurred.
+static void verifyRealCivilizationMemoryProjection()
+{
+    Simulation sim(525252);
+    sim.setupNewGame();
+    auto& world=sim.world();
+    assert(world.characters.size()>=2);
+    for(auto& resident:world.characters){
+        resident.memory.entries.clear();
+        resident.beliefs.beliefs.clear();
+    }
+    auto& actor=world.characters[0];
+    auto& other=world.characters[1];
+    GridPos position{};
+    assert(sim.runtimePosition(actor.id,position));
+    ResourceNodeId source=1;
+    while(findCivilizationResource(world,source)!=nullptr) ++source;
+    world.resourceNodes.push_back(
+        {source,MaterialKind::Stone,4,4,false,0,position});
+    CivilizationUtilityDecision gather;
+    gather.intent=CivilizationIntent::Gather;
+    gather.resourceNode=source;
+    gather.material=MaterialKind::Stone;
+    gather.quantity=1;
+    const int before=actor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Stone);
+    const auto result=executeCivilizationDecisionAtPosition(
+        world,actor,gather,position);
+    assert(result.executed &&result.success &&result.event.quantity>0);
+    assert(actor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Stone)>before);
+    rememberCivilizationAttemptOutcome(
+        actor,gather,world.minute,result.success);
+    assert(!actor.memory.entries.empty());
+    const auto firsthand=actor.memory.entries.back();
+    assert(firsthand.tags[1]=="Civilization:Gather:Stone");
+    assert(firsthand.sourceCharacter==actor.id);
+    // A copy carried by somebody else is not that person's own attempt.
+    other.memory.add(firsthand);
+    auto told=firsthand;
+    told.source=MemorySource::ToldByOther;
+    actor.memory.add(told);
+    auto inferred=firsthand;
+    inferred.source=MemorySource::Inferred;
+    actor.memory.add(inferred);
+    ResidentAIPairedMetrics metrics;
+    collectResidentAIPairedEvidence(sim,metrics);
+    assert(metrics.firsthandCivilizationMemories==1);
+    assert(metrics.residents.at(actor.id).firsthandCivilizationMemories==1);
+    assert(metrics.residents.at(other.id).firsthandCivilizationMemories==0);
+    assert(metrics.civilizationSuccessEvidence==1);
+    assert(metrics.residents.at(actor.id).civilizationSuccessEvidence==1);
+    assert(metrics.residents.at(other.id).civilizationSuccessEvidence==0);
+    // The writer itself deduplicates the same action/minute. Re-observing
+    // does not turn its one actual attempt into multiple retained outcomes.
+    rememberCivilizationAttemptOutcome(actor,gather,world.minute,result.success);
+    ResidentAIPairedMetrics again;
+    collectResidentAIPairedEvidence(sim,again);
+    assert(again.firsthandCivilizationMemories==1);
+    assert(again.civilizationSuccessEvidence==1);
+}
+
+static void verifyPersonalProjection(const ResidentAIPairedMetrics& metrics)
+{
+    std::uint64_t attempted=0,accepted=0,rejected=0,civilization=0,social=0,other=0;
+    std::uint64_t successEvidence=0,failureEvidence=0,memories=0,techniques=0,returns=0;
+    std::size_t living=0;
+    std::array<std::uint64_t,ObservedOpportunityContextCount> successes{},failures{};
+    assert(metrics.residents.size()>=4);
+    for(const auto& entry:metrics.residents){
+        assert(entry.first!=0);
+        const auto& actor=entry.second;
+        assert(actor.proposalsAttempted==actor.proposalsAccepted+actor.proposalsRejected);
+        attempted+=actor.proposalsAttempted;
+        accepted+=actor.proposalsAccepted;
+        rejected+=actor.proposalsRejected;
+        civilization+=actor.civilizationPendingStarts;
+        social+=actor.socialPendingStarts;
+        other+=actor.otherPendingStarts;
+        successEvidence+=actor.civilizationSuccessEvidence;
+        failureEvidence+=actor.civilizationFailureEvidence;
+        memories+=actor.firsthandCivilizationMemories;
+        techniques+=actor.knownTechniqueRecords;
+        returns+=actor.verifiedTradeJourneyReturns;
+        if(actor.alive) ++living;
+        for(std::size_t i=0;i<ObservedOpportunityContextCount;++i){
+            successes[i]+=actor.verifiedCoreSuccesses[i];
+            failures[i]+=actor.verifiedCoreFailures[i];
+        }
+    }
+    assert(attempted==metrics.proposalsAttempted);
+    assert(accepted==metrics.proposalsAccepted);
+    assert(rejected==metrics.proposalsRejected);
+    assert(civilization==metrics.observedCivilizationPendingStarts);
+    assert(social==metrics.observedSocialPendingStarts);
+    assert(other==metrics.observedOtherPendingStarts);
+    assert(successEvidence==metrics.civilizationSuccessEvidence);
+    assert(failureEvidence==metrics.civilizationFailureEvidence);
+    assert(memories==metrics.firsthandCivilizationMemories);
+    assert(techniques==metrics.knownTechniqueRecords);
+    assert(returns==metrics.verifiedTradeJourneyReturns);
+    assert(living==metrics.livingResidents);
+    assert(successes==metrics.verifiedCoreSuccesses);
+    assert(failures==metrics.verifiedCoreFailures);
+}
+
 int main()
 {
+    verifyOutcomeAuditGuards();
+    verifyRealCivilizationMemoryProjection();
     // A real Core result is authoritative; a proposed intent, pending token
     // disappearing, or an attempted double ACK is never counted as success.
     ResidentAIPairedMetrics verified;
@@ -138,11 +352,11 @@ int main()
     evidence(ContextActionKind::KnowledgeTeaching,
         CoreContextOutcomeCode::TeachingAdvanced);
     evidence(ContextActionKind::KnowledgeTeaching,
-        CoreContextOutcomeCode::TeachingComprehensionFailed);
+        CoreContextOutcomeCode::TeachingComprehensionFailed,12);
     evidence(ContextActionKind::Trade,
         CoreContextOutcomeCode::TradeExchanged);
     evidence(ContextActionKind::Trade,
-        CoreContextOutcomeCode::TradeExchangeRejected);
+        CoreContextOutcomeCode::TradeExchangeRejected,12);
     evidence(ContextActionKind::Trade,
         CoreContextOutcomeCode::TradeReturned);
     evidence(ContextActionKind::Trade,
@@ -163,6 +377,8 @@ int main()
     assert(first.seed==4242001);
     assert(first.days==1);
     assert(first.matchedInitialResidents);
+    verifyPersonalProjection(first.baseline);
+    verifyPersonalProjection(first.proxy);
     assert(first.baseline.proposalsAttempted==0);
     assert(first.baseline.proposalsAccepted==0);
     assert(first.baseline.proposalsRejected==0);
@@ -174,6 +390,7 @@ int main()
     assert(first.baseline.livingResidents<=4);
     assert(first.proxy.livingResidents<=4);
     const std::string output=residentAIPairedReportJson(first);
+    assert(output.find("\"residents\":{")!=std::string::npos);
     assert(output.find("fixed-deterministic-proxy-not-llm")!=std::string::npos);
     assert(output.find("\"matchedInitialResidents\":true")!=std::string::npos);
     assert(output.find("\"civilizationSuccessEvidence\":")!=std::string::npos);

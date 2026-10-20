@@ -36,6 +36,23 @@ inline std::size_t cognitiveOpportunityIndex(CognitiveIntentKind intent)
         default: return CognitiveOpportunityIntentCount;
     }
 }
+// Per-resident projection of observed inputs and real Core facts. Temporal
+// coexistence does not prove that cognition caused a baseline autonomous act.
+// These fields are audit-only, never authoritative snapshot state.
+struct ResidentAIPersonalAuditMetrics {
+    std::uint64_t proposalsAttempted=0,proposalsAccepted=0,proposalsRejected=0;
+    std::uint64_t civilizationPendingStarts=0,socialPendingStarts=0,otherPendingStarts=0;
+    std::array<std::uint64_t,ObservedOpportunityContextCount> verifiedCoreSuccesses{};
+    std::array<std::uint64_t,ObservedOpportunityContextCount> verifiedCoreFailures{};
+    std::uint64_t verifiedTradeJourneyReturns=0;
+    std::uint64_t civilizationSuccessEvidence=0,civilizationFailureEvidence=0;
+    std::uint64_t firsthandCivilizationMemories=0,knownTechniqueRecords=0;
+    bool alive=false;
+    // Core tokens increase monotonically; one watermark per context/phase
+    // bounds duplicate suppression by residents rather than event history.
+    std::array<std::uint64_t,ObservedOpportunityContextCount*2> lastVerifiedTokens{};
+};
+
 struct ResidentAIPairedMetrics {
     std::uint64_t proposalsAttempted=0;
     std::uint64_t proposalsAccepted=0;
@@ -76,6 +93,7 @@ struct ResidentAIPairedMetrics {
     std::uint64_t knownTechniqueRecords=0;
     int endMinute=0;
     std::size_t livingResidents=0;
+    std::map<CharacterId,ResidentAIPersonalAuditMetrics> residents;
 };
 
 struct ResidentAIPairedReport {
@@ -107,15 +125,19 @@ inline void observeResidentAIPendingStarts(
         auto& last=lastSeenToken[actor.id];
         if(last==pending.token) continue;
         last=pending.token;
+        auto& personal=totals.residents[actor.id];
         switch(pending.kind){
             case ContextActionKind::Civilization:
                 ++totals.observedCivilizationPendingStarts;
+                ++personal.civilizationPendingStarts;
                 break;
             case ContextActionKind::Social:
                 ++totals.observedSocialPendingStarts;
+                ++personal.socialPendingStarts;
                 break;
             default:
                 ++totals.observedOtherPendingStarts;
+                ++personal.otherPendingStarts;
                 break;
         }
         switch(pending.kind){
@@ -137,15 +159,32 @@ inline void observeResidentAIVerifiedCoreOutcome(
     const CoreContextOutcomeEvent& event,
     ResidentAIPairedMetrics& totals)
 {
-    if(event.actor==0 ||event.token==0 ||event.minute<0) return;
+    if(event.actor==0 ||event.token==0 ||event.minute<0
+       ||!observedOpportunityOutcomeKindMatches(event)) return;
     const auto index=observedOpportunityContextIndex(event.kind);
     if(index>=ObservedOpportunityContextCount) return;
-    if(coreContextOutcomeActualSuccess(event.code))
+    const bool returning=event.code==CoreContextOutcomeCode::TradeReturned;
+    const bool success=coreContextOutcomeActualSuccess(event.code);
+    const bool failure=coreContextOutcomeActualFailure(event.code);
+    if(!returning &&!success &&!failure) return;
+    // Missing-target rejection is still a real Core failure. A zero target
+    // can never support a successful interaction or journey return.
+    if(event.target==0 &&!failure) return;
+    auto& personal=totals.residents[event.actor];
+    auto& watermark=personal.lastVerifiedTokens[
+        index+(returning?ObservedOpportunityContextCount:0)];
+    if(event.token<=watermark) return;
+    watermark=event.token;
+    if(success){
         ++totals.verifiedCoreSuccesses[index];
-    else if(coreContextOutcomeActualFailure(event.code))
+        ++personal.verifiedCoreSuccesses[index];
+    }else if(failure){
         ++totals.verifiedCoreFailures[index];
-    else if(event.code==CoreContextOutcomeCode::TradeReturned)
+        ++personal.verifiedCoreFailures[index];
+    }else{
         ++totals.verifiedTradeJourneyReturns;
+        ++personal.verifiedTradeJourneyReturns;
+    }
 }
 
 inline void collectResidentAIPairedEvidence(
@@ -155,7 +194,16 @@ inline void collectResidentAIPairedEvidence(
     totals.socialFacts=sim.socialKnowledge().facts().size();
     constexpr const char* prefix="experienced-action-outcome:Civilization:";
     const std::string needle(prefix);
+    // Beliefs store a proposition prefix; memory tags store the bare action
+    // key written by rememberCivilizationAttemptOutcome. Do not conflate them.
+    const std::string memoryPrefix="Civilization:";
     for(const Character& actor:sim.world().characters){
+        auto& personal=totals.residents[actor.id];
+        personal.alive=actor.alive;
+        personal.knownTechniqueRecords=actor.civilization.knowledge.all().size();
+        personal.civilizationSuccessEvidence=0;
+        personal.civilizationFailureEvidence=0;
+        personal.firsthandCivilizationMemories=0;
         if(actor.alive) ++totals.livingResidents;
         totals.knownTechniqueRecords+=actor.civilization.knowledge.all().size();
         for(const BeliefRecord& belief:actor.beliefs.beliefs){
@@ -165,14 +213,19 @@ inline void collectResidentAIPairedEvidence(
             // plans. The Core's evidence recorder can deduplicate a minute.
             totals.civilizationSuccessEvidence+=belief.supportCount;
             totals.civilizationFailureEvidence+=belief.contradictionCount;
+            personal.civilizationSuccessEvidence+=belief.supportCount;
+            personal.civilizationFailureEvidence+=belief.contradictionCount;
         }
         for(const MemoryRecord& memory:actor.memory.entries){
             if(memory.source==MemorySource::DirectWitness
                &&memory.witnessed &&memory.sourceCharacter==actor.id
                &&memory.tags.size()==3
                &&memory.tags[0]=="action_experience"
-               &&memory.tags[1].compare(0,needle.size(),needle)==0)
+               &&memory.tags[1].compare(0,memoryPrefix.size(),memoryPrefix)==0)
+            {
                 ++totals.firsthandCivilizationMemories;
+                ++personal.firsthandCivilizationMemories;
+            }
         }
     }
 }
@@ -267,7 +320,9 @@ inline bool residentAIProxyProposal(
            &&memory.tags[0]=="action_experience")
             ++stats.firsthandOutcomesVisibleToProxy;
     }
+    auto& personal=stats.residents[actor];
     ++stats.proposalsAttempted;
+    ++personal.proposalsAttempted;
     if(catalogPolicy) ++stats.catalogSubmitted[catalogSlot];
     const std::size_t opportunity=cognitiveOpportunityIndex(proposal.intent);
     if(opportunity<CognitiveOpportunityIntentCount)
@@ -283,11 +338,13 @@ inline bool residentAIProxyProposal(
         request,proposal,"deterministic-audit-proxy","audit-proxy-v1");
     if(accepted){
         ++stats.proposalsAccepted;
+        ++personal.proposalsAccepted;
         if(catalogPolicy) ++stats.catalogAccepted[catalogSlot];
         if(opportunity<CognitiveOpportunityIntentCount)
             ++stats.opportunityProposalsAccepted[opportunity];
     }else{
         ++stats.proposalsRejected;
+        ++personal.proposalsRejected;
         if(catalogPolicy){
             ++stats.catalogRejected[catalogSlot];
             if(validation.accepted)
@@ -376,6 +433,30 @@ inline ResidentAIPairedReport runResidentAIPairedAudit(
     return report;
 }
 
+inline void appendResidentAIPersonalMetricsJson(
+    std::ostringstream& out,const ResidentAIPersonalAuditMetrics& m)
+{
+    out<<"{\"proposalsAttempted\":"<<m.proposalsAttempted
+       <<",\"proposalsAccepted\":"<<m.proposalsAccepted
+       <<",\"proposalsRejected\":"<<m.proposalsRejected
+       <<",\"civilizationPendingStarts\":"<<m.civilizationPendingStarts
+       <<",\"socialPendingStarts\":"<<m.socialPendingStarts
+       <<",\"otherPendingStarts\":"<<m.otherPendingStarts
+       <<",\"civilizationSuccessEvidence\":"<<m.civilizationSuccessEvidence
+       <<",\"civilizationFailureEvidence\":"<<m.civilizationFailureEvidence
+       <<",\"firsthandCivilizationMemories\":"<<m.firsthandCivilizationMemories
+       <<",\"knownTechniqueRecords\":"<<m.knownTechniqueRecords
+       <<",\"alive\":"<<(m.alive?"true":"false")
+       <<",\"verifiedCoreOutcomes\":{";
+    for(std::size_t i=0;i<ObservedOpportunityContextCount;++i){
+        if(i) out<<",";
+        out<<"\""<<ObservedOpportunityContextNames[i]<<"\":{"
+           <<"\"success\":"<<m.verifiedCoreSuccesses[i]
+           <<",\"failure\":"<<m.verifiedCoreFailures[i]<<"}";
+    }
+    out<<",\"tradeJourneyReturns\":"<<m.verifiedTradeJourneyReturns<<"}}";
+}
+
 inline void appendResidentAIPairedMetricsJson(
     std::ostringstream& out,const ResidentAIPairedMetrics& m)
 {
@@ -462,6 +543,15 @@ inline void appendResidentAIPairedMetricsJson(
            <<",\"noObservedPendingToken\":"
            <<m.acceptedOutcomeEvidence.noObservedToken[i]
            <<"}";
+    }
+    out<<"},\"residents\":{";
+    bool first=true;
+    for(const auto& entry:m.residents){
+        if(!first) out<<",";
+        first=false;
+        // IDs are JSON string keys, preserving all 64 bits.
+        out<<"\""<<entry.first<<"\":";
+        appendResidentAIPersonalMetricsJson(out,entry.second);
     }
     out<<"}}";
 }

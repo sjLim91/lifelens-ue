@@ -28,6 +28,27 @@ inline std::size_t observedOpportunityContextIndex(ContextActionKind kind)
     }
 }
 
+// A success enum alone is insufficient evidence. Its channel must match the
+// actual Core action kind; e.g. teaching success cannot complete childcare.
+inline bool observedOpportunityOutcomeKindMatches(const CoreContextOutcomeEvent& event)
+{
+    switch(event.kind){
+        case ContextActionKind::KnowledgeTeaching:
+            return event.code==CoreContextOutcomeCode::TeachingAdvanced
+                ||event.code==CoreContextOutcomeCode::TeachingComprehensionFailed
+                ||event.code==CoreContextOutcomeCode::TeachingClarityFailed
+                ||event.code==CoreContextOutcomeCode::TeachingRejected;
+        case ContextActionKind::Parenting:
+            return event.code==CoreContextOutcomeCode::ParentingPerformed
+                ||event.code==CoreContextOutcomeCode::ParentingRejected;
+        case ContextActionKind::Trade:
+            return event.code==CoreContextOutcomeCode::TradeExchanged
+                ||event.code==CoreContextOutcomeCode::TradeExchangeRejected
+                ||event.code==CoreContextOutcomeCode::TradeReturned;
+        default: return false;
+    }
+}
+
 inline CognitiveIntentKind observedOpportunityExpectedIntent(
     ContextActionKind kind)
 {
@@ -51,7 +72,8 @@ inline bool opportunityTokenHasMatchingAcceptedThought(
     const PendingContextActionObservation& pending)
 {
     if(!pending.active ||pending.token==0 ||pending.actor!=actor
-       ||pending.targetResident==0 ||pending.issuedMinute<0)
+       ||pending.targetResident==0 ||pending.issuedMinute<0
+       ||pending.issuedMinute>world.minute)
         return false;
     const CognitiveIntentKind expected=
         observedOpportunityExpectedIntent(pending.kind);
@@ -95,15 +117,21 @@ public:
         const World& world,
         const std::vector<AcceptedCognitiveDecision>& accepted)
     {
-        if(!pending.active ||pending.token==0 ||pending.actor!=actor){
+        if(!pending.active ||pending.token==0 ||pending.actor!=actor
+           ||pending.issuedMinute<0 ||pending.issuedMinute>world.minute){
             live_.erase(actor);
             return;
         }
         const auto previous=live_.find(actor);
-        if(previous!=live_.end() &&previous->second.token==pending.token)
+        if(previous!=live_.end() &&previous->second.token==pending.token
+           &&previous->second.target==pending.targetResident
+           &&previous->second.kind==pending.kind
+           &&previous->second.issuedMinute==pending.issuedMinute){
+            previous->second.lastObservedMinute=world.minute;
             return;
+        }
         live_[actor]={
-            pending.token,pending.targetResident,pending.kind,
+            pending.token,pending.targetResident,pending.kind,pending.issuedMinute,world.minute,
             opportunityTokenHasMatchingAcceptedThought(
                 world,accepted,actor,pending)
         };
@@ -123,13 +151,16 @@ public:
         const auto index=observedOpportunityContextIndex(event.kind);
         if(index>=ObservedOpportunityContextCount ||event.actor==0
            ||event.token==0 ||event.minute<0
+           ||!observedOpportunityOutcomeKindMatches(event)
            ||(!coreContextOutcomeActualSuccess(event.code)
                &&!coreContextOutcomeActualFailure(event.code)))
             return; // trade return is NOT a second exchange
         const auto it=live_.find(event.actor);
         if(it==live_.end() ||it->second.token!=event.token
            ||it->second.kind!=event.kind
-           ||it->second.target!=event.target){
+           ||it->second.target!=event.target
+           ||event.minute<it->second.issuedMinute
+           ||event.minute>it->second.lastObservedMinute){
             ++counts.noObservedToken[index];
             return;
         }
@@ -147,6 +178,8 @@ private:
         std::uint64_t token=0;
         CharacterId target=0;
         ContextActionKind kind=ContextActionKind::None;
+        int issuedMinute=-1;
+        int lastObservedMinute=-1;
         bool matched=false;
     };
     std::map<CharacterId,Live> live_;
@@ -162,7 +195,9 @@ public:
         OpportunityContextLifecycleCounts& counts)
     {
         auto prior=live_.find(actor);
-        const bool nowActive=pending.active &&pending.token!=0;
+        const bool nowActive=pending.active &&pending.token!=0
+            &&pending.actor==actor &&pending.issuedMinute>=0
+            &&pending.issuedMinute<=world.minute;
         if(prior!=live_.end()
            &&(!nowActive ||prior->second.token!=pending.token)){
             const auto index=observedOpportunityContextIndex(
