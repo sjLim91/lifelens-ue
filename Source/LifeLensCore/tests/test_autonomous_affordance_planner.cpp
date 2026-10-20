@@ -200,6 +200,11 @@ int main()
     assert(world.characters[0].civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood)==1);
 
+    // Evaluate a normal low-risk material goal independently of the
+    // deliberate 0.99 hunger emergency tested above. The real Core should
+    // always block optional collection while survival is urgent.
+    world.characters[0].needs.hunger=0.30;
+    request=currentRequest(world,relationships,11);
     // Material goals require an observed resource location and verified
     // Gather/Explore route, not an imaginary item creation primitive.
     auto materialGoal=foodGoal;
