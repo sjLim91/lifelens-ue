@@ -279,6 +279,10 @@ int main()
         emergencyWorld,relationships,emergencyRequest,sensedGoal).status
         ==AutonomousAffordancePlanStatus::Blocked);
     world.characters[0].needs.hunger=0.99;
+    // The earlier nonurgent material fixture intentionally changed the
+    // actor's hunger; rebuild this actual Core request before validating
+    // unrelated self-harm / no-op goal routes.
+    request=currentRequest(world,relationships,11);
 
     // Never implement a physiological self-harm increase as a normal
     // goal-to-action route, despite it being a well-typed B3 predicate.
