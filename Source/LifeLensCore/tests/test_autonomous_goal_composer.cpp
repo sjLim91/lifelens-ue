@@ -132,6 +132,59 @@ int main()
     };
     assert(waterPriority(directGoals)>waterPriority(hearsayGoals));
 
+    // The one resident mind can independently propose a material goal
+    // because Core's tiny proximity view contains a REAL nearby node.
+    // It cannot invent remote stock, a visual sighting or harvest success.
+    auto exploratory=requestFor(world,relationships,33);
+    const auto sensor=observeLocalResourceProximity(
+        world,33,world.resourceNodes.front().pos,4);
+    assert(sensor.actor==33 &&!sensor.nearbyResources.empty());
+    exploratory.localProximityObserved=true;
+    exploratory.localObserverPosition=sensor.observerPosition;
+    exploratory.localRadiusCells=sensor.radiusCells;
+    exploratory.localResources=sensor.nearbyResources;
+    const auto fromSensor=composeAutonomousGoalCandidates(
+        world,exploratory,6);
+    const AutonomousGoalCandidate* materialGoal=nullptr;
+    for(const auto& item:fromSensor)
+        if(item.desiredState.size()==1
+           &&item.desiredState[0].metric
+               ==AutonomousGoalMetric::ActorRawMaterialCount){
+            materialGoal=&item;
+            break;
+        }
+    assert(materialGoal!=nullptr);
+    assert(materialGoal->evidence.size()==1);
+    assert(materialGoal->evidence[0].kind
+        ==AutonomousGoalEvidenceKind::ObservedLocalResource);
+    assert(validateAutonomousGoalCandidate(
+        world,exploratory,*materialGoal).accepted);
+    const auto noSensor=composeAutonomousGoalCandidates(
+        world,requestFor(world,relationships,33),6);
+    for(const auto& item:noSensor)
+        for(const auto& condition:item.desiredState)
+            assert(condition.metric
+                !=AutonomousGoalMetric::ActorRawMaterialCount);
+    auto inventedSensor=exploratory;
+    inventedSensor.localResources[materialGoal->evidence[0].index].nodeId
+        =99999999;
+    assert(validateAutonomousGoalCandidate(
+        world,inventedSensor,*materialGoal).issue
+            ==AutonomousGoalIssue::InvalidEvidence);
+    // A formerly real node disappearing also invalidates the proposal.
+    const auto linkedIndex=materialGoal->evidence[0].index;
+    const auto nodeId=exploratory.localResources[linkedIndex].nodeId;
+    const auto actualNode=std::find_if(
+        world.resourceNodes.begin(),world.resourceNodes.end(),
+        [&](const ResourceNode& n){return n.id==nodeId;});
+    assert(actualNode!=world.resourceNodes.end());
+    const auto originalQuantity=actualNode->quantity;
+    actualNode->quantity=0;
+    assert(validateAutonomousGoalCandidate(
+        world,exploratory,*materialGoal).issue
+            ==AutonomousGoalIssue::InvalidEvidence);
+    actualNode->quantity=originalQuantity;
+
     // Cognition only proposes: no Need goal weight or simulation truth alters.
     assert(world.rng==rngBefore);
     assert(world.characters.size()==worldBefore.size());
