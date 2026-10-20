@@ -40,6 +40,9 @@ jobs:
       - name: Validate read-only resident AI paired evidence report
         run: python -m unittest Tools.tests.test_analyze_resident_ai_paired
 
+      - name: Validate checkpoint memory attribution summary
+        run: python -m unittest Tools.tests.test_system_balance_audit
+
       - name: Validate memory checkpoint report and missing-day safety
         run: python -m unittest Tools.tests.test_memory_checkpoint_analysis
 

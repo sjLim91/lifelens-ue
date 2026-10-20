@@ -66,5 +66,48 @@ class DeterministicEvidenceTest(unittest.TestCase):
         self.assertFalse(AUDIT.validate_evidence(self.first))
 
 
+
+class MemoryProvenanceSummaryTest(unittest.TestCase):
+    @staticmethod
+    def memory_row(identity, entries):
+        return {"id": identity, "memory_attribution": {
+            "entries": entries, "utf8_text_bytes": entries * 9,
+            "exact_duplicate_entries": 0, "direct_witness_entries": entries,
+            "told_by_other_entries": 0, "inferred_entries": 0,
+            "primary_tags": {"social_fact:direct": {
+                "entries": entries, "utf8_text_bytes": entries * 9}},
+        }}
+
+    def test_last_row_wins_without_summing_same_resident_twice(self):
+        data = AUDIT.aggregate_checkpoint_memory([
+            self.memory_row("1", 5), self.memory_row("2", 4),
+            self.memory_row("1", 7),
+        ])
+        self.assertTrue(data["complete_coverage"])
+        self.assertEqual(data["totals"]["entries"], 11)
+        self.assertEqual(data["covered_residents"], 2)
+        self.assertEqual(data["dominant_categories"][0]["entries"], 11)
+
+    def test_missing_is_never_zero_or_complete(self):
+        unavailable = AUDIT.aggregate_checkpoint_memory([{"id": "1"}])
+        self.assertIsNone(unavailable["totals"])
+        self.assertFalse(unavailable["complete_coverage"])
+        partial = AUDIT.aggregate_checkpoint_memory([
+            self.memory_row("1", 0), {"id": "2"}])
+        self.assertFalse(partial["complete_coverage"])
+        self.assertEqual(partial["covered_residents"], 1)
+        self.assertEqual(partial["reported_residents"], 2)
+
+    def test_untrusted_counters_rejected(self):
+        bad = self.memory_row("1", 3)
+        bad["memory_attribution"]["entries"] = True
+        with self.assertRaises(ValueError):
+            AUDIT.aggregate_checkpoint_memory([bad])
+        bad = self.memory_row("1", 3)
+        bad["memory_attribution"]["primary_tags"]["social_fact:direct"]["utf8_text_bytes"] = -1
+        with self.assertRaises(ValueError):
+            AUDIT.aggregate_checkpoint_memory([bad])
+
+
 if __name__ == "__main__":
     unittest.main()
