@@ -24,6 +24,7 @@ int main()
     const int initialMinute=sim.world().minute;
     const CharacterId actor=sim.world().characters[0].id;
     const CharacterId target=sim.world().characters[1].id;
+    const CharacterId alternate=sim.world().characters[2].id;
     const auto request=sim.observeCognitiveRequest(
         actor,CognitiveTriggerKind::Reflection);
     CognitiveProposal thought;
@@ -64,6 +65,14 @@ int main()
     assert(belief &&belief->contradictionCount==4);
     assert(resident.memory.entries.size()==originalMemories+4);
     assert(learnedActionDisposition(resident,"CoreContext:Trade")<1.0);
+    assert(std::abs(residentCognitivePartnerExperienceFactor(
+        resident,target,"CoreContext:Trade",sim.world().minute)-0.92)<1e-12);
+    // Failing with one actual person must NOT count as failure against a
+    // different person or a different activity such as teaching.
+    assert(residentCognitivePartnerExperienceFactor(
+        resident,alternate,"CoreContext:Trade",sim.world().minute)==1.0);
+    assert(residentCognitivePartnerExperienceFactor(
+        resident,target,"CoreContext:Teaching",sim.world().minute)==1.0);
     const double discouraged=residentCognitiveIntentPreference(
         sim.world(),sim.acceptedCognitiveDecisions(),actor,
         CognitiveIntentKind::TradeWithResident,target);
@@ -80,6 +89,8 @@ int main()
     assert(belief->supportCount==6);
     assert(resident.memory.entries.size()<=originalMemories+4);
     assert(learnedActionDisposition(resident,"CoreContext:Trade")>1.0);
+    assert(std::abs(residentCognitivePartnerExperienceFactor(
+        resident,target,"CoreContext:Trade",sim.world().minute)-1.04)<1e-12);
     assert(std::abs(residentCognitiveIntentPreference(
         sim.world(),sim.acceptedCognitiveDecisions(),actor,
         CognitiveIntentKind::TradeWithResident,target)-0.12)<1e-12);
@@ -95,6 +106,57 @@ int main()
         hasVerifiablePersonalSource=true;
     }
     assert(hasVerifiablePersonalSource);
+
+    // Distinct partners keep their own evidence without a new persistent
+    // AI or per-partner belief key. Failed B does not erase succeeded A.
+    Character alternateHistory=resident;
+    rememberCoreContextExperience(alternateHistory,{
+        actor,alternate,1005,initialMinute+11,
+        ContextActionKind::Trade,CoreContextOutcomeCode::TradeExchangeRejected
+    });
+    assert(std::abs(residentCognitivePartnerExperienceFactor(
+        alternateHistory,target,"CoreContext:Trade",initialMinute+11)-1.04)<1e-12);
+    assert(std::abs(residentCognitivePartnerExperienceFactor(
+        alternateHistory,alternate,"CoreContext:Trade",initialMinute+11)-0.92)<1e-12);
+
+    // An outcome must be directly witnessed and tied to a real Core token.
+    Character forged=alternateHistory;
+    for(auto& memory:forged.memory.entries){
+        if(memory.who==alternate &&memory.tags.size()==3
+           &&memory.tags[1]=="CoreContext:Trade")
+            memory.source=MemorySource::ToldByOther;
+    }
+    assert(residentCognitivePartnerExperienceFactor(
+        forged,alternate,"CoreContext:Trade",initialMinute+11)==1.0);
+    for(auto& memory:forged.memory.entries){
+        if(memory.who==alternate &&memory.tags.size()==3
+           &&memory.tags[1]=="CoreContext:Trade"){
+            memory.source=MemorySource::DirectWitness;
+            memory.where="model-claimed-core-context-token:1005";
+        }
+    }
+    assert(residentCognitivePartnerExperienceFactor(
+        forged,alternate,"CoreContext:Trade",initialMinute+11)==1.0);
+    // Same-minute success wins in either iteration order, preventing
+    // non-deterministic conclusions from a reordered saved memory list.
+    Character sameMinute=alternateHistory;
+    for(const auto& memory:alternateHistory.memory.entries){
+        if(memory.who==alternate &&memory.tags.size()==3
+           &&memory.tags[1]=="CoreContext:Trade"){
+            auto success=memory;
+            success.tags[2]="success";
+            success.where="core-context-token:1006";
+            sameMinute.memory.add(success);
+            break;
+        }
+    }
+    assert(std::abs(residentCognitivePartnerExperienceFactor(
+        sameMinute,alternate,"CoreContext:Trade",initialMinute+11)-1.04)<1e-12);
+    std::reverse(sameMinute.memory.entries.begin(),sameMinute.memory.entries.end());
+    assert(std::abs(residentCognitivePartnerExperienceFactor(
+        sameMinute,alternate,"CoreContext:Trade",initialMinute+11)-1.04)<1e-12);
+    assert(residentCognitivePartnerExperienceFactor(
+        alternateHistory,alternate,"CoreContext:Trade",initialMinute+1452)==1.0);
 
     // Care evidence is observed but never used to suppress essential care
     // preference; only optional teaching and trade get a bounded adjustment.
@@ -114,6 +176,10 @@ int main()
     assert(loaded!=nullptr);
     assert(std::abs(learnedActionDisposition(*loaded,"CoreContext:Trade")
         -learnedActionDisposition(resident,"CoreContext:Trade"))<1e-12);
+    assert(std::abs(residentCognitivePartnerExperienceFactor(
+        *loaded,target,"CoreContext:Trade",sim.world().minute)
+        -residentCognitivePartnerExperienceFactor(
+            resident,target,"CoreContext:Trade",sim.world().minute))<1e-12);
     assert(std::abs(learnedActionDisposition(*loaded,"CoreContext:Parenting")
         -learnedActionDisposition(resident,"CoreContext:Parenting"))<1e-12);
     return 0;
