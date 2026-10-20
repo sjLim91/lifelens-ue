@@ -32,8 +32,10 @@ int main(int argc,char** argv)
                     policy=lifelens::ResidentAIPairedPolicy::OriginalFour;
                 }else if(value=="opportunities"){
                     policy=lifelens::ResidentAIPairedPolicy::CoreOpportunityFour;
+                }else if(value=="catalog"){
+                    policy=lifelens::ResidentAIPairedPolicy::CatalogFourteen;
                 }else throw std::invalid_argument(
-                    "policy must be original or opportunities");
+                    "policy must be original, opportunities or catalog");
             }else{
                 throw std::invalid_argument("unknown option: "+option);
             }
@@ -46,7 +48,7 @@ int main(int argc,char** argv)
         std::cerr<<"Invalid resident AI paired audit: "<<e.what()<<"\n"
                  <<"Usage: ll_resident_ai_paired_audit"
                  <<" [--seed POSITIVE_UINT64] [--days 1..1000]"
-             <<" [--policy original|opportunities]\n";
+             <<" [--policy original|opportunities|catalog]\n";
         return 2;
     }
 }
