@@ -359,7 +359,7 @@ private:
     static constexpr std::size_t MaxRecentSocialEvents=64;
     void emit(const std::string& message);
     void emitCoreContextOutcome(
-        const Character& actor,
+        Character& actor,
         const PendingContextAction& action,
         CharacterId target,
         CoreContextOutcomeCode code);
