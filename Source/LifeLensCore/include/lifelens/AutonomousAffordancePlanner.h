@@ -127,8 +127,23 @@ inline AutonomousAffordancePlan draftAutonomousAffordancePlan(
         DefaultCognitiveMemoryContextLimit,
         DefaultCognitiveBeliefContextLimit,
         DefaultCognitiveRelationshipContextLimit);
-    plan.contextFingerprint=cognitiveRequestFingerprint(authoritative);
-    if(cognitiveRequestFingerprint(request)!=plan.contextFingerprint)
+    // The newly Core-issued per-resident proximity view is NOT an input
+    // to this legacy goal→known-action planner. This read-only planner has
+    // no access to Simulation runtimePosition, so it must neither treat a
+    // claimed local sensor as an authenticated path/resource permission nor
+    // reject EVERY otherwise legitimate resident goal when Core attaches it.
+    // Strip ONLY the unused sensor before comparing all existing personal
+    // needs, memories, beliefs, relationships and intent permissions. The
+    // FULL original receipt remains associated with this candidate. Real
+    // execution ALWAYS uses separate, current Core affordance checks.
+    CognitiveRequest nonSensorContext=request;
+    nonSensorContext.localProximityObserved=false;
+    nonSensorContext.localObserverPosition={};
+    nonSensorContext.localRadiusCells=0;
+    nonSensorContext.localResources.clear();
+    plan.contextFingerprint=cognitiveRequestFingerprint(request);
+    if(cognitiveRequestFingerprint(nonSensorContext)
+       !=cognitiveRequestFingerprint(authoritative))
         return fail(AutonomousAffordancePlanStatus::RejectedContext,
                     AutonomousAffordanceReason::StaleOrForgedContext);
 
