@@ -26,7 +26,23 @@ inline double residentCognitivePartnerExperienceFactor(
        ||partner==resident.id ||experienceKey==nullptr
        ||nowMinute<0) return 1.0;
     constexpr const char* tokenPrefix="core-context-token:";
+    constexpr const char* localFactPrefix="core-local-exchange-fact:";
     const std::string key(experienceKey);
+    // Local barter is a distinct, fact-backed Core execution lane. It has no
+    // pending context token and may ONLY provide successful trade evidence.
+    const auto provenance=[&](const MemoryRecord& memory)->bool{
+        const bool token=memory.where.rfind(tokenPrefix,0)==0;
+        const bool localFact=key=="CoreContext:Trade"
+            &&memory.tags[2]=="success"
+            &&memory.where.rfind(localFactPrefix,0)==0;
+        if(!token &&!localFact) return false;
+        const char* prefix=token?tokenPrefix:localFactPrefix;
+        const std::string id=memory.where.substr(
+            std::char_traits<char>::length(prefix));
+        return !id.empty() &&id!="0"
+            &&std::all_of(id.begin(),id.end(),
+                [](unsigned char ch){return ch>='0' &&ch<='9';});
+    };
     int latestMinute=-1;
     bool latestSucceeded=false;
     for(const auto& memory:resident.memory.entries){
@@ -39,13 +55,7 @@ inline double residentCognitivePartnerExperienceFactor(
            ||memory.tags[0]!="action_experience"
            ||memory.tags[1]!=key
            ||(memory.tags[2]!="success" &&memory.tags[2]!="failure")
-           ||memory.where.rfind(tokenPrefix,0)!=0) continue;
-        const std::string token=memory.where.substr(
-            std::char_traits<char>::length(tokenPrefix));
-        if(token.empty() ||token=="0"
-           ||!std::all_of(token.begin(),token.end(),
-               [](unsigned char ch){return ch>='0' &&ch<='9';}))
-            continue;
+           ||!provenance(memory)) continue;
         const bool success=memory.tags[2]=="success";
         // Insertion order and snapshot ordering do not change the answer;
         // a verified success is decisive if records share a minute.
@@ -75,13 +85,7 @@ inline double residentCognitivePartnerExperienceFactor(
            ||memory.tags[0]!="action_experience"
            ||memory.tags[1]!=key
            ||(memory.tags[2]!="success" &&memory.tags[2]!="failure")
-           ||memory.where.rfind(tokenPrefix,0)!=0) continue;
-        const std::string token=memory.where.substr(
-            std::char_traits<char>::length(tokenPrefix));
-        if(token.empty() ||token=="0"
-           ||!std::all_of(token.begin(),token.end(),
-               [](unsigned char ch){return ch>='0' &&ch<='9';}))
-            continue;
+           ||!provenance(memory)) continue;
         const bool success=memory.tags[2]=="success";
         if(memory.minute>priorMinute
            ||(memory.minute==priorMinute &&success)){
