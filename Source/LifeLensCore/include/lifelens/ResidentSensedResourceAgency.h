@@ -36,7 +36,9 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
        ||actor.needs.sleep>=DefaultSimulationRuleset.utilityAI.urgentThreshold
        ||actor.needs.bladder>=DefaultSimulationRuleset.utilityAI.urgentThreshold
        ||actor.needs.hygiene>=DefaultSimulationRuleset.utilityAI.urgentThreshold
-       ||maximumResidentNeed(actor)>=0.74
+       // Optional curiosity must yield before ordinary fatigue accumulates.
+       // The urgent Core thresholds remain untouched.
+       ||maximumResidentNeed(actor)>=0.55
        ||!actor.alive ||!lifeStageProfile(actor.lifeStage).canWork
        ||cognitiveCharacter(world,actor.id)!=&actor
        ||prior.authority!=ResidentAgencyAuthority::EmbodiedFallback)
@@ -121,7 +123,14 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
             // successful harvest probability or a fabricated amount/result.
             const auto executable=nativeBias(candidate);
             if(executable.utility<0.14) break; // ordinary Core optional-work floor
-            const double rank=executable.utility+0.12*goal.priority;
+            // Keep the existing exploration response to actual scarcity:
+            // a curiosity bonus may break ties among ordinary gathering,
+            // but must not displace a stronger native Explore decision.
+            const bool scarcityExploration=
+                baseline.kind==UnifiedDecisionKind::Civilization
+                &&baseline.civilization.intent==CivilizationIntent::Explore;
+            const double rank=executable.utility
+                +(scarcityExploration ? 0.0 : 0.12*goal.priority);
             if(rank>bestRank+1e-12){
                 bestRank=rank;
                 answer.agency.decision.kind=UnifiedDecisionKind::Civilization;
