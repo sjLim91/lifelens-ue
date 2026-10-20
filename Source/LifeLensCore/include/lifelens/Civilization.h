@@ -537,7 +537,9 @@ enum class CivilizationEventType {
     // Appended for C3-E. A successful experiment becomes Rediscovered only
     // when the technique has older historical evidence and no other living
     // resident currently retains that knowledge.
-    Rediscovered
+    Rediscovered,
+    Hunted,
+    HuntFailed
 };
 
 struct CivilizationEvent {

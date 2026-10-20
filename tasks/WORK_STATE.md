@@ -1,3 +1,12 @@
+## 2026-10-20 WAITING_CI — 실제 식물 소비와 주민 야생동물 사냥·현장 식사
+
+- 기준 main `3162b2debd9e4d54148a9710662808b496c3d994`; PR [#814](https://github.com/sjLim91/lifelens-ue/pull/814), 브랜치 `codex/wildlife-subsistence-20261020`.
+- 사용자 요청: 클론 없이 GitHub 연결로 초식 자원 고갈·기아/번식 영향·주민 사냥/식사를 연결.
+- 기존 고정 forage 확률과 주민 사냥 경로 부재를 확인. production은 실제 ResourceNode를 소비하며 사냥은 실제 개체/이동/시간/토큰을 검증하고 현장 식사만 완료한다.
+- 신규 Core 회귀와 저장 재개 검증, production 자원 전달·임계 허기의 사냥 토큰 유지 검증 추가. 제품 HEAD `037dccf` 전체 빌드/WASM/Web/자율성/Preflight/기존 야생·저장·지구 검사 PASS, 기존 Core 154개 PASS. 새 회귀는 (0,0)을 육지로 가정한 fixture 오류로 실패해 실제 Core 시작 지역에서 육지 구간을 선택하도록 수정. 최종 HEAD 전체 CTest/결정론/장기 재검증 대기.
+- 고기 운반/보관/조리·수생 먹이망·동물의 청크 간 이주는 미구현. main 병합/배포하지 않음.
+- 상세: `docs/WILDLIFE_SUBSISTENCE_2026-10-20.md`.
+
 ## 2026-10-19 DRAFT — 주민 인지 의도와 실제 Core 기회 통합 (#798)
 
 - 기준 main `aaddbd6ba71a6b66664be0e71fa06c56138f5a62`; 브랜치 `codex/790-resident-core-opportunities-20261019`.

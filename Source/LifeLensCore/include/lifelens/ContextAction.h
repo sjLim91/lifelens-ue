@@ -277,6 +277,7 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
             switch(action.civilization.intent){
                 case CivilizationIntent::Explore: return 6;
                 case CivilizationIntent::Gather: return 5;
+                case CivilizationIntent::Hunt: return 20;
                 case CivilizationIntent::Store: return 3;
                 case CivilizationIntent::Retrieve: return 3;
                 case CivilizationIntent::Experiment: return 7;
@@ -340,6 +341,13 @@ inline bool resolveCivilizationContextTarget(
                         world,actor.id,decision.material,authoritativePosition);
             if(!opportunity.available) return false;
             outTarget=opportunity.target;
+            return true;
+        }
+        case CivilizationIntent::Hunt: {
+            const auto* animal=findSubsistenceAnimal(world,decision.resourceNode);
+            if(!animal ||!residentCanHuntSpecies(actor,animal->species)
+               ||!subsistenceHuntSafe(world,animal->position)) return false;
+            outTarget=animal->position;
             return true;
         }
         case CivilizationIntent::Gather:
@@ -581,6 +589,7 @@ inline bool resolveCivilizationContextTarget(
 inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDecision& decision)
 {
     if(decision.intent==CivilizationIntent::Explore
+       || decision.intent==CivilizationIntent::Hunt
        || decision.intent==CivilizationIntent::Gather
        || decision.intent==CivilizationIntent::Store
        || decision.intent==CivilizationIntent::Retrieve) return true;
