@@ -22,22 +22,24 @@ web = load("ci_web")
 class ScopeTests(unittest.TestCase):
     def test_docs_require_no_compilation_or_rendering(self):
         self.assertEqual(scope.select_scope(["docs/new.md"]),
-                         {"web": False, "core": False, "long_run": False, "screens": []})
+                         {"web": False, "core": False, "long_run": False})
 
     def test_web_readout_does_not_run_core_or_365_days(self):
         result = scope.select_scope(["web/src/ui/resident-status.ts"])
         self.assertTrue(result["web"])
         self.assertFalse(result["core"])
         self.assertFalse(result["long_run"])
-        self.assertEqual(result["screens"], [])
+        self.assertNotIn("screens", result)
 
-    def test_social_changes_capture_social_only(self):
-        self.assertEqual(scope.select_scope(["web/src/render/social-event-layer.ts"])["screens"], ["social"])
-
-    def test_grounding_and_dependencies_keep_cross_scene_coverage(self):
-        for path in ("web/src/render/resident-grounding.ts", "web/package-lock.json",
-                     "web/src/runtime/core-bridge.ts", "web/src/render/new-shared-pass.ts"):
-            self.assertEqual(scope.select_scope([path])["screens"], list(scope.SCREENS), path)
+    def test_rendering_sources_still_run_web_checks_without_capture(self):
+        for path in ("web/src/render/social-event-layer.ts",
+                     "web/src/render/resident-grounding.ts",
+                     "web/package-lock.json",
+                     "web/src/runtime/core-bridge.ts",
+                     "web/src/render/new-shared-pass.ts"):
+            result = scope.select_scope([path])
+            self.assertTrue(result["web"], path)
+            self.assertNotIn("screens", result)
 
     def test_core_simulation_runs_native_long_run_and_web_contract(self):
         result = scope.select_scope(["Source/LifeLensCore/src/Simulation.cpp"])
@@ -51,25 +53,28 @@ class ScopeTests(unittest.TestCase):
             self.assertEqual(result["web"], "/tests/" not in path)
             self.assertFalse(result["long_run"])
 
-    def test_pure_core_ecology_contract_still_gets_environment_capture(self):
+    def test_core_ecology_contract_runs_native_and_web_regressions(self):
         result = scope.select_scope(["Source/LifeLensCore/include/lifelens/ContinuousTerrain.h"])
-        self.assertIn("environment", result["screens"])
+        self.assertTrue(result["core"])
+        self.assertTrue(result["web"])
+        self.assertTrue(result["long_run"])
+        self.assertNotIn("screens", result)
 
     def test_manual_and_nightly_request_full_verification(self):
         for event in ("schedule", "workflow_dispatch"):
             paths, full = scope.changed_paths({}, event)
             result = scope.select_scope(paths, full)
             self.assertTrue(result["web"] and result["core"] and result["long_run"])
-            self.assertEqual(result["screens"], list(scope.SCREENS))
+            self.assertNotIn("screens", result)
 
     def test_new_branch_fails_conservatively(self):
         paths, full = scope.changed_paths({"before": "0" * 40, "after": "abc"}, "push")
         self.assertTrue(full)
 
-    def test_policy_changes_verify_routing_and_scenes_without_long_run(self):
+    def test_policy_changes_verify_web_checks_without_screenshots(self):
         result = scope.select_scope([".github/workflows/web-checks.yml", "Tools/ci_scope.py"])
         self.assertTrue(result["web"])
-        self.assertEqual(result["screens"], list(scope.SCREENS))
+        self.assertNotIn("screens", result)
         self.assertFalse(result["long_run"])
 
     def test_git_diff_tracks_deletions_renames_and_literal_filenames(self):
@@ -96,7 +101,7 @@ class ScopeTests(unittest.TestCase):
             self.assertFalse(full)
             self.assertIn(weird, paths)
             self.assertIn("web/src/render/social-event-layer.ts", paths)
-            self.assertIn("social", scope.select_scope(paths)["screens"])
+            self.assertTrue(scope.select_scope(paths)["web"])
             with self.assertRaises(subprocess.CalledProcessError):
                 scope.changed_paths({"before": "missing", "after": head}, "push", root)
 
@@ -113,18 +118,17 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(len(entries), len(files))
             self.assertEqual(set(entries), {root / p for p in files})
 
-    def test_capture_selection_deduplicates_and_accepts_absent_future_gallery(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            file = root / "procedural-environment/browser-review.mjs"
-            file.parent.mkdir(); file.touch()
-            self.assertEqual(web.capture_entries(root, ["environment", "environment"]), [file])
-            future = root / "procedural-environment/wildlife-browser-review.mjs"; future.touch()
-            self.assertEqual(set(web.capture_entries(root, ["environment"])), {file, future})
-            with self.assertRaises(ValueError):
-                web.capture_entries(root, ["typo"])
-            with self.assertRaises(FileNotFoundError):
-                web.capture_entries(root, ["social"])
+    def test_no_capture_mode_or_screen_dependent_steps_in_web_ci(self):
+        self.assertFalse(hasattr(web, "capture_entries"))
+        workflow = (ROOT / ".github/workflows/web-checks.yml").read_text()
+        self.assertNotIn("screens:", workflow)
+        self.assertNotIn("playwright install", workflow)
+        self.assertNotIn("ci_web.py captures", workflow)
+        self.assertNotIn("Capture affected scenes", workflow)
+        self.assertNotIn("upload-artifact", workflow)
+        self.assertIn("ci_web.py regressions", workflow)
+        self.assertIn("npm run typecheck", workflow)
+        self.assertIn("npm run build", workflow)
 
     def test_legacy_automatic_workflows_are_manual_diagnostics(self):
         names = ("web-runtime-resilience", "web-typecheck", "procedural-environment-check",

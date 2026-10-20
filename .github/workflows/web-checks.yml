@@ -38,7 +38,6 @@ jobs:
     timeout-minutes: 5
     outputs:
       web: ${{ steps.select.outputs.web }}
-      screens: ${{ steps.select.outputs.screens }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -72,34 +71,3 @@ jobs:
       - name: Build once
         run: npm run build
         working-directory: web
-      - name: Install browser only for affected scenes
-        if: needs.scope.outputs.screens != '[]'
-        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright && npx playwright install --with-deps chromium
-        working-directory: web
-      - name: Prepare authoritative ecology fixtures only for environment captures
-        if: contains(fromJSON(needs.scope.outputs.screens), 'environment')
-        run: |
-          cmake -S Source/LifeLensCore -B /tmp/ecology-core -DCMAKE_BUILD_TYPE=Release
-          cmake --build /tmp/ecology-core --target ll_ecology_fixture test_natural_ecology_lifecycle -j2
-          /tmp/ecology-core/test_natural_ecology_lifecycle
-          mkdir -p web/tests/procedural-environment/review
-          /tmp/ecology-core/ll_ecology_fixture web/tests/procedural-environment/review/core-fixture.json
-      - name: Capture affected scenes only
-        if: needs.scope.outputs.screens != '[]'
-        env:
-          SCREENS_JSON: ${{ needs.scope.outputs.screens }}
-        run: |
-          python3 - <<'PY'
-          import json, os
-          from pathlib import Path
-          Path('ci-scope.json').write_text(json.dumps({'screens': json.loads(os.environ['SCREENS_JSON'])}))
-          PY
-          python3 Tools/ci_web.py captures
-      - name: Upload metrics and selected captures
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-review
-          path: web/tests/*/review/
-          if-no-files-found: ignore
-          retention-days: 7
