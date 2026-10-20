@@ -227,6 +227,54 @@ int main()
         allowed,0,1,1);
     assert(zero.memories.empty());
 
+    // A loaded resident may retain records with timestamps beyond the
+    // current Core tick (for example after branching a save). They are NOT
+    // future knowledge for the one resident mind. Bounded cognition must
+    // ignore them without modifying World, saved memory or beliefs.
+    const auto pastView=buildCognitiveRequest(
+        liveActor,relationships,1000,CognitiveTriggerKind::Reflection,
+        allowed,8,8,8);
+    Character futureActor=liveActor;
+    MemoryRecord impossible;
+    impossible.what="I already saw tomorrow's water source";
+    impossible.where="unvisited far valley";
+    impossible.minute=1001;
+    impossible.source=MemorySource::DirectWitness;
+    impossible.witnessed=true;
+    impossible.importance=1.0;
+    impossible.confidence=1.0;
+    impossible.tags={"action_experience","CoreContext:Trade","success"};
+    futureActor.memory.add(impossible);
+    auto& impossibleBelief=futureActor.beliefs.getOrCreate(
+        2,"tomorrow this resident will trade");
+    impossibleBelief.applyEvidence(true,2.0,1001);
+    const auto futureSourceCount=futureActor.memory.entries.size();
+    const auto futureBeliefCount=futureActor.beliefs.beliefs.size();
+    const auto currentView=buildCognitiveRequest(
+        futureActor,relationships,1000,CognitiveTriggerKind::Reflection,
+        allowed,8,8,8);
+    assert(currentView.memories.size()==pastView.memories.size());
+    assert(currentView.beliefs.size()==pastView.beliefs.size());
+    for(std::size_t i=0;i<currentView.memories.size();++i){
+        assert(currentView.memories[i].minute<=1000);
+        assert(currentView.memories[i].what==pastView.memories[i].what);
+    }
+    for(std::size_t i=0;i<currentView.beliefs.size();++i){
+        assert(currentView.beliefs[i].lastUpdatedMinute<=1000);
+        assert(currentView.beliefs[i].proposition
+            ==pastView.beliefs[i].proposition);
+    }
+    assert(futureActor.memory.entries.size()==futureSourceCount);
+    assert(futureActor.beliefs.beliefs.size()==futureBeliefCount);
+    // The same record becomes visible only after time has ACTUALLY passed.
+    const auto laterView=buildCognitiveRequest(
+        futureActor,relationships,1001,CognitiveTriggerKind::Reflection,
+        allowed,8,8,8);
+    bool becameKnown=false;
+    for(const auto& evidence:laterView.memories)
+        if(evidence.what==impossible.what) becameKnown=true;
+    assert(becameKnown);
+
     std::cout<<"cognitive agent read-only context + fail-closed proposal contract passed\n";
     return 0;
 }
