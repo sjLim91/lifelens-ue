@@ -183,12 +183,26 @@ int main()
     world.resourceNodes[0].regenerateDay(); // actual supply recovers; memory stays personal
     assert(world.resourceNodes[0].quantity==20);
     assert(bestGatherDecisionAtPosition(world,empty,{4,4},nullptr,MaterialKind::Stone).resourceNode==101);
-    assert(bestGatherDecisionAtPosition(world,learned,{4,4},nullptr,MaterialKind::Stone).resourceNode==102);
+    // The global survival/Civilization slot must not be secretly rewritten
+    // by a personal memory. Only the single agency's explicit local goal
+    // planning pass supplies its same-actor, same-minute learned index.
+    assert(bestGatherDecisionAtPosition(world,learned,{4,4},nullptr,MaterialKind::Stone).resourceNode==101);
+    const auto initialIndex=buildResidentResourceOutcomeIndex(learned,world.minute);
+    assert(bestGatherDecisionAtPosition(world,learned,{4,4},nullptr,MaterialKind::Stone,
+        nullptr,&initialIndex).resourceNode==102);
+    // A different actor's index cannot be injected as this resident's
+    // firsthand evidence.
+    auto forgedIndex=initialIndex;
+    forgedIndex.actor=learned.id+1;
+    assert(bestGatherDecisionAtPosition(world,learned,{4,4},nullptr,MaterialKind::Stone,
+        nullptr,&forgedIndex).resourceNode==101);
     world.minute=101;
     const auto succeeded=executeCivilizationDecisionAtPosition(world,learned,attempted,{4,4});
     assert(succeeded.executed &&succeeded.success);
     record(learned,101,101,true);
-    assert(bestGatherDecisionAtPosition(world,learned,{4,4},nullptr,MaterialKind::Stone).resourceNode==101);
+    const auto resumedIndex=buildResidentResourceOutcomeIndex(learned,world.minute);
+    assert(bestGatherDecisionAtPosition(world,learned,{4,4},nullptr,MaterialKind::Stone,
+        nullptr,&resumedIndex).resourceNode==101);
     // An unseen/exhausted source remains excluded even with positive memory.
     world.resourceNodes[0].quantity=0;
     assert(bestGatherDecisionAtPosition(world,learned,{4,4},nullptr,MaterialKind::Stone).resourceNode==102);
