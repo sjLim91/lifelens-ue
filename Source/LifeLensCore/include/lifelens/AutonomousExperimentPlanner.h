@@ -321,4 +321,55 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
     return result;
 }
 
+
+ // Recompute the exact Core-derived alternative against CURRENT truth before
+ // a later dispatcher is even permitted to consider it. This remains a
+ // read-only admission check, NOT a commit permission or step executor.
+enum class AutonomousExperimentRevalidation {
+    InvalidBudget,
+    StaleContext,
+    GoalSatisfied,
+    NoLongerAdmissible,
+    CurrentCandidate
+};
+
+inline AutonomousExperimentRevalidation revalidateAutonomousExperimentChoice(
+    const World& world,
+    const RelationshipBook& relationships,
+    const CognitiveRequest& currentRequest,
+    const AutonomousGoalCandidate& goal,
+    const AutonomousExperimentOptions& issued,
+    const AutonomousExperimentAlternative& selected,
+    const AutonomousExperimentBudget& budget={})
+{
+    if(!validAutonomousExperimentBudget(budget))
+        return AutonomousExperimentRevalidation::InvalidBudget;
+    if(issued.actor!=currentRequest.actor
+       ||issued.actor==0 ||issued.minute!=world.minute
+       ||issued.status!=AutonomousExperimentStatus::CandidatesOnly
+       ||issued.contextFingerprint==0
+       ||issued.contextFingerprint!=cognitiveRequestFingerprint(currentRequest))
+        return AutonomousExperimentRevalidation::StaleContext;
+    const auto current=composeAutonomousExperimentOptions(
+        world,relationships,currentRequest,goal,budget);
+    if(current.status==AutonomousExperimentStatus::AlreadySatisfied)
+        return AutonomousExperimentRevalidation::GoalSatisfied;
+    if(current.status==AutonomousExperimentStatus::RejectedContext)
+        return AutonomousExperimentRevalidation::StaleContext;
+    if(current.status!=AutonomousExperimentStatus::CandidatesOnly
+       ||current.contextFingerprint!=issued.contextFingerprint)
+        return AutonomousExperimentRevalidation::NoLongerAdmissible;
+    for(const auto& alternative:current.alternatives){
+        if(identicalAutonomousExperimentSteps(
+                selected.steps,alternative.steps)
+           &&selected.effortUnits==alternative.effortUnits
+           &&std::isfinite(selected.riskProxy)
+           &&std::isfinite(selected.preferenceScore)
+           &&selected.riskProxy==alternative.riskProxy
+           &&selected.preferenceScore==alternative.preferenceScore)
+            return AutonomousExperimentRevalidation::CurrentCandidate;
+    }
+    return AutonomousExperimentRevalidation::NoLongerAdmissible;
+}
+
 } // namespace lifelens

@@ -117,6 +117,48 @@ int main()
         else assert(false);
     }
     assert(foundApproach &&foundRepair);
+    // A previously issued proposal cannot become executable merely because
+    // it once appeared in a candidate list. Revalidate the exact steps,
+    // costs, context and Core facts before a later dispatcher's own checks.
+    const auto selected=options.alternatives.front();
+    assert(revalidateAutonomousExperimentChoice(
+        world,relationships,request,goal,options,selected)
+        ==AutonomousExperimentRevalidation::CurrentCandidate);
+    auto forgedOption=selected;
+    forgedOption.effortUnits++;
+    assert(revalidateAutonomousExperimentChoice(
+        world,relationships,request,goal,options,forgedOption)
+        ==AutonomousExperimentRevalidation::NoLongerAdmissible);
+    auto forgedUtility=selected;
+    forgedUtility.preferenceScore=std::numeric_limits<double>::quiet_NaN();
+    assert(revalidateAutonomousExperimentChoice(
+        world,relationships,request,goal,options,forgedUtility)
+        ==AutonomousExperimentRevalidation::NoLongerAdmissible);
+    World laterWorld=world;
+    ++laterWorld.minute;
+    assert(revalidateAutonomousExperimentChoice(
+        laterWorld,relationships,request,goal,options,selected)
+        ==AutonomousExperimentRevalidation::StaleContext);
+    auto successRelationships=relationships;
+    successRelationships.getOrCreate(11,22).trust=0.95;
+    const auto satisfiedRequest=observe(world,successRelationships,11);
+    // Old receipt is now stale, and a fresh query must observe true success.
+    assert(revalidateAutonomousExperimentChoice(
+        world,successRelationships,satisfiedRequest,goal,options,selected)
+        ==AutonomousExperimentRevalidation::StaleContext);
+    assert(composeAutonomousExperimentOptions(
+        world,successRelationships,satisfiedRequest,
+        trustGoal(satisfiedRequest,22)).status
+        ==AutonomousExperimentStatus::AlreadySatisfied);
+    AutonomousExperimentBudget noRisks;
+    noRisks.maxRiskProxy=0.01;
+    assert(revalidateAutonomousExperimentChoice(
+        world,relationships,request,goal,options,selected,noRisks)
+        ==AutonomousExperimentRevalidation::NoLongerAdmissible);
+    noRisks.maxSteps=0;
+    assert(revalidateAutonomousExperimentChoice(
+        world,relationships,request,goal,options,selected,noRisks)
+        ==AutonomousExperimentRevalidation::InvalidBudget);
 
     // Identical input, seed, context and budget must replay bit-for-bit
     // in candidate ordering without touching RNG or world state.
