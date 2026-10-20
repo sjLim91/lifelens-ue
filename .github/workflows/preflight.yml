@@ -31,6 +31,9 @@ jobs:
           python -m unittest Tools.tests.test_masterplan_tracking
           python Tools/validate_masterplan_tracking.py
 
+      - name: Validate per-resident real Core outcome reconciliation
+        run: python -m unittest Tools.tests.test_analyze_resident_ai_residents
+
       - name: Validate read-only resident AI paired evidence report
         run: python -m unittest Tools.tests.test_analyze_resident_ai_paired
 
