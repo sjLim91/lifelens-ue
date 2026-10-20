@@ -46,7 +46,10 @@ enum class AutonomousGoalEvidenceKind {
     ActorNeed,
     Remembered,
     Believed,
-    Related
+    Related,
+    // A current Core proximity report is a candidate opportunity, not a
+    // firsthand visual memory or a guaranteed reachable/harvestable source.
+    ObservedLocalResource
 };
 
 // These are references into a bounded individual CognitiveRequest, not proof
@@ -127,6 +130,16 @@ inline bool autonomousGoalEvidenceValid(
                 && request.beliefs[ref.index].lastUpdatedMinute<=request.minute;
         case AutonomousGoalEvidenceKind::Related:
             return ref.index<request.relationships.size();
+        case AutonomousGoalEvidenceKind::ObservedLocalResource:
+            return request.localProximityObserved
+                &&request.localRadiusCells>=1
+                &&request.localRadiusCells<=ResidentLocalPerceptionMaxRadius
+                &&ref.index<request.localResources.size()
+                &&ref.index<ResidentLocalPerceptionMaxFacts
+                &&request.localResources[ref.index].nodeId!=0
+                &&request.localResources[ref.index].distanceCells>=0
+                &&request.localResources[ref.index].distanceCells
+                    <=request.localRadiusCells;
         default: return false;
     }
 }
@@ -242,6 +255,32 @@ inline AutonomousGoalValidation validateAutonomousGoalCandidate(
         return reject(AutonomousGoalIssue::InvalidPriority);
     if(!autonomousGoalEvidenceSetValid(request,candidate.evidence))
         return reject(AutonomousGoalIssue::InvalidEvidence);
+    // A proximity claim (including one copied from another resident) does
+    // not create any resource. Require the named node to still exist in
+    // Core's material ledger and the candidate to actually concern that
+    // material. This check is read-only; LOS and reachability remain unknown.
+    for(const auto& ref:candidate.evidence){
+        if(ref.kind!=AutonomousGoalEvidenceKind::ObservedLocalResource)
+            continue;
+        const auto& sensed=request.localResources[ref.index];
+        const auto found=std::find_if(world.resourceNodes.begin(),
+            world.resourceNodes.end(),[&](const ResourceNode& node){
+                return node.id==sensed.nodeId
+                    &&node.material==sensed.material
+                    &&node.pos.x==sensed.position.x
+                    &&node.pos.y==sensed.position.y
+                    &&node.quantity>0;
+            });
+        if(found==world.resourceNodes.end())
+            return reject(AutonomousGoalIssue::InvalidEvidence);
+        const bool relevant=std::any_of(
+            candidate.desiredState.begin(),candidate.desiredState.end(),
+            [&](const AutonomousGoalPredicate& predicate){
+                return predicate.metric==AutonomousGoalMetric::ActorRawMaterialCount
+                    &&predicate.material==sensed.material;
+            });
+        if(!relevant) return reject(AutonomousGoalIssue::InvalidEvidence);
+    }
     if(!autonomousGoalPredicatesValid(
            world,request,candidate.desiredState))
         return reject(AutonomousGoalIssue::InvalidPredicate);
