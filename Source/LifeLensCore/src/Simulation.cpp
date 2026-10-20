@@ -8,6 +8,7 @@
 #include "lifelens/ResidentCognitiveCarePreference.h"
 #include "lifelens/ResidentContextOutcomeLearning.h"
 #include "lifelens/ResidentPredatorResponse.h"
+#include "lifelens/ResidentLocalResourceMemory.h"
 #include "lifelens/CoreNavigation.h"
 #include "lifelens/CultivationProgression.h"
 #include "lifelens/FamilyProgression.h"
@@ -3910,6 +3911,16 @@ void Simulation::step(){
             continue;
         }
 
+        // Every 12 in-world hours the ONE resident mind may retain a
+        // bounded INFERRED local resource hint from its physical position.
+        // Proximity is not line-of-sight or future resource certainty.
+        // Do not scan for hidden resources every simulation minute.
+        if(!requiresDirectCare(c.lifeStage)
+           &&world_.minute%ResidentSensedResourceMemoryCadenceMinutes==0){
+            const auto nearby=observeLocalResourceProximity(
+                world_,c.id,r.pos,6,4);
+            rememberResidentSensedLocalResources(c,nearby);
+        }
         syncDependentEscort(c.id,r);
         c.needs.decay(ruleset_.needs,c.metabolism,c.sleepTendency);
         c.needs.apply(healthNeedsPressurePerMinute(c.health));
