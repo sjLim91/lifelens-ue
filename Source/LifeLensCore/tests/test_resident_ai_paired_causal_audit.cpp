@@ -252,6 +252,11 @@ int main()
         assert(all.proxy.catalogSubmitted[i]
             ==all.proxy.catalogAccepted[i]
                 +all.proxy.catalogRejected[i]);
+        // Distinguish Core validator denial from an otherwise valid
+        // proposal rejected at the journal/commit stage.
+        assert(all.proxy.catalogRejected[i]
+            ==all.proxy.catalogRejectedByValidator[i]
+                +all.proxy.catalogRejectedAfterValidator[i]);
         assert(all.proxy.catalogSelected[i]
             ==all.proxy.catalogNotOffered[i]
                 +all.proxy.catalogNoEligibleTarget[i]
@@ -265,6 +270,10 @@ int main()
     assert(allJson.find("\"all-fourteen-core-catalog\"")
         !=std::string::npos);
     assert(allJson.find("\"catalogIntentInputs\":{")
+        !=std::string::npos);
+    assert(allJson.find("\"rejectedByValidator\":")
+        !=std::string::npos);
+    assert(allJson.find("\"rejectedAfterValidator\":")
         !=std::string::npos);
     for(const auto intent:fourteen)
         assert(allJson.find(std::string("\"")+cognitiveIntentName(intent)
