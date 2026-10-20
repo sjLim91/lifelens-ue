@@ -136,8 +136,9 @@ int main()
     // Core source memory distinguishes a repeatedly failing REAL node A
     // from a different living source B of the same material. Before personal
     // experience, equally stocked provision sources preserve vector order.
-    // The native chooser now learns this source preference too; language-model
-    // continuation must preserve that choice instead of penalizing B again.
+    // The native Core chooser intentionally preserves its stable baseline.
+    // Personal experience affects ONLY a verified resident-goal preference
+    // and the existing cognitive retry path, not an unrelated survival slot.
     World sources(606002);
     sources.minute=484;
     sources.resourceNodes.clear();
@@ -168,10 +169,18 @@ int main()
     const auto ranked=bestGatherDecisionAtPosition(
         sources,searching,camp,nullptr,MaterialKind::PlantFood);
     assert(ranked.intent==CivilizationIntent::Gather
-        &&ranked.resourceNode==302);
+        &&ranked.resourceNode==301);
+    assert(ranked.utility==neutralSource.utility);
+    const auto personalIndex=buildResidentResourceOutcomeIndex(
+        searching,sources.minute);
+    const auto personalRanked=bestGatherDecisionAtPosition(
+        sources,searching,camp,nullptr,MaterialKind::PlantFood,
+        nullptr,&personalIndex);
+    assert(personalRanked.intent==CivilizationIntent::Gather
+        &&personalRanked.resourceNode==302);
     // B has no personal failed-source evidence, so its utility stays neutral.
     // Learning about A must not add an unrelated material-wide penalty to B.
-    assert(ranked.utility==neutralSource.utility);
+    assert(personalRanked.utility==neutralSource.utility);
     assert(residentAIHasRecentRepeatedGatherFailure(
         searching,MaterialKind::PlantFood,484));
     assert(residentAIRecentGatherSourceFailed(
