@@ -46,6 +46,7 @@ struct ResidentAIPairedMetrics {
     std::uint64_t observedTradePendingStarts=0;
     std::uint64_t observedParentingPendingStarts=0;
     OpportunityContextLifecycleCounts opportunityTokenLifecycle{};
+    OpportunityAcceptedOutcomeCounts acceptedOutcomeEvidence{};
     // These counters come exclusively from Core's actual execution paths,
     // never inferred from a disappearing pending token or accepted AI goal.
     std::array<std::uint64_t,ObservedOpportunityContextCount>
@@ -288,13 +289,18 @@ inline ResidentAIPairedReport runResidentAIPairedAudit(
     if(!report.matchedInitialResidents)
         throw std::runtime_error("paired New Game initialization mismatch");
 
+    OpportunityAcceptedOutcomeObserver baselineLinked,proxyLinked;
     baseline.onCoreContextOutcome(
         [&](const CoreContextOutcomeEvent& event){
             observeResidentAIVerifiedCoreOutcome(event,report.baseline);
+            baselineLinked.observeOutcome(
+                event,report.baseline.acceptedOutcomeEvidence);
         });
     scripted.onCoreContextOutcome(
         [&](const CoreContextOutcomeEvent& event){
             observeResidentAIVerifiedCoreOutcome(event,report.proxy);
+            proxyLinked.observeOutcome(
+                event,report.proxy.acceptedOutcomeEvidence);
         });
     std::map<CharacterId,std::uint64_t> baseTokens,scriptTokens;
     OpportunityContextLifecycleObserver baselineLifecycle,proxyLifecycle;
@@ -313,6 +319,11 @@ inline ResidentAIPairedReport runResidentAIPairedAudit(
             baseline,report.baseline.opportunityTokenLifecycle);
         proxyLifecycle.observeSimulation(
             scripted,report.proxy.opportunityTokenLifecycle);
+        // Register only tokens actually seen pending after this step.
+        // Immediate in-step completions have no observed token and must
+        // never be credited to a proposal.
+        baselineLinked.observeSimulation(baseline);
+        proxyLinked.observeSimulation(scripted);
     }
     collectResidentAIPairedEvidence(baseline,report.baseline);
     collectResidentAIPairedEvidence(scripted,report.proxy);
@@ -376,6 +387,20 @@ inline void appendResidentAIPairedMetricsJson(
            <<m.opportunityTokenLifecycle.noLongerPendingUnclassified[i]
            <<",\"replacedByAnotherToken\":"
            <<m.opportunityTokenLifecycle.replacedByAnotherToken[i]
+           <<"}";
+    }
+    out<<"},\"acceptedIntentToVerifiedOutcome\":{";
+    for(std::size_t i=0;i<ObservedOpportunityContextCount;++i){
+        if(i) out<<",";
+        out<<"\""<<ObservedOpportunityContextNames[i]<<"\":{"
+           <<"\"temporallyMatchedSuccess\":"
+           <<m.acceptedOutcomeEvidence.matchedSuccesses[i]
+           <<",\"temporallyMatchedFailure\":"
+           <<m.acceptedOutcomeEvidence.matchedFailures[i]
+           <<",\"observedWithoutAcceptedIntent\":"
+           <<m.acceptedOutcomeEvidence.observedWithoutMatch[i]
+           <<",\"noObservedPendingToken\":"
+           <<m.acceptedOutcomeEvidence.noObservedToken[i]
            <<"}";
     }
     out<<"}}";
