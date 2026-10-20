@@ -56,7 +56,40 @@ inline double residentCognitivePartnerExperienceFactor(
         }
     }
     if(latestMinute<0) return 1.0;
-    return latestSucceeded?1.04:0.92;
+    if(latestSucceeded) return 1.04;
+
+    // Two DISTINCT recent, firsthand failures with the SAME partner are
+    // stronger evidence than one rejected exchange. Stop reinforcing that
+    // stale optional model target for this attempt; let ordinary Core rank
+    // independently eligible partners instead. Nothing is banned and no
+    // social action or exchange is executed by this preference.
+    int priorMinute=-1;
+    bool priorSucceeded=false;
+    for(const auto& memory:resident.memory.entries){
+        if(memory.minute<0 ||memory.minute>=latestMinute
+           ||memory.minute>nowMinute
+           ||nowMinute-memory.minute>ResidentAgencyGoalHorizonMinutes
+           ||memory.source!=MemorySource::DirectWitness
+           ||!memory.witnessed ||memory.sourceCharacter!=resident.id
+           ||memory.who!=partner ||memory.tags.size()!=3
+           ||memory.tags[0]!="action_experience"
+           ||memory.tags[1]!=key
+           ||(memory.tags[2]!="success" &&memory.tags[2]!="failure")
+           ||memory.where.rfind(tokenPrefix,0)!=0) continue;
+        const std::string token=memory.where.substr(
+            std::char_traits<char>::length(tokenPrefix));
+        if(token.empty() ||token=="0"
+           ||!std::all_of(token.begin(),token.end(),
+               [](unsigned char ch){return ch>='0' &&ch<='9';}))
+            continue;
+        const bool success=memory.tags[2]=="success";
+        if(memory.minute>priorMinute
+           ||(memory.minute==priorMinute &&success)){
+            priorMinute=memory.minute;
+            priorSucceeded=success;
+        }
+    }
+    return priorMinute>=0 &&!priorSucceeded?0.0:0.92;
 }
 
 inline double residentCognitiveIntentPreference(
