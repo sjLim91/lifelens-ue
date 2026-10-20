@@ -826,6 +826,21 @@ std::string Simulation::stamp() const{
 }
 void Simulation::emit(const std::string& message){ const std::string line=stamp()+message; logs_.push_back(line); for(auto& cb:callbacks_) cb(line); }
 void Simulation::onEvent(EventCallback cb){ callbacks_.push_back(std::move(cb)); }
+void Simulation::onCoreContextOutcome(CoreContextOutcomeCallback cb){
+    contextOutcomeCallbacks_.push_back(std::move(cb));
+}
+void Simulation::emitCoreContextOutcome(
+    const Character& actor,
+    const PendingContextAction& action,
+    CharacterId target,
+    CoreContextOutcomeCode code)
+{
+    if(contextOutcomeCallbacks_.empty() ||!action.active()) return;
+    const CoreContextOutcomeEvent event{
+        actor.id,target,action.token,world_.minute,action.kind,code
+    };
+    for(auto& listener:contextOutcomeCallbacks_) listener(event);
+}
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
 void Simulation::clearNavigation(Runtime& r){
     r.navigationRoute.clear();
