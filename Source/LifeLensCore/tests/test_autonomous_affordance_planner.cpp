@@ -85,6 +85,40 @@ int main()
     assert(replay.proposedSteps[0].physicalGoal==
            plan.proposedSteps[0].physicalGoal);
 
+    // The Core may now supply bounded LOCAL proximity facts in one
+    // resident's thought. They are informational, not direct execution
+    // rights. Existing safe Need/Social goal drafting must still work.
+    auto sensed=request;
+    sensed.localProximityObserved=true;
+    sensed.localObserverPosition={3,-2};
+    sensed.localRadiusCells=6;
+    sensed.localResources.push_back({
+        512,MaterialKind::Stone,{4,-2},1,
+        ObservedResourceAbundance::Present
+    });
+    const auto sensedPlan=draftAutonomousAffordancePlan(
+        world,relationships,sensed,goal);
+    assert(sensedPlan.status==AutonomousAffordancePlanStatus::CandidateOnly);
+    assert(sensedPlan.proposedSteps.size()==plan.proposedSteps.size());
+    assert(sensedPlan.proposedSteps.front().physicalGoal==Goal::Sleep);
+    assert(sensedPlan.contextFingerprint==cognitiveRequestFingerprint(sensed));
+    assert(sensedPlan.contextFingerprint!=plan.contextFingerprint);
+    const auto sameSensedPlan=draftAutonomousAffordancePlan(
+        world,relationships,sensed,goal);
+    assert(sameSensedPlan.contextFingerprint==sensedPlan.contextFingerprint);
+    auto forgedNeeds=sensed;
+    forgedNeeds.needs.sleep=0.0;
+    assert(draftAutonomousAffordancePlan(
+        world,relationships,forgedNeeds,goal).status
+        ==AutonomousAffordancePlanStatus::RejectedContext);
+    auto inventedHistory=sensed;
+    CognitiveMemoryEvidence invented;
+    invented.what="I already learned an impossible technology";
+    inventedHistory.memories.push_back(invented);
+    assert(draftAutonomousAffordancePlan(
+        world,relationships,inventedHistory,goal).status
+        ==AutonomousAffordancePlanStatus::RejectedContext);
+
     // Valid social aspirations compose with physical needs without granting
     // any direct power to increase a relationship value.
     AutonomousGoalPredicate trust;
