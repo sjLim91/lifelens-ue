@@ -37,7 +37,7 @@
 
 | 완료 | 단위 | 계획에 정의된 작업 | 상태 | 근거 / 후속 |
 |---|---|---|---|---|
-| [ ] | **M1-01** | Core \`PerceptionFact\`: 시야/거리/가림/흔적·청각 채널·시각별 관측 근거 | 🚧 진행 | [#822](https://github.com/sjLim91/lifelens-ue/pull/822) main `0f30df41` 시각 인과 경계. [#828](https://github.com/sjLim91/lifelens-ue/pull/828) Core 실제 주민 위치 기반 근접 자원 센서 구현·CI 검증 중. 시선 가림·청각·AI 모델 입력은 미완 |
+| [ ] | **M1-01** | Core \`PerceptionFact\`: 시야/거리/가림/흔적·청각 채널·시각별 관측 근거 | 🚧 진행 | [#822](https://github.com/sjLim91/lifelens-ue/pull/822) main `0f30df41` 현재 시각 경계; [#828](https://github.com/sjLim91/lifelens-ue/pull/828) 9개 exact-head CI PASS→main `82c43e0f` 주민 실제 Core 위치에서 근접 자원 감지; [#832](https://github.com/sjLim91/lifelens-ue/pull/832) 단일 AI 인지 DTO·fingerprint 연결 CI 진행. 가림·청각·움직임/실행 검증 미완 |
 | [ ] | **M1-02** | \`ResidentMind\` 통합 인터페이스: Needs/Emotion/Personality/Belief/Relation/Goal/Plan 하나의 decision slot | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M1-03** | 개인 기억 출처: DirectWitness/ToldByOther/Inferred와 사건·대상·공간·시간 일관화 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M1-04** | 에피소드→요약 기억→핵심 신념의 계층적 저장/회상(근거 ID 보존) | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
@@ -173,6 +173,7 @@
 
 | 날짜 | 단위 | 이전→현재 | 검증/조치 |
 |---|---|---|---|
+| 2026-10-20 | M1-01 | 🚧 진행 유지 | #828 정확한 HEAD Core/Preflight/WASM/Web 및 야생/지구 감사 PASS, main 82c43e0f. #832 Core-bound perceived-resource DTO·fingerprint CI 진행 중; M1 전체 미완 |
 | 2026-10-20 | M1-01 | 🚧 진행 유지 | #822 exact-head 4 CI PASS, main 0f30df41. 시간 인과 유입 차단 병합; 공간/시야 지각 전체 미완 |
 | 2026-10-20 | M0-05 | 미완→🚧 진행 | #826 캐릭터 리소스 다운로드 일시 timeout/503만 제한 재시도, 404/hash/size는 fail-closed. 검증 진행 중 |
 | 2026-10-20 | M2-07 | ⬜ 미완→🚧 진행 | [#830](https://github.com/sjLim91/lifelens-ue/pull/830) 직접 경험에 따른 사회적 계획 경쟁 순위 수정·CI 검증 중. 범용 효율/시간/이동·실제 실행은 미완 |
