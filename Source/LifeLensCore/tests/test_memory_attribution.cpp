@@ -74,4 +74,41 @@ int main(){
     assert(attempts.entries.size()==pristine.size());
     for(std::size_t i=0;i<pristine.size();++i)
         assert(sameMemoryRecord(attempts.entries[i],pristine[i]));
+
+    // A 100+ unique social-fact ID population must not exhaust the 64
+    // reporting categories or disguise dominant social-memory growth.
+    MemoryState facts;
+    for(int i=0;i<100;++i){
+        auto sample=a;
+        sample.tags={"fact:"+std::to_string(i+1),"direct-witness"};
+        facts.add(sample);
+    }
+    auto told=a;told.tags={"fact:101","rumor"};
+    told.source=MemorySource::ToldByOther;
+    told.witnessed=false;
+    facts.add(told);
+    auto inferred=a;inferred.tags={"fact:102","inference"};
+    inferred.source=MemorySource::Inferred;
+    inferred.witnessed=false;
+    facts.add(inferred);
+    auto other=a;other.tags={"environment"};
+    facts.add(other);
+    const auto exactRecords=facts.entries;
+    const auto grouped=observeMemoryAttribution(facts,1000);
+    assert(grouped.primaryTags.size()==4);
+    assert(grouped.primaryTags.at("social_fact:direct").entries==100);
+    assert(grouped.primaryTags.at("social_fact:told").entries==1);
+    assert(grouped.primaryTags.at("social_fact:inferred").entries==1);
+    assert(grouped.primaryTags.at("environment").entries==1);
+    std::uint64_t categories=0,textBytes=0;
+    for(const auto& category:grouped.primaryTags){
+        categories+=category.second.entries;
+        textBytes+=category.second.textBytes;
+    }
+    assert(categories==grouped.entries &&textBytes==grouped.textBytes);
+    assert(grouped.exactDuplicates==0);
+    for(std::size_t i=0;i<exactRecords.size();++i)
+        assert(sameMemoryRecord(exactRecords[i],facts.entries[i]));
+    auto malformed=a;malformed.tags={"fact:not-an-id"};
+    assert(memoryAttributionCategoryName(malformed)=="fact:not-an-id");
 }
