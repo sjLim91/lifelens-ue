@@ -17,8 +17,8 @@
 
 - 완료: **3/86** (M0-01, M0-02, M6-01). 단순 계획 단위 완료 지표이지 전체 시뮬레이션 구현률이 아니다.
 - 검증 완료·병합 검토: **0** (현재 표시 기준).
-- 진행: **11** (M0-03 #790/#820/#824/#836, M0-04 #669/#819/#839, M0-05 #826, M1-01 #822/#828/#832, M1-03 #841, M1-05 #841, M2-01 #844, M2-03 #844, M2-05 #846, M2-06 #846, M2-07 #830/#835/#838).
-- 미완 또는 미검증: **72**.
+- 진행: **12** (M0-03 #790/#820/#824/#836, M0-04 #669/#819/#839, M0-05 #826, M1-01 #822/#828/#832, M1-03 #841, M1-05 #841, M2-01 #844, M2-03 #844, M2-05 #846, M2-06 #846, M2-07 #830/#835/#838, M11-03 #852/#854).
+- 미완 또는 미검증: **71**.
 - **병렬 트랙:** AI 실행·인지 감사(M0-03, M1-01, M2-01), 메모리/장기 감사(M0-04, M11-04), 야생/생태(M0-02, M6-01), 시간 지속성(M9-01/02)은 파일 소유 영역을 분리한다. 실제 기능 구현/테스트 착수 전에는 신규 병렬 트랙을 완료·진행으로 미리 올리지 않는다.
 
 ## 전체 단위별 진행 장부
@@ -30,7 +30,7 @@
 | [x] | **M0-01** | #816 교역 양측 기억 exact-head·병합·메인 재검증 | ✅ 완료 | [PR #816](https://github.com/sjLim91/lifelens-ue/pull/816) · main e6061967 · Core/WASM/Web/인지 5 CI PASS |
 | [x] | **M0-02** | #814 사냥/식생 소모 코어 PR 충돌·검증 분리 | ✅ 완료 | [PR #814](https://github.com/sjLim91/lifelens-ue/pull/814) · 9 CI PASS · main 22ccf7a1 · Draft 해제 후 병합 |
 | [ ] | **M0-03** | #790 14개 의도 전수 지표: offered→accepted→pending→completed/failed/unsupported | 🚧 진행 | [#820](https://github.com/sjLim91/lifelens-ue/pull/820) 실 Core 실행 토큰 감사 main `04a9a477`; [#824](https://github.com/sjLim91/lifelens-ue/pull/824) 14개 intent offered/accepted/rejected main `eac1f47a`; [#836](https://github.com/sjLim91/lifelens-ue/pull/836) Core validator vs commit 거절 4 CI PASS→main `b30d40d6`. 여러 seed 100/365/1000일 실측 인과/미지원 사유 전체 미완 |
-| [ ] | **M0-04** | #669 메모리 source/tag/byte·중복·부정합 장기 감사 | 🚧 진행 | [#819](https://github.com/sjLim91/lifelens-ue/pull/819) source/actor/action 기억 감사 main `ac1f3b1a`; [#839](https://github.com/sjLim91/lifelens-ue/pull/839) checkpoint delta main `1f3d560d`; [#850](https://github.com/sjLim91/lifelens-ue/pull/850) 다중 seed별 실측 포함/누락 비교 Preflight 유닛 PASS→main `6495ad56`. 실제 여러 seed 100/365/1000일 결과·해석은 미완 |
+| [ ] | **M0-04** | #669 메모리 source/tag/byte·중복·부정합 장기 감사 | 🚧 진행 | [#819](https://github.com/sjLim91/lifelens-ue/pull/819) source/actor/action 기억 감사 main `ac1f3b1a`; [#839](https://github.com/sjLim91/lifelens-ue/pull/839) checkpoint delta main `1f3d560d`; [#850](https://github.com/sjLim91/lifelens-ue/pull/850) 다중 seed별 실측 포함/누락 비교 Preflight 유닛 PASS→main `6495ad56`. [#853](https://github.com/sjLim91/lifelens-ue/pull/853) Core 주민·기억 합계 누락 탐지 Preflight PASS→main `d66da8f5`. 실제 여러 seed 100/365/1000일 결과·해석 미완 |
 | [ ] | **M0-05** | baseline CI·저장 포맷·Ruleset·핵심 회귀 테스트 계약 동결 | 🚧 진행 | [#826](https://github.com/sjLim91/lifelens-ue/pull/826) Preflight/Web Checks PASS→main `8e2aac8b`, pinned 자산 timeout 재시도/원본 hash 검증 보존. 전체 baseline·저장·Ruleset 동결 미완 |
 
 ### M1 — 지각/기억
@@ -162,7 +162,7 @@
 |---|---|---|---|---|
 | [ ] | **M11-01** | exact-head Core CTest·WASM·Web Build/Typecheck/Preflight | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M11-02** | WorldSeed/PopulationSeed/generation/ruleset 및 snapshot/backward codec 검사 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M11-03** | 100/365/1000일 다중 seed 및 일부 3000일 장기 실행 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
+| [ ] | **M11-03** | 100/365/1000일 다중 seed 및 일부 3000일 장기 실행 | 🚧 진행 | [#852](https://github.com/sjLim91/lifelens-ue/pull/852) 365일 seed 874213955 수면 포화 42633분 > 14905분 기준 실패·Draft 유지; [#854](https://github.com/sjLim91/lifelens-ue/pull/854) 주민별 기여 원인 분석 CI 검증 중. 장기 다중 seed/3000일 안정성 미완 |
 | [ ] | **M11-04** | 수치 계측: 개인별 목표 생성/시도/완료/실패원인/학습 후 선택 변경 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M11-05** | no-LM, browser LM, PC loopback LM A/B 실행 프로파일 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 | [ ] | **M11-06** | 비용/성능: 4→8→32→100→300→1000 주민, 동물·메모리·LLM 토큰/시간/지연 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
@@ -170,6 +170,10 @@
 | [ ] | **M11-08** | 회귀 dashboard 및 사용자용 진척률: 실구현/실행경로/검증/배포 분리 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 
 ## 출하 변경 기록
+
+| 2026-10-20 | M0-04 | 🚧 진행 유지 | #853 실제 checkpoint 주민·기억 총합과 resident 개별 기록 불일치 실패 검증, Preflight PASS→main d66da8f5 |
+| 2026-10-20 | M11-03 | ⬜ 미완→🚧 진행 | #852 실제 365일 시드 수면 포화 회귀로 main 차단. #854 주민별 기여 원인 분석 신규 PR CI 중, 허용 임계치 불변 |
+
 
 | 날짜 | 단위 | 이전→현재 | 검증/조치 |
 |---|---|---|---|
