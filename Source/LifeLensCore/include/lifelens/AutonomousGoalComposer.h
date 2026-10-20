@@ -134,6 +134,47 @@ inline std::vector<AutonomousGoalCandidate> composeAutonomousGoalCandidates(
         emit(std::move(goal));
     }
 
+    // Personal opportunities arise from this resident's CURRENT bounded
+    // Core proximity hints, not an omniscient sweep over all World nodes.
+    // These are modest curiosity/material goals, not harvesting commands.
+    // LOS, path, free inventory room and actual resource extraction must
+    // all be established later by authoritative action execution.
+    if(request.localProximityObserved){
+        std::vector<MaterialKind> proposedMaterials;
+        proposedMaterials.reserve(3);
+        for(std::size_t i=0;i<request.localResources.size()
+            &&i<ResidentLocalPerceptionMaxFacts
+            &&proposedMaterials.size()<3;++i){
+            const auto& nearby=request.localResources[i];
+            if(nearby.nodeId==0
+               ||static_cast<int>(nearby.material)
+                   <static_cast<int>(MaterialKind::Stone)
+               ||static_cast<int>(nearby.material)
+                   >static_cast<int>(MaterialKind::Bronze)
+               ||std::find(proposedMaterials.begin(),proposedMaterials.end(),
+                            nearby.material)!=proposedMaterials.end())
+                continue;
+            proposedMaterials.push_back(nearby.material);
+            auto goal=makeGoal(std::clamp(
+                0.10+0.26*safeAutonomousPreference(
+                    request.personality.curiosity)
+                +0.03*(1.0-static_cast<double>(
+                    nearby.distanceCells)
+                    /std::max(1,request.localRadiusCells)),
+                0.0,0.45));
+            AutonomousGoalPredicate desire;
+            desire.metric=AutonomousGoalMetric::ActorRawMaterialCount;
+            desire.material=nearby.material;
+            desire.comparison=AutonomousGoalCompare::AtLeast;
+            desire.threshold=1.0;
+            goal.desiredState.push_back(desire);
+            goal.evidence.push_back({
+                AutonomousGoalEvidenceKind::ObservedLocalResource,i
+            });
+            emit(std::move(goal));
+        }
+    }
+
     std::vector<AutonomousGoalCandidate> relationshipGoals;
     relationshipGoals.reserve(request.relationships.size());
     for(std::size_t i=0;i<request.relationships.size();++i){
