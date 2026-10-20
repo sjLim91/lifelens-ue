@@ -89,11 +89,13 @@ int main()
     // chunk crossing or water shortcut. Empty source cannot relieve hunger.
     {
         World world(4242001,0,4);
-        auto state=population(world.seed);
+        const auto landChunk=world.initialStartRegion().region.coord;
+        const auto landOrigin=chunkOriginGrid(landChunk);
+        auto state=population(world.seed,landChunk);
         GridPos start{},end{};
         bool found=false;
-        for(int x=2;x<27 &&!found;++x)
-            for(int y=2;y<29 &&!found;++y){
+        for(int x=landOrigin.x+2;x<landOrigin.x+27 &&!found;++x)
+            for(int y=landOrigin.y+2;y<landOrigin.y+29 &&!found;++y){
                 bool land=true;
                 for(int dx=0;dx<=4;++dx)
                     land=land &&coreGroundTraversable(world,{x+dx,y});
@@ -118,16 +120,18 @@ int main()
     world.resourceNodes.clear();
     world.storageSites.clear();
     world.wildlifeEnabled=true;
+    const auto landChunk=world.initialStartRegion().region.coord;
+    const auto landOrigin=chunkOriginGrid(landChunk);
     GridPos position{};
     bool found=false;
-    for(int x=2;x<29 &&!found;++x)
-        for(int y=2;y<29 &&!found;++y)
+    for(int x=landOrigin.x+2;x<landOrigin.x+29 &&!found;++x)
+        for(int y=landOrigin.y+2;y<landOrigin.y+29 &&!found;++y)
             if(coreGroundTraversable(world,{x,y})
                &&coreGroundTraversable(world,{x+1,y})){
                 position={x,y};found=true;
             }
     assert(found);
-    auto state=population(world.seed);
+    auto state=population(world.seed,landChunk);
     addHare(state,{position.x+1,position.y});
     world.wildlifePopulations={state};
     Character actor;
