@@ -183,6 +183,17 @@ bool Simulation::completeContextAction(
     if(pending.hasSpatialTarget && !contextActionNearTarget(resolvedPosition,pending.targetPos,1))
         return false;
 
+    if(pending.kind==ContextActionKind::Civilization
+       &&pending.civilization.intent==CivilizationIntent::Hunt){
+        const auto* animal=findSubsistenceAnimal(
+            world_,pending.civilization.resourceNode);
+        if(!animal ||!contextActionNearTarget(resolvedPosition,animal->position,1))
+            return false;
+        // Unlike legacy ACK-only work, hunting pays an explicit Core duration.
+        if(world_.minute-pending.issuedMinute<contextActionDurationTicks(pending))
+            return false;
+    }
+
     // Return ACK completes transport only; it must never apply toilet care twice.
     if(pending.kind==ContextActionKind::Parenting
        &&pending.parentingAction==ParentingAction::ToiletAssist
@@ -414,6 +425,12 @@ bool Simulation::completeContextAction(
             std::ostringstream log;
             log<<actor.name<<" -> Civilization "<<civilizationIntentName(decision.intent);
             switch(result.event.type){
+                case CivilizationEventType::Hunted:
+                    log<<" 사냥 성공, 현장 식사 완료";
+                    break;
+                case CivilizationEventType::HuntFailed:
+                    log<<" 사냥 실패, 음식 획득 없음";
+                    break;
                 case CivilizationEventType::Gathered:
                     log<<" "<<materialName(result.event.material)<<" x"<<result.event.quantity;
                     break;

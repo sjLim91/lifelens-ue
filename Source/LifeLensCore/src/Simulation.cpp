@@ -742,6 +742,10 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
         dto.civilizationResourceNode=r.civilizationResourceNode;
         dto.civilizationStorage=r.civilizationStorage;
         switch(r.civilizationEvent.type){
+            case CivilizationEventType::Hunted:
+            case CivilizationEventType::HuntFailed:
+                dto.civilizationIntent=CivilizationIntent::Hunt;
+                break;
             case CivilizationEventType::Gathered:
                 dto.civilizationIntent=CivilizationIntent::Gather;
                 break;
@@ -793,7 +797,8 @@ ResidentCivilizationActivityObservation Simulation::observeResidentCivilizationA
     dto.minute=r.civilizationActivityMinute;
     dto.resourceNode=r.civilizationResourceNode;
     dto.storage=r.civilizationStorage;
-    dto.success=r.civilizationEvent.type!=CivilizationEventType::ExperimentFailed;
+    dto.success=r.civilizationEvent.type!=CivilizationEventType::ExperimentFailed
+        &&r.civilizationEvent.type!=CivilizationEventType::HuntFailed;
     dto.hasSpatialTarget=r.civilizationHasSpatialTarget;
     dto.targetGridX=r.civilizationTargetPos.x;
     dto.targetGridY=r.civilizationTargetPos.y;
@@ -1101,6 +1106,25 @@ bool Simulation::advancePendingContext(
 {
     PendingContextAction& pending=runtime.pendingContext;
     if(!pending.active()) return false;
+
+    // Wildlife can flee, be eaten by a predator, or be taken by another
+    // resident while this hunter travels. Refresh the SAME individual's
+    // position; never complete against a stale point or switch prey silently.
+    if(pending.kind==ContextActionKind::Civilization
+       &&pending.civilization.intent==CivilizationIntent::Hunt){
+        const auto* animal=findSubsistenceAnimal(
+            world_,pending.civilization.resourceNode);
+        if(!animal ||!residentCanHuntSpecies(actor,animal->species)
+           ||!subsistenceHuntSafe(world_,animal->position)){
+            pending.clear();
+            clearNavigation(runtime);
+            return false;
+        }
+        if(!sameGridPos(pending.targetPos,animal->position)){
+            pending.targetPos=animal->position;
+            clearNavigation(runtime);
+        }
+    }
 
     // A dependent returning from sanitation remains under the caregiver's
     // physical escort. It is persisted using parenting-tagged, already-encoded
@@ -4043,10 +4067,10 @@ void Simulation::step(){
         const auto humans=livingResidentPositions();
         if(world_.minute%(24*60)!=0){
             for(auto& population:world_.wildlifePopulations)
-                stepWildlifeHour(population,world_.minute/60,humans);
+                stepWildlifeHour(population,world_.minute/60,humans,&world_.resourceNodes);
         }else{
             for(auto& population:world_.wildlifePopulations)
-                stepWildlifeDay(population,world_.minute/(24*60),humans);
+                stepWildlifeDay(population,world_.minute/(24*60),humans,&world_.resourceNodes);
         }
     }
     if(world_.minute%(24*60)==0){

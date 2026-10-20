@@ -23,6 +23,8 @@
 #include "SettlementProduction.h"
 #include "SocietyEconomy.h"
 #include "World.h"
+#include "WildlifeSubsistence.h"
+#include "CoreNavigation.h"
 
 namespace lifelens {
 
@@ -35,7 +37,9 @@ enum class CivilizationIntent {
     // Appended so existing enum ordinals remain stable.
     Retrieve,
     // Core-authored frontier search. Keep appended for persisted enum stability.
-    Explore
+    Explore,
+    // Appended: living wildlife target uses resourceNode as a tagged ID.
+    Hunt
 };
 
 enum class FacilityBuildAction {
@@ -64,6 +68,7 @@ inline const char* civilizationIntentName(CivilizationIntent intent)
         case CivilizationIntent::Craft: return "Craft";
         case CivilizationIntent::Retrieve: return "Retrieve";
         case CivilizationIntent::Explore: return "Explore";
+        case CivilizationIntent::Hunt: return "Hunt";
         default: return "None";
     }
 }
@@ -2970,6 +2975,46 @@ inline CivilizationUtilityDecision applySettlementProductionSpecializationUtilit
     return decision;
 }
 
+// Only current, nearby wildlife on a real ground route is a food opportunity.
+// Density makes nearby prey more likely; there is no omniscient remote hunt.
+inline CivilizationUtilityDecision bestHuntDecisionAtPosition(
+    const World& world,const Character& self,GridPos position)
+{
+    CivilizationUtilityDecision best;
+    if(!world.wildlifeEnabled ||self.needs.hunger<0.45
+       ||!self.alive ||!lifeStageProfile(self.lifeStage).canWork
+       ||self.civilization.inventory.count(
+            ItemKind::RawMaterial,MaterialKind::PlantFood)>0) return best;
+    int nearest=17;
+    for(const auto& population:world.wildlifePopulations){
+        // Only populations in or adjacent to the resident's chunk can
+        // contain a candidate in the bounded 16-cell perception radius.
+        const auto local=chunkCoordForGrid(position);
+        if(std::abs(population.habitat.coord.x-local.x)>1
+           ||std::abs(population.habitat.coord.y-local.y)>1) continue;
+        for(const auto& animal:population.animals){
+            if(!animal.alive ||!residentCanHuntSpecies(self,animal.species)) continue;
+            const int distance=std::abs(animal.position.x-position.x)
+                +std::abs(animal.position.y-position.y);
+            if(distance>16 ||distance>nearest
+               ||(distance==nearest &&best.resourceNode!=0
+                  &&animal.id>=best.resourceNode)
+               ||!subsistenceHuntSafe(world,animal.position)) continue;
+            std::vector<GridPos> route;
+            if(!buildCoreGroundRoute(world,position,animal.position,1,route)) continue;
+            nearest=distance;
+            best.intent=CivilizationIntent::Hunt;
+            best.resourceNode=animal.id;
+            // This is the hunger/provision demand tag, never a plant output.
+            best.material=MaterialKind::PlantFood;
+            best.quantity=1;
+            best.utility=clampCivilization01(
+                0.45+0.40*self.needs.hunger-0.012*distance);
+        }
+    }
+    return best;
+}
+
 inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -3024,6 +3069,8 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
         best,regionalize(
             bestGatherDecisionAtPosition(
                 world,self,authoritativePosition,population)));
+    considerCivilizationDecision(
+        best,regionalize(bestHuntDecisionAtPosition(world,self,authoritativePosition)));
     return best;
 }
 
@@ -3108,6 +3155,18 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
             result.event.quantity=0;
             result.executed=true;
             result.success=true;
+            return result;
+        }
+        case CivilizationIntent::Hunt: {
+            const auto hunt=completeSubsistenceHunt(
+                world,self,decision.resourceNode,authoritativePosition);
+            result.executed=hunt.attempted;
+            result.success=hunt.caught;
+            result.event.actor=self.id;
+            result.event.type=hunt.caught
+                ?CivilizationEventType::Hunted:CivilizationEventType::HuntFailed;
+            result.event.material=MaterialKind::Unknown;
+            result.event.quantity=hunt.caught?1:0;
             return result;
         }
         case CivilizationIntent::Gather: {

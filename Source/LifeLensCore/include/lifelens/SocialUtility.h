@@ -298,6 +298,7 @@ inline double civilizationDispositionAffinity(
     const PreferenceProfile& preferences) {
 
     switch (intent) {
+        case CivilizationIntent::Hunt:
         case CivilizationIntent::Gather:
             return socialClamp01(
                 0.50 * preferences.gathering +
@@ -741,6 +742,19 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
                                 world,authoritativePosition,access,1,route)) continue;
                         nearestNode=&node;
                         nearestNodeDistance=distance;
+                    }
+                }
+                // Compare the effort to reach real prey with known plant food.
+                // Nearby safe stock remains preferred; hunting is not gated
+                // on every plant node in the entire world being exhausted.
+                auto hunt=bestHuntDecisionAtPosition(world,self,authoritativePosition);
+                if(hunt.intent==CivilizationIntent::Hunt){
+                    const auto* animal=findSubsistenceAnimal(world,hunt.resourceNode);
+                    const int huntDistance=animal
+                        ?manhattan(authoritativePosition,animal->position):1000000;
+                    if(nearestNode==nullptr ||huntDistance+3<nearestNodeDistance){
+                        hunt.utility=socialClamp01(0.80+0.20*need);
+                        return hunt;
                     }
                 }
                 if(nearestNode!=nullptr){

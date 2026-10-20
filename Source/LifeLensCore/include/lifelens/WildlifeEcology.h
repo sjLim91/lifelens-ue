@@ -9,10 +9,11 @@
 #include <vector>
 
 #include "Hydrology.h"
+#include "Civilization.h"
 
-// ECO-A1: opt-in, isolated Core wildlife domain prototype.
-// No implicit construction, mutation of World/Simulation, RNG calls, resource
-// drops, actor DTOs, inventory writes or snapshot-schema changes.
+// Core wildlife domain. Production ticks receive actual resource nodes for
+// terrestrial grazing; standalone calls without resource input retain the
+// original isolated habitat-potential model. No global RNG or inventory drops.
 // The habitat source below is *procedural Core terrain*, NOT real-world
 // species distribution, actual weather, or geographical climate conditioning.
 namespace lifelens {
@@ -414,11 +415,116 @@ inline WildlifePopulation startWildlifePopulation(
     return state;
 }
 
+// Herbivores share the same finite plant stock used by residents. Mature
+// timber is not food: only deer browsing young regrowth may remove wood units.
+inline int wildlifeEdiblePlantUnits(
+    const ResourceNode& node,WildlifeSpecies species,int minute)
+{
+    if(species!=WildlifeSpecies::Hare && species!=WildlifeSpecies::Deer)
+        return 0;
+    if(node.material==MaterialKind::PlantFood || node.material==MaterialKind::Fiber)
+        return std::max(0,node.quantity);
+    if(species!=WildlifeSpecies::Deer || node.material!=MaterialKind::Wood)
+        return 0;
+    int units=0;
+    for(const auto& tree:node.trees){
+        const auto age=static_cast<std::int64_t>(minute)-tree.bornMinute;
+        if(age>=0 && age<365LL*1440) units+=std::max(0,tree.remainingWood);
+    }
+    return std::min(std::max(0,node.quantity),units);
+}
+
+inline const ResourceNode* wildlifeNearestPlant(
+    const WildlifePopulation& population,const WildlifeAnimal& animal,
+    const std::vector<ResourceNode>& resources,int minute,int radius)
+{
+    const ResourceNode* best=nullptr;
+    int nearest=radius+1;
+    for(const auto& node:resources){
+        if(!(chunkCoordForGrid(node.pos)==population.habitat.coord)
+           ||wildlifeEdiblePlantUnits(node,animal.species,minute)<=0) continue;
+        const int distance=std::abs(node.pos.x-animal.position.x)
+            +std::abs(node.pos.y-animal.position.y);
+        if(distance<=radius && (distance<nearest
+           ||(distance==nearest && (!best ||node.id<best->id)))){
+            best=&node;
+            nearest=distance;
+        }
+    }
+    return best;
+}
+
+inline int wildlifeConsumePlants(
+    WildlifePopulation& population,const WildlifeAnimal& animal,
+    std::vector<ResourceNode>& resources,int minute)
+{
+    const ResourceNode* source=wildlifeNearestPlant(
+        population,animal,resources,minute,2);
+    if(source==nullptr) return 0;
+    const auto index=static_cast<std::size_t>(source-resources.data());
+    auto& node=resources[index];
+    const int taken=std::min(animal.species==WildlifeSpecies::Deer?3:1,
+        wildlifeEdiblePlantUnits(node,animal.species,minute));
+    if(node.material==MaterialKind::Wood){
+        int left=taken;
+        for(auto& tree:node.trees){
+            const auto age=static_cast<std::int64_t>(minute)-tree.bornMinute;
+            if(age<0 || age>=365LL*1440) continue;
+            const int bite=std::min(left,std::max(0,tree.remainingWood));
+            tree.remainingWood-=bite;
+            left-=bite;
+            if(bite>0 &&tree.remainingWood==0) tree.felledMinute=minute;
+            if(left==0) break;
+        }
+    }
+    node.quantity-=taken;
+    // Refresh reproductive visuals from current stock; growth remains owned
+    // by the existing natural ecology/regeneration cadence.
+    const double stock=node.maxQuantity>0
+        ?std::clamp(static_cast<double>(node.quantity)/node.maxQuantity,0.0,1.0):0.0;
+    node.flower01=std::min(node.flower01,stock);
+    node.fruit01=std::min(node.fruit01,stock);
+    return taken;
+}
+
+inline bool wildlifeApproachPlants(
+    WildlifePopulation& population,WildlifeAnimal& animal,
+    const std::vector<ResourceNode>& resources,int minute,
+    const std::vector<GridPos>& residents)
+{
+    if(animal.hunger01<0.12) return false;
+    const ResourceNode* source=wildlifeNearestPlant(
+        population,animal,resources,minute,2*WildlifeCellsPerChunk);
+    if(source==nullptr) return false;
+    const auto distance=[&](GridPos p){
+        return std::abs(source->pos.x-p.x)+std::abs(source->pos.y-p.y);
+    };
+    if(distance(animal.position)<=2) return true;
+    const auto hydro=deriveHydrologyFacts(
+        makeWorldGenesisIdentity(population.worldSeed,0,population.generationVersion),
+        population.habitat.coord);
+    GridPos best=animal.position;
+    int nearest=distance(best);
+    constexpr std::array<GridPos,4> directions={{{1,0},{0,1},{-1,0},{0,-1}}};
+    for(const GridPos d:directions){
+        const GridPos candidate{animal.position.x+d.x,animal.position.y+d.y};
+        if(!(chunkCoordForGrid(candidate)==population.habitat.coord)
+           ||surfaceWaterGroundContainsGrid(hydro,candidate)
+           ||(!residents.empty() &&wildlifeNearestResidentDistance(candidate,residents)
+                <=wildlifeHumanAvoidanceRadius(animal.species))) continue;
+        if(distance(candidate)<nearest){best=candidate;nearest=distance(candidate);}
+    }
+    const bool moved=best.x!=animal.position.x ||best.y!=animal.position.y;
+    animal.position=best;
+    return moved;
+}
+
 // Explicit one-day Core-domain transition. Calling twice for the same day
 // never produces extra food, offspring, or RNG draws. No time-skips allowed.
 inline WildlifeStepResult stepWildlifeDay(
     WildlifePopulation& state,std::int64_t targetDay,
-    const std::vector<GridPos>& residentPositions={})
+    const std::vector<GridPos>& residentPositions={},
+    std::vector<ResourceNode>* resources=nullptr)
 {
     WildlifeStepResult report;
     if(!state.habitat.available
@@ -483,10 +589,20 @@ inline WildlifeStepResult stepWildlifeDay(
                     ate=true;
                 }
             }
-        }else if(!humanNear){
+        }else if(!humanNear && !predator){
+            if(!fish &&resources!=nullptr){
+                const int minute=static_cast<int>(std::min<std::int64_t>(
+                    targetDay,std::numeric_limits<int>::max()/1440)*1440);
+                const int eaten=wildlifeConsumePlants(state,animal,*resources,minute);
+                const int required=animal.species==WildlifeSpecies::Deer?3:1;
+                animal.hunger01=std::max(0.0,animal.hunger01
+                    -0.28*static_cast<double>(eaten)/required);
+                if(eaten>0) ++report.foraged;
+            }else{
             const double chance=fish?0.68:std::clamp(
                 0.15+0.68*state.habitat.forage01,0.0,0.90);
             ate=wildlifeRoll(state,animal.id,targetDay,0x464f52414745ULL)<chance;
+            }
         }
         if(ate){
             animal.hunger01=std::max(0.0,animal.hunger01-(tiger?0.88:predator?0.7:0.28));
@@ -593,7 +709,8 @@ inline WildlifeBehavior wildlifeBehavior(
 // camera-driven ecology. Call only on the absolute Core hour boundary.
 inline int stepWildlifeHour(
     WildlifePopulation& population,std::int64_t hourIndex,
-    const std::vector<GridPos>& residentPositions={})
+    const std::vector<GridPos>& residentPositions={},
+    const std::vector<ResourceNode>* resources=nullptr)
 {
     if(!population.habitat.available || hourIndex<=0) return 0;
     const GridPos origin=chunkOriginGrid(population.habitat.coord);
@@ -614,6 +731,13 @@ inline int stepWildlifeHour(
             continue;
         }
         const auto behavior=wildlifeBehavior(population,animal,residentPositions);
+        if(resources!=nullptr &&behavior!=WildlifeBehavior::Flee
+           &&wildlifeApproachPlants(population,animal,*resources,
+                static_cast<int>(std::min<std::int64_t>(
+                    hourIndex,std::numeric_limits<int>::max()/60)*60),residentPositions)){
+            if(before.x!=animal.position.x ||before.y!=animal.position.y) ++moved;
+            continue;
+        }
         const std::uint64_t roll=wildlifeHash(
             population.worldSeed,population.habitat.coord,animal.id,
             static_cast<std::uint64_t>(hourIndex),0x57494c44484f5552ULL);
