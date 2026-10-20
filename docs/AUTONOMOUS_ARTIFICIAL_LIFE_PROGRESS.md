@@ -17,8 +17,8 @@
 
 - 완료: **3/86** (M0-01, M0-02, M6-01). 단순 계획 단위 완료 지표이지 전체 시뮬레이션 구현률이 아니다.
 - 검증 완료·병합 검토: **0** (현재 표시 기준).
-- 진행: **12** (M0-03 #790/#820/#824/#836, M0-04 #669/#819/#839, M0-05 #826, M1-01 #822/#828/#832, M1-03 #841, M1-05 #841, M2-01 #844, M2-03 #844, M2-05 #846, M2-06 #846, M2-07 #830/#835/#838, M11-03 #852/#854).
-- 미완 또는 미검증: **71**.
+- 진행: **13** (M0-03 #790/#820/#824/#836, M0-04 #669/#819/#839, M0-05 #826, M1-01 #822/#828/#832, M1-03 #841, M1-05 #841, M2-01 #844, M2-03 #844, M2-05 #846, M2-06 #846, M2-07 #830/#835/#838, M2-08 #857, M11-03 #852/#854).
+- 미완 또는 미검증: **70**.
 - **병렬 트랙:** AI 실행·인지 감사(M0-03, M1-01, M2-01), 메모리/장기 감사(M0-04, M11-04), 야생/생태(M0-02, M6-01), 시간 지속성(M9-01/02)은 파일 소유 영역을 분리한다. 실제 기능 구현/테스트 착수 전에는 신규 병렬 트랙을 완료·진행으로 미리 올리지 않는다.
 
 ## 전체 단위별 진행 장부
@@ -56,7 +56,7 @@
 | [ ] | **M2-05** | 실세계 \`Affordance\` primitive 목록: Observe/Move/Approach/Pick/Carry/Transfer/Combine/Work/Talk 등 구현별 capability | 🚧 진행 | [#846](https://github.com/sjLim91/lifelens-ue/pull/846) 실제 가까이 감지된 물자 목표를 Core Gather read-only 후보로 연결. #844 main 이후 정확히 변경 파일만 재기반, Core Gather 후보 원격 CI PASS 후 main eb3398c5 병합. 경로·소비·실제 실행 전권·다단계 계획 미완 |
 | [ ] | **M2-06** | \`PlanCandidate\` 조합 검색: 순서·전제 조건·자원/거리·우회·포기 | 🚧 진행 | [#846](https://github.com/sjLim91/lifelens-ue/pull/846) 실제 가까이 감지된 물자 목표를 Core Gather read-only 후보로 연결. #844 main 이후 정확히 변경 파일만 재기반, Core Gather 후보 원격 CI PASS 후 main eb3398c5 병합. 경로·소비·실제 실행 전권·다단계 계획 미완 |
 | [ ] | **M2-07** | 경쟁 계획 평가: 예상 효율·위험·소요/이동·과거 개인 성공률 | 🚧 진행 | [#830](https://github.com/sjLim91/lifelens-ue/pull/830) 개인 경험 기반 read-only 대안 순위 main `d8c09fd2`; [#835](https://github.com/sjLim91/lifelens-ue/pull/835) 같은 주민·상대·사회 행동의 개인 Core 경험을 실제 unified agency 선택에 반영 4 CI PASS→main `cc4df1b9`; [#838](https://github.com/sjLim91/lifelens-ue/pull/838) Core/Preflight/WASM/Web 4 CI PASS→main `d40e1521` 지각 컨텍스트/목표 계획 호환. 물리 거리/다단계 자율 실행·인과 검증 미완 |
-| [ ] | **M2-08** | \`ExperimentBudget\`: 한시적 탐색·안전한 실험·자원 제한/긴급 생존 선점 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
+| [ ] | **M2-08** | \`ExperimentBudget\`: 한시적 탐색·안전한 실험·자원 제한/긴급 생존 선점 | 🚧 진행 | [PR #857](https://github.com/sjLim91/lifelens-ue/pull/857) 실제 근접 자원의 거리별 계획 effort/risk 예산 검증을 작성해 exact-head CI 진행 중. 후보만 계산하며 실제 Core 집행/장기 안전 완료는 미검증 |
 | [ ] | **M2-09** | 실패/환경변화 시 부분 재계획·가설 수정·기존 목표 유지/포기 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
 
 ### M3 — 실행/학습
