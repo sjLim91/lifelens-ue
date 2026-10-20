@@ -312,6 +312,10 @@ inline CognitiveRequest buildCognitiveRequest(
     std::vector<CognitiveMemoryCandidate> memories;
     memories.reserve(actor.memory.entries.size());
     for(const MemoryRecord& memory:actor.memory.entries){
+        // The personal mind cannot recall an event from its own future,
+        // even if an old snapshot or imported memory contains it. Reject
+        // impossible timestamps without editing authoritative history.
+        if(memory.minute<0 ||memory.minute>currentMinute) continue;
         CognitiveMemoryCandidate evidence;
         evidence.who=memory.who;
         evidence.sourceCharacter=memory.sourceCharacter;
@@ -497,6 +501,10 @@ inline CognitiveRequest buildCognitiveRequest(
     std::vector<CognitiveBeliefEvidence> beliefs;
     beliefs.reserve(actor.beliefs.beliefs.size());
     for(const BeliefRecord& belief:actor.beliefs.beliefs){
+        // Beliefs may be wrong or based on hearsay, but a belief first
+        // updated in the future cannot be known to this past cognition tick.
+        if(belief.lastUpdatedMinute<0
+           ||belief.lastUpdatedMinute>currentMinute) continue;
         CognitiveBeliefEvidence evidence;
         evidence.subject=belief.subject;
         evidence.proposition=belief.proposition;
