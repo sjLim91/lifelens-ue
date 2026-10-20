@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "CognitiveDecisionJournal.h"
+#include "ResidentContextOutcomeLearning.h"
 
 namespace lifelens {
 
@@ -31,7 +32,19 @@ inline double residentCognitiveIntentPreference(
            ||!validAcceptedCognitiveDecision(*it,world)
            ||world.minute-it->minute>ResidentAgencyGoalHorizonMinutes
            ||it->priority<0.55) return 0.0;
-        return 0.12*it->priority;
+        double preference=0.12*it->priority;
+        // ONLY optional social/economic choices adapt to firsthand Core
+        // success/failure. Critical childcare and survival remain protected.
+        const char* experienceKey=nullptr;
+        if(intent==CognitiveIntentKind::TeachKnowledge)
+            experienceKey=coreContextExperienceKey(
+                ContextActionKind::KnowledgeTeaching);
+        else if(intent==CognitiveIntentKind::TradeWithResident)
+            experienceKey=coreContextExperienceKey(ContextActionKind::Trade);
+        if(experienceKey!=nullptr)
+            preference=std::min(0.12,preference*
+                learnedActionDisposition(*resident,experienceKey));
+        return preference;
     }
     return 0.0;
 }
