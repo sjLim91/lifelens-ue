@@ -18,8 +18,10 @@ namespace lifelens {
 // deterministic, hand-written proxy, NOT an LLM nor an assertion of learning.
 enum class ResidentAIPairedPolicy {
     OriginalFour,
-    CoreOpportunityFour
+    CoreOpportunityFour,
+    CatalogFourteen
 };
+inline constexpr std::size_t FullCognitiveCatalogCount=14;
 inline constexpr std::size_t CognitiveOpportunityIntentCount=4;
 inline constexpr const char* CognitiveOpportunityIntentNames[]={
     "TeachKnowledge","CareForDependent","TradeWithResident","MigrateHousehold"
@@ -62,6 +64,10 @@ struct ResidentAIPairedMetrics {
         opportunityProposalsAccepted{};
     std::array<std::uint64_t,CognitiveOpportunityIntentCount>
         opportunityNoEligibleTarget{};
+    // Selection/availability/acceptance cannot be mistaken for execution.
+    std::array<std::uint64_t,FullCognitiveCatalogCount>
+        catalogSelected{},catalogNotOffered{},catalogNoEligibleTarget{},
+        catalogSubmitted{},catalogAccepted{},catalogRejected{};
     std::uint64_t civilizationSuccessEvidence=0;
     std::uint64_t civilizationFailureEvidence=0;
     std::uint64_t firsthandCivilizationMemories=0;
@@ -185,14 +191,21 @@ inline bool residentAIProxyProposal(
     const CharacterId actor=eligible[slot%eligible.size()];
     const auto request=sim.observeCognitiveRequest(
         actor,CognitiveTriggerKind::Reflection);
-    if(request.actor!=actor ||request.allowedIntents.empty()) return false;
+    if(request.actor!=actor) return false;
     CognitiveProposal proposal;
     proposal.actor=actor;
     proposal.priority=0.9;
 
     // Fixed policies intentionally ignore learned beliefs. Each input is a
     // controlled preference, never a command to issue or complete an action.
-    if(policy==ResidentAIPairedPolicy::CoreOpportunityFour){
+    const auto fullCatalog=cognitiveStrategicIntentCatalog();
+    const bool catalogPolicy=policy==ResidentAIPairedPolicy::CatalogFourteen;
+    const std::size_t catalogSlot=
+        catalogPolicy?static_cast<std::size_t>(slot%fullCatalog.size()):0;
+    if(catalogPolicy){
+        proposal.intent=fullCatalog[catalogSlot];
+        ++stats.catalogSelected[catalogSlot];
+    }else if(policy==ResidentAIPairedPolicy::CoreOpportunityFour){
         switch(slot%4){
             case 0: proposal.intent=CognitiveIntentKind::TeachKnowledge; break;
             case 1: proposal.intent=CognitiveIntentKind::CareForDependent; break;
@@ -224,15 +237,29 @@ inline bool residentAIProxyProposal(
             }
         }
     }
+    // Audit never invents a peer or bypasses an actual eligibility gate.
+    if(catalogPolicy &&cognitiveIntentTargetsResident(proposal.intent)){
+        for(const auto& candidate:sim.world().characters){
+            if(!candidate.alive ||candidate.id==actor) continue;
+            if(proposal.intent==CognitiveIntentKind::CareForDependent
+               &&!isDependentStage(candidate.lifeStage)) continue;
+            proposal.targetResident=candidate.id;
+            break;
+        }
+    }
     const std::size_t chosenOpportunity=
         cognitiveOpportunityIndex(proposal.intent);
     if(cognitiveIntentTargetsResident(proposal.intent)
        &&proposal.targetResident==0){
         if(chosenOpportunity<CognitiveOpportunityIntentCount)
             ++stats.opportunityNoEligibleTarget[chosenOpportunity];
+        if(catalogPolicy) ++stats.catalogNoEligibleTarget[catalogSlot];
         return false;
     }
-    if(!residentAIHasAllowedIntent(request,proposal.intent)) return false;
+    if(!residentAIHasAllowedIntent(request,proposal.intent)){
+        if(catalogPolicy) ++stats.catalogNotOffered[catalogSlot];
+        return false;
+    }
     for(const auto& memory:request.memories){
         if(memory.source==MemorySource::DirectWitness &&memory.witnessed
            &&memory.tags.size()==3
@@ -240,6 +267,7 @@ inline bool residentAIProxyProposal(
             ++stats.firsthandOutcomesVisibleToProxy;
     }
     ++stats.proposalsAttempted;
+    if(catalogPolicy) ++stats.catalogSubmitted[catalogSlot];
     const std::size_t opportunity=cognitiveOpportunityIndex(proposal.intent);
     if(opportunity<CognitiveOpportunityIntentCount)
         ++stats.opportunityProposalsAttempted[opportunity];
@@ -248,9 +276,13 @@ inline bool residentAIProxyProposal(
         request,proposal,"deterministic-audit-proxy","audit-proxy-v1");
     if(accepted){
         ++stats.proposalsAccepted;
+        if(catalogPolicy) ++stats.catalogAccepted[catalogSlot];
         if(opportunity<CognitiveOpportunityIntentCount)
             ++stats.opportunityProposalsAccepted[opportunity];
-    }else ++stats.proposalsRejected;
+    }else{
+        ++stats.proposalsRejected;
+        if(catalogPolicy) ++stats.catalogRejected[catalogSlot];
+    }
     return accepted;
 }
 
@@ -366,6 +398,18 @@ inline void appendResidentAIPairedMetricsJson(
            <<",\"noEligibleTarget\":"<<m.opportunityNoEligibleTarget[i]
            <<"}";
     }
+    out<<"},\"catalogIntentInputs\":{";
+    const auto catalog=cognitiveStrategicIntentCatalog();
+    for(std::size_t i=0;i<catalog.size();++i){
+        if(i) out<<",";
+        out<<"\""<<cognitiveIntentName(catalog[i])<<"\":{"
+           <<"\"selected\":"<<m.catalogSelected[i]
+           <<",\"notOffered\":"<<m.catalogNotOffered[i]
+           <<",\"noEligibleTarget\":"<<m.catalogNoEligibleTarget[i]
+           <<",\"submitted\":"<<m.catalogSubmitted[i]
+           <<",\"accepted\":"<<m.catalogAccepted[i]
+           <<",\"rejected\":"<<m.catalogRejected[i]<<"}";
+    }
     out<<"},\"verifiedCoreOutcomes\":{";
     for(std::size_t i=0;i<ObservedOpportunityContextCount;++i){
         if(i) out<<",";
@@ -414,7 +458,9 @@ inline std::string residentAIPairedReportJson(
        <<",\"policy\":\"fixed-deterministic-proxy-not-llm\""
        <<",\"proxySelection\":\""
        <<(report.policy==ResidentAIPairedPolicy::CoreOpportunityFour
-             ?"four-core-opportunities":"original-four")<<"\""
+             ?"four-core-opportunities"
+              :report.policy==ResidentAIPairedPolicy::CatalogFourteen
+              ?"all-fourteen-core-catalog":"original-four")<<"\""
        <<",\"matchedInitialResidents\":"
        <<(report.matchedInitialResidents?"true":"false")
        <<",\"baseline\":";
