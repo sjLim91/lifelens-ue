@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "lifelens/ResidentCognitivePreference.h"
+#include "lifelens/ResidentContextOutcomeLearning.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
@@ -150,6 +151,68 @@ static void localTradeChoice()
     assert(encodeSimulationSnapshot(preferred.captureSnapshot(),left));
     assert(encodeSimulationSnapshot(replay.captureSnapshot(),right));
     assert(left==right);
+
+    // One real rejection discourages but does not displace the chosen
+    // partner: this actor still prefers the same Core-eligible opportunity.
+    auto oneFailure=saved;
+    auto& learner=oneFailure.world.characters[0];
+    rememberCoreContextExperience(learner,{
+        a,requested,901,55,ContextActionKind::Trade,
+        CoreContextOutcomeCode::TradeExchangeRejected
+    });
+    assert(residentCognitiveIntentPreference(
+        oneFailure.world,oneFailure.acceptedCognitiveDecisions,a,
+        CognitiveIntentKind::TradeWithResident,requested)>0.0);
+    Simulation retryOnce(790102);
+    assert(retryOnce.restoreSnapshot(oneFailure));
+    retryOnce.step();
+    assert(units(retryOnce,requested,MaterialKind::Wood)==1);
+    assert(units(retryOnce,b,MaterialKind::Wood)==0);
+
+    // A second INDEPENDENT real rejection with the same partner removes
+    // the stale optional model preference. Normal Core ranks another
+    // physically possible trade instead; the model creates no inventory.
+    auto repeatedFailure=oneFailure;
+    rememberCoreContextExperience(repeatedFailure.world.characters[0],{
+        a,requested,902,56,ContextActionKind::Trade,
+        CoreContextOutcomeCode::TradeExchangeRejected
+    });
+    assert(residentCognitiveIntentPreference(
+        repeatedFailure.world,repeatedFailure.acceptedCognitiveDecisions,a,
+        CognitiveIntentKind::TradeWithResident,requested)==0.0);
+    Simulation alternatePartner(790102);
+    assert(alternatePartner.restoreSnapshot(repeatedFailure));
+    alternatePartner.step();
+    assert(units(alternatePartner,b,MaterialKind::Wood)==1);
+    assert(units(alternatePartner,requested,MaterialKind::Wood)==0);
+
+    // The goal is never permanently blacklisted. A later actually
+    // successful trade with the same target restores the thought preference.
+    auto recovered=repeatedFailure;
+    rememberCoreContextExperience(recovered.world.characters[0],{
+        a,requested,903,57,ContextActionKind::Trade,
+        CoreContextOutcomeCode::TradeExchanged
+    });
+    assert(residentCognitiveIntentPreference(
+        recovered.world,recovered.acceptedCognitiveDecisions,a,
+        CognitiveIntentKind::TradeWithResident,requested)>0.0);
+    Simulation recoveredPartner(790102);
+    assert(recoveredPartner.restoreSnapshot(recovered));
+    recoveredPartner.step();
+    assert(units(recoveredPartner,requested,MaterialKind::Wood)==1);
+    assert(units(recoveredPartner,b,MaterialKind::Wood)==0);
+
+    // Rejection by another person is not evidence against the selected
+    // target, and may not override this resident's own viable choice.
+    auto differentPartner=oneFailure;
+    rememberCoreContextExperience(differentPartner.world.characters[0],{
+        a,b,904,56,ContextActionKind::Trade,
+        CoreContextOutcomeCode::TradeExchangeRejected
+    });
+    Simulation unaffected(790102);
+    assert(unaffected.restoreSnapshot(differentPartner));
+    unaffected.step();
+    assert(units(unaffected,requested,MaterialKind::Wood)==1);
 
     // Validated thought cannot authorize missing stock or a remote local swap.
     auto empty=saved;
