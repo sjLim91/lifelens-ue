@@ -73,6 +73,44 @@ static void verifyStrictTokenProvenance()
         world,journal,counts);
     assert(counts.noLongerPendingUnclassified[1]==1);
 
+    // Only a LIVE observed token + matching last accepted actor/target
+    // plus an actual Core terminal event qualifies for temporal attribution.
+    OpportunityAcceptedOutcomeObserver matchedObserver;
+    OpportunityAcceptedOutcomeCounts evidenceLinks;
+    matchedObserver.observePending(actor,teaching,world,journal);
+    matchedObserver.observeOutcome(
+        {actor,target,teaching.token,world.minute,
+         ContextActionKind::KnowledgeTeaching,
+         CoreContextOutcomeCode::TeachingAdvanced},evidenceLinks);
+    assert(evidenceLinks.matchedSuccesses[0]==1);
+    // Duplicate callback or never-observed token is NOT another matched result.
+    matchedObserver.observeOutcome(
+        {actor,target,teaching.token,world.minute,
+         ContextActionKind::KnowledgeTeaching,
+         CoreContextOutcomeCode::TeachingAdvanced},evidenceLinks);
+    assert(evidenceLinks.matchedSuccesses[0]==1);
+    assert(evidenceLinks.noObservedToken[0]==1);
+    auto otherPerson=teaching;
+    otherPerson.token=934;
+    otherPerson.targetResident=other;
+    matchedObserver.observePending(actor,otherPerson,world,journal);
+    matchedObserver.observeOutcome(
+        {actor,other,otherPerson.token,world.minute,
+         ContextActionKind::KnowledgeTeaching,
+         CoreContextOutcomeCode::TeachingComprehensionFailed},evidenceLinks);
+    assert(evidenceLinks.observedWithoutMatch[0]==1);
+    matchedObserver.observeOutcome(
+        {actor,target,999,world.minute,
+         ContextActionKind::KnowledgeTeaching,
+         CoreContextOutcomeCode::TeachingRejected},evidenceLinks);
+    assert(evidenceLinks.noObservedToken[0]==2);
+    // A return from a real trade does not imply an additional exchange.
+    matchedObserver.observeOutcome(
+        {actor,target,1000,world.minute,
+         ContextActionKind::Trade,CoreContextOutcomeCode::TradeReturned},
+         evidenceLinks);
+    assert(evidenceLinks.noObservedToken[2]==0);
+
     // A newer unrelated decision supersedes the older target preference.
     auto newer=chosen;
     newer.intent=CognitiveIntentKind::ExploreOpportunity;
@@ -180,6 +218,10 @@ int main()
     assert(focusedJson.find("\"observedKnowledgeTeachingPendingStarts\":")
         !=std::string::npos);
     assert(focusedJson.find("\"tokenLifecycle\":")!=std::string::npos);
+    assert(focusedJson.find("\"acceptedIntentToVerifiedOutcome\":")
+        !=std::string::npos);
+    assert(focusedJson.find("\"noObservedPendingToken\":")
+        !=std::string::npos);
     assert(focusedJson.find("\"temporalIntentTargetMatches\":")!=std::string::npos);
     assert(focusedJson.find("\"noLongerPendingUnclassified\":")!=std::string::npos);
     assert(residentAIPairedReportJson(runResidentAIPairedAudit(
