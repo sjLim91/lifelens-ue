@@ -6,6 +6,7 @@
 #include "lifelens/ResidentAICompletedPlanGuard.h"
 #include "lifelens/ResidentUnifiedAgency.h"
 #include "lifelens/ResidentCognitiveCarePreference.h"
+#include "lifelens/ResidentContextOutcomeLearning.h"
 #include "lifelens/ResidentPredatorResponse.h"
 #include "lifelens/CoreNavigation.h"
 #include "lifelens/CultivationProgression.h"
@@ -830,15 +831,18 @@ void Simulation::onCoreContextOutcome(CoreContextOutcomeCallback cb){
     contextOutcomeCallbacks_.push_back(std::move(cb));
 }
 void Simulation::emitCoreContextOutcome(
-    const Character& actor,
+    Character& actor,
     const PendingContextAction& action,
     CharacterId target,
     CoreContextOutcomeCode code)
 {
-    if(contextOutcomeCallbacks_.empty() ||!action.active()) return;
+    if(!action.active()) return;
     const CoreContextOutcomeEvent event{
         actor.id,target,action.token,world_.minute,action.kind,code
     };
+    // Lived experience is independent of optional audit/UI subscribers.
+    // Only this real Core execution site can author the result.
+    rememberCoreContextExperience(actor,event);
     for(auto& listener:contextOutcomeCallbacks_) listener(event);
 }
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
