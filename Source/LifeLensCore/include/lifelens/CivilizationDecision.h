@@ -1257,15 +1257,13 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
         return evaluation;
     };
 
-    // Build once, or reuse the SAME actor/minute planning-pass view.
-    const bool reuseSourceOutcomes=personalSourceOutcomes!=nullptr
+    // Only the resident's own validated PERSONAL goal-planning pass may
+    // supply firsthand source preference. Baseline Core survival/gathering
+    // decisions must retain their established deterministic utility order.
+    // Never rescan memories on unrelated native Gather calls.
+    const bool usePersonalSourceOutcomes=personalSourceOutcomes!=nullptr
         &&personalSourceOutcomes->actor==self.id
         &&personalSourceOutcomes->currentMinute==world.minute;
-    const auto ownedSourceOutcomes=reuseSourceOutcomes
-        ?ResidentResourceOutcomeIndex{}
-        :buildResidentResourceOutcomeIndex(self,world.minute);
-    const auto& sourceOutcomes=reuseSourceOutcomes
-        ?*personalSourceOutcomes:ownedSourceOutcomes;
     CivilizationUtilityDecision best;
     for(const auto& node:world.resourceNodes){
         if(node.id==0
@@ -1342,11 +1340,14 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Gather;
-        // Bounded firsthand preference, never a resource/path permission
-        // or suppression of urgent survival. Lookup does not scan memories.
-        candidate.utility=clampCivilization01(score+
-            sourceOutcomes.find(node.id,std::string("Civilization:Gather:")+
-                materialName(node.material)).utilityAdjustment);
+        // Lived source preference only participates in the resident's
+        // current personal-goal comparison, not global Core gather ranking.
+        const double firsthandBias=usePersonalSourceOutcomes
+            ?personalSourceOutcomes->find(
+                node.id,std::string("Civilization:Gather:")+
+                    materialName(node.material)).utilityAdjustment
+            :0.0;
+        candidate.utility=clampCivilization01(score+firsthandBias);
         candidate.resourceNode=node.id;
         candidate.material=node.material;
         candidate.item=ItemKind::RawMaterial;
