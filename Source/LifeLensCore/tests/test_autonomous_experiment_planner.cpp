@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "lifelens/AutonomousExperimentPlanner.h"
+#include "lifelens/ResidentCivilizationOutcomeLearning.h"
 
 using namespace lifelens;
 
