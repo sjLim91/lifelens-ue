@@ -107,6 +107,21 @@ try {
       ...record, worldSeed: invalidSeed,
     }), /유효하지 않은/, `invalid unsigned Core WorldSeed ${invalidSeed}`);
   }
+  for (const earthOrigin of [
+    { latitudeDeg: 91, longitudeDeg: 0 },
+    { latitudeDeg: -91, longitudeDeg: 0 },
+    { latitudeDeg: 0, longitudeDeg: 181 },
+    { latitudeDeg: 0, longitudeDeg: -181 },
+    { latitudeDeg: Number.NaN, longitudeDeg: 20 },
+    { latitudeDeg: 0, longitudeDeg: Number.POSITIVE_INFINITY },
+  ]) {
+    await assert.rejects(writePersistedWorld({ ...record, earthOrigin }),
+      /유효하지 않은/, 'outside Earth coordinates cannot enter a Core save');
+  }
+  const validEdgeOrigin = { latitudeDeg: -90, longitudeDeg: 180 };
+  assert.doesNotThrow(() => assertCheckpointProgress(null, {
+    ...record, earthOrigin: validEdgeOrigin,
+  }));
   await writePersistedWorld(record);
   assert.deepEqual(await readPersistedWorld(), record);
   const later = { ...record, minute: 1778,
@@ -141,6 +156,14 @@ try {
   const newer = { ...later, minute: later.minute + 1,
     savedAtWallMs: later.savedAtWallMs + 1000 };
   await writePersistedWorld(newer);
+  assert.deepEqual(await readPersistedWorld(), newer);
+  // A later timestamp cannot disguise the very same world's Earth-origin
+  // mutation. A new origin belongs to an explicitly new game.
+  await assert.rejects(writePersistedWorld({
+    ...newer, minute: newer.minute + 1,
+    savedAtWallMs: newer.savedAtWallMs + 1000,
+    earthOrigin: { latitudeDeg: 10, longitudeDeg: 20 },
+  }), /충돌/);
   assert.deepEqual(await readPersistedWorld(), newer);
   // An explicitly different WorldSeed is a new game; leases and multi-tab
   // authority will be handled separately, not faked by this monotonic check.
