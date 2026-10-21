@@ -46,3 +46,5 @@ GitHub `main` is source truth. Core logic changes must pass native Core tests an
 GitHub Pages is the canonical checkable Web preview. AppDeploy is not used for LifeLens Web.
 
 No paid runtime API/cloud dependency is required for the baseline product.
+
+<!-- GitHub write-permission probe: 2026-10-21; no runtime or design changes. -->
