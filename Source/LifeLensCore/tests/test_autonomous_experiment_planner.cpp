@@ -425,7 +425,9 @@ int main()
     auto alternativeNode=reroute.resourceNodes.front();
     alternativeNode.id=std::numeric_limits<ResourceNodeId>::max()-4;
     alternativeNode.quantity=10;
-    reroute.resourceNodes.push_back(alternativeNode);
+    // Limit the receipt to these two actual nodes; unrelated generated
+    // resources cannot exhaust the 8-evidence goal budget in this test.
+    reroute.resourceNodes={reroute.resourceNodes.front(),alternativeNode};
     CivilizationUtilityDecision inaccessible;
     inaccessible.intent=CivilizationIntent::Gather;
     inaccessible.material=alternativeNode.material;
