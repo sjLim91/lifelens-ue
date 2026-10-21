@@ -77,6 +77,22 @@ int main()
     assert(plan.proposedSteps[0].target==0);
     assert(plan.proposedSteps[0].goalPredicateIndex==0);
 
+    // Two individually valid Sleep thresholds do NOT authorize two
+    // unobserved Sleep results in one plan. Core must provide new observed
+    // need state before the resident considers another attempt.
+    auto duplicateSleep=goalFor(request);
+    auto stricterSleep=duplicateSleep.desiredState.front();
+    stricterSleep.threshold=0.10;
+    duplicateSleep.desiredState.push_back(stricterSleep);
+    assert(validateAutonomousGoalCandidate(
+        world,request,duplicateSleep).accepted);
+    const auto noDoubleSleep=draftAutonomousAffordancePlan(
+        world,relationships,request,duplicateSleep);
+    assert(noDoubleSleep.status==AutonomousAffordancePlanStatus::Unsupported);
+    assert(noDoubleSleep.reason==AutonomousAffordanceReason::UnsupportedMetric);
+    assert(noDoubleSleep.proposedSteps.empty());
+    assert(world.characters.front().needs.sleep==0.54);
+
     const auto replay=draftAutonomousAffordancePlan(
         world,relationships,request,goal);
     assert(replay.status==plan.status);
