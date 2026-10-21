@@ -155,6 +155,40 @@ int main()
         agedIndex,removed.id,1541,101,key).available);
 
 
+    // A fresh local Core node contradicts ONLY the claim that an old
+    // witnessed source remains depleted. It never fabricates a successful
+    // harvest, full-map awareness, path clearance or inventory.
+    World reobservedWorld(73144,0,1);
+    reobservedWorld.minute=100;
+    reobservedWorld.characters={removed};
+    reobservedWorld.resourceNodes={
+        {101,MaterialKind::Stone,0,20,true,0,{4,4}},
+    };
+    const auto originalRng=reobservedWorld.rng;
+    const auto hypothesis=describeResidentGatherHypothesis(
+        buildResidentResourceOutcomeIndex(
+            reobservedWorld.characters.front(),100),
+        removed.id,100,101,key);
+    assert(hypothesis.available);
+    assert(reviewResidentGatherHypothesisFromCore(
+        reobservedWorld,reobservedWorld.characters.front(),{4,4},hypothesis)
+        ==ResidentGatherHypothesisRecheck::StillUnconfirmed);
+    reobservedWorld.resourceNodes.front().quantity=20;
+    assert(reviewResidentGatherHypothesisFromCore(
+        reobservedWorld,reobservedWorld.characters.front(),{4,4},hypothesis)
+        ==ResidentGatherHypothesisRecheck::FreshCoreStockContradictsDepletion);
+    assert(reviewResidentGatherHypothesisFromCore(
+        reobservedWorld,reobservedWorld.characters.front(),{40,40},hypothesis)
+        ==ResidentGatherHypothesisRecheck::StillUnconfirmed);
+    assert(reviewResidentGatherHypothesisFromCore(
+        reobservedWorld,reobservedWorld.characters.front(),{4,4},
+        accessThought)==ResidentGatherHypothesisRecheck::StillUnconfirmed);
+    assert(reviewResidentGatherHypothesisFromCore(
+        reobservedWorld,reobservedWorld.characters.front(),{4,4},
+        { })==ResidentGatherHypothesisRecheck::InvalidContext);
+    assert(reobservedWorld.rng==originalRng);
+    assert(reobservedWorld.characters.front().civilization.inventory.stacks().empty());
+
     // The planning-pass index stores only real memory source/action keys.
     // Repeated lookups are read-only and never traverse later-added memory.
     {

@@ -6,6 +6,8 @@
 #include <string>
 
 #include "ResidentResourceOutcomePreference.h"
+#include "ResidentLocalPerception.h"
+#include "CivilizationDecision.h"
 
 namespace lifelens {
 
@@ -89,6 +91,47 @@ inline ResidentGatherHypothesis describeResidentGatherHypothesis(
             return {};
     }
     return h;
+}
+
+
+enum class ResidentGatherHypothesisRecheck {
+    InvalidContext,
+    StillUnconfirmed,
+    FreshCoreStockContradictsDepletion
+};
+
+// Re-observe a resident's OWN location against actual current Core resources.
+// A replenished node refutes the narrow "still depleted" explanation; it
+// does not prove the next gather attempt will succeed, access is open, or the
+// resident acquired a missing tool. Missing from a bounded scan is UNKNOWN,
+// never evidence that the whole world ran out of the material.
+inline ResidentGatherHypothesisRecheck reviewResidentGatherHypothesisFromCore(
+    const World& world,const Character& actor,GridPos actualPosition,
+    const ResidentGatherHypothesis& hypothesis)
+{
+    const auto resident=std::find_if(world.characters.begin(),
+        world.characters.end(),[&](const Character& current){
+            return current.id==actor.id &&current.alive;
+        });
+    if(!hypothesis.available ||!actor.alive ||actor.id==0
+       ||hypothesis.actor!=actor.id
+       ||resident==world.characters.end() ||&*resident!=&actor
+       ||world.minute<hypothesis.evidenceMinute
+       ||world.minute<0 ||hypothesis.resourceNode==0
+       ||static_cast<std::int64_t>(world.minute)-hypothesis.evidenceMinute
+            >ResidentResourceOutcomeHorizonMinutes)
+        return ResidentGatherHypothesisRecheck::InvalidContext;
+    if(hypothesis.cause!=ResidentGatherHypothesisCause::SourceDepletedOrRemoved)
+        return ResidentGatherHypothesisRecheck::StillUnconfirmed;
+    const auto local=observeLocalResourceProximity(
+        world,actor.id,actualPosition);
+    for(const auto& fact:local.nearbyResources){
+        if(fact.nodeId==hypothesis.resourceNode
+           &&hypothesis.actionKey
+               ==std::string("Civilization:Gather:")+materialName(fact.material))
+            return ResidentGatherHypothesisRecheck::FreshCoreStockContradictsDepletion;
+    }
+    return ResidentGatherHypothesisRecheck::StillUnconfirmed;
 }
 
 } // namespace lifelens
