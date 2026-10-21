@@ -1,6 +1,6 @@
 # LifeLens 마스터플랜 86개 개발단위 추적표
 
-> 기준: 2026-10-20 KST. 원본 [자율 인공생명 마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) · 실제 메인/PR/Actions 우선.
+> 기준: 2026-10-21 KST. 원본 [자율 인공생명 마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) · 실제 메인/PR/Actions 우선.
 >
 > 이 표는 **완료 시 반드시 수정하는 단위별 진행 장부**다. 저장만 했거나 PR/테스트가 실행 중인 단위를 완료로 올리지 않는다.
 >
@@ -17,9 +17,9 @@
 
 ## 현재 계획 완료 집계
 
-- 완료: **3/86** (M0-01, M0-02, M6-01). 단순 계획 단위 완료 지표이지 전체 시뮬레이션 구현률이 아니다.
+- 완료: **4/86** (M0-01, M0-02, M0-05, M6-01). 단순 계획 단위 완료 지표이지 전체 시뮬레이션 구현률이 아니다.
 - 검증 완료·병합 검토: **0** (현재 표시 기준).
-- 진행: **21** (M0-03 #790/#820/#824/#836, M0-04 #669/#819/#839, M0-05 #826, M1-01 #822/#828/#832/#887, M1-03 #841, M1-05 #841, M2-01 #844, M2-03 #844, M2-05 #846, M2-06 #846/#894, M2-07 #830/#835/#838/#885, M2-08 #857/#866, M2-04 #879/#882/#883, M2-09 #864/#880/#894, M3-02 #895, M3-03 #893, M6-04 #881/#886, M9-01 #859/#863, M9-02 #884, M11-03 #852/#854, M11-04 #860/#868).
+- 진행: **20** (M0-03 #790/#820/#824/#836, M0-04 #669/#819/#839/#903, M1-01 #822/#828/#832/#887, M1-03 #841, M1-05 #841, M2-01 #844, M2-03 #844, M2-05 #846, M2-06 #846/#894, M2-07 #830/#835/#838/#885, M2-08 #857/#866, M2-04 #879/#882/#883, M2-09 #864/#880/#894, M3-02 #895, M3-03 #893, M6-04 #881/#886, M9-01 #859/#863, M9-02 #884, M11-03 #852/#854, M11-04 #860/#868).
 - 미완 또는 미검증: **62**.
 - **병렬 트랙:** AI 실행·인지 감사(M0-03, M1-01, M2-01), 메모리/장기 감사(M0-04, M11-04), 야생/생태(M0-02, M6-01), 시간 지속성(M9-01/02)은 파일 소유 영역을 분리한다. 실제 기능 구현/테스트 착수 전에는 신규 병렬 트랙을 완료·진행으로 미리 올리지 않는다.
 
@@ -32,8 +32,8 @@
 | [x] | **M0-01** | #816 교역 양측 기억 exact-head·병합·메인 재검증 | ✅ 완료 | [PR #816](https://github.com/sjLim91/lifelens-ue/pull/816) · main e6061967 · Core/WASM/Web/인지 5 CI PASS |
 | [x] | **M0-02** | #814 사냥/식생 소모 코어 PR 충돌·검증 분리 | ✅ 완료 | [PR #814](https://github.com/sjLim91/lifelens-ue/pull/814) · 9 CI PASS · main 22ccf7a1 · Draft 해제 후 병합 |
 | [ ] | **M0-03** | #790 14개 의도 전수 지표: offered→accepted→pending→completed/failed/unsupported | 🚧 진행 | [#820](https://github.com/sjLim91/lifelens-ue/pull/820) 실 Core 실행 토큰 감사 main `04a9a477`; [#824](https://github.com/sjLim91/lifelens-ue/pull/824) 14개 intent offered/accepted/rejected main `eac1f47a`; [#836](https://github.com/sjLim91/lifelens-ue/pull/836) Core validator vs commit 거절 4 CI PASS→main `b30d40d6`. 여러 seed 100/365/1000일 실측 인과/미지원 사유 전체 미완 |
-| [ ] | **M0-04** | #669 메모리 source/tag/byte·중복·부정합 장기 감사 | 🚧 진행 | [#819](https://github.com/sjLim91/lifelens-ue/pull/819) source/actor/action 기억 감사 main `ac1f3b1a`; [#839](https://github.com/sjLim91/lifelens-ue/pull/839) checkpoint delta main `1f3d560d`; [#850](https://github.com/sjLim91/lifelens-ue/pull/850) 다중 seed별 실측 포함/누락 비교 Preflight 유닛 PASS→main `6495ad56`. [#853](https://github.com/sjLim91/lifelens-ue/pull/853) Core 주민·기억 합계 누락 탐지 Preflight PASS→main `d66da8f5`. 실제 여러 seed 100/365/1000일 결과·해석 미완 [PR #874](https://github.com/sjLim91/lifelens-ue/pull/874) 사실 고유 ID 메모리 출처 분류 Core/WASM/Web/Preflight exact-head CI PASS→main `2d74ac54` 병합; [PR #875](https://github.com/sjLim91/lifelens-ue/pull/875) 실제 checkpoint 주민 기억 유형/전언/중복 통계 Preflight·Web CI PASS 후 main `534909b4` 병합. 실측 1000일 결과 최종 판정 미완 |
-| [ ] | **M0-05** | baseline CI·저장 포맷·Ruleset·핵심 회귀 테스트 계약 동결 | 🚧 진행 | [#826](https://github.com/sjLim91/lifelens-ue/pull/826) Preflight/Web Checks PASS→main `8e2aac8b`, pinned 자산 timeout 재시도/원본 hash 검증 보존. 전체 baseline·저장·Ruleset 동결 미완 |
+| [ ] | **M0-04** | #669 메모리 source/tag/byte·중복·부정합 장기 감사 | 🚧 진행 | [#819](https://github.com/sjLim91/lifelens-ue/pull/819) source/actor/action 기억 감사 main `ac1f3b1a`; [#839](https://github.com/sjLim91/lifelens-ue/pull/839) checkpoint delta main `1f3d560d`; [#850](https://github.com/sjLim91/lifelens-ue/pull/850) 다중 seed별 실측 포함/누락 비교 Preflight 유닛 PASS→main `6495ad56`. [#853](https://github.com/sjLim91/lifelens-ue/pull/853) Core 주민·기억 합계 누락 탐지 Preflight PASS→main `d66da8f5`. 실제 여러 seed 100/365/1000일 결과·해석 미완 [PR #874](https://github.com/sjLim91/lifelens-ue/pull/874) 사실 고유 ID 메모리 출처 분류 Core/WASM/Web/Preflight exact-head CI PASS→main `2d74ac54` 병합; [PR #875](https://github.com/sjLim91/lifelens-ue/pull/875) 실제 checkpoint 주민 기억 유형/전언/중복 통계 Preflight·Web CI PASS 후 main `534909b4` 병합. 실측 1000일 결과 최종 판정 미완 | [#903](https://github.com/sjLim91/lifelens-ue/pull/903) 개인 기억 3출처·성공/실패·직접/간접 분류 합계 오류 fail-closed 7종 회귀 Preflight PASS→main `2364fa4e` 병합. 복수 시드 100/365/1000일 최종 원인 분석은 미완
+| [x] | **M0-05** | baseline CI·저장 포맷·Ruleset·핵심 회귀 테스트 계약 동결 | ✅ 완료 | [#826](https://github.com/sjLim91/lifelens-ue/pull/826) Preflight/Web Checks PASS→main `8e2aac8b`, pinned 자산 timeout 재시도/원본 hash 검증 보존. 전체 baseline·저장·Ruleset 동결 미완 | [#902](https://github.com/sjLim91/lifelens-ue/pull/902) 3시드 독립 binary truth·저장/복원 후 240분 결정론·snapshot/ruleset 버전 정적 계약, exact HEAD 9 CI(Core CTest/365일·WASM/Web/Preflight 포함) PASS→main `06121361` 병합. 기준선 확인만 완료; 장기 문명 인과 검증 별도
 
 ### M1 — 지각/기억
 
