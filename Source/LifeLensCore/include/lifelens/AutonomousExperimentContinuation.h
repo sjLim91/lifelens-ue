@@ -81,8 +81,14 @@ inline AutonomousExperimentContinuation reviewAutonomousExperimentContinuation(
         out.status=AutonomousExperimentContinuationStatus::DeadlineExpired;
         return out;
     }
+    // Goal validation binds createdMinute to the CURRENT Core request.
+    // Renew only the context issue minute for this read-only query. The
+    // original goal predicates, target and ABSOLUTE expiration survive;
+    // no silent 24h deadline extension and no stale resident memories.
+    auto reconsideredGoal=goal;
+    reconsideredGoal.createdMinute=world.minute;
     const auto fresh=composeAutonomousExperimentOptions(
-        world,relationships,freshRequest,goal,budget);
+        world,relationships,freshRequest,reconsideredGoal,budget);
     if(fresh.status==AutonomousExperimentStatus::RejectedContext
        ||fresh.status==AutonomousExperimentStatus::RejectedGoal
        ||fresh.status==AutonomousExperimentStatus::InvalidBudget){
