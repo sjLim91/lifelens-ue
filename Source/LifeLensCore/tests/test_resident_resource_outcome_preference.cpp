@@ -76,6 +76,29 @@ int main()
     assert(std::abs(residentResourceOutcomePreference(access,101,key,100).utilityAdjustment)
         <std::abs(depleted.utilityAdjustment));
 
+    // Same-minute firsthand conflict with equal utility is resolved by a
+    // stable reason enum, never by memory/snapshot traversal order.
+    // This is only a tie-break; genuine later Core outcomes still dominate.
+    auto conflicting=empty;
+    record(conflicting,101,100,false,ResidentGatherFailureCause::SourceExhausted);
+    auto accessFailure=empty;
+    record(accessFailure,101,100,false,
+        ResidentGatherFailureCause::ResourceAccessUnavailable);
+    conflicting.memory.add(accessFailure.memory.entries.front());
+    for(auto& episode:conflicting.memory.entries)
+        episode.confidence=0.0;
+    const auto forwardReason=residentResourceOutcomePreference(
+        conflicting,101,key,100).reason;
+    std::reverse(conflicting.memory.entries.begin(),conflicting.memory.entries.end());
+    const auto reverseReason=residentResourceOutcomePreference(
+        conflicting,101,key,100).reason;
+    assert(forwardReason==reverseReason);
+    assert(forwardReason==ResidentResourceOutcomeReason::SourceUnavailable);
+    // A later real success repairs the local conclusion regardless of the
+    // same-minute conflict and never gives another resident the memory.
+    record(conflicting,101,101,true);
+    assert(residentResourceOutcomePreference(conflicting,101,key,101).succeeded);
+
     // Hearsay, inferred proximity signals, future records and model prose
     // cannot become firsthand evidence even if they mention the same node.
     for(int variant=0;variant<7;++variant){
