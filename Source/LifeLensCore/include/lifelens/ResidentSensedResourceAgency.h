@@ -7,6 +7,7 @@
 #include "ResidentUnifiedAgency.h"
 #include "AutonomousGoalComposer.h"
 #include "CoreNavigation.h"
+#include "ResidentPredatorResponse.h"
 
 namespace lifelens {
 
@@ -42,6 +43,12 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
        ||!actor.alive ||!lifeStageProfile(actor.lifeStage).canWork
        ||cognitiveCharacter(world,actor.id)!=&actor
        ||prior.authority!=ResidentAgencyAuthority::EmbodiedFallback)
+        return answer;
+    // A real live Core predator encounter suspends OPTIONAL material
+    // curiosity: the single resident's existing flee/survival lane retains
+    // authority. A hare or an unseen/distant animal grants no such warning.
+    if(world.wildlifeEnabled
+       &&observeResidentPredatorThreat(world,actualPosition).detected)
         return answer;
     // Protect existing social/care/avoidance, bodily work, committed facility
     // projects and all other supported optional actions. Only ordinary
