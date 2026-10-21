@@ -156,6 +156,17 @@ inline AutonomousGoalTruthDelta compareAutonomousGoalCoreTruth(
        ||cognitiveCharacter(observed,goal.actor)==nullptr)
         return result;
 
+    // Core may retain a deceased resident's last hunger, inventory and
+    // relationship values. Those frozen values are NOT evidence of a living
+    // actor reaching a new goal after death. A death during the window is an
+    // interrupted/unverifiable experiment, never a successful goal action.
+    const Character* actorBefore=cognitiveCharacter(baseline,goal.actor);
+    const Character* actorAfter=cognitiveCharacter(observed,goal.actor);
+    if(!actorBefore->alive ||!actorAfter->alive){
+        result.status=AutonomousGoalTruthDeltaStatus::Unverifiable;
+        return result;
+    }
+
     result.satisfiedBefore=true;
     result.satisfiedAfter=true;
     bool improved=false;
