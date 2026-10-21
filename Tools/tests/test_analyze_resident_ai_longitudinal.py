@@ -52,6 +52,64 @@ class TestCoreLongitudinalResidentAudit(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     analyze_series([first, item])
 
+    def test_new_outcome_kind_must_be_visible_without_invented_baseline(self):
+        first = fixture()
+        second = copy.deepcopy(first)
+        second["days"] = 365
+        # New evidence categories can emerge between report versions. A
+        # missing earlier kind is UNKNOWN, not proof that it was zero.
+        for branch_name in ("baseline", "proxy"):
+            branch = second[branch_name]
+            branch["verifiedCoreOutcomes"]["EmergencyShelter"] = {
+                "success": 1, "failure": 0,
+            }
+            for rid, resident in branch["residents"].items():
+                resident["verifiedCoreOutcomes"]["EmergencyShelter"] = {
+                    "success": int(rid == "1"), "failure": 0,
+                }
+        result = analyze_series([first, second])
+        row = result["windows"][0]["residents"]["1"]["proxy"]
+        self.assertEqual(row["verifiedCoreOutcomeDelta"]["EmergencyShelter"], {
+            "comparable": False,
+            "reason": "outcome_kind_missing_from_previous_checkpoint",
+        })
+        self.assertEqual(row["verifiedCoreOutcomeDelta"]["KnowledgeTeaching"]
+                         ["successDelta"], 0)
+
+    def test_new_core_trade_return_and_counter_reversal(self):
+        first = fixture()
+        second = copy.deepcopy(first)
+        second["days"] = 100
+        second["proxy"]["residents"]["1"]["verifiedCoreOutcomes"]["tradeJourneyReturns"] = 1
+        second["proxy"]["verifiedCoreOutcomes"]["tradeJourneyReturns"] = 1
+        result = analyze_series([first, second])
+        self.assertEqual(result["windows"][0]["residents"]["1"]["proxy"]
+                         ["tradeJourneyReturnsDelta"], 1)
+        reverse = copy.deepcopy(second)
+        reverse["days"] = 365
+        reverse["proxy"]["residents"]["1"]["verifiedCoreOutcomes"]["tradeJourneyReturns"] = 0
+        reverse["proxy"]["verifiedCoreOutcomes"]["tradeJourneyReturns"] = 0
+        with self.assertRaisesRegex(ValueError, "nonmonotonic verified Core trade"):
+            analyze_series([first, second, reverse])
+
+    def test_disappearing_core_outcome_kind_rejected(self):
+        first = fixture()
+        second = copy.deepcopy(first)
+        second["days"] = 100
+        for branch_name in ("baseline", "proxy"):
+            branch = second[branch_name]
+            branch["verifiedCoreOutcomes"].pop("KnowledgeTeaching")
+            branch["verifiedCoreOutcomes"]["EmergencyShelter"] = {
+                "success": 0, "failure": 0,
+            }
+            for resident in branch["residents"].values():
+                resident["verifiedCoreOutcomes"].pop("KnowledgeTeaching")
+                resident["verifiedCoreOutcomes"]["EmergencyShelter"] = {
+                    "success": 0, "failure": 0,
+                }
+        with self.assertRaisesRegex(ValueError, "disappeared Core outcome"):
+            analyze_series([first, second])
+
     def test_empty_singleton_and_invalid_policy(self):
         first = fixture()
         with self.assertRaises(ValueError):
