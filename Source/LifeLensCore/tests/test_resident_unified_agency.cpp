@@ -183,6 +183,26 @@ int main()
     assert(continued.authority==ResidentAgencyAuthority::ResidentCognition);
     assert(continued.decision.kind==UnifiedDecisionKind::Social);
     world.minute=480;
+    // The single resident decision slot cannot be bypassed by a malformed
+    // thought that would have been rejected by the accepted journal.
+    thought.contextFingerprint=0;
+    assert(chooseSingleResidentAgencyDecision(
+        world,world.characters.front(),{0,0},relations,baseline,
+        &thought,nullptr,GridPos{1,0},false).authority
+        ==ResidentAgencyAuthority::EmbodiedFallback);
+    thought.contextFingerprint=884;
+    thought.priority=1.01;
+    assert(chooseSingleResidentAgencyDecision(
+        world,world.characters.front(),{0,0},relations,baseline,
+        &thought,nullptr,GridPos{1,0},false).authority
+        ==ResidentAgencyAuthority::EmbodiedFallback);
+    thought.priority=0.85;
+    thought.intent=CognitiveIntentKind::None;
+    assert(chooseSingleResidentAgencyDecision(
+        world,world.characters.front(),{0,0},relations,baseline,
+        &thought,nullptr,GridPos{1,0},false).authority
+        ==ResidentAgencyAuthority::EmbodiedFallback);
+    thought.intent=CognitiveIntentKind::CooperateWithResident;
     thought.actor=100;
     assert(chooseSingleResidentAgencyDecision(
         world,world.characters.front(),{0,0},relations,baseline,
