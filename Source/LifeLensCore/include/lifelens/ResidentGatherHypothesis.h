@@ -109,9 +109,13 @@ inline ResidentGatherHypothesisRecheck reviewResidentGatherHypothesisFromCore(
     const World& world,const Character& actor,GridPos actualPosition,
     const ResidentGatherHypothesis& hypothesis)
 {
+    const auto resident=std::find_if(world.characters.begin(),
+        world.characters.end(),[&](const Character& current){
+            return current.id==actor.id &&current.alive;
+        });
     if(!hypothesis.available ||!actor.alive ||actor.id==0
        ||hypothesis.actor!=actor.id
-       ||cognitiveCharacter(world,actor.id)!=&actor
+       ||resident==world.characters.end() ||&*resident!=&actor
        ||world.minute<hypothesis.evidenceMinute
        ||world.minute<0 ||hypothesis.resourceNode==0
        ||static_cast<std::int64_t>(world.minute)-hypothesis.evidenceMinute
