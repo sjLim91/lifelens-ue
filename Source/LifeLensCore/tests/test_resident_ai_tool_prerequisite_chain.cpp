@@ -23,6 +23,9 @@ static AcceptedCognitiveDecision personalToolGoal()
     decision.minute=480;
     decision.priority=0.91;
     decision.intent=CognitiveIntentKind::CraftUsefulTools;
+    // An accepted strategic thought is bound to its original Core context.
+    // The one-resident decision slot rejects unbound synthetic input.
+    decision.contextFingerprint=0x4466ULL;
     return decision;
 }
 
