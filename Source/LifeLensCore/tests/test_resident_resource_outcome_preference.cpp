@@ -1,4 +1,5 @@
 #include "lifelens/ResidentResourceOutcomePreference.h"
+#include "lifelens/ResidentGatherHypothesis.h"
 #include "lifelens/ResidentCivilizationOutcomeLearning.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
@@ -114,6 +115,45 @@ int main()
     assert(residentResourceOutcomePreference(both,101,key,100).utilityAdjustment==adjustment);
     record(actor,101,101,true);
     assert(residentResourceOutcomePreference(actor,101,key,101).succeeded);
+    // M2-04: observed source/access/container failures must generate
+    // different *hypotheses*, never fabricated Core facts or new actions.
+    const auto sourceIndex=buildResidentResourceOutcomeIndex(removed,100);
+    const auto sourceThought=describeResidentGatherHypothesis(
+        sourceIndex,removed.id,100,101,key);
+    assert(sourceThought.available
+        &&sourceThought.cause==ResidentGatherHypothesisCause::SourceDepletedOrRemoved
+        &&sourceThought.nextEvidence
+            ==ResidentGatherHypothesisNextEvidence::ObserveSourceStockAgain);
+    const auto accessThought=describeResidentGatherHypothesis(
+        buildResidentResourceOutcomeIndex(access,100),access.id,100,101,key);
+    assert(accessThought.cause==ResidentGatherHypothesisCause::RouteOrAccessBlocked);
+    const auto missingVessel=describeResidentGatherHypothesis(
+        buildResidentResourceOutcomeIndex(container,100),container.id,100,101,key);
+    assert(missingVessel.cause
+        ==ResidentGatherHypothesisCause::ContainerPrerequisiteMissing);
+    assert(missingVessel.nextEvidence
+        ==ResidentGatherHypothesisNextEvidence::ObserveContainerAvailability);
+    const auto unknownThought=describeResidentGatherHypothesis(
+        buildResidentResourceOutcomeIndex(unknown,100),unknown.id,100,101,key);
+    assert(unknownThought.cause
+        ==ResidentGatherHypothesisCause::AttemptFailedWithoutKnownCause);
+    const auto recoveredThought=describeResidentGatherHypothesis(
+        buildResidentResourceOutcomeIndex(actor,101),actor.id,101,101,key);
+    assert(recoveredThought.cause
+        ==ResidentGatherHypothesisCause::RecoveredByRealSuccess
+        &&recoveredThought.nextEvidence==ResidentGatherHypothesisNextEvidence::None);
+    assert(!describeResidentGatherHypothesis(
+        sourceIndex,removed.id+1,100,101,key).available);
+    assert(!describeResidentGatherHypothesis(
+        sourceIndex,removed.id,101,101,key).available);
+    assert(!describeResidentGatherHypothesis(
+        sourceIndex,removed.id,100,102,key).available);
+    assert(!describeResidentGatherHypothesis(
+        sourceIndex,removed.id,100,101,"Civilization:Gather:Wood").available);
+    const auto agedIndex=buildResidentResourceOutcomeIndex(removed,1541);
+    assert(!describeResidentGatherHypothesis(
+        agedIndex,removed.id,1541,101,key).available);
+
 
     // The planning-pass index stores only real memory source/action keys.
     // Repeated lookups are read-only and never traverse later-added memory.
