@@ -377,6 +377,46 @@ int main()
     assert(gather.size()==1);
     assert(gather[0].kind==AutonomousAffordanceKind::ExistingCivilizationGather);
     assert(gather[0].resourceNode==localRequest.localResources[0].nodeId);
+    // Actual personal outcomes change only THIS resident's nonbinding
+    // read-only experiment preference; they never conjure a harvested item.
+    assert(realCandidate.alternatives[0].preferenceScore==0.0);
+    CivilizationUtilityDecision observedGather;
+    observedGather.intent=CivilizationIntent::Gather;
+    observedGather.material=gather[0].material;
+    observedGather.resourceNode=gather[0].resourceNode;
+    World learnedGather=world;
+    rememberCivilizationAttemptOutcome(
+        learnedGather.characters.front(),observedGather,world.minute,true);
+    auto learnedRequest=observe(learnedGather,relationships,11);
+    learnedRequest.localProximityObserved=true;
+    learnedRequest.localObserverPosition=localRequest.localObserverPosition;
+    learnedRequest.localRadiusCells=localRequest.localRadiusCells;
+    learnedRequest.localResources=localRequest.localResources;
+    const auto learnedOptions=composeAutonomousExperimentOptions(
+        learnedGather,relationships,learnedRequest,materialGoal);
+    assert(learnedOptions.status==AutonomousExperimentStatus::CandidatesOnly);
+    assert(learnedOptions.alternatives.size()==1);
+    assert(learnedOptions.alternatives[0].preferenceScore
+        >realCandidate.alternatives[0].preferenceScore);
+    World failedGather=world;
+    rememberCivilizationAttemptOutcome(
+        failedGather.characters.front(),observedGather,world.minute,false,
+        ResidentGatherFailureCause::ResourceAccessUnavailable);
+    auto failedRequest=observe(failedGather,relationships,11);
+    failedRequest.localProximityObserved=true;
+    failedRequest.localObserverPosition=localRequest.localObserverPosition;
+    failedRequest.localRadiusCells=localRequest.localRadiusCells;
+    failedRequest.localResources=localRequest.localResources;
+    const auto failedOptions=composeAutonomousExperimentOptions(
+        failedGather,relationships,failedRequest,materialGoal);
+    assert(failedOptions.status==AutonomousExperimentStatus::CandidatesOnly);
+    assert(failedOptions.alternatives.size()==1);
+    assert(failedOptions.alternatives[0].preferenceScore
+        <realCandidate.alternatives[0].preferenceScore);
+    assert(world.rng==initialRng);
+    assert(world.characters.front().memory.entries.empty());
+    assert(learnedGather.resourceNodes.front().quantity
+        ==world.resourceNodes.front().quantity);
     // M2-08: a more distant (but genuinely observed) resource consumes
     // more hypothetical exploration effort and risk budget. No Core action
     // occurs, and small budgets reject the speculative alternative.
