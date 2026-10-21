@@ -58,6 +58,12 @@ function valid(record: unknown): record is PersistedWorld {
       typeof value.earthOrigin === 'object'
       && Number.isFinite(value.earthOrigin?.latitudeDeg)
       && Number.isFinite(value.earthOrigin?.longitudeDeg)
+      // Latitude and longitude are physical Earth coordinates. A finite
+      // value outside the globe must never reach restored Core geography.
+      && (value.earthOrigin?.latitudeDeg ?? 91) >= -90
+      && (value.earthOrigin?.latitudeDeg ?? -91) <= 90
+      && (value.earthOrigin?.longitudeDeg ?? 181) >= -180
+      && (value.earthOrigin?.longitudeDeg ?? -181) <= 180
     ));
 }
 
@@ -94,6 +100,14 @@ export function assertCheckpointProgress(
     throw Error('기존 월드 기록이 손상되어 새 저장본으로 덮어쓰지 않습니다.');
   }
   if (existing.worldSeed !== incoming.worldSeed) return;
+  // One seed and a continuing Core world must not silently change its
+  // geographic origin between checkpoints, even at a later saved minute.
+  // Changing the starting Earth origin requires an explicit new-game seed.
+  if ((existing.earthOrigin === null) !== (incoming.earthOrigin === null)
+      || existing.earthOrigin?.latitudeDeg !== incoming.earthOrigin?.latitudeDeg
+      || existing.earthOrigin?.longitudeDeg !== incoming.earthOrigin?.longitudeDeg) {
+    throw Error('같은 월드의 지구 시작 위치가 달라 체크포인트 충돌을 차단했습니다.');
+  }
   if (incoming.minute < existing.minute
       || incoming.savedAtWallMs < existing.savedAtWallMs) {
     throw Error('더 오래된 월드 체크포인트가 최신 저장본을 덮어쓰지 못하도록 차단했습니다.');
