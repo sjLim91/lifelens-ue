@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstring>
@@ -77,6 +78,25 @@ inline std::uint64_t memoryRecordFingerprint(const MemoryRecord& m)
     return hash;
 }
 
+// Group unique social fact identifiers ONLY for reporting. Preserve each
+// original memory, tags, fingerprint, provenance, and snapshot bytes unchanged.
+inline std::string memoryAttributionCategoryName(const MemoryRecord& memory)
+{
+    if(memory.tags.empty()) return "(untagged)";
+    const auto& first=memory.tags.front();
+    const bool fact=first.size()>5 &&first.compare(0,5,"fact:")==0
+        &&std::all_of(first.begin()+5,first.end(),[](char ch){
+            return ch>='0' &&ch<='9';
+        });
+    if(!fact)return first;
+    switch(memory.source){
+        case MemorySource::DirectWitness:return "social_fact:direct";
+        case MemorySource::ToldByOther:return "social_fact:told";
+        case MemorySource::Inferred:return "social_fact:inferred";
+    }
+    return "social_fact:unknown";
+}
+
 // Read-only checkpoint instrumentation. Text bytes are UTF-8 payload bytes,
 // not a fabricated exact sizeof/vector capacity or full snapshot-size claim.
 // Hash collisions are resolved by complete record comparison.
@@ -99,7 +119,7 @@ inline MemoryAttribution observeMemoryAttribution(
         if(age<0)++out.futureEntries;
         else ++out.ageBuckets[age<1440?0:age<7*1440?1:
                              age<30*1440?2:age<365*1440?3:4];
-        std::string category=m.tags.empty()?"(untagged)":m.tags.front();
+        std::string category=memoryAttributionCategoryName(m);
         if(out.primaryTags.size()>=64 &&out.primaryTags.count(category)==0)
             category="(other tags)";
         auto& group=out.primaryTags[category];
