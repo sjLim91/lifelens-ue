@@ -45,11 +45,16 @@ inline ResidentAgencyChoice chooseSingleResidentAgencyDecision(
        ||requiresDirectCare(actor.lifeStage) ||urgentNeed
        ||newestThought==nullptr) return answer;
     const AcceptedCognitiveDecision& thought=*newestThought;
+    // This is the sole Core decision slot: even if a caller bypasses the
+    // normal accepted-journal gate, an unbound or malformed model thought
+    // cannot obtain physical/social decision authority.
     if(thought.actor!=actor.id || thought.minute<0
        ||thought.minute>world.minute
        ||world.minute-thought.minute>ResidentAgencyGoalHorizonMinutes
+       ||thought.contextFingerprint==0
+       ||thought.intent==CognitiveIntentKind::None
        ||!std::isfinite(thought.priority)
-       ||thought.priority<0.50) return answer;
+       ||thought.priority<0.50 ||thought.priority>1.0) return answer;
 
     const auto select=[&](const UnifiedUtilityDecision& chosen){
         answer.decision=chosen;
