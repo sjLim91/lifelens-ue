@@ -1,0 +1,59 @@
+name: LifeLens Resident AI Actual Core Longitudinal Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/resident-ai-longitudinal.yml'
+      - 'Tools/analyze_resident_ai_longitudinal.py'
+      - 'Tools/analyze_resident_ai_residents.py'
+      - 'Tools/tests/test_analyze_resident_ai_longitudinal.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-personal-longitudinal-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  paired-core-longitudinal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure unchanged Core
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build actual paired Core audit executable
+        run: cmake --build build --target ll_resident_ai_paired_audit --parallel 2
+      - name: Verify resident lineage analysis on synthetic fixtures
+        run: |
+          python3 -m unittest Tools.tests.test_analyze_resident_ai_residents
+          python3 -m unittest Tools.tests.test_analyze_resident_ai_longitudinal
+      - name: Run fixed scripted proxy over real initial 1-day Core truth
+        run: |
+          mkdir -p resident-longitudinal
+          ./build/ll_resident_ai_paired_audit \
+            --seed 4242001 --days 1 --policy original > resident-longitudinal/day1.json
+      - name: Run exact same seed and policy over real 7-day Core truth
+        run: |
+          ./build/ll_resident_ai_paired_audit \
+            --seed 4242001 --days 7 --policy original > resident-longitudinal/day7.json
+      - name: Validate actual resident outcomes and observed time deltas
+        run: |
+          python3 Tools/analyze_resident_ai_residents.py \
+            resident-longitudinal/day1.json --output resident-longitudinal/day1-residents.json
+          python3 Tools/analyze_resident_ai_residents.py \
+            resident-longitudinal/day7.json --output resident-longitudinal/day7-residents.json
+          python3 Tools/analyze_resident_ai_longitudinal.py \
+            resident-longitudinal/day1.json resident-longitudinal/day7.json \
+            --output resident-longitudinal/observed-windows.json
+      - name: Retain true Core reports and derived resident deltas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resident-ai-real-core-1day-7day
+          path: resident-longitudinal/
+          retention-days: 14
+          if-no-files-found: warn

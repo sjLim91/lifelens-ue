@@ -8,7 +8,11 @@ import argparse
 import json
 from pathlib import Path
 
-from Tools.analyze_resident_ai_residents import analyze_paired_residents
+# Allow both direct "python Tools/script.py" and package/module invocation.
+if __package__:
+    from .analyze_resident_ai_residents import analyze_paired_residents
+else:
+    from analyze_resident_ai_residents import analyze_paired_residents
 
 CORE_EVENTS = ("proposalsAttempted", "proposalsAccepted", "proposalsRejected",
                "civilizationPendingStarts", "socialPendingStarts", "otherPendingStarts",

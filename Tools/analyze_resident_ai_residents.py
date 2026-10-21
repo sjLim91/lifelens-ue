@@ -66,7 +66,8 @@ def inspect_branch(data, label):
         ):
             raise ValueError(f"{label}.{resident_id}: proposal lifecycle mismatch")
         observations = entry.get("verifiedCoreOutcomes")
-        if not isinstance(observations, dict) or set(observations) != names:
+        if (not isinstance(observations, dict)
+                or set(observations) != (names | {"tradeJourneyReturns"})):
             raise ValueError(f"{label}.{resident_id}: missing/extra outcome kinds")
         metrics["verifiedCoreOutcomes"] = {}
         for name in sorted(names):
@@ -80,8 +81,8 @@ def inspect_branch(data, label):
             metrics["verifiedCoreOutcomes"][name] = {
                 "success": success, "failure": failure,
             }
-        returned = nonnegative(entry.get("tradeJourneyReturns"),
-                               f"{label}.{resident_id}.tradeJourneyReturns")
+        returned = nonnegative(observations.get("tradeJourneyReturns"),
+                               f"{label}.{resident_id}.verifiedCoreOutcomes.tradeJourneyReturns")
         returns += returned
         metrics["tradeJourneyReturns"] = returned
         normalized[resident_id] = metrics
