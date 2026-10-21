@@ -140,17 +140,31 @@ export async function writePersistedWorld(record: PersistedWorld): Promise<void>
   }
 }
 
+// Only finite, bounded wall-clock math may feed Core catch-up decisions.
+// Browsers can report a rolled-back time, corrupted storage values, or a
+// gigantic clock jump. None should produce NaN/Infinity/fractional ticks.
 export function elapsedOfflineMinutes(savedAtWallMs: number, nowWallMs: number): number {
   if (!Number.isSafeInteger(savedAtWallMs)
     || !Number.isSafeInteger(nowWallMs)
-    || nowWallMs <= savedAtWallMs) return 0;
-  return Math.max(0, Math.floor(
-    (nowWallMs - savedAtWallMs) / REAL_MS_PER_SIMULATION_MINUTE_AT_1X,
-  ));
+    || nowWallMs <= savedAtWallMs
+    || !Number.isFinite(REAL_MS_PER_SIMULATION_MINUTE_AT_1X)
+    || REAL_MS_PER_SIMULATION_MINUTE_AT_1X <= 0) return 0;
+  const elapsed = (nowWallMs - savedAtWallMs) / REAL_MS_PER_SIMULATION_MINUTE_AT_1X;
+  if (!Number.isFinite(elapsed) || elapsed <= 0) return 0;
+  return Math.min(Number.MAX_SAFE_INTEGER, Math.floor(elapsed));
 }
 
 export function wallTimeAfterAdvance(startWallMs: number, minutes: number): number {
-  if (!Number.isSafeInteger(startWallMs) || minutes <= 0) return startWallMs;
-  return Math.floor(startWallMs
-    + minutes * REAL_MS_PER_SIMULATION_MINUTE_AT_1X);
+  if (!Number.isSafeInteger(startWallMs) || startWallMs < 0
+    || !Number.isSafeInteger(minutes) || minutes < 0
+    || !Number.isFinite(REAL_MS_PER_SIMULATION_MINUTE_AT_1X)
+    || REAL_MS_PER_SIMULATION_MINUTE_AT_1X <= 0) {
+    throw Error('월드 시간 복원에 유효하지 않은 Core 분·시계 값이 전달됐습니다.');
+  }
+  if (minutes === 0) return startWallMs;
+  const advanced = startWallMs + minutes * REAL_MS_PER_SIMULATION_MINUTE_AT_1X;
+  if (!Number.isFinite(advanced) || advanced > Number.MAX_SAFE_INTEGER) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+  return Math.max(startWallMs, Math.floor(advanced));
 }

@@ -77,6 +77,22 @@ try {
     'two real minutes are one Core day at the established 1x pace');
   assert.equal(elapsedOfflineMinutes(t0, t0 + 120000 + 500), 1446);
   assert.equal(wallTimeAfterAdvance(t0, 1440), t0 + 120000);
+  assert.equal(elapsedOfflineMinutes(Number.NaN, t0), 0);
+  assert.equal(elapsedOfflineMinutes(t0, Number.POSITIVE_INFINITY), 0);
+  assert.equal(elapsedOfflineMinutes(t0, t0 + 1.5), 0);
+  assert.equal(elapsedOfflineMinutes(t0, t0 + 42), 0,
+    'fractional Core minutes are never rounded up');
+  const hugeOffline = elapsedOfflineMinutes(0, Number.MAX_SAFE_INTEGER);
+  assert(Number.isSafeInteger(hugeOffline) && hugeOffline > 0,
+    'absurd wall-clock jumps cannot escape safe integer Core minutes');
+  assert.equal(wallTimeAfterAdvance(t0, 0), t0);
+  assert.equal(wallTimeAfterAdvance(Number.MAX_SAFE_INTEGER - 5, 1440),
+    Number.MAX_SAFE_INTEGER, 'overflowing wall time saturates at a safe timestamp');
+  assert.throws(() => wallTimeAfterAdvance(t0, Number.NaN), /유효하지 않은/);
+  assert.throws(() => wallTimeAfterAdvance(t0, Number.POSITIVE_INFINITY), /유효하지 않은/);
+  assert.throws(() => wallTimeAfterAdvance(t0, -1), /유효하지 않은/);
+  assert.throws(() => wallTimeAfterAdvance(t0, 0.5), /유효하지 않은/);
+  assert.throws(() => wallTimeAfterAdvance(Number.NaN, 100), /유효하지 않은/);
 
   const record = {
     key: 'active-world', schemaVersion: 1, worldSeed: '18446744073709551615',
