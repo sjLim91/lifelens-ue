@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cassert>
+#include <climits>
 #include <string>
 #include <vector>
 
@@ -41,6 +42,18 @@ static const Character& residentById(const Simulation& simulation,CharacterId id
 
 int main()
 {
+    GridPos boundary{};
+    assert(!checkedResidentEscapeNeighbor(
+        {INT_MAX,0},{1,0},boundary));
+    assert(!checkedResidentEscapeNeighbor(
+        {INT_MIN,0},{-1,0},boundary));
+    assert(!checkedResidentEscapeNeighbor(
+        {0,INT_MAX},{0,1},boundary));
+    assert(!checkedResidentEscapeNeighbor(
+        {0,INT_MIN},{0,-1},boundary));
+    assert(checkedResidentEscapeNeighbor(
+        {INT_MAX-1,INT_MIN+1},{1,-1},boundary));
+    assert(boundary.x==INT_MAX &&boundary.y==INT_MIN);
     // The observer needs an actual live predator in the same local region,
     // not a decorative tiger mesh or an inferred/witnessed rumour.
     Simulation sim(77,0,4),replay(77,0,4);

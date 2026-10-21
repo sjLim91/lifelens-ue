@@ -87,6 +87,22 @@ inline std::int64_t nearestResidentPredatorDistance(
     return distance;
 }
 
+// GridPos uses signed 32-bit coordinates even on Earth-like extreme
+// regions. Never let a cardinal escape proposal wrap an int boundary and
+// "teleport" a resident while responding to an actual predator.
+inline bool checkedResidentEscapeNeighbor(
+    GridPos from,GridPos direction,GridPos& candidate)
+{
+    const auto x=static_cast<std::int64_t>(from.x)+direction.x;
+    const auto y=static_cast<std::int64_t>(from.y)+direction.y;
+    if(x<std::numeric_limits<std::int32_t>::min()
+       ||x>std::numeric_limits<std::int32_t>::max()
+       ||y<std::numeric_limits<std::int32_t>::min()
+       ||y>std::numeric_limits<std::int32_t>::max()) return false;
+    candidate={static_cast<std::int32_t>(x),static_cast<std::int32_t>(y)};
+    return true;
+}
+
 // Propose one physically traversable cardinal step. The Simulation must
 // still move through advanceNavigation (terrain/weather/health speed checks).
 // Choose a step that *strictly* increases clearance from the nearest local
@@ -104,10 +120,9 @@ inline bool chooseResidentPredatorEscapeStep(
     // Fixed deterministic order for ties.
     constexpr std::array<GridPos,4> steps={{{1,0},{0,1},{-1,0},{0,-1}}};
     for(const GridPos direction:steps){
-        const GridPos candidate{
-            resident.x+direction.x,resident.y+direction.y
-        };
-        if(!coreGroundTraversable(world,candidate)) continue;
+        GridPos candidate{};
+        if(!checkedResidentEscapeNeighbor(resident,direction,candidate)
+           ||!coreGroundTraversable(world,candidate)) continue;
         const auto clearance=nearestResidentPredatorDistance(world,candidate);
         if(clearance<=current) continue;
         const double cost=coreGroundTraversalCost(world,resident,candidate);
