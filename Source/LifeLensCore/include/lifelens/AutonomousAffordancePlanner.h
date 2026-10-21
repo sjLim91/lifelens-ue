@@ -9,6 +9,7 @@
 #include "AutonomousGoalComposer.h"
 #include "CognitiveDecisionJournal.h"
 #include "SocialUtility.h"
+#include "ResidentResourceOutcomePreference.h"
 #include "UtilityAI.h"
 
 namespace lifelens {
@@ -261,6 +262,7 @@ inline AutonomousAffordancePlan draftAutonomousAffordancePlan(
                 if(!request.localProximityObserved)
                     return fail(AutonomousAffordancePlanStatus::Unsupported,
                                 AutonomousAffordanceReason::UnsupportedMetric);
+                const auto outcomes=buildResidentResourceOutcomeIndex(*actor,world.minute);
                 const ObservedLocalResource* matching=nullptr;
                 for(const auto& evidence:goal.evidence){
                     if(evidence.kind
@@ -273,6 +275,16 @@ inline AutonomousAffordancePlan draftAutonomousAffordancePlan(
                        ||perceptionGridDistance(
                            request.localObserverPosition,hint.position)
                             >request.localRadiusCells)
+                        continue;
+                    // Personal, firsthand access failures make THIS optional
+                    // plan try another actually observed resource. A current
+                    // stocked node may refute a previous depletion instead.
+                    const auto history=outcomes.find(
+                        hint.nodeId,std::string("Civilization:Gather:")
+                            +materialName(hint.material));
+                    if(history.hasEvidence &&!history.succeeded
+                       &&history.reason
+                           ==ResidentResourceOutcomeReason::AccessUnavailable)
                         continue;
                     const auto node=std::find_if(world.resourceNodes.begin(),
                         world.resourceNodes.end(),[&](const ResourceNode& n){

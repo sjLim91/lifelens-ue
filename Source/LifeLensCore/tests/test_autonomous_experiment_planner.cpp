@@ -410,14 +410,59 @@ int main()
     failedRequest.localResources=localRequest.localResources;
     const auto failedOptions=composeAutonomousExperimentOptions(
         failedGather,relationships,failedRequest,materialGoal);
-    assert(failedOptions.status==AutonomousExperimentStatus::CandidatesOnly);
-    assert(failedOptions.alternatives.size()==1);
-    assert(failedOptions.alternatives[0].preferenceScore
-        <realCandidate.alternatives[0].preferenceScore);
+    // The firsthand access failure excludes the sole physical source.
+    // No fallback may be fabricated; a separate observed source is tested
+    // below. An offered plan is not a guaranteed executable action.
+    assert(failedOptions.status==AutonomousExperimentStatus::NoSafeCandidate);
+    assert(failedOptions.alternatives.empty());
     assert(world.rng==initialRng);
     assert(world.characters.front().memory.entries.empty());
     assert(learnedGather.resourceNodes.front().quantity
         ==world.resourceNodes.front().quantity);
+    // Another physically present Core source is chosen when this actor
+    // experienced a true ACCESS failure at the closest resource.
+    World reroute=world;
+    auto alternativeNode=reroute.resourceNodes.front();
+    alternativeNode.id=std::numeric_limits<ResourceNodeId>::max()-4;
+    alternativeNode.quantity=10;
+    // Limit the receipt to these two actual nodes; unrelated generated
+    // resources cannot exhaust the 8-evidence goal budget in this test.
+    reroute.resourceNodes={reroute.resourceNodes.front(),alternativeNode};
+    CivilizationUtilityDecision inaccessible;
+    inaccessible.intent=CivilizationIntent::Gather;
+    inaccessible.material=alternativeNode.material;
+    inaccessible.resourceNode=reroute.resourceNodes.front().id;
+    rememberCivilizationAttemptOutcome(
+        reroute.characters.front(),inaccessible,reroute.minute,false,
+        ResidentGatherFailureCause::ResourceAccessUnavailable);
+    auto rerouteRequest=observe(reroute,relationships,11);
+    const auto rerouteSensed=observeLocalResourceProximity(
+        reroute,11,reroute.resourceNodes.front().pos,3);
+    assert(rerouteSensed.nearbyResources.size()>=2);
+    rerouteRequest.localProximityObserved=true;
+    rerouteRequest.localObserverPosition=rerouteSensed.observerPosition;
+    rerouteRequest.localRadiusCells=rerouteSensed.radiusCells;
+    rerouteRequest.localResources=rerouteSensed.nearbyResources;
+    auto rerouteGoal=materialGoal;
+    rerouteGoal.evidence.clear();
+    for(std::size_t i=0;i<rerouteRequest.localResources.size();++i)
+        if(rerouteRequest.localResources[i].material
+            ==rerouteGoal.desiredState.front().material)
+            rerouteGoal.evidence.push_back({
+                AutonomousGoalEvidenceKind::ObservedLocalResource,i});
+    assert(validateAutonomousGoalCandidate(
+        reroute,rerouteRequest,rerouteGoal).accepted);
+    const auto rerouted=draftAutonomousAffordancePlan(
+        reroute,relationships,rerouteRequest,rerouteGoal);
+    assert(rerouted.status==AutonomousAffordancePlanStatus::CandidateOnly);
+    assert(rerouted.proposedSteps.size()==1);
+    assert(rerouted.proposedSteps.front().resourceNode==alternativeNode.id);
+    assert(reroute.resourceNodes.front().quantity
+        ==world.resourceNodes.front().quantity);
+    assert(reroute.resourceNodes.back().quantity==10);
+    assert(reroute.characters[1].memory.entries.empty());
+    assert(reroute.rng==initialRng);
+
     // M2-08: a more distant (but genuinely observed) resource consumes
     // more hypothetical exploration effort and risk budget. No Core action
     // occurs, and small budgets reject the speculative alternative.
