@@ -1,6 +1,7 @@
 #include <cassert>
 #include <climits>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #include "lifelens/ResidentLocalPerception.h"
@@ -52,6 +53,21 @@ int main()
     for(const auto& entry:seen.nearbyResources)
         assert(entry.nodeId!=12 &&entry.nodeId!=13 &&entry.nodeId!=14
                &&entry.nodeId!=15);
+    // A large caller-supplied maxFacts must never reveal the full local
+    // World list, despite genuine live nodes at the same nearby cell.
+    World crowded=world;
+    for(ResourceNodeId id=100;id<125;++id)
+        crowded.resourceNodes.push_back(
+            makeNode(id,MaterialKind::Stone,{0,0},4));
+    const auto oversized=observeLocalResourceProximity(
+        crowded,10,{0,0},ResidentLocalPerceptionMaxRadius,
+        std::numeric_limits<std::size_t>::max());
+    assert(oversized.nearbyResources.size()==ResidentLocalPerceptionMaxFacts);
+    for(std::size_t i=0;i<oversized.nearbyResources.size();++i){
+        assert(oversized.nearbyResources[i].nodeId==100+i);
+        assert(oversized.nearbyResources[i].distanceCells==0);
+    }
+    assert(crowded.resourceNodes.size()==world.resourceNodes.size()+25);
     const auto replay=observeLocalResourceProximity(world,10,{0,0},3);
     assert(replay.nearbyResources.size()==seen.nearbyResources.size());
     for(std::size_t i=0;i<seen.nearbyResources.size();++i)
