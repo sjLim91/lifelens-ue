@@ -48,9 +48,14 @@ inline std::size_t rememberResidentSensedLocalResources(
             seenInThisScan.insert(memory.tags[1]);
     }
     for(const auto& source:view.nearbyResources){
+        // The claimed scan distance must agree with the recorded observer
+        // and node positions. Never learn a remote resource from a forged
+        // short distance in an otherwise well-formed perception DTO.
         if(source.nodeId==0 ||source.material==MaterialKind::Unknown
            ||source.distanceCells<0
-           ||source.distanceCells>view.radiusCells) continue;
+           ||source.distanceCells>view.radiusCells
+           ||perceptionGridDistance(view.observerPosition,source.position)
+               !=source.distanceCells) continue;
         const std::string nodeTag="node:"+std::to_string(source.nodeId);
         const std::string kindTag="material:"
             +std::to_string(static_cast<int>(source.material));
