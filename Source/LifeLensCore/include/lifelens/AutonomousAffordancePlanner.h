@@ -183,6 +183,19 @@ inline AutonomousAffordancePlan draftAutonomousAffordancePlan(
                 if(physical==Goal::Idle ||!actionAvailableFor(world,*actor,physical))
                     return fail(AutonomousAffordancePlanStatus::Blocked,
                                 AutonomousAffordanceReason::MissingProvision);
+                // Several thresholds for the SAME need are conjunctive
+                // predicates, not proof that two completed Eat/Sleep/etc.
+                // actions should be scheduled blindly in one plan. Recheck
+                // Core truth after each real action instead of duplicating
+                // a physical step without a verified intervening result.
+                if(std::any_of(plan.proposedSteps.begin(),
+                        plan.proposedSteps.end(),[&](const auto& previous){
+                            return previous.kind
+                                ==AutonomousAffordanceKind::ExistingPhysicalGoal
+                                &&previous.physicalGoal==physical;
+                        }))
+                    return fail(AutonomousAffordancePlanStatus::Unsupported,
+                                AutonomousAffordanceReason::UnsupportedMetric);
                 plan.proposedSteps.push_back({
                     AutonomousAffordanceKind::ExistingPhysicalGoal,
                     physical,SocialIntent::None,0,i
