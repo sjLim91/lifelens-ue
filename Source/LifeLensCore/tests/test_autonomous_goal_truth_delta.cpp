@@ -86,6 +86,23 @@ int main()
         before,beforeRelations,observed,observedRelations,sleep)
         .status==Status::Regressed);
 
+    // A dead actor cannot have completed a living resident's plan merely
+    // because its last need/inventory values happen to cross a threshold.
+    auto deceasedActor=before;
+    deceasedActor.minute=480;
+    deceasedActor.characters.front().alive=false;
+    deceasedActor.characters.front().needs.hunger=0.05;
+    const auto afterDeathWithoutExecution=compareAutonomousGoalCoreTruth(
+        before,beforeRelations,deceasedActor,beforeRelations,hunger);
+    assert(afterDeathWithoutExecution.status==Status::Unverifiable);
+    assert(!afterDeathWithoutExecution.satisfiedAfter);
+    assert(afterDeathWithoutExecution.predicates.empty());
+    auto deceasedBaseline=before;
+    deceasedBaseline.characters.front().alive=false;
+    assert(compareAutonomousGoalCoreTruth(
+        deceasedBaseline,beforeRelations,before,beforeRelations,hunger)
+        .status==Status::Unverifiable);
+
     // Inventories are read, never awarded, by the evaluator.
     before.characters[0].civilization.inventory.add(
         {ItemKind::RawMaterial,MaterialKind::Wood,2,0.5,1.0});
