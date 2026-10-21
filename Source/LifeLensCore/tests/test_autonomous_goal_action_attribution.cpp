@@ -94,6 +94,53 @@ int main()
         learner,link,5001,112,Verdict::AchievedDuringExecution));
     CHECK(learner.memory.entries.size()==1);
     CHECK(hasGoalFeedback(learner,22,"achieved-during-action"));
+    // M3-03: malicious/secondhand text with familiar action-feedback tags
+    // must not be overwritten or promoted to a direct Core witness.
+    Character provenanceActor;
+    provenanceActor.id=11;
+    MemoryRecord rumor;
+    rumor.who=22;
+    rumor.sourceCharacter=33;
+    rumor.source=MemorySource::ToldByOther;
+    rumor.witnessed=false;
+    rumor.minute=108;
+    rumor.what="unverified-secondhand-account";
+    rumor.tags={"goal_action_feedback","self_trust","Approach"};
+    provenanceActor.memory.add(rumor);
+    CHECK(rememberAutonomousGoalActionOutcome(
+        provenanceActor,link,5001,110,Verdict::ProgressButNotAchieved));
+    CHECK(provenanceActor.memory.entries.size()==2);
+    CHECK(provenanceActor.memory.entries.front().what
+          =="unverified-secondhand-account");
+    CHECK(provenanceActor.memory.entries.front().source
+          ==MemorySource::ToldByOther);
+    CHECK(provenanceActor.memory.entries.front().sourceCharacter==33);
+    CHECK(!provenanceActor.memory.entries.front().witnessed);
+    const auto& firsthand=provenanceActor.memory.entries.back();
+    CHECK(firsthand.source==MemorySource::DirectWitness);
+    CHECK(firsthand.sourceCharacter==11 &&firsthand.witnessed);
+    CHECK(firsthand.what=="progress-but-not-achieved");
+    CHECK(rememberAutonomousGoalActionOutcome(
+        provenanceActor,link,5001,111,Verdict::AchievedDuringExecution));
+    CHECK(provenanceActor.memory.entries.size()==2);
+    CHECK(provenanceActor.memory.entries.front().what
+          =="unverified-secondhand-account");
+    CHECK(provenanceActor.memory.entries.back().what
+          =="achieved-during-action");
+
+    // A future-dated Core-looking record cannot be rewritten by an older
+    // execution receipt, even if all provenance fields otherwise match.
+    Character futureActor;
+    futureActor.id=11;
+    MemoryRecord futureRecord=firsthand;
+    futureRecord.minute=200;
+    futureActor.memory.add(futureRecord);
+    CHECK(rememberAutonomousGoalActionOutcome(
+        futureActor,link,5001,120,Verdict::NotAchievedNoProgress));
+    CHECK(futureActor.memory.entries.size()==2);
+    CHECK(futureActor.memory.entries.front().minute==200);
+    CHECK(futureActor.memory.entries.back().minute==120);
+
     Character independent;
     independent.id=33;
     CHECK(learnedAutonomousGoalProgressDisposition(
