@@ -137,6 +137,52 @@ class TestMemoryCheckpointAnalysis(unittest.TestCase):
                              ["checkpoint_reconciliation"],
                              "summary_fields_missing")
 
+    def test_resident_memory_partitions_fail_closed(self):
+        # The Core snapshot total alone cannot detect corrupt attribution
+        # buckets: the three sources and two action partitions must agree.
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "audit.jsonl"
+            base = resident(100, 4, 2)
+
+            def altered(change):
+                item = json.loads(json.dumps(base))
+                change(item["memory_attribution"])
+                return item
+
+            cases = [
+                ("source partition", lambda a: a.update(direct_witness_entries=3),
+                 "memory source partition mismatch"),
+                ("witness claim", lambda a: a.update(witnessed_direct_entries=5),
+                 "witnessed direct exceeds source count"),
+                ("duplicate overflow", lambda a: a.update(exact_duplicate_entries=5),
+                 "exact duplicates exceed memory entries"),
+                ("action outcome", lambda a: a["action_experiences_by_key"]
+                 ["CoreContext:Trade"].update(successful=0),
+                 "action status partition mismatch"),
+                ("action provenance", lambda a: a["action_experiences_by_key"]
+                 ["CoreContext:Trade"].update(indirect_or_unverified=2),
+                 "action provenance partition mismatch"),
+                ("bad action map", lambda a: a.update(action_experiences_by_key=[]),
+                 "malformed action memory map"),
+                ("action overflow", lambda a: a["action_experiences_by_key"].update({
+                     "Other:Work": {"entries": 3, "successful": 3, "failed": 0,
+                                    "witnessed_direct": 3,
+                                    "indirect_or_unverified": 0,
+                                    "utf8_text_bytes": 30}}),
+                 "action entries exceed memory total"),
+            ]
+            for name, mutate, message in cases:
+                with self.subTest(name=name):
+                    write_rows(path, [checkpoint(100, 1000), altered(mutate)])
+                    with self.assertRaisesRegex(ValueError, message):
+                        analyze_file(path)
+            # Legitimate read-only reports still preserve measured totals.
+            write_rows(path, [checkpoint(100, 1000), base])
+            point = analyze_file(path)["checkpoints"][0]
+            self.assertEqual(point["sources"]["direct_witness_entries"], 4)
+            self.assertEqual(point["action_experiences_by_key"]
+                             ["CoreContext:Trade"]["entries"], 2)
+
     def test_missing_real_snapshot_never_accepted(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "audit.jsonl"

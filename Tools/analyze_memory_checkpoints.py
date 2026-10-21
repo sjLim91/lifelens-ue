@@ -82,11 +82,35 @@ def analyze_file(path: Path) -> dict[str, Any]:
                 total[key] += _nonnegative(attribution.get(key), key)
             for key in SOURCE_KEYS:
                 sources[key] += _nonnegative(attribution.get(key), key)
-            for key, value in attribution.get("action_experiences_by_key", {}).items():
-                if not isinstance(value, dict):
+            # Core has exactly three MemorySource values. A loss of one
+            # source bucket must not masquerade as successful attribution.
+            if sum(attribution[key] for key in SOURCE_KEYS) != attribution["entries"]:
+                raise ValueError(f"{path}: day {day} resident memory source partition mismatch")
+            if attribution["witnessed_direct_entries"] > attribution["direct_witness_entries"]:
+                raise ValueError(f"{path}: day {day} witnessed direct exceeds source count")
+            if attribution["exact_duplicate_entries"] > attribution["entries"]:
+                raise ValueError(f"{path}: day {day} exact duplicates exceed memory entries")
+            action_memories = attribution.get("action_experiences_by_key", {})
+            if not isinstance(action_memories, dict):
+                raise ValueError(f"{path}: day {day} malformed action memory map")
+            action_entries = 0
+            for key, value in action_memories.items():
+                if not isinstance(key, str) or not key or not isinstance(value, dict):
                     raise ValueError(f"{path}: bad action memory entry")
-                for metric in per_action[key]:
-                    per_action[key][metric] += _nonnegative(value.get(metric), metric)
+                metrics = {metric: _nonnegative(value.get(metric), metric)
+                           for metric in per_action[key]}
+                if metrics["successful"] + metrics["failed"] != metrics["entries"]:
+                    raise ValueError(f"{path}: day {day} action status partition mismatch")
+                if (metrics["witnessed_direct"] +
+                        metrics["indirect_or_unverified"] != metrics["entries"]):
+                    raise ValueError(f"{path}: day {day} action provenance partition mismatch")
+                action_entries += metrics["entries"]
+                for metric, count in metrics.items():
+                    per_action[key][metric] += count
+            # One memory has at most one action-experience key. The full
+            # memory total is Core truth, not a sum fabricated by this audit.
+            if action_entries > attribution["entries"]:
+                raise ValueError(f"{path}: day {day} action entries exceed memory total")
         # The authoritative Core audit writes a checkpoint summary before
         # all residents of that day. A truncated JSONL may look convincing if
         # we only total whichever resident records survived the truncation.
