@@ -99,6 +99,14 @@ try {
     minute: 338, savedAtWallMs: t0, earthOrigin: null,
     snapshotBase64: 'QUJDREVGR0hJSktMTU5PUA==',
   };
+  for (const invalidSeed of [
+    '0', '00', '00042', '', '-1', '1.0', 'abc', '18446744073709551616',
+    '999999999999999999999999999999999',
+  ]) {
+    await assert.rejects(writePersistedWorld({
+      ...record, worldSeed: invalidSeed,
+    }), /유효하지 않은/, `invalid unsigned Core WorldSeed ${invalidSeed}`);
+  }
   await writePersistedWorld(record);
   assert.deepEqual(await readPersistedWorld(), record);
   const later = { ...record, minute: 1778,
@@ -140,6 +148,14 @@ try {
     { ...newer, worldSeed: '44', minute: 0 }));
 
   await assert.rejects(writePersistedWorld({ ...later, minute: -1 }), /유효하지 않은/);
+  persistent.set('active-world', {
+    ...later, worldSeed: '18446744073709551616',
+  });
+  await assert.rejects(readPersistedWorld(), /손상/);
+  await assert.rejects(writePersistedWorld({
+    ...later, minute: later.minute + 1,
+    savedAtWallMs: later.savedAtWallMs + 1000,
+  }), /손상/, 'do not overwrite corrupt WorldSeed with a fresh receipt');
   persistent.set('active-world', { ...later, snapshotBase64: '' });
   await assert.rejects(readPersistedWorld(), /손상/);
   assert.equal(persistent.get('active-world').minute, 1778,
