@@ -66,6 +66,27 @@ int main()
     assert(world.rng==rng &&world.minute==480);
     assert(!*autonomousGoalSatisfiedByTruth(world,relationships,*selected.personalGoal));
 
+    // Production resident-goal choice must re-evaluate firsthand evidence
+    // against the LIVE source, not permanently obey a stale depletion belief.
+    World revivedWorld=world;
+    auto& revivedActor=revivedWorld.characters[0];
+    rememberCivilizationAttemptOutcome(
+        revivedActor,selected.agency.decision.civilization,480,false,
+        ResidentGatherFailureCause::SourceExhausted);
+    const auto depletion=buildResidentResourceOutcomeIndex(revivedActor,480);
+    assert(depletion.find(101,"Civilization:Gather:Stone").reason
+        ==ResidentResourceOutcomeReason::SourceUnavailable);
+    const auto revived=chooseResidentSensedResourceGoal(
+        revivedWorld,revivedActor,position,relationships,fallback,nullptr,false);
+    assert(revived.personalGoal);
+    assert(revived.agency.decision.civilization.resourceNode==101);
+    assert(revivedWorld.resourceNodes.front().quantity==12);
+    // No other resident imports this direct failure, and no world transition
+    // or phantom Gather success is manufactured by cognition.
+    assert(revivedWorld.characters[1].memory.entries.empty());
+    assert(revivedWorld.characters[0].civilization.inventory.stacks().empty());
+    assert(revivedWorld.rng==rng &&revivedWorld.minute==480);
+
     // A real scarcity Explore with slightly stronger intrinsic utility must
     // not be displaced by the personal resource curiosity bonus alone.
     auto shortageExplore=fallback;

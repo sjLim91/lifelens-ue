@@ -8,6 +8,7 @@
 #include "AutonomousGoalComposer.h"
 #include "CoreNavigation.h"
 #include "ResidentPredatorResponse.h"
+#include "ResidentGatherHypothesis.h"
 
 namespace lifelens {
 
@@ -126,9 +127,23 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
             const auto history=sourceOutcomes.find(
                 candidate.resourceNode,
                 std::string("Civilization:Gather:")+materialName(candidate.material));
+            // Recent first-hand depletion is a hypothesis, not permanent
+            // world truth. A CURRENT, same-resident, local Core observation of
+            // stock at this exact node refutes "still depleted" and may reopen
+            // that OPTIONAL goal; access failures remain blocked until a real
+            // successful retry or the existing memory horizon expires.
+            const auto hypothesis=describeResidentGatherHypothesis(
+                sourceOutcomes,actor.id,world.minute,candidate.resourceNode,
+                std::string("Civilization:Gather:")+materialName(candidate.material));
+            const bool replenished=history.reason
+                ==ResidentResourceOutcomeReason::SourceUnavailable
+                &&reviewResidentGatherHypothesisFromCore(
+                    world,actor,actualPosition,hypothesis)
+                    ==ResidentGatherHypothesisRecheck::FreshCoreStockContradictsDepletion;
             if(history.hasEvidence &&!history.succeeded
-               &&(history.reason==ResidentResourceOutcomeReason::SourceUnavailable
-                   ||history.reason==ResidentResourceOutcomeReason::AccessUnavailable)){
+               &&(history.reason==ResidentResourceOutcomeReason::AccessUnavailable
+                  ||(history.reason==ResidentResourceOutcomeReason::SourceUnavailable
+                     &&!replenished))){
                 excluded.push_back(candidate.resourceNode);
                 continue;
             }
