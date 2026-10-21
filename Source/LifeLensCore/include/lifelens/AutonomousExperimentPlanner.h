@@ -5,9 +5,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <string>
 
 #include "AutonomousAffordancePlanner.h"
 #include "AutonomousSocialOutcomeLearning.h"
+#include "ResidentResourceOutcomePreference.h"
 
 namespace lifelens {
 
@@ -165,6 +167,12 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
         return result;
     }
 
+    // Directly observed, same-resident Core Gather successes and failures
+    // may inform candidate ranking (never the physical permission/result).
+    // Build this ephemeral index ONCE per comparison, not for each source.
+    const auto sourceOutcomes=buildResidentResourceOutcomeIndex(
+        *actor,world.minute);
+
     // Branch only on ACTUALLY supported social methods (Approach/Repair).
     // Every other proposed physical action remains unchanged; there is no
     // fictitious construction/gathering/location or invented technology.
@@ -208,7 +216,7 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
         AutonomousExperimentAlternative option;
         option.steps=std::move(steps);
         double totalUtility=0.0;
-        std::size_t socialSteps=0;
+        std::size_t scoredSteps=0;
         bool valid=true;
         for(const auto& step:option.steps){
             option.effortUnits+=autonomousExperimentEffort(step);
@@ -243,7 +251,7 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
                 const double personalPreference=std::clamp(
                     utility*(1.0+0.25*personalMood),0.0,1.0);
                 totalUtility+=personalPreference;
-                ++socialSteps;
+                ++scoredSteps;
             }else if(step.kind
                 ==AutonomousAffordanceKind::ExistingCivilizationGather){
                 // Candidate-only budget accounting must use THIS thought's
@@ -284,6 +292,14 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
                     valid=false;
                     break;
                 }
+                // A firsthand Core outcome at THIS exact source/material
+                // changes the resident's personal preference, not world
+                // availability or the likelihood of a future harvest.
+                totalUtility+=sourceOutcomes.find(
+                    step.resourceNode,
+                    std::string("Civilization:Gather:")+
+                        materialName(step.material)).utilityAdjustment;
+                ++scoredSteps;
             }else{
                 valid=false;
                 break;
@@ -292,8 +308,8 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
         if(!valid ||option.effortUnits>budget.maxEffortUnits
            ||option.riskProxy>budget.maxRiskProxy+1e-12)
             continue;
-        option.preferenceScore=socialSteps==0
-            ?0.0:totalUtility/static_cast<double>(socialSteps);
+        option.preferenceScore=scoredSteps==0
+            ?0.0:totalUtility/static_cast<double>(scoredSteps);
         bool duplicate=false;
         for(const auto& prior:result.alternatives){
             if(identicalAutonomousExperimentSteps(
