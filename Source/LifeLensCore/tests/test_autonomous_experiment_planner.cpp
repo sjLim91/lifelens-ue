@@ -5,7 +5,6 @@
 
 #include "lifelens/AutonomousExperimentPlanner.h"
 #include "lifelens/ResidentCivilizationOutcomeLearning.h"
-#include "lifelens/ResidentCivilizationOutcomeLearning.h"
 
 using namespace lifelens;
 
@@ -411,10 +410,11 @@ int main()
     failedRequest.localResources=localRequest.localResources;
     const auto failedOptions=composeAutonomousExperimentOptions(
         failedGather,relationships,failedRequest,materialGoal);
-    assert(failedOptions.status==AutonomousExperimentStatus::CandidatesOnly);
-    assert(failedOptions.alternatives.size()==1);
-    assert(failedOptions.alternatives[0].preferenceScore
-        <realCandidate.alternatives[0].preferenceScore);
+    // The firsthand access failure excludes the sole physical source.
+    // No fallback may be fabricated; a separate observed source is tested
+    // below. An offered plan is not a guaranteed executable action.
+    assert(failedOptions.status==AutonomousExperimentStatus::NoSafeCandidate);
+    assert(failedOptions.alternatives.empty());
     assert(world.rng==initialRng);
     assert(world.characters.front().memory.entries.empty());
     assert(learnedGather.resourceNodes.front().quantity
