@@ -366,6 +366,22 @@ inline AutonomousExperimentRevalidation revalidateAutonomousExperimentChoice(
        ||issued.contextFingerprint==0
        ||issued.contextFingerprint!=cognitiveRequestFingerprint(currentRequest))
         return AutonomousExperimentRevalidation::StaleContext;
+    // The selected plan must be an exact member of the ORIGINAL Core offer.
+    // Recomputing a currently valid option must not authorize an option
+    // that the original resident decision receipt never issued.
+    const bool originallyIssued=std::any_of(
+        issued.alternatives.begin(),issued.alternatives.end(),
+        [&](const AutonomousExperimentAlternative& option){
+            return identicalAutonomousExperimentSteps(
+                       selected.steps,option.steps)
+                &&selected.effortUnits==option.effortUnits
+                &&std::isfinite(selected.riskProxy)
+                &&std::isfinite(selected.preferenceScore)
+                &&selected.riskProxy==option.riskProxy
+                &&selected.preferenceScore==option.preferenceScore;
+        });
+    if(!originallyIssued)
+        return AutonomousExperimentRevalidation::NoLongerAdmissible;
     const auto current=composeAutonomousExperimentOptions(
         world,relationships,currentRequest,goal,budget);
     if(current.status==AutonomousExperimentStatus::AlreadySatisfied)
