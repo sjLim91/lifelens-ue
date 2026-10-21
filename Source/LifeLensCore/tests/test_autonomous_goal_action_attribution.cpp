@@ -304,8 +304,7 @@ int main()
         bool raw(char* out,std::size_t count) {
             if(count!=sizeof(AutonomousGoalActionLinkExtensionMagic))
                 return false;
-            std::copy(std::begin(AutonomousGoalActionLinkExtensionMagic),
-                std::end(AutonomousGoalActionLinkExtensionMagic),out);
+            std::copy_n(AutonomousGoalActionLinkExtensionMagic,count,out);
             return true;
         }
         bool u32(std::uint32_t& value) {
