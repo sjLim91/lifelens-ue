@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <string>
 
 #include "AutonomousAffordancePlanner.h"
 #include "AutonomousSocialOutcomeLearning.h"
