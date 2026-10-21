@@ -86,7 +86,14 @@ inline bool newerOutcome(
            &&incoming.succeeded==selected.succeeded
            &&(incoming.succeeded
                 ?incoming.utilityAdjustment>selected.utilityAdjustment
-                :incoming.utilityAdjustment<selected.utilityAdjustment));
+                :incoming.utilityAdjustment<selected.utilityAdjustment))
+        // If different firsthand failures have the SAME minute AND the same
+        // decayed utility, actor-memory iteration or snapshot record order
+        // must not arbitrarily choose a different hypothesis next turn.
+        ||(incoming.minute==selected.minute
+           &&incoming.succeeded==selected.succeeded
+           &&incoming.utilityAdjustment==selected.utilityAdjustment
+           &&static_cast<int>(incoming.reason)>static_cast<int>(selected.reason));
 }
 
 } // namespace resident_resource_outcome_detail
