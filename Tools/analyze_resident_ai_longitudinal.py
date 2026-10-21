@@ -56,20 +56,38 @@ def analyze_series(reports):
                         raise ValueError(f"{rid}: nonmonotonic Core {branch}.{metric}")
                     changes[metric] = delta
                 outcomes = {}
-                for kind in older["verifiedCoreOutcomes"]:
-                    if kind not in newer["verifiedCoreOutcomes"]:
+                past_kinds = older["verifiedCoreOutcomes"]
+                current_kinds = newer["verifiedCoreOutcomes"]
+                for kind in sorted(set(past_kinds) | set(current_kinds)):
+                    if kind not in current_kinds:
                         raise ValueError(f"{rid}: disappeared Core outcome kind {kind}")
-                    old = older["verifiedCoreOutcomes"][kind]
-                    new = newer["verifiedCoreOutcomes"][kind]
+                    if kind not in past_kinds:
+                        # A new report category may contain prior unreported
+                        # outcomes. Do not invent a zero baseline or drop it.
+                        outcomes[kind] = {
+                            "comparable": False,
+                            "reason": "outcome_kind_missing_from_previous_checkpoint",
+                        }
+                        continue
+                    old = past_kinds[kind]
+                    new = current_kinds[kind]
                     success = new["success"] - old["success"]
                     failure = new["failure"] - old["failure"]
                     if success < 0 or failure < 0:
                         raise ValueError(f"{rid}: nonmonotonic verified Core outcome {kind}")
-                    outcomes[kind] = {"successDelta": success, "failureDelta": failure}
+                    outcomes[kind] = {
+                        "comparable": True,
+                        "successDelta": success,
+                        "failureDelta": failure,
+                    }
+                trade_returns = newer["tradeJourneyReturns"] - older["tradeJourneyReturns"]
+                if trade_returns < 0:
+                    raise ValueError(f"{rid}: nonmonotonic verified Core trade return")
                 branches[branch] = {
                     "comparable": True,
                     "observedMetricDelta": changes,
                     "verifiedCoreOutcomeDelta": outcomes,
+                    "tradeJourneyReturnsDelta": trade_returns,
                     "acceptedProposalsAreNotCompletedActions": True,
                 }
             comparisons[rid] = branches
