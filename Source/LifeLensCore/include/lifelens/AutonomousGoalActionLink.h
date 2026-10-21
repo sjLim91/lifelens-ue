@@ -158,10 +158,18 @@ inline bool rememberAutonomousGoalActionOutcome(
     // One latest firsthand recollection per partner/method, replacing
     // old outcomes rather than expanding memory once per simulation minute.
     for(MemoryRecord& memory:actor.memory.entries){
+        // A hearsay, inferred, other-actor, or future memory that happens to
+        // share tags is NOT this actor's Core-verified firsthand outcome.
+        // Never silently promote that record into DirectWitness by reusing
+        // its slot. Keep the old provenance intact and create a new firsthand
+        // record below. This is independent of the action's success verdict.
         if(memory.who!=link.target ||memory.tags.size()!=3
            ||memory.tags[0]!="goal_action_feedback"
            ||memory.tags[1]!="self_trust"
-           ||memory.tags[2]!=action) continue;
+           ||memory.tags[2]!=action
+           ||memory.source!=MemorySource::DirectWitness
+           ||!memory.witnessed ||memory.sourceCharacter!=actor.id
+           ||memory.minute>minute) continue;
         memory.what=autonomousGoalActionOutcomeName(outcome);
         memory.minute=minute;
         memory.confidence=1.0;
