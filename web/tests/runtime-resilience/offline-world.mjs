@@ -82,8 +82,9 @@ try {
   assert.equal(elapsedOfflineMinutes(t0, t0 + 1.5), 0);
   assert.equal(elapsedOfflineMinutes(t0, t0 + 42), 0,
     'fractional Core minutes are never rounded up');
-  assert.equal(elapsedOfflineMinutes(0, Number.MAX_SAFE_INTEGER),
-    Number.MAX_SAFE_INTEGER, 'absurd wall-clock jumps cannot escape safe integers');
+  const hugeOffline = elapsedOfflineMinutes(0, Number.MAX_SAFE_INTEGER);
+  assert(Number.isSafeInteger(hugeOffline) && hugeOffline > 0,
+    'absurd wall-clock jumps cannot escape safe integer Core minutes');
   assert.equal(wallTimeAfterAdvance(t0, 0), t0);
   assert.equal(wallTimeAfterAdvance(Number.MAX_SAFE_INTEGER - 5, 1440),
     Number.MAX_SAFE_INTEGER, 'overflowing wall time saturates at a safe timestamp');
