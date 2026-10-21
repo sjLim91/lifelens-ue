@@ -40,7 +40,11 @@ function valid(record: unknown): record is PersistedWorld {
   return value.key === PRIMARY_KEY
     && value.schemaVersion === 1
     && typeof value.worldSeed === 'string'
-    && /^\d+$/.test(value.worldSeed)
+    // The canonical Core WorldSeed is an unsigned nonzero 64-bit decimal.
+    // Reject "0", aliases with leading zeros, and overflow values before
+    // restoring their encoded Core snapshot or comparing save authority.
+    && /^[1-9]\d{0,19}$/.test(value.worldSeed)
+    && BigInt(value.worldSeed) <= 18446744073709551615n
     && typeof value.minute === 'number'
     && Number.isSafeInteger(value.minute)
     && value.minute >= 0
