@@ -158,6 +158,38 @@ int main()
     assert(!failedAgency.personalGoal);
     assert(failedAgency.agency.authority==fallback.authority);
     assert(world.resourceNodes.front().quantity==12);
+    // M2-09: a personally failed source does not trap the resident in an
+    // infinite same-node retry. Replan from the SAME live, bounded local
+    // perception to a second genuinely reachable source and prove one real
+    // Core Gather result, without forcing another AI decision slot.
+    World rerouteWorld=world;
+    rerouteWorld.resourceNodes.push_back(
+        {103,MaterialKind::Stone,12,12,false,0,
+            {position.x+1,position.y}});
+    auto& rerouteActor=rerouteWorld.characters[0];
+    const auto reroute=chooseResidentSensedResourceGoal(
+        rerouteWorld,rerouteActor,position,relationships,fallback,nullptr,false);
+    assert(reroute.personalGoal);
+    assert(reroute.agency.authority==ResidentAgencyAuthority::PersonalGoal);
+    assert(reroute.agency.decision.civilization.resourceNode==103);
+    GridPos rerouteAccess{};
+    assert(resolveCivilizationResourceAccessGridPosition(
+        rerouteWorld,103,rerouteAccess));
+    const auto rerouteOutcome=executeCivilizationDecisionAtPosition(
+        rerouteWorld,rerouteActor,reroute.agency.decision.civilization,
+        rerouteAccess);
+    assert(rerouteOutcome.executed &&rerouteOutcome.success
+        &&rerouteOutcome.event.quantity>0);
+    rememberCivilizationAttemptOutcome(
+        rerouteActor,reroute.agency.decision.civilization,
+        rerouteWorld.minute,true);
+    assert(rerouteActor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Stone)>0);
+    assert(rerouteWorld.resourceNodes.front().quantity==12);
+    assert(!rerouteWorld.characters[1].memory.entries.size());
+    assert(world.resourceNodes.size()==2);
+    assert(world.resourceNodes.front().quantity==12);
+    assert(!failedAgency.personalGoal); // original failure still meaningful
     // Another actor has not witnessed this access failure.
     const auto independent=chooseResidentSensedResourceGoal(
         world,world.characters[1],position,relationships,fallback,nullptr,false);
