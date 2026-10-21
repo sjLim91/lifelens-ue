@@ -79,8 +79,12 @@ inline ResidentLocalPerception observeLocalResourceProximity(
                 return a.distanceCells<b.distanceCells;
             return a.nodeId<b.nodeId;
         });
-    if(view.nearbyResources.size()>maxFacts)
-        view.nearbyResources.resize(maxFacts);
+    // An external call cannot enlarge the resident's personal senses
+    // beyond the fixed Core contract merely by requesting more facts.
+    // Keep the nearest deterministic 12; farther World truth stays hidden.
+    const auto cap=std::min(maxFacts,ResidentLocalPerceptionMaxFacts);
+    if(view.nearbyResources.size()>cap)
+        view.nearbyResources.resize(cap);
     return view;
 }
 
