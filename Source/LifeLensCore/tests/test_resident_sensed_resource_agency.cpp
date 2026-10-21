@@ -70,10 +70,19 @@ int main()
     // against the LIVE source, not permanently obey a stale depletion belief.
     World revivedWorld=world;
     auto& revivedActor=revivedWorld.characters[0];
+    revivedWorld.resourceNodes.front().quantity=0;
+    const auto observedFailure=diagnoseResidentGatherFailure(
+        revivedWorld,revivedActor,selected.agency.decision.civilization,
+        position);
+    assert(observedFailure==ResidentGatherFailureCause::SourceExhausted);
     rememberCivilizationAttemptOutcome(
         revivedActor,selected.agency.decision.civilization,480,false,
-        ResidentGatherFailureCause::SourceExhausted);
-    const auto depletion=buildResidentResourceOutcomeIndex(revivedActor,480);
+        observedFailure);
+    // The exact Core source is later replenished. The resident needs a fresh
+    // observation, not a fabricated success or an arbitrary memory reset.
+    revivedWorld.minute=495;
+    revivedWorld.resourceNodes.front().quantity=12;
+    const auto depletion=buildResidentResourceOutcomeIndex(revivedActor,495);
     assert(depletion.find(101,"Civilization:Gather:Stone").reason
         ==ResidentResourceOutcomeReason::SourceUnavailable);
     const auto revived=chooseResidentSensedResourceGoal(
@@ -85,7 +94,7 @@ int main()
     // or phantom Gather success is manufactured by cognition.
     assert(revivedWorld.characters[1].memory.entries.empty());
     assert(revivedWorld.characters[0].civilization.inventory.stacks().empty());
-    assert(revivedWorld.rng==rng &&revivedWorld.minute==480);
+    assert(revivedWorld.rng==rng &&revivedWorld.minute==495);
 
     // A real scarcity Explore with slightly stronger intrinsic utility must
     // not be displaced by the personal resource curiosity bonus alone.
