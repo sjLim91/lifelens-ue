@@ -125,6 +125,17 @@ int main()
     assert(revalidateAutonomousExperimentChoice(
         world,relationships,request,goal,options,selected)
         ==AutonomousExperimentRevalidation::CurrentCandidate);
+    // Only a previously offered candidate may survive revalidation.
+    // A valid current plan fabricated after the offer is NOT issued authority.
+    auto unissued=options;
+    unissued.alternatives.erase(unissued.alternatives.begin());
+    assert(revalidateAutonomousExperimentChoice(
+        world,relationships,request,goal,unissued,selected)
+        ==AutonomousExperimentRevalidation::NoLongerAdmissible);
+    unissued.alternatives.clear();
+    assert(revalidateAutonomousExperimentChoice(
+        world,relationships,request,goal,unissued,selected)
+        ==AutonomousExperimentRevalidation::NoLongerAdmissible);
     auto forgedOption=selected;
     forgedOption.effortUnits++;
     assert(revalidateAutonomousExperimentChoice(
