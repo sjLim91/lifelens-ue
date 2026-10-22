@@ -86,6 +86,20 @@ int main()
     assert(residentAIPlanAlreadyAttempted(
         legacy,sourceThought,replacement,504));
 
+    // Corrupt source provenance is NOT evidence that the attempt happened
+    // at a different node. Both the old source and a replacement must be
+    // guarded until a fresh decision can be issued.
+    for(const std::string badSource:{
+            "resource-node:", "resource-node:xyz",
+            "resource-node:202junk", "resource-node:000202",
+            "resource-node:-202", "resource-node:0",
+            "resource-node:184467440737095516160"}){
+        Character damaged=sourced;
+        damaged.memory.entries.back().where=badSource;
+        assert(residentAIPlanAlreadyAttempted(
+            damaged,sourceThought,replacement,504));
+    }
+
     // A successful partial ingredient collection is normally consumed.
     // Only the caller that has rechecked the STILL-UNMET real recipe can
     // explicitly request continuation for the same original tool goal.
