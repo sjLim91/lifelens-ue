@@ -293,6 +293,90 @@ int main()
         *findResident(replayed,actor->id),target->id,
         "not-achieved-no-progress"));
 
+    // A malformed SECOND goal link must not half-restore the FIRST one
+    // when this extension reader is invoked directly on a snapshot.
+    // A real decoder separately preserves whole-snapshot atomicity.
+    struct ScriptedGoalLinkReader {
+        std::vector<AutonomousGoalActionLink> links;
+        std::size_t index=0;
+        int field=0;
+        int header=0;
+        bool raw(char* out,std::size_t count) {
+            if(count!=sizeof(AutonomousGoalActionLinkExtensionMagic))
+                return false;
+            std::copy_n(AutonomousGoalActionLinkExtensionMagic,count,out);
+            return true;
+        }
+        bool u32(std::uint32_t& value) {
+            if(header++!=0) return false;
+            value=AutonomousGoalActionLinkExtensionVersion;
+            return true;
+        }
+        bool count(std::uint32_t& value) {
+            value=static_cast<std::uint32_t>(links.size());
+            return true;
+        }
+        bool u64(std::uint64_t& value) {
+            if(index>=links.size()) return false;
+            const auto& entry=links[index];
+            switch(field++){
+                case 0: value=entry.actor; return true;
+                case 1: value=entry.token; return true;
+                case 2: value=entry.target; return true;
+                case 5: value=entry.contextFingerprint; return true;
+                default: return false;
+            }
+        }
+        bool enumeration(SocialIntent& value) {
+            if(index>=links.size() ||field++!=3) return false;
+            value=links[index].intent;
+            return true;
+        }
+        bool i32(int& value) {
+            if(index>=links.size() ||field++!=4) return false;
+            value=links[index].issuedMinute;
+            return true;
+        }
+        bool real(double& value) {
+            if(index>=links.size()) return false;
+            if(field==6){value=links[index].trustThreshold;++field;return true;}
+            if(field==7){
+                value=links[index].trustAtIssue;
+                field=0;
+                ++index;
+                return true;
+            }
+            return false;
+        }
+    };
+    auto twoLinks=initial;
+    const CharacterId otherActor=33;
+    const CharacterId otherTarget=44;
+    auto& otherPending=twoLinks.runtime[otherActor].pendingContext;
+    otherPending.token=action.token+200;
+    otherPending.kind=ContextActionKind::Social;
+    otherPending.issuedMinute=action.issuedMinute;
+    otherPending.social.intent=SocialIntent::Approach;
+    otherPending.social.target=otherTarget;
+    auto otherLink=tied;
+    otherLink.actor=otherActor;
+    otherLink.target=otherTarget;
+    otherLink.token=otherPending.token;
+    CHECK(validAutonomousGoalActionLink(otherLink));
+    twoLinks.runtime[pending.actor].pendingContext.autonomousGoal.clear();
+    CHECK(!twoLinks.runtime[pending.actor].pendingContext.autonomousGoal.active());
+    ScriptedGoalLinkReader malformed{{tied,otherLink}};
+    malformed.links[1].target=otherTarget+1;
+    CHECK(!readAutonomousGoalActionLinkExtension(malformed,twoLinks));
+    CHECK(!twoLinks.runtime[pending.actor].pendingContext.autonomousGoal.active());
+    CHECK(!twoLinks.runtime[otherActor].pendingContext.autonomousGoal.active());
+    ScriptedGoalLinkReader validReader{{tied,otherLink}};
+    CHECK(readAutonomousGoalActionLinkExtension(validReader,twoLinks));
+    CHECK(twoLinks.runtime[pending.actor].pendingContext.autonomousGoal.token
+        ==tied.token);
+    CHECK(twoLinks.runtime[otherActor].pendingContext.autonomousGoal.token
+        ==otherLink.token);
+
     // Cancelling/preempting a pending action drops its link without
     // manufacturing a failure or a successful interaction.
     auto cancelled=initial;

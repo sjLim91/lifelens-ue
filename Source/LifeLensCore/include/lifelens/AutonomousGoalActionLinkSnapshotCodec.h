@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "SimulationSnapshot.h"
@@ -78,6 +79,11 @@ bool readAutonomousGoalActionLinkExtension(
         return false;
 
     std::unordered_set<CharacterId> seen;
+    // Stage every decoded link. If a later record is malformed, do not
+    // partially attach earlier goal-attribution links to the caller's
+    // snapshot; provenance either restores as one valid extension or not.
+    std::vector<std::pair<CharacterId,AutonomousGoalActionLink>> staged;
+    staged.reserve(count);
     for(std::uint32_t i=0;i<count;++i){
         CharacterId actor=0;
         AutonomousGoalActionLink link;
@@ -105,8 +111,10 @@ bool readAutonomousGoalActionLinkExtension(
            ||pending.kind!=ContextActionKind::Social
            ||link.issuedMinute>snapshot.world.minute)
             return false;
-        runtime->second.pendingContext.autonomousGoal=link;
+        staged.emplace_back(actor,link);
     }
+    for(const auto& [actor,link]:staged)
+        snapshot.runtime.at(actor).pendingContext.autonomousGoal=link;
     return true;
 }
 
