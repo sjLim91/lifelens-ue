@@ -67,7 +67,8 @@ try {
     return { REAL_MS_PER_SIMULATION_MINUTE_AT_1X: actualMinuteMs };
   });
   const { readPersistedWorld, writePersistedWorld, assertCheckpointProgress,
-    elapsedOfflineMinutes, wallTimeAfterAdvance, MAX_CORE_WORLD_MINUTE } = exports;
+    elapsedOfflineMinutes, wallTimeAfterAdvance, MAX_CORE_WORLD_MINUTE,
+    assertCoreMinuteAdvanceCapacity } = exports;
   assert.equal(await readPersistedWorld(), null);
   const t0 = 1790000000000;
   assert.equal(elapsedOfflineMinutes(t0, t0 - 60000), 0,
@@ -101,6 +102,25 @@ try {
   };
   assert.equal(MAX_CORE_WORLD_MINUTE, 2147483647,
     'the durable minute must match the authoritative signed Core field');
+  assert.doesNotThrow(() => assertCoreMinuteAdvanceCapacity(0, 0));
+  assert.doesNotThrow(() => assertCoreMinuteAdvanceCapacity(
+    MAX_CORE_WORLD_MINUTE - 1440, 1440
+  ), 'exact maximum Core minute remains allowed');
+  for (const [minute, advance] of [
+    [MAX_CORE_WORLD_MINUTE, 1],
+    [MAX_CORE_WORLD_MINUTE - 100, 1440],
+    [MAX_CORE_WORLD_MINUTE + 1, 0],
+    [-1, 1440],
+    [100, -1],
+    [100, 0.5],
+    [Number.NaN, 1],
+    [100, Number.POSITIVE_INFINITY],
+    [100, Number.MAX_SAFE_INTEGER],
+  ]) {
+    assert.throws(() => assertCoreMinuteAdvanceCapacity(minute, advance),
+      /Core 월드 시간/, 'native Core time overflow must fail BEFORE replay');
+  }
+
   assert.doesNotThrow(() => assertCheckpointProgress(null, {
     ...record, minute: MAX_CORE_WORLD_MINUTE,
   }));
