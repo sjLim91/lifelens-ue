@@ -109,6 +109,52 @@ int main()
     assert(hurtChoice.decision.utility>0.0);
     assert(world.characters.front().beliefs.beliefs.empty());
 
+    // Goal progress is a separate Core-measured personal outcome: the SAME
+    // approved social thought now prefers methods that previously advanced
+    // its own trust objective, even when its immediate mood was unchanged.
+    AutonomousGoalActionLink goalLink;
+    goalLink.token=901;
+    goalLink.actor=9;
+    goalLink.target=10;
+    goalLink.intent=SocialIntent::Approach;
+    goalLink.issuedMinute=479;
+    goalLink.contextFingerprint=884;
+    goalLink.trustAtIssue=0.20;
+    goalLink.trustThreshold=0.50;
+    assert(validAutonomousGoalActionLink(goalLink));
+    World progressed=world;
+    assert(rememberAutonomousGoalActionOutcome(
+        progressed.characters[0],goalLink,901,479,
+        AutonomousGoalActionOutcome::ProgressButNotAchieved));
+    const auto progressedChoice=chooseSingleResidentAgencyDecision(
+        progressed,progressed.characters.front(),{0,0},relations,
+        baseline,&thought,nullptr,GridPos{1,0},false);
+    assert(progressedChoice.authority==ResidentAgencyAuthority::ResidentCognition);
+    assert(progressedChoice.decision.utility>socialDecision.decision.utility);
+    World stalled=world;
+    assert(rememberAutonomousGoalActionOutcome(
+        stalled.characters[0],goalLink,901,479,
+        AutonomousGoalActionOutcome::NotAchievedNoProgress));
+    const auto stalledChoice=chooseSingleResidentAgencyDecision(
+        stalled,stalled.characters.front(),{0,0},relations,
+        baseline,&thought,nullptr,GridPos{1,0},false);
+    assert(stalledChoice.authority==ResidentAgencyAuthority::ResidentCognition);
+    assert(stalledChoice.decision.utility<socialDecision.decision.utility);
+    assert(stalledChoice.decision.utility>0.0);
+    // Another resident's Core outcome cannot become the actor's experience.
+    World otherGoal=world;
+    auto otherLink=goalLink;
+    otherLink.actor=10;
+    otherLink.target=9;
+    assert(rememberAutonomousGoalActionOutcome(
+        otherGoal.characters[1],otherLink,901,479,
+        AutonomousGoalActionOutcome::AchievedDuringExecution));
+    const auto independentGoalChoice=chooseSingleResidentAgencyDecision(
+        otherGoal,otherGoal.characters.front(),{0,0},relations,
+        baseline,&thought,nullptr,GridPos{1,0},false);
+    assert(independentGoalChoice.decision.utility==socialDecision.decision.utility);
+    assert(world.characters.front().beliefs.beliefs.empty());
+
     // A partner's own private mood cannot become the first resident's
     // firsthand learning. Reported memories alone cannot fabricate a
     // Core-proven self-mood belief either.
