@@ -242,6 +242,36 @@ int main()
     assert(composeAutonomousExperimentOptions(
         tiredWorld,relationships,tiredRequest,tiredSocial).status
         ==AutonomousExperimentStatus::NoSafeCandidate);
+    // An invalid Need must never accidentally grant discretionary work.
+    // In particular a NaN in the first field defeats std::max unless every
+    // bodily input is checked explicitly, and nonfinite/out-of-range pressure
+    // cannot be treated as calm. No Core minute/Need is modified by review.
+    for(const double invalid:{
+            std::numeric_limits<double>::quiet_NaN(),
+            std::numeric_limits<double>::infinity(),
+            -0.01,1.01}){
+        for(int index=0;index<5;++index){
+            World corrupted=world;
+            const double beforeHunger=corrupted.characters.front().needs.hunger;
+            double* needs[]={
+                &corrupted.characters.front().needs.hunger,
+                &corrupted.characters.front().needs.thirst,
+                &corrupted.characters.front().needs.sleep,
+                &corrupted.characters.front().needs.bladder,
+                &corrupted.characters.front().needs.hygiene,
+            };
+            *needs[index]=invalid;
+            const auto invalidRequest=observe(corrupted,relationships,11);
+            const auto rejected=composeAutonomousExperimentOptions(
+                corrupted,relationships,invalidRequest,
+                trustGoal(invalidRequest,22));
+            assert(rejected.status!=AutonomousExperimentStatus::CandidatesOnly);
+            assert(rejected.alternatives.empty());
+            assert(corrupted.minute==world.minute);
+            assert(corrupted.rng==world.rng);
+            assert(world.characters.front().needs.hunger==beforeHunger);
+        }
+    }
     const auto tiredRest=restGoal(tiredRequest);
     const auto recovery=composeAutonomousExperimentOptions(
         tiredWorld,relationships,tiredRequest,tiredRest);

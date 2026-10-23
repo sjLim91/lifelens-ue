@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <vector>
 #include <string>
 
@@ -162,16 +163,26 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
     // remains available. These are read-only candidates: actual emergency
     // work always belongs to the single authoritative Core decision slot.
     constexpr double DiscretionaryExperimentNeedLimit=0.55;
-    const double highestNeed=std::max({
+    const double bodyNeeds[]={
         actor->needs.hunger,actor->needs.thirst,actor->needs.sleep,
         actor->needs.bladder,actor->needs.hygiene
-    });
+    };
+    // NaN/Inf and out-of-range Need values cannot silently become "safe"
+    // by defeating std::max comparisons. This fail-closed optional-work
+    // budget is read-only; ordinary Core survival decisions stay authoritative.
+    const bool untrustedBodyNeed=std::any_of(
+        std::begin(bodyNeeds),std::end(bodyNeeds),[](double value){
+            return !std::isfinite(value) ||value<0.0 ||value>1.0;
+        });
+    const double highestNeed=*std::max_element(
+        std::begin(bodyNeeds),std::end(bodyNeeds));
     const bool optionalWork=std::any_of(
         base.proposedSteps.begin(),base.proposedSteps.end(),
         [](const AutonomousAffordanceStep& step){
             return step.kind!=AutonomousAffordanceKind::ExistingPhysicalGoal;
         });
-    if(optionalWork &&highestNeed>=DiscretionaryExperimentNeedLimit){
+    if(optionalWork &&(untrustedBodyNeed
+                       ||highestNeed>=DiscretionaryExperimentNeedLimit)){
         result.status=AutonomousExperimentStatus::NoSafeCandidate;
         return result;
     }
