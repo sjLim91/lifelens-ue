@@ -174,6 +174,22 @@ export async function writePersistedWorld(record: PersistedWorld): Promise<void>
   }
 }
 
+// Native LifeLensCore World::minute is a signed 32-bit integer. Validate
+// the requested advance BEFORE invoking Core, even if the wall-time debt is a
+// safe JavaScript integer. Both interactive skip-days and offline replay use
+// the same exclusive authority; never wrap a living world into negative time.
+export function assertCoreMinuteAdvanceCapacity(
+  currentMinute: number,
+  advanceMinutes: number,
+): void {
+  if (!Number.isSafeInteger(currentMinute) || currentMinute < 0
+    || currentMinute > MAX_CORE_WORLD_MINUTE
+    || !Number.isSafeInteger(advanceMinutes) || advanceMinutes < 0
+    || advanceMinutes > MAX_CORE_WORLD_MINUTE - currentMinute) {
+    throw Error('Core 월드 시간이 허용된 범위를 초과하여 진행을 차단했습니다.');
+  }
+}
+
 // Only finite, bounded wall-clock math may feed Core catch-up decisions.
 // Browsers can report a rolled-back time, corrupted storage values, or a
 // gigantic clock jump. None should produce NaN/Infinity/fractional ticks.
