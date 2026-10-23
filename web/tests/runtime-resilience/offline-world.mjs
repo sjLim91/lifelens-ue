@@ -122,6 +122,13 @@ try {
   assert.doesNotThrow(() => assertCheckpointProgress(null, {
     ...record, earthOrigin: validEdgeOrigin,
   }));
+  for (const snapshotBase64 of [
+    '!!!!!!!!!!!!!!!!!!!!', 'QUJDREVGR0hJSktMTU5PUA=',
+    'QUJDREVGR0hJSktMTU5PUA\n=', 'QUJDREVGR0hJSktMTU5PUA=!',
+  ]) {
+    await assert.rejects(writePersistedWorld({ ...record, snapshotBase64 }),
+      /유효하지 않은/, 'malformed base64 cannot become authoritative Core bytes');
+  }
   await writePersistedWorld(record);
   assert.deepEqual(await readPersistedWorld(), record);
   const later = { ...record, minute: 1778,
@@ -179,6 +186,8 @@ try {
     ...later, minute: later.minute + 1,
     savedAtWallMs: later.savedAtWallMs + 1000,
   }), /손상/, 'do not overwrite corrupt WorldSeed with a fresh receipt');
+  persistent.set('active-world', { ...later, snapshotBase64: '!!!!!!!!!!!!!!!!!' });
+  await assert.rejects(readPersistedWorld(), /손상/);
   persistent.set('active-world', { ...later, snapshotBase64: '' });
   await assert.rejects(readPersistedWorld(), /손상/);
   assert.equal(persistent.get('active-world').minute, 1778,
