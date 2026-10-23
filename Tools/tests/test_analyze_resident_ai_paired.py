@@ -61,6 +61,56 @@ class TestPairedAuditAnalysis(unittest.TestCase):
                          ["successDelta"], 2)
         self.assertIn("not proof", out["interpretation"])
 
+    def test_per_intent_and_temporal_attribution_are_not_fake_successes(self):
+        src = fixture()
+        src["proxy"]["acceptedIntentToVerifiedOutcome"]["KnowledgeTeaching"][
+            "temporallyMatchedSuccess"
+        ] = 2
+        out = analyze(src)
+        lifecycle = out["intentLifecycle"]
+        self.assertEqual(lifecycle["observedIntentKinds"], ["ImproveFoodSecurity"])
+        self.assertEqual(lifecycle["intentKindCount"], 1)
+        self.assertFalse(lifecycle["all14IntentsObserved"])
+        self.assertTrue(lifecycle["notVerifiedActionCompletions"])
+        rows = lifecycle["perIntent"]["ImproveFoodSecurity"]
+        self.assertEqual(rows["accepted"]["deltaProxyMinusBaseline"], 5)
+        self.assertEqual(rows["rejectedByValidator"]["proxy"], 2)
+        self.assertEqual(rows["rejectedAfterValidator"]["proxy"], 0)
+        self.assertEqual(
+            out["temporalAttribution"]["KnowledgeTeaching"][
+                "temporallyMatchedSuccess"]["deltaProxyMinusBaseline"], 2
+        )
+        self.assertEqual(
+            out["verifiedCoreOutcomes"]["KnowledgeTeaching"]["successDelta"], 2
+        )
+        self.assertFalse(out["causalImprovementDemonstrated"])
+
+    def test_mismatched_catalog_intent_sets_must_not_compare(self):
+        src = fixture()
+        src["proxy"]["catalogIntentInputs"]["OtherIntent"] = (
+            src["proxy"]["catalogIntentInputs"].pop("ImproveFoodSecurity")
+        )
+        with self.assertRaisesRegex(ValueError, "same intent catalog kinds"):
+            analyze(src)
+
+    def test_complete_14_kind_coverage_is_explicit_not_assumed(self):
+        src = fixture()
+        # All extra categories have zero counts. Neither a zero proposal
+        # nor complete catalog coverage is evidence of action completion.
+        zero = {key: 0 for key in src["baseline"]["catalogIntentInputs"][
+            "ImproveFoodSecurity"]}
+        for i in range(13):
+            name = f"CatalogIntent{i:02d}"
+            src["baseline"]["catalogIntentInputs"][name] = dict(zero)
+            src["proxy"]["catalogIntentInputs"][name] = dict(zero)
+        result = analyze(src)
+        self.assertTrue(result["intentLifecycle"]["all14IntentsObserved"])
+        self.assertEqual(result["intentLifecycle"]["intentKindCount"], 14)
+        self.assertEqual(
+            result["intentLifecycle"]["perIntent"]["CatalogIntent00"][
+                "submitted"]["proxy"], 0
+        )
+
     def test_invalid_evidence_never_silently_passes(self):
         variants = []
         bad = fixture()
