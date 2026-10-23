@@ -34,6 +34,59 @@ class TestCoreLongitudinalResidentAudit(unittest.TestCase):
                          ["KnowledgeTeaching"]["successDelta"], 1)
         self.assertEqual(row["observedMetricDelta"]["proposalsAccepted"], 0)
 
+    def test_matched_cohort_distinguishes_actual_outcomes_from_learning(self):
+        first = fixture()
+        second = copy.deepcopy(first)
+        second["days"] = 7
+        actor = second["proxy"]["residents"]["1"]
+        actor["verifiedCoreOutcomes"]["KnowledgeTeaching"]["success"] += 1
+        actor["civilizationSuccessEvidence"] += 1
+        second["proxy"]["civilizationSuccessEvidence"] += 1
+        second["proxy"]["verifiedCoreOutcomes"]["KnowledgeTeaching"]["success"] += 1
+        paired = analyze_series([first, second])["windows"][0]["pairedOutcomeComparison"]
+        self.assertEqual(paired["comparableResidentCount"], 2)
+        self.assertEqual(paired["excludedResidentCount"], 0)
+        teaching = paired["outcomeKinds"]["KnowledgeTeaching"]
+        self.assertEqual(teaching["baselineSuccessDelta"], 0)
+        self.assertEqual(teaching["proxySuccessDelta"], 1)
+        self.assertEqual(teaching["observedSuccessDifference"], 1)
+        self.assertEqual(teaching["comparableResidentCount"], 2)
+        self.assertFalse(paired["causalLearningEvidence"])
+
+    def test_newborn_is_excluded_from_paired_window_not_counted_as_zero(self):
+        from Tools.tests.test_analyze_resident_ai_residents import resident
+        first = fixture()
+        second = copy.deepcopy(first)
+        second["days"] = 7
+        second["proxy"]["residents"]["3"] = resident()
+        second["proxy"]["livingResidents"] += 1
+        paired = analyze_series([first, second])["windows"][0]["pairedOutcomeComparison"]
+        self.assertEqual(paired["comparableResidentCount"], 2)
+        self.assertEqual(paired["excludedResidentCount"], 1)
+        self.assertEqual(
+            paired["outcomeKinds"]["KnowledgeTeaching"]["excludedResidentCount"], 1
+        )
+
+    def test_new_outcome_kind_is_excluded_without_pretending_zero_baseline(self):
+        first = fixture()
+        second = copy.deepcopy(first)
+        second["days"] = 7
+        for name in ("baseline", "proxy"):
+            branch = second[name]
+            branch["verifiedCoreOutcomes"]["ShelterRepair"] = {
+                "success": 1, "failure": 0,
+            }
+            for rid, resident_row in branch["residents"].items():
+                resident_row["verifiedCoreOutcomes"]["ShelterRepair"] = {
+                    "success": int(rid == "1"), "failure": 0,
+                }
+        paired = analyze_series([first, second])["windows"][0]["pairedOutcomeComparison"]
+        repair = paired["outcomeKinds"]["ShelterRepair"]
+        self.assertEqual(repair["comparableResidentCount"], 0)
+        self.assertEqual(repair["excludedResidentCount"], 2)
+        self.assertEqual(repair["observedSuccessDifference"], 0)
+        self.assertEqual(paired["outcomeKinds"]["KnowledgeTeaching"]["comparableResidentCount"], 2)
+
     def test_cross_seed_reordering_or_counter_reversal_rejected(self):
         first = fixture()
         second = copy.deepcopy(first)

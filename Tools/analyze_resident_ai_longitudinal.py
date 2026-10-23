@@ -100,9 +100,65 @@ def analyze_series(reports):
                     "acceptedProposalsAreNotCompletedActions": True,
                 }
             comparisons[rid] = branches
+        # Never compare whole-population deltas when births, deaths, or
+        # evidence schema changes make two cohorts unequal. Compare only
+        # residents present in BOTH branches at BOTH checkpoints.
+        paired_residents = [
+            row for row in comparisons.values()
+            if row.get("baseline", {}).get("comparable")
+            and row.get("proxy", {}).get("comparable")
+        ]
+        kinds = sorted({
+            kind
+            for row in paired_residents
+            for branch in ("baseline", "proxy")
+            for kind in row[branch]["verifiedCoreOutcomeDelta"]
+        })
+        paired_outcomes = {}
+        for kind in kinds:
+            matched = [
+                row for row in paired_residents
+                if row["baseline"]["verifiedCoreOutcomeDelta"].get(kind, {}).get("comparable")
+                and row["proxy"]["verifiedCoreOutcomeDelta"].get(kind, {}).get("comparable")
+            ]
+            baseline_success = sum(
+                row["baseline"]["verifiedCoreOutcomeDelta"][kind]["successDelta"]
+                for row in matched
+            )
+            proxy_success = sum(
+                row["proxy"]["verifiedCoreOutcomeDelta"][kind]["successDelta"]
+                for row in matched
+            )
+            baseline_failure = sum(
+                row["baseline"]["verifiedCoreOutcomeDelta"][kind]["failureDelta"]
+                for row in matched
+            )
+            proxy_failure = sum(
+                row["proxy"]["verifiedCoreOutcomeDelta"][kind]["failureDelta"]
+                for row in matched
+            )
+            paired_outcomes[kind] = {
+                "comparableResidentCount": len(matched),
+                "excludedResidentCount": len(comparisons) - len(matched),
+                "baselineSuccessDelta": baseline_success,
+                "proxySuccessDelta": proxy_success,
+                "observedSuccessDifference": proxy_success - baseline_success,
+                "baselineFailureDelta": baseline_failure,
+                "proxyFailureDelta": proxy_failure,
+                "observedFailureDifference": proxy_failure - baseline_failure,
+            }
         windows.append({
             "fromDay": prev["days"], "toDay": curr["days"],
             "residents": comparisons,
+            "pairedOutcomeComparison": {
+                "comparableResidentCount": len(paired_residents),
+                "excludedResidentCount": len(comparisons) - len(paired_residents),
+                "outcomeKinds": paired_outcomes,
+                "causalLearningEvidence": False,
+                "note": ("Same-resident paired Core outcomes are observations, "
+                         "not proof that the proxy or learning caused a change. "
+                         "Unavailable/absent outcomes are excluded, not zero."),
+            },
         })
     return {
         "seed": seed,
