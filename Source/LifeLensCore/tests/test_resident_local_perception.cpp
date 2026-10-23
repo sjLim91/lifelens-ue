@@ -68,6 +68,54 @@ int main()
         assert(oversized.nearbyResources[i].distanceCells==0);
     }
     assert(crowded.resourceNodes.size()==world.resourceNodes.size()+25);
+    // A large resource registry must return EXACTLY the same nearest facts
+    // as the former full-sort contract, independent of source iteration order.
+    // This is also an allocation-bound regression: the production view never
+    // holds more than ResidentLocalPerceptionMaxFacts during the scan.
+    World dense=world;
+    dense.resourceNodes.clear();
+    for(ResourceNodeId id=1000;id<3500;++id){
+        const int x=static_cast<int>((id*7u)%15u)-7;
+        const int y=static_cast<int>((id*13u)%11u)-5;
+        dense.resourceNodes.push_back(makeNode(
+            id,MaterialKind::Stone,{x,y},1+static_cast<int>(id%5)));
+    }
+    auto fullFacts=std::vector<ObservedLocalResource>{};
+    for(const auto& node:dense.resourceNodes){
+        const auto distance=perceptionGridDistance({0,0},node.pos);
+        if(distance>ResidentLocalPerceptionMaxRadius) continue;
+        fullFacts.push_back({node.id,node.material,node.pos,
+                             static_cast<int>(distance),
+                             node.quantity<3
+                                 ?ObservedResourceAbundance::Scarce
+                                 :ObservedResourceAbundance::Present});
+    }
+    std::sort(fullFacts.begin(),fullFacts.end(),
+        [](const auto& a,const auto& b){
+            if(a.distanceCells!=b.distanceCells)
+                return a.distanceCells<b.distanceCells;
+            return a.nodeId<b.nodeId;
+        });
+    fullFacts.resize(ResidentLocalPerceptionMaxFacts);
+    const auto compareDense=[&](const World& registry){
+        const auto observed=observeLocalResourceProximity(
+            registry,10,{0,0},ResidentLocalPerceptionMaxRadius,
+            std::numeric_limits<std::size_t>::max());
+        assert(observed.nearbyResources.size()==fullFacts.size());
+        for(std::size_t i=0;i<fullFacts.size();++i){
+            assert(observed.nearbyResources[i].nodeId==fullFacts[i].nodeId);
+            assert(observed.nearbyResources[i].distanceCells
+                   ==fullFacts[i].distanceCells);
+            assert(observed.nearbyResources[i].abundance
+                   ==fullFacts[i].abundance);
+        }
+    };
+    compareDense(dense);
+    std::reverse(dense.resourceNodes.begin(),dense.resourceNodes.end());
+    compareDense(dense);
+    const auto smallest=observeLocalResourceProximity(dense,10,{0,0},8,1);
+    assert(smallest.nearbyResources.size()==1);
+    assert(smallest.nearbyResources.front().nodeId==fullFacts.front().nodeId);
     const auto replay=observeLocalResourceProximity(world,10,{0,0},3);
     assert(replay.nearbyResources.size()==seen.nearbyResources.size());
     for(std::size_t i=0;i<seen.nearbyResources.size();++i)
