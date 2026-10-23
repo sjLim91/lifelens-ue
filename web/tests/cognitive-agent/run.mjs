@@ -483,6 +483,36 @@ await test('scheduler bounds active and waiting work',async()=>{
   scheduler.dispose();
 });
 
+await test('superseded queued resident thoughts never consume local inference',async()=>{
+  const entered=[];
+  const pending=[];
+  const provider={name:'single-webgpu-slot',reason:req=>new Promise(resolve=>{
+    entered.push({actor:req.actor,minute:req.minute});
+    pending.push(()=>resolve(proposal(req)));
+  })};
+  const scheduler=new CognitionScheduler(provider,()=>102,{
+    maxConcurrent:1,maxQueued:2,timeoutMs:500,
+    staleAfterSimulationMinutes:100,
+  });
+  const active=scheduler.submitObserved(request('1',100));
+  const obsolete=scheduler.submitObserved(request('2',101));
+  const newest=scheduler.submitObserved(request('2',102));
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.deepEqual(entered,[{actor:'1',minute:100}]);
+  pending.shift()();
+  assert.equal((await active).status,'validated');
+  const discarded=await obsolete;
+  assert.equal(discarded.status,'stale');
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.deepEqual(entered,[
+    {actor:'1',minute:100},
+    {actor:'2',minute:102},
+  ],'the obsolete request must never enter the local model');
+  pending.shift()();
+  assert.equal((await newest).status,'validated');
+  scheduler.dispose();
+});
+
 await test('newer request from same resident invalidates the older late response',async()=>{
   const pending=new Map();
   const provider={

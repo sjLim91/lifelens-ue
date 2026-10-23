@@ -113,6 +113,13 @@ export class CognitionScheduler {
     ) {
       const item = this.queue.shift();
       if (!item) break;
+      // A more recent Core request from this SAME resident can supersede
+      // queued work before it gets the only GPU inference slot. Do not
+      // waste time/tokens on a model answer that must be discarded as stale.
+      if (this.latestByActor.get(item.request.actor) !== item.sequence) {
+        item.resolve(outcome('stale'));
+        continue;
+      }
       this.active += 1;
       void this.execute(item);
     }
