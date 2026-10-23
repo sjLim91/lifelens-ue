@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <vector>
 
 #include "World.h"
@@ -92,9 +93,14 @@ inline ResidentLocalPerception observeLocalResourceProximity(
             });
         if(view.nearbyResources.size()==cap
            &&position==view.nearbyResources.end()) continue;
-        view.nearbyResources.insert(position,std::move(candidate));
-        if(view.nearbyResources.size()>cap)
+        const auto insertAt=std::distance(
+            view.nearbyResources.begin(),position);
+        // Discard the farthest BEFORE insertion, otherwise a full list
+        // temporarily allocates cap+1 facts and defeats the memory bound.
+        if(view.nearbyResources.size()==cap)
             view.nearbyResources.pop_back();
+        view.nearbyResources.insert(
+            view.nearbyResources.begin()+insertAt,std::move(candidate));
     }
     return view;
 }
