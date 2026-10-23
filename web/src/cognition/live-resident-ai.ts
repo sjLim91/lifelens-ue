@@ -109,6 +109,25 @@ export function residentAIObservedTrigger(
       || (!livedContext && !key?.startsWith('Civilization:'))
       || (memory.tags[2] !== 'failure' && memory.tags[2] !== 'success')) continue;
 
+    // A claimed firsthand flag and action_experience tag are not enough.
+    // For Civilization actions the actual Core writer has a finite set of
+    // exact descriptions. Model narrative must never create two "failures"
+    // or invent a success that erases a REAL failure streak. Social context
+    // tokens are validated by their distinct existing contract above.
+    if (!livedContext) {
+      const prefix = '실제 문명 행동 ' + key;
+      const validSuccess = memory.tags[2] === 'success'
+        && memory.what === prefix + ' 수행에 성공했다';
+      const failed = prefix + ' 수행을 시도했지만 실패했다';
+      const validFailure = memory.tags[2] === 'failure'
+        && (memory.what === failed || [
+          'source-removed', 'source-exhausted',
+          'container-missing', 'access-unavailable',
+        ].some(cause => memory.what === failed
+          + ' (직접 확인한 원인: ' + cause + ')'));
+      if (!validSuccess && !validFailure) continue;
+    }
+
     const kind = memory.tags[2];
     // Actual Core social/economic attempts name the OTHER resident in
     // "who". Failed attempts with two different partners must not be
