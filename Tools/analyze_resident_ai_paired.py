@@ -8,6 +8,15 @@ import json
 from pathlib import Path
 
 POLICY = "fixed-deterministic-proxy-not-llm"
+# Keep aligned with cognitiveStrategicIntentCatalog() in CognitiveAgent.h.
+# Merely having 14 arbitrary labels must not count as canonical coverage.
+CANONICAL_INTENTS = frozenset((
+    "ImproveFoodSecurity", "ImproveWaterSecurity", "ImproveShelter",
+    "ImproveSanitation", "AcquireMaterials", "CraftUsefulTools",
+    "ExpandCultivation", "ExploreOpportunity", "CooperateWithResident",
+    "ResolveConflict", "TeachKnowledge", "TradeWithResident",
+    "CareForDependent", "MigrateHousehold",
+))
 COUNT_FIELDS = (
     "proposalsAttempted", "proposalsAccepted", "proposalsRejected",
     "observedCivilizationPendingStarts", "observedSocialPendingStarts",
@@ -112,7 +121,7 @@ def analyze(report):
         "intentLifecycle": {
             "observedIntentKinds": sorted(base_intents),
             "intentKindCount": len(base_intents),
-            "all14IntentsObserved": len(base_intents) == 14,
+            "all14IntentsObserved": set(base_intents) == CANONICAL_INTENTS,
             "perIntent": {
                 intent: {
                     stage: {
