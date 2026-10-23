@@ -99,17 +99,23 @@ class TestPairedAuditAnalysis(unittest.TestCase):
         # nor complete catalog coverage is evidence of action completion.
         zero = {key: 0 for key in src["baseline"]["catalogIntentInputs"][
             "ImproveFoodSecurity"]}
-        for i in range(13):
-            name = f"CatalogIntent{i:02d}"
+        from Tools.analyze_resident_ai_paired import CANONICAL_INTENTS
+        for name in CANONICAL_INTENTS - {"ImproveFoodSecurity"}:
             src["baseline"]["catalogIntentInputs"][name] = dict(zero)
             src["proxy"]["catalogIntentInputs"][name] = dict(zero)
         result = analyze(src)
         self.assertTrue(result["intentLifecycle"]["all14IntentsObserved"])
         self.assertEqual(result["intentLifecycle"]["intentKindCount"], 14)
         self.assertEqual(
-            result["intentLifecycle"]["perIntent"]["CatalogIntent00"][
+            result["intentLifecycle"]["perIntent"]["ImproveWaterSecurity"][
                 "submitted"]["proxy"], 0
         )
+        counterfeit = copy.deepcopy(src)
+        counterfeit["baseline"]["catalogIntentInputs"]["InventedIntent"] = (
+            counterfeit["baseline"]["catalogIntentInputs"].pop("ImproveShelter"))
+        counterfeit["proxy"]["catalogIntentInputs"]["InventedIntent"] = (
+            counterfeit["proxy"]["catalogIntentInputs"].pop("ImproveShelter"))
+        self.assertFalse(analyze(counterfeit)["intentLifecycle"]["all14IntentsObserved"])
 
     def test_invalid_evidence_never_silently_passes(self):
         variants = []
