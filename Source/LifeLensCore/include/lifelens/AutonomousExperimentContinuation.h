@@ -58,6 +58,9 @@ inline AutonomousExperimentContinuation reviewAutonomousExperimentContinuation(
     if(priorOptions.status!=AutonomousExperimentStatus::CandidatesOnly
        ||priorOptions.actor==0 ||priorOptions.actor!=goal.actor
        ||priorOptions.contextFingerprint==0
+       ||priorOptions.issuedWorldSeed!=world.seed
+       ||priorOptions.issuedPopulationSeed!=world.populationSeed
+       ||priorOptions.issuedGenerationVersion!=world.generationVersion
        ||priorOptions.minute<0
        ||priorOptions.minute>world.minute
        ||goal.createdMinute>priorOptions.minute
