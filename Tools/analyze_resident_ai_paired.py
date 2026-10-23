@@ -8,6 +8,15 @@ import json
 from pathlib import Path
 
 POLICY = "fixed-deterministic-proxy-not-llm"
+# Keep aligned with cognitiveStrategicIntentCatalog() in CognitiveAgent.h.
+# Merely having 14 arbitrary labels must not count as canonical coverage.
+CANONICAL_INTENTS = frozenset((
+    "ImproveFoodSecurity", "ImproveWaterSecurity", "ImproveShelter",
+    "ImproveSanitation", "AcquireMaterials", "CraftUsefulTools",
+    "ExpandCultivation", "ExploreOpportunity", "CooperateWithResident",
+    "ResolveConflict", "TeachKnowledge", "TradeWithResident",
+    "CareForDependent", "MigrateHousehold",
+))
 COUNT_FIELDS = (
     "proposalsAttempted", "proposalsAccepted", "proposalsRejected",
     "observedCivilizationPendingStarts", "observedSocialPendingStarts",
@@ -34,6 +43,7 @@ def _metric(value, path):
     catalog = value.get("catalogIntentInputs")
     if not isinstance(catalog, dict) or not catalog:
         raise ValueError(f"{path}: missing 14-intent evidence")
+    intent_counts = {}
     for intent, row in catalog.items():
         if not isinstance(row, dict):
             raise ValueError(f"{path}: invalid intent {intent}")
@@ -48,6 +58,7 @@ def _metric(value, path):
             or m["rejected"] != m["rejectedByValidator"]
                 + m["rejectedAfterValidator"]):
             raise ValueError(f"{path}: inconsistent intent lifecycle {intent}")
+        intent_counts[intent] = m
     verified = value.get("verifiedCoreOutcomes")
     attributed = value.get("acceptedIntentToVerifiedOutcome")
     if not isinstance(verified, dict) or not isinstance(attributed, dict):
@@ -74,7 +85,7 @@ def _metric(value, path):
             or temporal[label]["temporallyMatchedFailure"]
                 > real[label]["failure"]):
             raise ValueError(f"{path}: matched outcomes exceed Core truth {label}")
-    return counts, real, temporal
+    return counts, real, temporal, intent_counts
 
 
 def analyze(report):
@@ -86,9 +97,10 @@ def analyze(report):
         raise ValueError("missing simulation identity or paired baseline evidence")
     if not report["matchedInitialResidents"]:
         raise ValueError("paired cohorts did not start from the same residents")
-    baseline, base_real, base_temporal = _metric(report.get("baseline"), "baseline")
-    proxy, proxy_real, proxy_temporal = _metric(report.get("proxy"), "proxy")
-    del base_temporal, proxy_temporal
+    baseline, base_real, base_temporal, base_intents = _metric(report.get("baseline"), "baseline")
+    proxy, proxy_real, proxy_temporal, proxy_intents = _metric(report.get("proxy"), "proxy")
+    if set(base_intents) != set(proxy_intents):
+        raise ValueError("paired cohorts must report the same intent catalog kinds")
     keys = ("proposalsAttempted", "proposalsAccepted", "proposalsRejected",
             "observedCivilizationPendingStarts", "observedSocialPendingStarts",
             "civilizationSuccessEvidence", "civilizationFailureEvidence",
@@ -103,6 +115,46 @@ def analyze(report):
             key: {"baseline": baseline[key], "proxy": proxy[key],
                   "deltaProxyMinusBaseline": proxy[key] - baseline[key]}
             for key in keys
+        },
+        # Accepted proposals do not imply that Core actions completed.
+        # Preserve intent-stage evidence including both rejection causes.
+        "intentLifecycle": {
+            "observedIntentKinds": sorted(base_intents),
+            "intentKindCount": len(base_intents),
+            "all14IntentsObserved": set(base_intents) == CANONICAL_INTENTS,
+            "perIntent": {
+                intent: {
+                    stage: {
+                        "baseline": base_intents[intent][stage],
+                        "proxy": proxy_intents[intent][stage],
+                        "deltaProxyMinusBaseline": (
+                            proxy_intents[intent][stage] - base_intents[intent][stage]
+                        ),
+                    }
+                    for stage in ("selected", "notOffered", "noEligibleTarget",
+                                  "submitted", "accepted", "rejected",
+                                  "rejectedByValidator", "rejectedAfterValidator")
+                }
+                for intent in sorted(base_intents)
+            },
+            "notVerifiedActionCompletions": True,
+        },
+        # Temporal matches are not causal proof of a completed goal.
+        "temporalAttribution": {
+            kind: {
+                stage: {
+                    "baseline": base_temporal[kind][stage],
+                    "proxy": proxy_temporal[kind][stage],
+                    "deltaProxyMinusBaseline": (
+                        proxy_temporal[kind][stage] - base_temporal[kind][stage]
+                    ),
+                }
+                for stage in ("temporallyMatchedSuccess",
+                              "temporallyMatchedFailure",
+                              "observedWithoutAcceptedIntent",
+                              "noObservedPendingToken")
+            }
+            for kind in sorted(base_temporal)
         },
         "verifiedCoreOutcomes": {
             kind: {
