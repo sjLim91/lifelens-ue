@@ -242,6 +242,30 @@ int main()
     narrated.memory.add(claimed);
     assert(!residentAIHasRecentSourcedGatherFailure(
         narrated,MaterialKind::PlantFood,480,487));
+    assert(!residentAIRecentGatherSourceFailed(
+        narrated,MaterialKind::PlantFood,303,480,487));
+    // A malicious or corrupted "direct" story at a previously successful
+    // real source must not defeat the Core-verified success. The attempted
+    // source ID and timestamp alone never make prose a physical outcome.
+    MemoryRecord forgedAtA=claimed;
+    forgedAtA.where="resource-node:301";
+    forgedAtA.minute=488;
+    narrated.memory.add(forgedAtA);
+    assert(!residentAIRecentGatherSourceFailed(
+        narrated,MaterialKind::PlantFood,301,480,488));
+    // Even an exact Core failure phrase belongs to the actor who actually
+    // executed it; a copied memory with an unrelated subject is not ours.
+    MemoryRecord stolenAtA=claimed;
+    stolenAtA.where="resource-node:301";
+    stolenAtA.minute=489;
+    stolenAtA.what="실제 문명 행동 "+key
+        +" 수행을 시도했지만 실패했다 (직접 확인한 원인: access-unavailable)";
+    stolenAtA.who=999;
+    narrated.memory.add(stolenAtA);
+    assert(!residentAIRecentGatherSourceFailed(
+        narrated,MaterialKind::PlantFood,301,480,489));
+    assert(!residentAIHasRecentSourcedGatherFailure(
+        narrated,MaterialKind::PlantFood,480,489));
     const auto restoredSource=chooseResidentAIExistingCivilizationAffordance(
         sources,searching,camp,sourceThought);
     assert(restoredSource
