@@ -68,6 +68,19 @@ export class CognitionScheduler {
   submitObserved(request: CognitiveRequestDto): Promise<CognitionOutcome> {
     if (this.disposed) return Promise.resolve(outcome('cancelled'));
     if (request.allowedIntents.length === 0) return Promise.resolve(outcome('rejected', 'invalid_schema'));
+    // A queued thought from THIS resident must not reserve the sole free
+    // local-model slot against a fresher Core observation from that resident.
+    // Replace only a same-actor queued item; never displace another person's
+    // thought or let an older Core minute roll back a newer queued request.
+    const queuedIndex = this.queue.findIndex(item => item.request.actor === request.actor);
+    if (queuedIndex >= 0) {
+      const queued = this.queue[queuedIndex];
+      if (request.minute < queued.request.minute) {
+        return Promise.resolve(outcome('stale'));
+      }
+      this.queue.splice(queuedIndex, 1);
+      queued.resolve(outcome('stale'));
+    }
     const canStart = this.active < this.config.maxConcurrent;
     if (!canStart && this.queue.length >= this.config.maxQueued) {
       return Promise.resolve(outcome('busy'));

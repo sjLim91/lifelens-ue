@@ -483,6 +483,37 @@ await test('scheduler bounds active and waiting work',async()=>{
   scheduler.dispose();
 });
 
+await test('full single-model queue admits fresher thought from the same resident',async()=>{
+  const entered=[];
+  const release=[];
+  const provider={name:'local-model',reason:req=>new Promise(resolve=>{
+    entered.push([req.actor,req.minute]);
+    release.push(()=>resolve(proposal(req)));
+  })};
+  const scheduler=new CognitionScheduler(provider,()=>105,{
+    maxConcurrent:1,maxQueued:1,timeoutMs:1000,staleAfterSimulationMinutes:100,
+  });
+  const active=scheduler.submitObserved(request('1',100));
+  const old=scheduler.submitObserved(request('2',101));
+  const newThought=scheduler.submitObserved(request('2',105));
+  assert.equal((await old).status,'stale',
+    'older same-resident queue item must release its reserved slot immediately');
+  assert.equal((await scheduler.submitObserved(request('2',103))).status,'stale',
+    'a new older Core observation may not displace the newest queued mind');
+  assert.equal((await scheduler.submitObserved(request('3',105))).status,'busy',
+    'another resident may not steal the occupied one-slot queue');
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.deepEqual(entered,[['1',100]]);
+  release.shift()();
+  assert.equal((await active).status,'validated');
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.deepEqual(entered,[['1',100],['2',105]],
+    'only the latest admitted same-resident request reaches local inference');
+  release.shift()();
+  assert.equal((await newThought).status,'validated');
+  scheduler.dispose();
+});
+
 await test('superseded queued resident thoughts never consume local inference',async()=>{
   const entered=[];
   const pending=[];
