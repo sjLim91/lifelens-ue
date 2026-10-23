@@ -73,7 +73,12 @@ inline bool rememberExperiencedSocialMoodOutcome(
            ||memory.tags[0]!="social_self_outcome"
            ||memory.tags[1]!=action
            ||memory.tags[2]!=outcome
-           ||memory.tags[3]!="direct") continue;
+           ||memory.tags[3]!="direct"
+           // A hearsay/inference may imitate the same tags. Never promote
+           // it into firsthand experience or overwrite future evidence.
+           ||memory.source!=MemorySource::DirectWitness
+           ||!memory.witnessed ||memory.sourceCharacter!=actor.id
+           ||memory.minute>minute) continue;
         memory.minute=minute;
         memory.confidence=1.0;
         memory.source=MemorySource::DirectWitness;

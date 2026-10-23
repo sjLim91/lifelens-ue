@@ -128,6 +128,46 @@ int main()
     assert(learnedSocialMoodDisposition(other,22,SocialIntent::Repair)<0);
     assert(learnedSocialMoodDisposition(other,22,SocialIntent::Approach)==0.0);
 
+    // A third-party report with self-outcome tags is NEVER recycled into
+    // a firsthand memory, nor is a future-dated Core-looking observation
+    // overwritten by an older action receipt.
+    Character provenance=world.characters[0];
+    provenance.memory.entries.clear();
+    provenance.beliefs.beliefs.clear();
+    MemoryRecord hearsay;
+    hearsay.who=22;
+    hearsay.sourceCharacter=33;
+    hearsay.source=MemorySource::ToldByOther;
+    hearsay.witnessed=false;
+    hearsay.minute=world.minute;
+    hearsay.what="reported-good-mood";
+    hearsay.tags={"social_self_outcome","Approach","improved","direct"};
+    provenance.memory.add(hearsay);
+    MemoryRecord future=hearsay;
+    future.sourceCharacter=provenance.id;
+    future.source=MemorySource::DirectWitness;
+    future.witnessed=true;
+    future.minute=world.minute+100;
+    future.what="future-self-report";
+    provenance.memory.add(future);
+    assert(rememberExperiencedSocialMoodOutcome(
+        provenance,22,SocialIntent::Approach,world.minute+1,0.00,0.05));
+    assert(provenance.memory.entries.size()==3);
+    assert(provenance.memory.entries[0].what=="reported-good-mood");
+    assert(provenance.memory.entries[0].source==MemorySource::ToldByOther);
+    assert(!provenance.memory.entries[0].witnessed);
+    assert(provenance.memory.entries[1].what=="future-self-report");
+    assert(provenance.memory.entries[1].minute==world.minute+100);
+    assert(provenance.memory.entries[2].source==MemorySource::DirectWitness);
+    assert(provenance.memory.entries[2].sourceCharacter==provenance.id);
+    assert(provenance.memory.entries[2].minute==world.minute+1);
+    assert(rememberExperiencedSocialMoodOutcome(
+        provenance,22,SocialIntent::Approach,world.minute+2,0.00,0.05));
+    assert(provenance.memory.entries.size()==3);
+    assert(provenance.memory.entries[0].what=="reported-good-mood");
+    assert(provenance.memory.entries[1].minute==world.minute+100);
+    assert(provenance.memory.entries[2].minute==world.minute+2);
+
     // The existing authoritative snapshot serializes the learned beliefs
     // and bounded memories, without adding a new version or pending field.
     Simulation simulation(51515);
