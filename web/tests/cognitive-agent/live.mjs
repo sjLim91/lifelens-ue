@@ -582,6 +582,25 @@ const provider = {
       ],what:'실제 문명 행동 Civilization:Gather:PlantFood 수행에 성공했다',
     }],
   }),'Reflection','latest real success resets failure streak');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[failure,{...second,what:'model says the source failed'}],
+  }),'Reflection','fabricated direct-style prose cannot create a second Core failure');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[{
+      ...failure,what:'I failed before',
+    },{
+      ...second,what:'I failed again',
+    }],
+  }),'Reflection','two fabricated failures are not firsthand Core attempts');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[failure,second,{
+      ...second,minute:480,tags:[
+        'action_experience','Civilization:Gather:PlantFood','success',
+      ],what:'model says I succeeded',
+    }],
+  }),'RepeatedFailure',
+  'an unverified claimed success must not erase two real Core failures');
+
   assert.equal(residentAIObservedTrigger({...base,minute:2000}),
     'Reflection','one-day-old attempts expire');
   assert.equal(residentAIObservedTrigger({
