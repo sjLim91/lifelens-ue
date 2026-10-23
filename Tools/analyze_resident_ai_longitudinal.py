@@ -17,7 +17,7 @@ else:
 CORE_EVENTS = ("proposalsAttempted", "proposalsAccepted", "proposalsRejected",
                "civilizationPendingStarts", "socialPendingStarts", "otherPendingStarts",
                "civilizationSuccessEvidence", "civilizationFailureEvidence",
-               "firsthandCivilizationMemories")
+               "firsthandCivilizationMemories", "knownTechniqueRecords")
 
 
 def analyze_series(reports):
@@ -49,10 +49,17 @@ def analyze_series(reports):
                 if older is None or newer is None:
                     branches[branch] = {"comparable": False}
                     continue
+                # Core identities never resurrect. A dead resident present
+                # at both checkpoints cannot silently restart the same GUID.
+                if not older["alive"] and newer["alive"]:
+                    raise ValueError(f"{rid}: impossible dead-to-alive resident transition")
                 changes = {}
                 for metric in CORE_EVENTS:
                     delta = newer[metric] - older[metric]
-                    if (metric != "firsthandCivilizationMemories" and delta < 0):
+                    # Working memory and held technique records can shrink.
+                    # Their counts are observations, NOT cumulative successes.
+                    if (metric not in ("firsthandCivilizationMemories",
+                                       "knownTechniqueRecords") and delta < 0):
                         raise ValueError(f"{rid}: nonmonotonic Core {branch}.{metric}")
                     changes[metric] = delta
                 outcomes = {}
@@ -86,6 +93,8 @@ def analyze_series(reports):
                 branches[branch] = {
                     "comparable": True,
                     "observedMetricDelta": changes,
+                    "residentAliveBefore": older["alive"],
+                    "residentAliveAfter": newer["alive"],
                     "verifiedCoreOutcomeDelta": outcomes,
                     "tradeJourneyReturnsDelta": trade_returns,
                     "acceptedProposalsAreNotCompletedActions": True,
