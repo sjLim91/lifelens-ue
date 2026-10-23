@@ -54,6 +54,12 @@ function valid(record: unknown): record is PersistedWorld {
     && typeof value.snapshotBase64 === 'string'
     && value.snapshotBase64.length >= 16
     && value.snapshotBase64.length <= 64 * 1024 * 1024
+    // A snapshot is stored as canonical base64 bytes, not arbitrary text.
+    // Structural damage must fail closed before decode/restore or overwrite.
+    && value.snapshotBase64.length % 4 === 0
+    && /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
+      value.snapshotBase64,
+    )
     && (value.earthOrigin === null || (
       typeof value.earthOrigin === 'object'
       && Number.isFinite(value.earthOrigin?.latitudeDeg)
