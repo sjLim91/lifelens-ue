@@ -16,6 +16,9 @@ const DATABASE_NAME = 'LifeLensContinuingWorld';
 const DATABASE_VERSION = 1;
 const STORE_NAME = 'checkpoints';
 const PRIMARY_KEY = 'active-world';
+// LifeLensCore World::minute is a signed C++ int. An oversized JS value
+// must never be accepted as a durable authoritative minute or replay cursor.
+export const MAX_CORE_WORLD_MINUTE = 2147483647;
 
 function database(): Promise<IDBDatabase> {
   if (typeof indexedDB === 'undefined') {
@@ -48,6 +51,7 @@ function valid(record: unknown): record is PersistedWorld {
     && typeof value.minute === 'number'
     && Number.isSafeInteger(value.minute)
     && value.minute >= 0
+    && value.minute <= MAX_CORE_WORLD_MINUTE
     && typeof value.savedAtWallMs === 'number'
     && Number.isSafeInteger(value.savedAtWallMs)
     && (value.savedAtWallMs ?? 0) > 0
@@ -101,6 +105,12 @@ export function assertCheckpointProgress(
   existing: PersistedWorld | null,
   incoming: PersistedWorld,
 ): void {
+  // This assertion is also exported for direct callers, not just the
+  // IndexedDB writer. A malformed candidate is never an admissible Core
+  // checkpoint even when there is no previous save to compare against.
+  if (!valid(incoming)) {
+    throw Error('유효하지 않은 Core 체크포인트 비교 요청입니다.');
+  }
   if (existing === null) return;
   if (!valid(existing)) {
     throw Error('기존 월드 기록이 손상되어 새 저장본으로 덮어쓰지 않습니다.');

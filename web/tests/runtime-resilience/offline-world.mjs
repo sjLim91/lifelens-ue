@@ -67,7 +67,7 @@ try {
     return { REAL_MS_PER_SIMULATION_MINUTE_AT_1X: actualMinuteMs };
   });
   const { readPersistedWorld, writePersistedWorld, assertCheckpointProgress,
-    elapsedOfflineMinutes, wallTimeAfterAdvance } = exports;
+    elapsedOfflineMinutes, wallTimeAfterAdvance, MAX_CORE_WORLD_MINUTE } = exports;
   assert.equal(await readPersistedWorld(), null);
   const t0 = 1790000000000;
   assert.equal(elapsedOfflineMinutes(t0, t0 - 60000), 0,
@@ -99,6 +99,23 @@ try {
     minute: 338, savedAtWallMs: t0, earthOrigin: null,
     snapshotBase64: 'QUJDREVGR0hJSktMTU5PUA==',
   };
+  assert.equal(MAX_CORE_WORLD_MINUTE, 2147483647,
+    'the durable minute must match the authoritative signed Core field');
+  assert.doesNotThrow(() => assertCheckpointProgress(null, {
+    ...record, minute: MAX_CORE_WORLD_MINUTE,
+  }));
+  for (const minute of [MAX_CORE_WORLD_MINUTE + 1, Number.MAX_SAFE_INTEGER,
+    Number.POSITIVE_INFINITY, 1.5, -1]) {
+    const forged = { ...record, minute };
+    assert.throws(() => assertCheckpointProgress(null, forged),
+      /유효하지 않은/, 'an empty save cannot authorize forged Core time');
+    await assert.rejects(writePersistedWorld(forged),
+      /유효하지 않은/, 'oversized/fractional time cannot become a checkpoint');
+  }
+  assert.throws(() => assertCheckpointProgress(null, {
+    ...record, snapshotBase64: '!!!!',
+  }), /유효하지 않은/, 'direct comparison must validate incoming Core bytes');
+
   for (const invalidSeed of [
     '0', '00', '00042', '', '-1', '1.0', 'abc', '18446744073709551616',
     '999999999999999999999999999999999',
