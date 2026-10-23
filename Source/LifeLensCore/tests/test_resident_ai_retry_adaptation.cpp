@@ -185,6 +185,8 @@ int main()
         searching,MaterialKind::PlantFood,484));
     assert(residentAIRecentGatherSourceFailed(
         searching,MaterialKind::PlantFood,301,480,484));
+    assert(residentAIHasRecentSourcedGatherFailure(
+        searching,MaterialKind::PlantFood,480,484));
     assert(!residentAIRecentGatherSourceFailed(
         searching,MaterialKind::PlantFood,302,480,484));
     const auto changedSource=chooseResidentAIExistingCivilizationAffordance(
@@ -211,6 +213,35 @@ int main()
     // freeze an entire source based on historical failures forever.
     rememberCivilizationAttemptOutcome(searching,attemptedA,484,true);
     sources.minute=485;
+    assert(!residentAIHasRecentSourcedGatherFailure(
+        searching,MaterialKind::PlantFood,480,485));
+    // Recovery of A cannot erase an independent CURRENT failure at B,
+    // but a later real success at B resolves that source as well.
+    auto attemptedB=attemptedA;
+    attemptedB.resourceNode=302;
+    rememberCivilizationAttemptOutcome(
+        searching,attemptedB,485,false,
+        ResidentGatherFailureCause::ResourceAccessUnavailable);
+    assert(residentAIHasRecentSourcedGatherFailure(
+        searching,MaterialKind::PlantFood,480,485));
+    rememberCivilizationAttemptOutcome(searching,attemptedB,486,true);
+    assert(!residentAIHasRecentSourcedGatherFailure(
+        searching,MaterialKind::PlantFood,480,486));
+    // A fabricated narrative with failure tags is NOT a new verified
+    // execution record. The exact Core-written message is mandatory.
+    Character narrated=searching;
+    MemoryRecord claimed;
+    claimed.who=narrated.id;
+    claimed.sourceCharacter=narrated.id;
+    claimed.source=MemorySource::DirectWitness;
+    claimed.witnessed=true;
+    claimed.minute=487;
+    claimed.where="resource-node:303";
+    claimed.what="model claimed this source failed";
+    claimed.tags={"action_experience",key,"failure"};
+    narrated.memory.add(claimed);
+    assert(!residentAIHasRecentSourcedGatherFailure(
+        narrated,MaterialKind::PlantFood,480,487));
     const auto restoredSource=chooseResidentAIExistingCivilizationAffordance(
         sources,searching,camp,sourceThought);
     assert(restoredSource

@@ -6,6 +6,7 @@
 #include "ResidentCognitivePreference.h"
 #include "CivilizationDecision.h"
 #include "ResidentCivilizationOutcomeLearning.h"
+#include "ResidentResourceOutcomePreference.h"
 #include "ResidentAICompletedPlanGuard.h"
 
 namespace lifelens {
@@ -153,15 +154,18 @@ inline bool residentAIHasRecentSourcedGatherFailure(
     gather.intent=CivilizationIntent::Gather;
     gather.material=material;
     const std::string key=civilizationActionExperienceKey(gather);
-    for(const auto& memory:actor.memory.entries)
-        if(memory.source==MemorySource::DirectWitness &&memory.witnessed
-           &&memory.sourceCharacter==actor.id
-           &&memory.minute>=0 &&memory.minute<=nowMinute
-           &&nowMinute-memory.minute<=ResidentAgencyGoalHorizonMinutes
-           &&memory.tags.size()==3
-           &&memory.tags[0]=="action_experience"
-           &&memory.tags[1]==key &&memory.tags[2]=="failure"
-           &&memory.where.rfind("resource-node:",0)==0)
+    // A historical failure is not an ONGOING failed source once this same
+    // resident has actually succeeded there. The Core-derived per-source
+    // index already resolves the latest authentic attempt (same-minute
+    // success wins), rejects rumors, and never guesses a failed source from
+    // the absence of a node in a bounded perception scan.
+    const auto evidence=buildResidentResourceOutcomeIndex(actor,nowMinute);
+    for(const auto& entry:evidence.entries)
+        if(entry.first.first==key
+           &&entry.second.hasEvidence
+           &&!entry.second.succeeded
+           &&entry.second.minute>=0
+           &&nowMinute-entry.second.minute<=ResidentAgencyGoalHorizonMinutes)
             return true;
     return false;
 }
