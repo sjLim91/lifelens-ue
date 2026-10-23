@@ -5,8 +5,9 @@ import { LifeLensCoreBridge } from './runtime/core-bridge';
 import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
 import { SimulationClock } from './runtime/simulation-clock';
 import { acquireWorldWriterLease, type WorldWriterLease } from './runtime/world-writer-lease';
-import { elapsedOfflineMinutes, readPersistedWorld, wallTimeAfterAdvance,
-  writePersistedWorld, type PersistedWorld } from './runtime/offline-world-store';
+import { assertCoreMinuteAdvanceCapacity, elapsedOfflineMinutes, readPersistedWorld,
+  wallTimeAfterAdvance, writePersistedWorld,
+  type PersistedWorld } from './runtime/offline-world-store';
 import {
   OBSERVER_CAMERA_CONTRACT,
   OBSERVER_RUNTIME_CONTRACT,
@@ -215,12 +216,16 @@ export function startObserverEngine(): () => void {
     let advanced = 0;
     let nextCheckpoint = MINUTES_PER_DAY;
     try {
+      let currentCoreMinute = Number(ownedCore?.worldOverview().minute);
+      assertCoreMinuteAdvanceCapacity(currentCoreMinute, 0);
       while (!stopped) {
         const target = elapsedOfflineMinutes(savedAt, Date.now());
         const remaining = target - advanced;
         if (remaining <= 0) break;
         const step = Math.min(240, remaining);
+        assertCoreMinuteAdvanceCapacity(currentCoreMinute, step);
         worldSession.runMinutes(step);
+        currentCoreMinute += step;
         advanced += step;
         timelineAnchorMs = wallTimeAfterAdvance(savedAt, advanced);
         if (advanced >= nextCheckpoint) {
@@ -663,6 +668,7 @@ export function startObserverEngine(): () => void {
     try {
       const beforeSnapshot = refresh(true);
       if (!beforeSnapshot) throw new Error('고속 진행 전 세계 기록을 읽지 못했습니다.');
+      assertCoreMinuteAdvanceCapacity(Number(beforeSnapshot.overview.minute), totalMinutes);
       const before = captureFastForwardState({
         world: beforeSnapshot.overview,
         residents: beforeSnapshot.residentDetails,
