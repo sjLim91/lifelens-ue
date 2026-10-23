@@ -79,6 +79,32 @@ int main()
         ::PreviousAlternativeStillPreferred);
     assert(review.currentBest.has_value());
 
+    // A resident's old goal may not silently survive NEW GAME or a
+    // different world-generation/population lineage, even when actor IDs,
+    // social facts, and the goal's deadline happen to match exactly.
+    auto foreignWorld=advanced;
+    ++foreignWorld.seed;
+    auto foreignView=observe(foreignWorld,relations,11);
+    review=reviewAutonomousExperimentContinuation(
+        foreignWorld,relations,foreignView,goal,issued,selected);
+    assert(review.status==AutonomousExperimentContinuationStatus
+        ::InvalidPreviousProposal);
+    assert(!review.currentBest);
+    auto foreignPopulation=advanced;
+    ++foreignPopulation.populationSeed;
+    auto populationView=observe(foreignPopulation,relations,11);
+    review=reviewAutonomousExperimentContinuation(
+        foreignPopulation,relations,populationView,goal,issued,selected);
+    assert(review.status==AutonomousExperimentContinuationStatus
+        ::InvalidPreviousProposal);
+    auto foreignGeneration=advanced;
+    ++foreignGeneration.generationVersion;
+    auto generationView=observe(foreignGeneration,relations,11);
+    review=reviewAutonomousExperimentContinuation(
+        foreignGeneration,relations,generationView,goal,issued,selected);
+    assert(review.status==AutonomousExperimentContinuationStatus
+        ::InvalidPreviousProposal);
+
     auto altered=selected;
     ++altered.effortUnits;
     review=reviewAutonomousExperimentContinuation(
