@@ -6,6 +6,7 @@
 #include "ResidentAIExistingAffordance.h"
 #include "ResidentAICompletedPlanGuard.h"
 #include "AutonomousSocialOutcomeLearning.h"
+#include "AutonomousGoalActionLink.h"
 #include "SocialUtility.h"
 
 namespace lifelens {
@@ -96,8 +97,16 @@ inline ResidentAgencyChoice chooseSingleResidentAgencyDecision(
         // bypasses care/avoidance, or overrides urgent survival.
         const double personalDisposition=learnedSocialMoodDisposition(
             actor,thought.target,intent);
+        // A REAL Core-completed token may also have shown whether this
+        // method advanced the actor's OWN trust objective. Incorporate
+        // that independent firsthand evidence in the SAME resident mind;
+        // imagined completions, hearsay and the recipient's private mood
+        // cannot affect this preference or authorize an action.
+        const double goalProgress=learnedAutonomousGoalProgressDisposition(
+            actor,thought.target,intent);
         const double score=std::clamp(
-            baseScore*(1.0+0.25*personalDisposition),0.0,1.0);
+            baseScore*(1.0+0.20*personalDisposition+0.20*goalProgress),
+            0.0,1.0);
         if(score<0.18) return answer;
 
         UnifiedUtilityDecision next=fallback;
