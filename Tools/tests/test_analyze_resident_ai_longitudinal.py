@@ -110,6 +110,40 @@ class TestCoreLongitudinalResidentAudit(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "disappeared Core outcome"):
             analyze_series([first, second])
 
+    def test_technique_counts_and_death_are_observations_not_model_learning(self):
+        first = fixture()
+        later = copy.deepcopy(first)
+        later["days"] = 100
+        original = first["proxy"]["residents"]["1"]["knownTechniqueRecords"]
+        later["proxy"]["residents"]["1"]["knownTechniqueRecords"] = original + 2
+        later["proxy"]["knownTechniqueRecords"] += 2
+        later["proxy"]["residents"]["1"]["alive"] = False
+        later["proxy"]["livingResidents"] -= 1
+        result = analyze_series([first, later])
+        actor = result["windows"][0]["residents"]["1"]["proxy"]
+        self.assertEqual(actor["observedMetricDelta"]["knownTechniqueRecords"], 2)
+        self.assertTrue(actor["residentAliveBefore"])
+        self.assertFalse(actor["residentAliveAfter"])
+        self.assertFalse(result["longitudinalLearningProven"])
+        self.assertFalse(result["causalImprovementDemonstrated"])
+
+        # Technique-record counts are a noncumulative inventory. Never turn
+        # a decline into a negative number of completed Core actions.
+        third = copy.deepcopy(later)
+        third["days"] = 365
+        third["proxy"]["residents"]["1"]["knownTechniqueRecords"] = original
+        third["proxy"]["knownTechniqueRecords"] -= 2
+        reduced = analyze_series([first, later, third])
+        self.assertEqual(reduced["windows"][1]["residents"]["1"]["proxy"]
+                         ["observedMetricDelta"]["knownTechniqueRecords"], -2)
+
+        resurrection = copy.deepcopy(third)
+        resurrection["days"] = 1000
+        resurrection["proxy"]["residents"]["1"]["alive"] = True
+        resurrection["proxy"]["livingResidents"] += 1
+        with self.assertRaisesRegex(ValueError, "dead-to-alive"):
+            analyze_series([first, later, third, resurrection])
+
     def test_empty_singleton_and_invalid_policy(self):
         first = fixture()
         with self.assertRaises(ValueError):
