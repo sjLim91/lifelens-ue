@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <vector>
 
 #include "World.h"
@@ -60,31 +61,47 @@ inline ResidentLocalPerception observeLocalResourceProximity(
     view.observerPosition=actualPosition;
     view.radiusCells=std::min(
         requestedRadius,ResidentLocalPerceptionMaxRadius);
+    // Bound BOTH the returned facts and working memory while scanning.
+    // Crowded generated chunks can hold thousands of nodes; collecting and
+    // sorting the entire world would make each resident's private perception
+    // an unbounded O(N log N) allocation. Keep only the nearest 12 facts.
+    const auto cap=std::min(maxFacts,ResidentLocalPerceptionMaxFacts);
+    view.nearbyResources.reserve(cap);
+    const auto closer=[](const ObservedLocalResource& a,
+                         const ObservedLocalResource& b){
+        if(a.distanceCells!=b.distanceCells)
+            return a.distanceCells<b.distanceCells;
+        return a.nodeId<b.nodeId;
+    };
     for(const auto& node:world.resourceNodes){
         if(node.id==0 ||node.material==MaterialKind::Unknown
            ||node.quantity<=0) continue;
-        const auto distance=perceptionGridDistance(
-            actualPosition,node.pos);
+        const auto distance=perceptionGridDistance(actualPosition,node.pos);
         if(distance>view.radiusCells) continue;
-        view.nearbyResources.push_back({
+        ObservedLocalResource candidate{
             node.id,node.material,node.pos,static_cast<int>(distance),
             node.quantity<3
                 ?ObservedResourceAbundance::Scarce
                 :ObservedResourceAbundance::Present
-        });
+        };
+        // The existing ordering remains distance first, then immutable Core
+        // node ID. Equal keys preserve their original scan order.
+        auto position=std::upper_bound(
+            view.nearbyResources.begin(),view.nearbyResources.end(),
+            candidate,[&](const auto& value,const auto& prior){
+                return closer(value,prior);
+            });
+        if(view.nearbyResources.size()==cap
+           &&position==view.nearbyResources.end()) continue;
+        const auto insertAt=std::distance(
+            view.nearbyResources.begin(),position);
+        // Discard the farthest BEFORE insertion, otherwise a full list
+        // temporarily allocates cap+1 facts and defeats the memory bound.
+        if(view.nearbyResources.size()==cap)
+            view.nearbyResources.pop_back();
+        view.nearbyResources.insert(
+            view.nearbyResources.begin()+insertAt,std::move(candidate));
     }
-    std::sort(view.nearbyResources.begin(),view.nearbyResources.end(),
-        [](const auto& a,const auto& b){
-            if(a.distanceCells!=b.distanceCells)
-                return a.distanceCells<b.distanceCells;
-            return a.nodeId<b.nodeId;
-        });
-    // An external call cannot enlarge the resident's personal senses
-    // beyond the fixed Core contract merely by requesting more facts.
-    // Keep the nearest deterministic 12; farther World truth stays hidden.
-    const auto cap=std::min(maxFacts,ResidentLocalPerceptionMaxFacts);
-    if(view.nearbyResources.size()>cap)
-        view.nearbyResources.resize(cap);
     return view;
 }
 
