@@ -48,6 +48,12 @@ struct AutonomousExperimentAlternative {
 struct AutonomousExperimentOptions {
     CharacterId actor=0;
     int minute=-1;
+    // World genesis is part of the issued plan identity. A fresh request at
+    // another minute cannot reuse the old fingerprint, but it must never
+    // carry this resident's plan into a different world/seed lineage.
+    WorldSeed issuedWorldSeed=0;
+    PopulationSeed issuedPopulationSeed=0;
+    WorldGenerationVersion issuedGenerationVersion=0;
     std::uint64_t contextFingerprint=0;
     AutonomousExperimentStatus status=AutonomousExperimentStatus::RejectedContext;
     std::vector<AutonomousExperimentAlternative> alternatives;
@@ -114,6 +120,9 @@ inline AutonomousExperimentOptions composeAutonomousExperimentOptions(
     AutonomousExperimentOptions result;
     result.actor=request.actor;
     result.minute=world.minute;
+    result.issuedWorldSeed=world.seed;
+    result.issuedPopulationSeed=world.populationSeed;
+    result.issuedGenerationVersion=world.generationVersion;
     if(!validAutonomousExperimentBudget(budget)){
         result.status=AutonomousExperimentStatus::InvalidBudget;
         return result;
@@ -362,6 +371,9 @@ inline AutonomousExperimentRevalidation revalidateAutonomousExperimentChoice(
         return AutonomousExperimentRevalidation::InvalidBudget;
     if(issued.actor!=currentRequest.actor
        ||issued.actor==0 ||issued.minute!=world.minute
+       ||issued.issuedWorldSeed!=world.seed
+       ||issued.issuedPopulationSeed!=world.populationSeed
+       ||issued.issuedGenerationVersion!=world.generationVersion
        ||issued.status!=AutonomousExperimentStatus::CandidatesOnly
        ||issued.contextFingerprint==0
        ||issued.contextFingerprint!=cognitiveRequestFingerprint(currentRequest))
