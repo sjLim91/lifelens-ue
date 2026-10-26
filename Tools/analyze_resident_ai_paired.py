@@ -17,6 +17,9 @@ CANONICAL_INTENTS = frozenset((
     "ResolveConflict", "TeachKnowledge", "TradeWithResident",
     "CareForDependent", "MigrateHousehold",
 ))
+# Must match ObservedOpportunityContextNames in
+# ResidentAIContextLifecycleAudit.h, never accept model-defined outcome kinds.
+CORE_OUTCOME_KINDS = frozenset(("KnowledgeTeaching", "Parenting", "Trade"))
 COUNT_FIELDS = (
     "proposalsAttempted", "proposalsAccepted", "proposalsRejected",
     "observedCivilizationPendingStarts", "observedSocialPendingStarts",
@@ -70,6 +73,8 @@ def _metric(value, path):
     labels = set(verified) - {"tradeJourneyReturns"}
     if not labels or labels != set(attributed):
         raise ValueError(f"{path}: verified and attributed kinds differ")
+    if not labels.issubset(CORE_OUTCOME_KINDS):
+        raise ValueError(f"{path}: unknown Core outcome kind")
     # Core's completed journey-return counter is genuine execution evidence,
     # not a model proposal. It previously bypassed validation and reporting.
     # Legacy reports that predate the field stay readable as unavailable.
