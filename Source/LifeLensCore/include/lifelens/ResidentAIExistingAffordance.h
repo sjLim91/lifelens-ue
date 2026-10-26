@@ -15,6 +15,32 @@ namespace lifelens {
 // Subsequent Core steps must still satisfy the live world, prerequisites,
 // personal outcome evidence and normal bodily survival at every tick.
 
+// Validate the entire Core-authored Gather outcome, not a self-declared
+// DirectWitness flag or tags. An unverified future "success" must not erase
+// a genuine failure, and forged failures must not poison resident planning.
+inline std::optional<bool> residentAIVerifiedGatherOutcome(
+    const Character& actor,const MemoryRecord& memory,
+    const std::string& key,int minute)
+{
+    if(memory.source!=MemorySource::DirectWitness
+       ||!memory.witnessed ||memory.sourceCharacter!=actor.id
+       ||memory.who!=actor.id ||memory.minute<0
+       ||memory.minute>minute ||memory.tags.size()!=3
+       ||memory.tags[0]!="action_experience"
+       ||memory.tags[1]!=key) return std::nullopt;
+    const std::string prefix="실제 문명 행동 "+key;
+    if(memory.tags[2]=="success"
+       &&memory.what==prefix+" 수행에 성공했다") return true;
+    if(memory.tags[2]!="failure") return std::nullopt;
+    const std::string failure=prefix+" 수행을 시도했지만 실패했다";
+    if(memory.what==failure) return false;
+    const std::string diagnosed=failure+" (직접 확인한 원인: ";
+    for(const char* cause:{"source-removed","source-exhausted",
+                           "container-missing","access-unavailable"})
+        if(memory.what==diagnosed+cause+")") return false;
+    return std::nullopt;
+}
+
 // A model's proposed strategy is not evidence. Require at least three
 // firsthand failed Core attempts, a worse-than-neutral accumulated belief,
 // and the actor's most recent firsthand outcome for the SAME material being
@@ -38,19 +64,13 @@ inline bool residentAIHasRecentRepeatedGatherFailure(
     int latest=-1;
     bool latestFailed=false;
     for(const MemoryRecord& memory:actor.memory.entries){
-        if(memory.source!=MemorySource::DirectWitness
-           ||!memory.witnessed ||memory.sourceCharacter!=actor.id
-           ||memory.minute<0 ||memory.minute>minute
-           ||memory.tags.size()!=3
-           ||memory.tags[0]!="action_experience"
-           ||memory.tags[1]!=key) continue;
-        if(memory.tags[2]!="failure" &&memory.tags[2]!="success")
-            continue;
+        const auto succeeded=residentAIVerifiedGatherOutcome(
+            actor,memory,key,minute);
+        if(!succeeded.has_value()) continue;
         if(memory.minute>latest){
             latest=memory.minute;
-            latestFailed=memory.tags[2]=="failure";
-        }else if(memory.minute==latest
-                 &&memory.tags[2]=="success"){
+            latestFailed=!*succeeded;
+        }else if(memory.minute==latest &&*succeeded){
             latestFailed=false;
         }
     }
@@ -84,20 +104,15 @@ inline bool residentAIHasConfirmedLostGatherSource(
     int latest=-1;
     bool confirmed=false;
     for(const MemoryRecord& memory:actor.memory.entries){
-        if(memory.source!=MemorySource::DirectWitness
-           ||!memory.witnessed ||memory.sourceCharacter!=actor.id
-           ||memory.minute<0 ||memory.minute>minute
-           ||memory.tags.size()!=3
-           ||memory.tags[0]!="action_experience"
-           ||memory.tags[1]!=key
-           ||(memory.tags[2]!="failure" &&memory.tags[2]!="success"))
-            continue;
-        // A same-minute success is decisive even if memories are reordered.
+        const auto succeeded=residentAIVerifiedGatherOutcome(
+            actor,memory,key,minute);
+        if(!succeeded.has_value()) continue;
+        // A same-minute VERIFIED success wins regardless of memory order.
         if(memory.minute>latest){
             latest=memory.minute;
-            confirmed=memory.tags[2]=="failure"
+            confirmed=!*succeeded
                 &&(memory.what==exhausted ||memory.what==removed);
-        }else if(memory.minute==latest &&memory.tags[2]=="success"){
+        }else if(memory.minute==latest &&*succeeded){
             confirmed=false;
         }
     }
