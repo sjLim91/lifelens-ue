@@ -43,6 +43,10 @@ def _metric(value, path):
     catalog = value.get("catalogIntentInputs")
     if not isinstance(catalog, dict) or not catalog:
         raise ValueError(f"{path}: missing 14-intent evidence")
+    # An invented label is not a new autonomous ability. The partial
+    # catalog of archived audits is supported, unknown names are not.
+    if set(catalog) - CANONICAL_INTENTS:
+        raise ValueError(f"{path}: unknown strategic intent catalog labels")
     intent_counts = {}
     for intent, row in catalog.items():
         if not isinstance(row, dict):
