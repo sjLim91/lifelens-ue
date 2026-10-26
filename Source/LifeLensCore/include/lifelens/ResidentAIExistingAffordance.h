@@ -328,6 +328,39 @@ inline CivilizationUtilityDecision chooseResidentAIKnowledgePrerequisiteStep(
             world,resident,position,edge.prerequisite,population,thought,depth+1);
         if(preceding.intent!=CivilizationIntent::None) return preceding;
     }
+    // Metal experiments require a physically built and operational furnace.
+    // Under the SAME observed tool goal, planning/delivering/working on the
+    // actual project is a genuine executable prerequisite, not free smelting.
+    if(desired==TechnologyId::CopperSmelting
+       ||desired==TechnologyId::TinSmelting
+       ||desired==TechnologyId::BronzeAlloying){
+        if(!hasOperationalFurnaceNear(world,position)){
+            const auto furnace=bestPrimitiveFurnaceDecision(
+                world,resident,position);
+            if(furnace.intent==CivilizationIntent::Craft
+               &&furnace.facilityKind==FacilityKind::Furnace
+               &&furnace.facilityAction!=FacilityBuildAction::None
+               &&(thought==nullptr ||!residentAIPlanAlreadyAttempted(
+                   resident,*thought,furnace,world.minute)))
+                return furnace;
+            const auto* project=primitiveFurnaceProjectNear(world,position);
+            if(project!=nullptr &&project->state!=FacilityState::Operational){
+                for(const auto& requirement:project->requirements){
+                    if(requirement.required<=requirement.delivered
+                       ||resident.civilization.inventory.count(
+                            ItemKind::RawMaterial,requirement.material)>0)
+                        continue;
+                    const auto ingredient=chooseResidentAIFreshIngredientGather(
+                        world,resident,position,requirement.material,population);
+                    if(ingredient.intent==CivilizationIntent::Gather
+                       &&(thought==nullptr ||!residentAIPlanAlreadyAttempted(
+                           resident,*thought,ingredient,world.minute,true)))
+                        return ingredient;
+                }
+            }
+            return {};
+        }
+    }
     if(!technologyKnowledgePrerequisitesSatisfied(knowledge,desired))
         return {};
     const auto technique=techniqueForTechnology(desired);
@@ -438,7 +471,10 @@ inline CivilizationUtilityDecision chooseResidentAIToolPrerequisite(
         }
         if((next.intent==CivilizationIntent::Gather
              ||next.intent==CivilizationIntent::Experiment
-             ||next.intent==CivilizationIntent::Explore)
+             ||next.intent==CivilizationIntent::Explore
+             ||(next.intent==CivilizationIntent::Craft
+                &&next.facilityKind==FacilityKind::Furnace
+                &&next.facilityAction!=FacilityBuildAction::None))
            &&std::isfinite(next.utility)
            &&next.utility>=0.14 &&next.utility<=1.0
            // A goal's next action must not be the already-attempted failed
@@ -544,8 +580,11 @@ chooseResidentAIExistingCivilizationAffordance(
                &&candidate.intent!=CivilizationIntent::Explore)
                 return std::nullopt;
             if(candidate.intent==CivilizationIntent::Craft
-               &&(candidate.facilityAction!=FacilityBuildAction::None
-                  ||candidate.technique==TechniqueId::None))
+               &&candidate.facilityAction!=FacilityBuildAction::None
+               &&candidate.facilityKind!=FacilityKind::Furnace)
+                return std::nullopt;
+            if(candidate.intent==CivilizationIntent::Craft
+               &&candidate.technique==TechniqueId::None)
                 return std::nullopt;
             break;
         case CognitiveIntentKind::ExpandCultivation:
