@@ -1,0 +1,74 @@
+name: LifeLens M0-04 Multi-Seed Memory Closeout
+
+on:
+  pull_request:
+    paths:
+      - 'Tools/m0_memory_closeout.py'
+      - 'Tools/tests/test_m0_memory_closeout.py'
+      - '.github/workflows/m0-memory-closeout.yml'
+      - 'Tools/analyze_memory_checkpoints.py'
+      - 'Source/LifeLensCore/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-world-memory:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: ['874213954', '4242001']
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regression tests for verified multi-seed checkpoint receipts
+        run: |
+          python3 -m unittest Tools.tests.test_memory_checkpoint_analysis Tools.tests.test_m0_memory_closeout -v
+      - name: Compile authoritative native World and audit harness
+        run: |
+          cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target ll_balance_audit --parallel 2
+      - name: Measure real 100 / 365 / 1000 day memory and snapshots
+        run: |
+          mkdir -p "m0-raw/${{ matrix.seed }}"
+          ./build/ll_balance_audit --seed "${{ matrix.seed }}" --days 1000 \
+            --checkpoints 100,365,1000 \
+            --audit-directory "m0-raw/${{ matrix.seed }}" \
+            > "m0-raw/${{ matrix.seed }}/simulation.log" 2>&1
+          test -s "m0-raw/${{ matrix.seed }}/metrics.jsonl"
+      - name: Upload actual native Core checkpoint evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m0-real-memory-${{ matrix.seed }}
+          path: m0-raw/${{ matrix.seed }}/
+          if-no-files-found: warn
+          retention-days: 30
+
+  closeout:
+    needs: [real-world-memory]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: m0-real-memory-*
+          path: m0-evidence
+      - name: Require both independent complete Core timelines
+        run: |
+          python3 -m unittest Tools.tests.test_m0_memory_closeout -v
+          python3 Tools/m0_memory_closeout.py \
+            m0-evidence/m0-real-memory-874213954/metrics.jsonl \
+            m0-evidence/m0-real-memory-4242001/metrics.jsonl \
+            --output m0-evidence/m0-memory-closeout.json
+      - name: Publish verified growth, source, action and snapshot diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m0-memory-closeout-report
+          path: m0-evidence/
+          if-no-files-found: warn
+          retention-days: 30
