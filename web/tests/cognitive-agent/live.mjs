@@ -676,6 +676,33 @@ const provider = {
     ...base,memories:[next,attempt],
   }),'RepeatedFailure','reordered Core token history preserves reflection');
   assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,{...next,what:'model claimed trade failed'}],
+  }),'Reflection','fake CoreContext text cannot create repeated failure');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,{...next,where:'core-context-token:502suffix'}],
+  }),'Reflection','a prefix-only fake token is not a Core-issued token');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,{...next,what:
+      '실제 행동 CoreContext:Trade 대상 3 결과: trade-core-rejected'}],
+  }),'Reflection','counterpart must match Core outcome text');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,next,{...next,minute:480,
+      tags:['action_experience','CoreContext:Trade','success'],
+      where:'core-context-token:503',
+      what:'a made-up completed trade'}],
+  }),'RepeatedFailure','a fake success must not erase real failures');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,next,{...next,minute:480,
+      tags:['action_experience','CoreContext:Trade','success'],
+      where:'core-local-exchange-fact:911',
+      what:'model claims local barter happened'}],
+  }),'RepeatedFailure','local barter requires exact registered fact wording');
+  assert.equal(residentAIObservedTrigger({
+    ...base,memories:[attempt,{...next,
+      tags:['action_experience','CoreContext:Teaching','failure'],
+      what:'실제 행동 CoreContext:Teaching 대상 2 결과: teaching-core-rejected'}],
+  }),'Reflection','distinct Core context actions are not one failure group');
+  assert.equal(residentAIObservedTrigger({
     ...base,memories:[attempt,{...next,source:'ToldByOther',witnessed:false}],
   }),'Reflection','secondhand trade claims cannot become our failures');
   assert.equal(residentAIObservedTrigger({
@@ -690,18 +717,21 @@ const provider = {
   assert.equal(residentAIObservedTrigger({
     ...base,memories:[attempt,{...next,who:'3'},{
       ...next,who:'3',minute:480,where:'core-context-token:504',
+      what:'실제 행동 CoreContext:Trade 대상 3 결과: trade-core-rejected',
     }],
   }),'RepeatedFailure','independent repeated failures with partner 3 still count');
   assert.equal(residentAIObservedTrigger({
     ...base,memories:[attempt,next,{...next,minute:480,
       where:'core-context-token:503',
       tags:['action_experience','CoreContext:Trade','success'],
+      what:'실제 행동 CoreContext:Trade 대상 2 결과: trade-exchanged',
     }],
   }),'Reflection','actual later exchange success clears failure streak');
   assert.equal(residentAIObservedTrigger({
     ...base,memories:[attempt,next,{...next,minute:480,
       where:'core-local-exchange-fact:911',
       tags:['action_experience','CoreContext:Trade','success'],
+      what:'실제 지역 교역 대상 2 물품 교환 완료 (Core exchange fact)',
     }],
   }),'Reflection','confirmed local barter success clears remote failure streak');
   assert.equal(residentAIObservedTrigger({
