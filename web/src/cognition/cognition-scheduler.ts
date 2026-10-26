@@ -28,7 +28,7 @@ interface QueueItem {
 }
 
 function validPositiveInteger(value: number): boolean {
-  return Number.isInteger(value) && value > 0;
+  return Number.isSafeInteger(value) && value > 0;
 }
 
 export class CognitionScheduler {
@@ -53,14 +53,14 @@ export class CognitionScheduler {
     if (!validPositiveInteger(config.maxConcurrent)) {
       throw new Error('cognition maxConcurrent must be a positive integer');
     }
-    if (!Number.isInteger(config.maxQueued) || config.maxQueued < 0) {
+    if (!Number.isSafeInteger(config.maxQueued) || config.maxQueued < 0) {
       throw new Error('cognition maxQueued must be a non-negative integer');
     }
-    if (!Number.isFinite(config.timeoutMs) || config.timeoutMs <= 0) {
+    if (!Number.isSafeInteger(config.timeoutMs) || config.timeoutMs <= 0) {
       throw new Error('cognition timeoutMs must be positive');
     }
     if (
-      !Number.isFinite(config.staleAfterSimulationMinutes)
+      !Number.isSafeInteger(config.staleAfterSimulationMinutes)
       || config.staleAfterSimulationMinutes < 0
     ) {
       throw new Error('cognition stale window must be non-negative');
@@ -207,7 +207,7 @@ export class CognitionScheduler {
         result = outcome('stale');
       } else {
         const now = this.simulationMinute();
-        if (!Number.isFinite(now) || now < item.request.minute
+        if (!Number.isSafeInteger(now) || now < item.request.minute
           || now - item.request.minute > this.config.staleAfterSimulationMinutes) {
           result = outcome('stale');
         }
