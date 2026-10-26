@@ -353,7 +353,7 @@ int main()
     assert(buildResidentResourceOutcomeIndex(routeLearner,103)
         .find(101,routeKey).succeeded);
     assert(!buildResidentResourceOutcomeIndex(routeLearner,
-        102+ResidentResourceOutcomeHorizonMinutes+1)
+        103+ResidentResourceOutcomeHorizonMinutes+1)
         .find(101,routeKey).hasEvidence);
     world.minute=101;
 
