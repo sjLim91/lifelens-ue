@@ -138,6 +138,23 @@ int main()
     assert(!residentAIPlanAlreadyAttempted(
         sourced,sourceThought,replacement,504));
 
+    // An arbitrary location beginning with resource-node: is not valid
+    // provenance. Only a real canonical uint64 Core node counts.
+    for(const std::string& where:{
+         std::string("resource-node:101garbage"),
+         std::string("resource-node:000101"),
+         std::string("resource-node:18446744073709551616")}){
+        Character malformed=sourced;
+        for(auto& memory:malformed.memory.entries)
+            if(memory.tags.size()==3) memory.where=where;
+        assert(!residentAIPlanAlreadyAttempted(
+            malformed,sourceThought,oldSource,504));
+        CivilizationUtilityDecision unsourced=oldSource;
+        unsourced.resourceNode=0;
+        assert(!residentAIPlanAlreadyAttempted(
+            malformed,sourceThought,unsourced,504));
+    }
+
     // A successful partial ingredient collection is normally consumed.
     // Only the caller that has rechecked the STILL-UNMET real recipe can
     // explicitly request continuation for the same original tool goal.
