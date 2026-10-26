@@ -403,6 +403,15 @@ inline CivilizationUtilityDecision chooseResidentAIKnowledgePrerequisiteStep(
                   ingredient.kind,ingredient.material,ingredient.anyMaterial)
                      >=ingredient.quantity)
                 continue;
+            // The ordinary experiment chooser cannot start before the
+            // ingredient is present. That is a reason to procure a REAL
+            // source, not to abandon the resident's original technology goal.
+            const auto liveGather=chooseResidentAIFreshIngredientGather(
+                world,resident,position,ingredient.material,population);
+            if(liveGather.intent==CivilizationIntent::Gather
+               &&(thought==nullptr ||!residentAIPlanAlreadyAttempted(
+                   resident,*thought,liveGather,world.minute,true)))
+                return liveGather;
             // Only an actual Core exploration opportunity can seek remote ore.
             const auto explore=bestResourceExplorationDecisionAtPosition(
                 world,resident,position,population,ingredient.material);
