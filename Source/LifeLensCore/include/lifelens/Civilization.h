@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <optional>
+#include <utility>
 #include <string>
 #include <vector>
 #include "Ids.h"
@@ -582,6 +583,8 @@ struct ExperimentResult {
     ItemStack output{};
     CivilizationEvent event{};
 };
+
+inline double civilizationRoll(const ExperimentContext& context);
 
 // One resident's genuine material-composition trial. Unlike a fixed recipe,
 // head/handle/binding are found among ACTUAL carried raw materials and chosen
