@@ -100,9 +100,9 @@ try {
     minute: 338, savedAtWallMs: t0, earthOrigin: null,
     snapshotBase64: 'QUJDREVGR0hJSktMTU5PUA==',
   };
-  for(const malformedPadding of ['AB==','AAB=','ABCDAB==','ABCDABC=']){
+  for(const malformedPadding of ['AAAAAAAAAAAAAB==','AAAAAAAAAAAAAAB=']){
     assert.throws(()=>assertCheckpointProgress(null,{
-      ...record,snapshotBase64:malformedPadding.padEnd(16,'A'),
+      ...record,snapshotBase64:malformedPadding,
     }),/유효하지 않은/,
     'noncanonical unused Base64 bits may not be persisted as Core bytes');
   }
