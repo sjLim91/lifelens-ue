@@ -712,10 +712,12 @@ const provider = {
     ...base,memories:[attempt,{...next,minute:478}],
   }),'Reflection','same-minute records count as only one attempt');
   assert.equal(residentAIObservedTrigger({
-    ...base,memories:[attempt,{...next,who:'3'}],
-  }),'Reflection','different partners are not two failures with one person');
+    ...base,memories:[attempt,{...next,who:'3',
+      what:'실제 행동 CoreContext:Trade 대상 3 결과: trade-core-rejected'}],
+  }),'Reflection','different valid Core counterpart is not our repeated failure');
   assert.equal(residentAIObservedTrigger({
-    ...base,memories:[attempt,{...next,who:'3'},{
+    ...base,memories:[attempt,{...next,who:'3',
+      what:'실제 행동 CoreContext:Trade 대상 3 결과: trade-core-rejected'},{
       ...next,who:'3',minute:480,where:'core-context-token:504',
       what:'실제 행동 CoreContext:Trade 대상 3 결과: trade-core-rejected',
     }],
