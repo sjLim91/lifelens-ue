@@ -169,7 +169,7 @@ class TestPairedAuditAnalysis(unittest.TestCase):
         src["proxy"]["catalogIntentInputs"]["OtherIntent"] = (
             src["proxy"]["catalogIntentInputs"].pop("ImproveFoodSecurity")
         )
-        with self.assertRaisesRegex(ValueError, "same intent catalog kinds"):
+        with self.assertRaisesRegex(ValueError, "unknown strategic intent"):
             analyze(src)
 
     def test_complete_14_kind_coverage_is_explicit_not_assumed(self):
@@ -194,7 +194,8 @@ class TestPairedAuditAnalysis(unittest.TestCase):
             counterfeit["baseline"]["catalogIntentInputs"].pop("ImproveShelter"))
         counterfeit["proxy"]["catalogIntentInputs"]["InventedIntent"] = (
             counterfeit["proxy"]["catalogIntentInputs"].pop("ImproveShelter"))
-        self.assertFalse(analyze(counterfeit)["intentLifecycle"]["all14IntentsObserved"])
+        with self.assertRaisesRegex(ValueError, "unknown strategic intent"):
+            analyze(counterfeit)
 
     def test_catalog_presence_does_not_claim_all_intents_were_selected(self):
         src = fixture()
