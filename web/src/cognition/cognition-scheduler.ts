@@ -38,6 +38,9 @@ export class CognitionScheduler {
   // queued items lets an older observation cancel a newer running mind.
   private readonly latestMinuteByActor = new Map<string, number>();
   private readonly activeControllers = new Set<AbortController>();
+  // Keep actor/minute authority until ALL overlapping inferences settle.
+  // A newer answer can finish while an older request is still running.
+  private readonly activeRequests = new Set<QueueItem>();
   private sequence = 0;
   private active = 0;
   private disposed = false;
@@ -147,8 +150,16 @@ export class CognitionScheduler {
         continue;
       }
       this.active += 1;
+      this.activeRequests.add(item);
       void this.execute(item);
     }
+  }
+
+  private activeRequestsHasActor(actor: string): boolean {
+    for (const inFlight of this.activeRequests) {
+      if (inFlight.request.actor === actor) return true;
+    }
+    return false;
   }
 
   private async execute(item: QueueItem): Promise<void> {
@@ -204,9 +215,18 @@ export class CognitionScheduler {
       if (timer !== undefined) clearTimeout(timer);
       if (onAbort) controller.signal.removeEventListener('abort', onAbort);
       this.activeControllers.delete(controller);
+      this.activeRequests.delete(item);
       if (this.latestByActor.get(item.request.actor) === item.sequence) {
         this.latestByActor.delete(item.request.actor);
-        this.latestMinuteByActor.delete(item.request.actor);
+      }
+      // A newer thought might finish BEFORE an older (now stale) provider
+      // call. Preserve the latest Core-minute watermark until every active
+      // and queued request for this resident has drained. Never retain a
+      // resident watermark forever after all such work has settled.
+      const actor = item.request.actor;
+      if (!this.activeRequestsHasActor(actor)
+        && !this.queue.some(waiting => waiting.request.actor === actor)) {
+        this.latestMinuteByActor.delete(actor);
       }
       this.active = Math.max(0, this.active - 1);
       this.pump();

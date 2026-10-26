@@ -607,6 +607,39 @@ await test('scheduler rejects malformed Core minute without consuming inference'
   scheduler.dispose();
 });
 
+await test('newest Core minute survives when a newer provider finishes before an older one',async()=>{
+  const entered=[];
+  const pending=new Map();
+  const provider={name:'out-of-order-overlapping',reason:req=>new Promise(resolve=>{
+    entered.push(req.minute);
+    pending.set(req.minute,()=>resolve(proposal(req)));
+  })};
+  const scheduler=new CognitionScheduler(provider,()=>106,{
+    maxConcurrent:2,maxQueued:0,timeoutMs:1000,
+    staleAfterSimulationMinutes:100,
+  });
+  const older=scheduler.submitObserved(request('1',100));
+  const newer=scheduler.submitObserved(request('1',105));
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.deepEqual(entered,[100,105]);
+  pending.get(105)();
+  assert.equal((await newer).status,'validated');
+  assert.equal((await scheduler.submitObserved(request('1',103))).status,
+    'stale','older observation must not regain authority while superseded work is active');
+  assert.deepEqual(entered,[100,105],
+    'discarded older request cannot consume a local inference slot');
+  const freshest=scheduler.submitObserved(request('1',106));
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.deepEqual(entered,[100,105,106]);
+  pending.get(106)();
+  assert.equal((await freshest).status,'validated');
+  assert.equal((await scheduler.submitObserved(request('1',104))).status,'stale',
+    'most recent settled Core minute must outlive still-running older inference');
+  pending.get(100)();
+  assert.equal((await older).status,'stale');
+  scheduler.dispose();
+});
+
 await test('timeout settles even when provider ignores AbortSignal forever',async()=>{
   const provider={
     name:'hung',
