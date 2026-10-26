@@ -224,6 +224,17 @@ class TestPairedAuditAnalysis(unittest.TestCase):
         self.assertNotIn("ImproveWaterSecurity", out["neverSelectedIntents"])
         self.assertFalse(out["all14IntentsActuallySelected"])
 
+    def test_invented_catalog_is_not_a_new_resident_ability(self):
+        evidence = fixture()
+        for cohort in ("baseline", "proxy"):
+            evidence[cohort]["catalogIntentInputs"]["InventedMindControl"] = {
+                "selected": 0, "notOffered": 0, "noEligibleTarget": 0,
+                "submitted": 0, "accepted": 0, "rejected": 0,
+                "rejectedByValidator": 0, "rejectedAfterValidator": 0,
+            }
+        with self.assertRaisesRegex(ValueError, "unknown strategic intent"):
+            analyze(evidence)
+
     def test_invalid_evidence_never_silently_passes(self):
         variants = []
         bad = fixture()
