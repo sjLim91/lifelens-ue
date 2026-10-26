@@ -413,5 +413,68 @@ int main()
     assert(residentAIPlanAlreadyAttempted(
         failedPotter,thought,failedClay,slow.minute+2,true));
 
+    // A resident who has actually OBSERVED an advanced bronze tool can
+    // pursue the missing TinSmelting prerequisite without being granted
+    // tin, bronze, a recipe or a new AI execution authority.
+    World metallurgy(4466);
+    metallurgy.minute=480;
+    metallurgy.resourceNodes.clear();
+    ResourceNode ore=wood;
+    ore.id=907;
+    ore.material=MaterialKind::TinOre;
+    ore.quantity=7;
+    ore.maxQuantity=7;
+    metallurgy.resourceNodes.push_back(ore);
+    ConstructedFacility furnace;
+    furnace.id=9007;
+    furnace.kind=FacilityKind::Furnace;
+    furnace.pos={0,0};
+    furnace.state=FacilityState::Operational;
+    furnace.active=true;
+    furnace.durability=1.0;
+    metallurgy.facilities.push_back(furnace);
+
+    Character apprentice=makeResident();
+    for(const auto technique:{
+         TechniqueId::SharpFlake,TechniqueId::ChippedStoneTool,
+         TechniqueId::FiberCordage,TechniqueId::SimpleContainer,
+         TechniqueId::DiggingStick,TechniqueId::StoneHammer,
+         TechniqueId::FireMaking,TechniqueId::CopperSmelting}){
+        apprentice.civilization.knowledge.learn(
+            technique,KnowledgeLevel::Reproducible,1.0);
+    }
+    apprentice.civilization.knowledge.learn(
+        TechniqueId::BronzeAxe,KnowledgeLevel::Observed,0.5);
+    apprentice.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Charcoal,3,0.75,1.0});
+    const auto tinPrerequisite=chooseResidentAIKnowledgePrerequisiteStep(
+        metallurgy,apprentice,{0,0},TechnologyId::BronzeAxe,nullptr,&thought);
+    assert(tinPrerequisite.intent==CivilizationIntent::Gather
+        &&tinPrerequisite.material==MaterialKind::TinOre
+        &&tinPrerequisite.resourceNode==907);
+    assert(!apprentice.civilization.knowledge.knowsAtLeast(
+        TechniqueId::TinSmelting,KnowledgeLevel::Reproducible));
+    assert(apprentice.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::TinOre)==0);
+    const auto tinGather=executeCivilizationDecisionAtPosition(
+        metallurgy,apprentice,tinPrerequisite,{0,0});
+    assert(tinGather.executed &&tinGather.success);
+    assert(apprentice.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::TinOre)>0);
+    metallurgy.minute=481;
+    rememberCivilizationAttemptOutcome(
+        apprentice,tinPrerequisite,metallurgy.minute,true);
+    const auto nextKnowledgeStep=chooseResidentAIKnowledgePrerequisiteStep(
+        metallurgy,apprentice,{0,0},TechnologyId::BronzeAxe,nullptr,&thought);
+    assert(nextKnowledgeStep.intent==CivilizationIntent::Experiment
+        &&nextKnowledgeStep.technique==TechniqueId::TinSmelting
+        &&nextKnowledgeStep.experiment==ExperimentKind::SmeltTinOre);
+    // Observing an advanced tool never grants its smelting or alloying
+    // knowledge: only executing the real Core experiment may teach it.
+    assert(!apprentice.civilization.knowledge.knowsAtLeast(
+        TechniqueId::TinSmelting,KnowledgeLevel::Reproducible));
+    assert(apprentice.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Bronze)==0);
+
     return 0;
 }
