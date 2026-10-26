@@ -315,6 +315,9 @@ int main()
     assert(!rememberResidentGatherRouteFailure(
         routeLearner,routeKey,101,991,101)); // idempotent
     assert(routeLearner.memory.entries.size()==1);
+    assert(routeLearner.memory.entries.front().tags.size()==4);
+    assert(residentGatherRouteFailurePendingToken(
+        routeLearner.memory.entries.front())==991);
     assert(routeLearner.beliefs.find(
         0,actionExperienceProposition(routeKey.c_str()))==nullptr);
     assert(routeLearner.memory.entries.front().tags[0]
@@ -340,6 +343,21 @@ int main()
     assert(rememberResidentGatherRouteFailure(
         routeLearner,routeKey,101,992,102));
     assert(routeLearner.memory.entries.size()==1); // bounded refresh
+    assert(residentGatherRouteFailurePendingToken(
+        routeLearner.memory.entries.front())==992);
+    // A forged token cannot be converted into direct Core route evidence.
+    auto corruptToken=routeLearner;
+    corruptToken.memory.entries.front().tags[3]="context-token:NaN";
+    assert(!buildResidentResourceOutcomeIndex(corruptToken,102)
+        .find(101,routeKey).hasEvidence);
+    // An older snapshot episode with no token remains learnable but is not
+    // falsely reported as having a traceable original pending token.
+    auto legacyRoute=routeLearner;
+    legacyRoute.memory.entries.front().tags.pop_back();
+    assert(residentGatherRouteFailurePendingToken(
+        legacyRoute.memory.entries.front())==0);
+    assert(buildResidentResourceOutcomeIndex(legacyRoute,102)
+        .find(101,routeKey).hasEvidence);
     auto fabricated=routeLearner;
     fabricated.memory.entries.front().source=MemorySource::ToldByOther;
     assert(!buildResidentResourceOutcomeIndex(fabricated,102)
@@ -396,7 +414,8 @@ int main()
     bool routeEpisodeSurvived=false;
     for(const auto& memory:restoredRoute.memory.entries)
         if(memory.where=="resource-node:101"
-           &&memory.tags.size()==3
+           &&memory.tags.size()==4
+           &&residentGatherRouteFailurePendingToken(memory)==992
            &&memory.tags[0]=="navigation_experience"
            &&memory.tags[1]==routeKey
            &&memory.tags[2]=="route-failed")
