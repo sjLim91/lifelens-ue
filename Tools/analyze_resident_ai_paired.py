@@ -156,6 +156,25 @@ def analyze(report):
             "observedIntentKinds": sorted(base_intents),
             "intentKindCount": len(base_intents),
             "all14IntentsObserved": set(base_intents) == CANONICAL_INTENTS,
+            # A row with all zeros means the catalog was listed, NOT that
+            # the resident selected, attempted or executed its intention.
+            "activelySelectedIntents": sorted(
+                intent for intent in base_intents
+                if base_intents[intent]["selected"] > 0
+                or proxy_intents[intent]["selected"] > 0
+            ),
+            "neverSelectedIntents": sorted(
+                intent for intent in base_intents
+                if base_intents[intent]["selected"] == 0
+                and proxy_intents[intent]["selected"] == 0
+            ),
+            "all14IntentsActuallySelected": (
+                set(base_intents) == CANONICAL_INTENTS
+                and all(base_intents[intent]["selected"] > 0
+                        or proxy_intents[intent]["selected"] > 0
+                        for intent in CANONICAL_INTENTS)
+            ),
+            "selectedIsNotCoreCompletion": True,
             "perIntent": {
                 intent: {
                     stage: {
