@@ -1,0 +1,79 @@
+name: LifeLens M0-03 14-Intent Real Core Closeout
+
+on:
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/**'
+      - 'Tools/m0_intent_closeout.py'
+      - 'Tools/tests/test_m0_intent_closeout.py'
+      - 'Tools/analyze_resident_ai_paired.py'
+      - '.github/workflows/m0-intent-closeout.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fourteen-intent-core:
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        seed: ['874213954', '4242001']
+        days: [100, 365, 1000]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify never credit accepted input as Core action
+        run: |
+          python3 -m unittest Tools.tests.test_analyze_resident_ai_paired Tools.tests.test_m0_intent_closeout -v
+      - name: Compile authoritative native Core and per-resident audit
+        run: |
+          cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target ll_resident_ai_paired_audit test_resident_ai_paired_causal_audit --parallel 2
+      - name: Verify physical Core outcome identity and actor counters
+        run: |
+          ctest --test-dir build -R '^test_resident_ai_paired_causal_audit$' --output-on-failure
+      - name: Execute real baseline versus deterministic policy worlds
+        run: |
+          mkdir -p m0-intent
+          ./build/ll_resident_ai_paired_audit --seed ${{ matrix.seed }} \
+            --days ${{ matrix.days }} --policy catalog > m0-intent/paired.json
+          python3 Tools/analyze_resident_ai_paired.py \
+            m0-intent/paired.json --output m0-intent/checkpoint-analysis.json
+          printf '%s\n' "${{ matrix.seed }}" > m0-intent/seed.txt
+          printf '%s\n' "${{ matrix.days }}" > m0-intent/day.txt
+      - name: Retain both worlds and 14 intent lifecycle ledgers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m0-real-intent-${{ matrix.seed }}-${{ matrix.days }}
+          path: m0-intent/
+          retention-days: 30
+          if-no-files-found: warn
+
+  closeout:
+    needs: [fourteen-intent-core]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: m0-real-intent-*
+          path: m0-evidence
+      - name: Require 14 intents and verified resident evidence for 6 real timelines
+        run: |
+          python3 -m unittest Tools.tests.test_m0_intent_closeout -v
+          python3 -m Tools.m0_intent_closeout \
+            m0-evidence/m0-real-intent-*/paired.json \
+            --output m0-evidence/m0-intent-closeout.json
+      - name: Preserve per-resident outcomes and unknown causal paths
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m0-intent-closeout-report
+          path: m0-evidence/
+          retention-days: 30
+          if-no-files-found: warn

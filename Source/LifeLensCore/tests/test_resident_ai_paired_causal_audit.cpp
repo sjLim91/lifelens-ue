@@ -479,6 +479,33 @@ int main()
                 +all.proxy.catalogNoEligibleTarget[i]
                 +all.proxy.catalogSubmitted[i]);
     }
+    // Every catalog input stage belongs to exactly one resident. An actor
+    // rejected for lacking a target still receives the real audit counter;
+    // never invent a per-person completed action for a global count.
+    for(std::size_t i=0;i<fourteen.size();++i){
+        std::uint64_t sumSelected=0,sumSubmitted=0,sumAccepted=0,
+            sumRejected=0,sumNotOffered=0,sumNoTarget=0,
+            sumValidator=0,sumCommit=0;
+        for(const auto& pair:all.proxy.residents){
+            const auto& person=pair.second;
+            sumSelected+=person.catalogSelected[i];
+            sumNotOffered+=person.catalogNotOffered[i];
+            sumNoTarget+=person.catalogNoEligibleTarget[i];
+            sumSubmitted+=person.catalogSubmitted[i];
+            sumAccepted+=person.catalogAccepted[i];
+            sumRejected+=person.catalogRejected[i];
+            sumValidator+=person.catalogRejectedByValidator[i];
+            sumCommit+=person.catalogRejectedAfterValidator[i];
+        }
+        assert(sumSelected==all.proxy.catalogSelected[i]);
+        assert(sumNotOffered==all.proxy.catalogNotOffered[i]);
+        assert(sumNoTarget==all.proxy.catalogNoEligibleTarget[i]);
+        assert(sumSubmitted==all.proxy.catalogSubmitted[i]);
+        assert(sumAccepted==all.proxy.catalogAccepted[i]);
+        assert(sumRejected==all.proxy.catalogRejected[i]);
+        assert(sumValidator==all.proxy.catalogRejectedByValidator[i]);
+        assert(sumCommit==all.proxy.catalogRejectedAfterValidator[i]);
+    }
     assert(selected>0);
     assert(submitted==all.proxy.proposalsAttempted);
     assert(accepted==all.proxy.proposalsAccepted);
@@ -492,6 +519,7 @@ int main()
         !=std::string::npos);
     assert(allJson.find("\"rejectedAfterValidator\":")
         !=std::string::npos);
+    assert(allJson.find("\"residents\":{")!=std::string::npos);
     for(const auto intent:fourteen)
         assert(allJson.find(std::string("\"")+cognitiveIntentName(intent)
             +"\":{")!=std::string::npos);
