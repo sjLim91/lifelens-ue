@@ -120,13 +120,11 @@ export function CognitiveShadowPanel({ resident, residents, controller = shadowO
       )}
     </section>
     <p className="hint">{L.singleModelNote}</p>
-    <p role="status">{formatCognitionState(state.status)}</p>
-    <p className="hint">{L.budget}</p>
     <p>{L.currentAction}: <b>{residentStatusText(resident, residents)}</b></p>
     {records[0] && records[0] !== latest && <p role="status">
       {L.reason}: {formatCognitionState(records[0].outcome.reason)}
     </p>}
-    {latest ? <RecordDetails record={latest} residents={residents} /> : <p>{L.empty}</p>}
+    {latest && <RecordDetails record={latest} residents={residents} />}
     {records.length > 1 && <details><summary>{L.history}</summary>
       {records.filter((record) => record !== latest).map((record) =>
         <RecordDetails key={record.id} record={record} residents={residents} />)}
