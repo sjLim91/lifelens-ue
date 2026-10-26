@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include "lifelens/CivilizationDecision.h"
+#include "lifelens/ResidentAIExistingAffordance.h"
 
 using namespace lifelens;
 
@@ -112,6 +113,58 @@ int main()
         world,autonomous,{0,0});
     assert(selected.intent==CivilizationIntent::Experiment
         &&selected.experiment==ExperimentKind::ComposeMaterials);
+    // A real accepted personal tool strategy can ALSO reach this trial
+    // through the single resident agency, rather than only a separate
+    // ordinary civilization scheduler. Saturate known tool stocks to force
+    // the physically possible novel method, not a pre-written recipe.
+    Character seeking=inventor(MaterialKind::Flint);
+    for(const auto& technology:TechnologyRegistry){
+        if(technology.legacyTechnique==TechniqueId::None) continue;
+        seeking.civilization.knowledge.learn(
+            technology.legacyTechnique,KnowledgeLevel::Reproducible,1.0);
+        const auto recipe=techniqueRecipe(technology.legacyTechnique);
+        const int desired=desiredTechniqueOutputStock(
+            technology.legacyTechnique);
+        if(recipe.producesItem &&desired>0){
+            const int held=seeking.civilization.inventory.count(
+                recipe.outputKind,recipe.outputMaterial,
+                recipe.outputMaterial==MaterialKind::Unknown);
+            if(desired>held) seeking.civilization.inventory.add({
+                recipe.outputKind,recipe.outputMaterial,desired-held,0.6,1.0});
+        }
+    }
+    AcceptedCognitiveDecision thought;
+    thought.actor=seeking.id;
+    thought.minute=world.minute;
+    thought.priority=0.90;
+    thought.contextFingerprint=991;
+    thought.intent=CognitiveIntentKind::CraftUsefulTools;
+    const auto agency=chooseResidentAIExistingCivilizationAffordance(
+        world,seeking,{0,0},thought);
+    assert(agency
+        &&agency->intent==CivilizationIntent::Experiment
+        &&agency->experiment==ExperimentKind::ComposeMaterials
+        &&agency->material==MaterialKind::Flint);
+    assert(civilizationActionExperienceKey(*agency)
+        =="Civilization:Experiment:MaterialComposition:Flint");
+    assert(!residentAIPlanAlreadyAttempted(
+        seeking,thought,*agency,world.minute));
+    const auto realAction=executeCivilizationDecisionAtPosition(
+        world,seeking,*agency,{0,0});
+    assert(realAction.executed);
+    world.minute+=1;
+    rememberCivilizationAttemptOutcome(
+        seeking,*agency,world.minute,realAction.success);
+    assert(residentAIPlanAlreadyAttempted(
+        seeking,thought,*agency,world.minute));
+    assert(!chooseResidentAIExistingCivilizationAffordance(
+        world,seeking,{0,0},thought));
+    assert(seeking.civilization.knowledge.knowsAtLeast(
+        TechniqueId::BronzeAxe,KnowledgeLevel::Reproducible));
+    // The personal experiment never creates any new technology knowledge.
+    assert(seeking.civilization.knowledge.all().size()
+        ==TechnologyRegistry.size());
+
     autonomous.needs.thirst=0.90;
     const auto urgent=bestExperimentDecisionAtPosition(
         world,autonomous,{0,0});
