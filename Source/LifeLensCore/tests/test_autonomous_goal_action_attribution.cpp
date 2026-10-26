@@ -83,15 +83,22 @@ int main()
     CHECK(!rememberAutonomousGoalActionOutcome(
         learner,link,5001,110,Verdict::NotAchievedNoProgress));
     CHECK(learner.memory.entries.size()==1);
+    // A late duplicate ACK with the SAME token but another minute must not
+    // retrain this resident. New Core tokens are independent physical actions.
+    CHECK(!rememberAutonomousGoalActionOutcome(
+        learner,link,5001,111,Verdict::ProgressButNotAchieved));
+    auto secondLink=link; secondLink.token=5002;
+    auto thirdLink=link; thirdLink.token=5003;
+    auto reachedLink=link; reachedLink.token=5004;
     const auto* learnerBelief=learner.beliefs.find(
         22,autonomousGoalProgressProposition(SocialIntent::Approach));
     CHECK(learnerBelief &&learnerBelief->contradictionCount==1);
     CHECK(rememberAutonomousGoalActionOutcome(
-        learner,link,5001,111,Verdict::ProgressButNotAchieved));
+        learner,secondLink,5002,111,Verdict::ProgressButNotAchieved));
     CHECK(learner.memory.entries.size()==1);
     CHECK(learnerBelief->supportCount==1);
     CHECK(rememberAutonomousGoalActionOutcome(
-        learner,link,5001,112,Verdict::AchievedDuringExecution));
+        learner,thirdLink,5003,112,Verdict::AchievedDuringExecution));
     CHECK(learner.memory.entries.size()==1);
     CHECK(hasGoalFeedback(learner,22,"achieved-during-action"));
     // M3-03: malicious/secondhand text with familiar action-feedback tags
@@ -121,7 +128,7 @@ int main()
     CHECK(firsthand.sourceCharacter==11 &&firsthand.witnessed);
     CHECK(firsthand.what=="progress-but-not-achieved");
     CHECK(rememberAutonomousGoalActionOutcome(
-        provenanceActor,link,5001,111,Verdict::AchievedDuringExecution));
+        provenanceActor,secondLink,5002,111,Verdict::AchievedDuringExecution));
     CHECK(provenanceActor.memory.entries.size()==2);
     CHECK(provenanceActor.memory.entries.front().what
           =="unverified-secondhand-account");
@@ -147,7 +154,7 @@ int main()
         independent,22,SocialIntent::Approach)==0.0);
     const auto successes=learnerBelief->supportCount;
     CHECK(rememberAutonomousGoalActionOutcome(
-        learner,link,5001,113,Verdict::AlreadyReachedBeforeExecution));
+        learner,reachedLink,5004,113,Verdict::AlreadyReachedBeforeExecution));
     CHECK(learnerBelief->supportCount==successes);
     CHECK(!rememberAutonomousGoalActionOutcome(
         learner,link,5001,114,Verdict::Unverifiable));

@@ -133,6 +133,18 @@ inline bool rememberAutonomousGoalActionOutcome(
        ||outcome==AutonomousGoalActionOutcome::Unverifiable)
         return false;
 
+    // Once a Core token has already produced this actor's firsthand goal
+    // feedback, replaying an acknowledgement later must not train twice.
+    const std::string tokenSource="personal-goal-token:"
+        +std::to_string(completedToken);
+    for(const MemoryRecord& memory:actor.memory.entries)
+        if(memory.where==tokenSource &&memory.minute<=minute
+           &&memory.source==MemorySource::DirectWitness
+           &&memory.witnessed &&memory.sourceCharacter==actor.id
+           &&memory.tags.size()==3
+           &&memory.tags[0]=="goal_action_feedback"
+           &&memory.tags[1]=="self_trust") return false;
+
     const bool measurable=
         outcome!=AutonomousGoalActionOutcome::AlreadyReachedBeforeExecution;
     const bool progressed=
@@ -171,6 +183,7 @@ inline bool rememberAutonomousGoalActionOutcome(
            ||!memory.witnessed ||memory.sourceCharacter!=actor.id
            ||memory.minute>minute) continue;
         memory.what=autonomousGoalActionOutcomeName(outcome);
+        memory.where=tokenSource;
         memory.minute=minute;
         memory.confidence=1.0;
         memory.importance=progressed ? 0.40 : 0.52;
@@ -185,7 +198,7 @@ inline bool rememberAutonomousGoalActionOutcome(
     memory.who=link.target;
     memory.sourceCharacter=actor.id;
     memory.what=autonomousGoalActionOutcomeName(outcome);
-    memory.where="personal goal outcome";
+    memory.where=tokenSource;
     memory.minute=minute;
     memory.emotionValence=actor.emotion.valence;
     memory.emotionIntensity=actor.emotion.intensity();
