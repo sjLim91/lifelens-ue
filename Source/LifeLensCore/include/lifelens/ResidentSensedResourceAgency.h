@@ -80,6 +80,64 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
     const auto goals=composeAutonomousGoalCandidates(
         world,request,MaxComposedAutonomousGoals);
     const auto sourceOutcomes=buildResidentResourceOutcomeIndex(actor,world.minute);
+
+    // AL-1: the Core may have proved that this resident COULD NOT REACH a
+    // resource selected by the ordinary, nonurgent Gather slot. The existing
+    // personal-goal branch previously handled remembered source losses only
+    // when a separate curiosity goal happened to outrank this fallback.
+    // Preserve the same material goal, but retry another CURRENTLY SENSED
+    // live source after firsthand navigation failure. This does not grant a
+    // new Gather: the chosen context still travels and executes in Core.
+    if(baseline.kind==UnifiedDecisionKind::Civilization
+       &&baseline.civilization.intent==CivilizationIntent::Gather
+       &&baseline.civilization.resourceNode!=0
+       &&baseline.civilization.material!=MaterialKind::Unknown){
+        const auto material=baseline.civilization.material;
+        const std::string actionKey=std::string("Civilization:Gather:")
+            +materialName(material);
+        const auto failed=sourceOutcomes.find(
+            baseline.civilization.resourceNode,actionKey);
+        if(failed.hasEvidence &&!failed.succeeded
+           &&failed.reason==ResidentResourceOutcomeReason::AccessUnavailable){
+            std::vector<ResourceNodeId> allowed;
+            allowed.reserve(sensed.nearbyResources.size());
+            for(const auto& source:sensed.nearbyResources)
+                if(source.material==material &&source.nodeId!=0)
+                    allowed.push_back(source.nodeId);
+            std::vector<ResourceNodeId> excluded{
+                baseline.civilization.resourceNode};
+            for(std::size_t n=0;n<allowed.size();++n){
+                const auto alternative=bestGatherDecisionAtPosition(
+                    world,actor,actualPosition,population,material,
+                    &excluded,&sourceOutcomes,&allowed);
+                if(alternative.intent!=CivilizationIntent::Gather
+                   ||alternative.resourceNode==0) break;
+                const auto past=sourceOutcomes.find(
+                    alternative.resourceNode,actionKey);
+                GridPos access{};
+                std::vector<GridPos> route;
+                const bool reachable=
+                    resolveCivilizationResourceAccessGridPosition(
+                        world,alternative.resourceNode,access)
+                    &&buildCoreGroundRoute(
+                        world,actualPosition,access,1,route);
+                if((past.hasEvidence &&!past.succeeded
+                    &&past.reason==ResidentResourceOutcomeReason::AccessUnavailable)
+                   ||!reachable){
+                    excluded.push_back(alternative.resourceNode);
+                    continue;
+                }
+                if(!std::isfinite(alternative.utility)
+                   ||alternative.utility<0.14) break;
+                answer.agency.decision.civilization=alternative;
+                answer.agency.decision.utility=alternative.utility;
+                answer.agency.authority=ResidentAgencyAuthority::PersonalGoal;
+                answer.agency.contextFingerprint=cognitiveRequestFingerprint(
+                    request);
+                return answer;
+            }
+        }
+    }
     // Compare candidates on the SAME existing Core score scale. Raw Gather
     // scores are not comparable to the disposition/role/coordination-biased
     // score already held by the single decision slot.
