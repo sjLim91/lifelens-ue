@@ -128,6 +128,38 @@ int main()
         routeWorld,routeWorld.characters[1],position,relationships,
         requestedGather,nullptr,false);
     assert(neighbour.agency.decision.civilization.resourceNode==101);
+    // AL-1: a single accepted resident cognition retains its identity and
+    // target material while Core recovers from its firsthand blocked route.
+    // No separate fallback agent competes for this strategic slot.
+    ResidentAgencyChoice cognitiveGather=requestedGather;
+    cognitiveGather.authority=ResidentAgencyAuthority::ResidentCognition;
+    cognitiveGather.cognitiveIntent=CognitiveIntentKind::ImproveFoodSecurity;
+    cognitiveGather.contextFingerprint=88442;
+    const auto cognitionBeforeFailure=chooseResidentSensedResourceGoal(
+        routeWorld,routeWorld.characters[1],position,relationships,
+        cognitiveGather,nullptr,false);
+    assert(cognitionBeforeFailure.agency.authority
+        ==ResidentAgencyAuthority::ResidentCognition);
+    assert(cognitionBeforeFailure.agency.decision.civilization.resourceNode==101);
+    const auto cognitiveRecovery=chooseResidentSensedResourceGoal(
+        routeWorld,routeWorld.characters[0],position,relationships,
+        cognitiveGather,nullptr,false);
+    assert(cognitiveRecovery.agency.authority
+        ==ResidentAgencyAuthority::ResidentCognition);
+    assert(cognitiveRecovery.agency.cognitiveIntent
+        ==CognitiveIntentKind::ImproveFoodSecurity);
+    assert(cognitiveRecovery.agency.contextFingerprint==88442);
+    assert(cognitiveRecovery.agency.decision.civilization.resourceNode==103);
+    assert(cognitiveRecovery.agency.decision.civilization.material
+        ==MaterialKind::Stone);
+    const auto blockedCognition=cognitiveGather;
+    auto changedStrategy=blockedCognition;
+    changedStrategy.decision.civilization.intent=CivilizationIntent::Explore;
+    assert(chooseResidentSensedResourceGoal(
+        routeWorld,routeWorld.characters[0],position,relationships,
+        changedStrategy,nullptr,false).agency.decision.civilization.intent
+            ==CivilizationIntent::Explore);
+
     GridPos accessible{};
     assert(resolveCivilizationResourceAccessGridPosition(
         routeWorld,103,accessible));
