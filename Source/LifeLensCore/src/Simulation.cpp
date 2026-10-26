@@ -4014,6 +4014,19 @@ void Simulation::step(){
                                 c,r,"outbound trade route failed");
                         }
                     }else{
+                        // A blocked approach is a real lived event, not a
+                        // failed extraction. Keep it separate from Gather
+                        // execution receipts and feed only the actor's own
+                        // bounded source preference on subsequent planning.
+                        if(r.pendingContext.kind==ContextActionKind::Civilization
+                           &&r.pendingContext.civilization.intent
+                               ==CivilizationIntent::Gather){
+                            const auto& gather=r.pendingContext.civilization;
+                            rememberResidentGatherRouteFailure(
+                                c,civilizationActionExperienceKey(gather),
+                                gather.resourceNode,r.pendingContext.token,
+                                world_.minute);
+                        }
                         emit(c.name+" context action route failed");
                         r.pendingContext.clear();
                         clearNavigation(r);

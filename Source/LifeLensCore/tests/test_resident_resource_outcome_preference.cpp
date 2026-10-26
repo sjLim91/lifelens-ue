@@ -1,6 +1,7 @@
 #include "lifelens/ResidentResourceOutcomePreference.h"
 #include "lifelens/ResidentGatherHypothesis.h"
 #include "lifelens/ResidentCivilizationOutcomeLearning.h"
+#include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
@@ -300,6 +301,68 @@ int main()
     const auto resumedIndex=buildResidentResourceOutcomeIndex(learned,world.minute);
     assert(bestGatherDecisionAtPosition(world,learned,{4,4},nullptr,MaterialKind::Stone,
         nullptr,&resumedIndex).resourceNode==101);
+    // AL-1: a REAL navigation failure is not a Gather execution result.
+    // One resident learns to prefer the reachable second source while the
+    // other resident's memories and the actual source stocks stay untouched.
+    auto routeLearner=empty;
+    routeLearner.memory.entries.clear();
+    routeLearner.beliefs=BeliefState{};
+    const std::string routeKey=gatherKey(MaterialKind::Stone);
+    assert(!rememberResidentGatherRouteFailure(
+        routeLearner,routeKey,101,0,101)); // no Core token
+    assert(rememberResidentGatherRouteFailure(
+        routeLearner,routeKey,101,991,101));
+    assert(!rememberResidentGatherRouteFailure(
+        routeLearner,routeKey,101,991,101)); // idempotent
+    assert(routeLearner.memory.entries.size()==1);
+    assert(routeLearner.beliefs.find(
+        0,actionExperienceProposition(routeKey.c_str()))==nullptr);
+    assert(routeLearner.memory.entries.front().tags[0]
+        =="navigation_experience");
+    assert(routeLearner.memory.entries.front().what
+        =="Core 이동 경로 실패로 자원 채집을 시작하지 못했다");
+    assert(routeLearner.memory.entries.front().source
+        ==MemorySource::DirectWitness);
+    assert(routeLearner.memory.entries.front().sourceCharacter
+        ==routeLearner.id);
+    assert(!residentAIVerifiedGatherOutcome(
+        routeLearner,routeLearner.memory.entries.front(),routeKey,101));
+    const auto routePreference=buildResidentResourceOutcomeIndex(routeLearner,101);
+    assert(routePreference.find(101,routeKey).reason
+        ==ResidentResourceOutcomeReason::AccessUnavailable);
+    assert(routePreference.find(101,routeKey).utilityAdjustment<0.0);
+    assert(!routePreference.find(102,routeKey).hasEvidence);
+    world.minute=101;
+    assert(bestGatherDecisionAtPosition(world,routeLearner,{4,4},
+        nullptr,MaterialKind::Stone,nullptr,&routePreference).resourceNode==102);
+    assert(bestGatherDecisionAtPosition(world,empty,{4,4},
+        nullptr,MaterialKind::Stone).resourceNode==101);
+    assert(rememberResidentGatherRouteFailure(
+        routeLearner,routeKey,101,992,102));
+    assert(routeLearner.memory.entries.size()==1); // bounded refresh
+    auto fabricated=routeLearner;
+    fabricated.memory.entries.front().source=MemorySource::ToldByOther;
+    assert(!buildResidentResourceOutcomeIndex(fabricated,102)
+        .find(101,routeKey).hasEvidence);
+    auto forgedText=routeLearner;
+    forgedText.memory.entries.front().what="model claimed route blocked";
+    assert(!buildResidentResourceOutcomeIndex(forgedText,102)
+        .find(101,routeKey).hasEvidence);
+    // A later confirmed harvest of this same source supersedes spatial
+    // uncertainty; a prior blocked path is not perpetual world truth.
+    world.minute=103;
+    const auto genuineHarvest=executeCivilizationDecisionAtPosition(
+        world,routeLearner,attempted,{4,4});
+    assert(genuineHarvest.executed &&genuineHarvest.success
+        &&genuineHarvest.event.quantity>0);
+    record(routeLearner,101,103,true);
+    assert(buildResidentResourceOutcomeIndex(routeLearner,103)
+        .find(101,routeKey).succeeded);
+    assert(!buildResidentResourceOutcomeIndex(routeLearner,
+        103+ResidentResourceOutcomeHorizonMinutes+1)
+        .find(101,routeKey).hasEvidence);
+    world.minute=101;
+
     // An unseen/exhausted source remains excluded even with positive memory.
     world.resourceNodes[0].quantity=0;
     assert(bestGatherDecisionAtPosition(world,learned,{4,4},nullptr,MaterialKind::Stone).resourceNode==102);
@@ -319,4 +382,24 @@ int main()
     const int minute=savedWorld.world().minute;
     assert(residentResourceOutcomePreference(restored,101,key,minute).utilityAdjustment
         ==residentResourceOutcomePreference(learned,101,key,minute).utilityAdjustment);
+
+    // Existing binary snapshot retains the actor's distinct route-failure
+    // episode as well as the later physically confirmed success.
+    savedWorld.world().characters.front().memory=routeLearner.memory;
+    savedWorld.world().characters.front().beliefs=routeLearner.beliefs;
+    assert(encodeSimulationSnapshot(savedWorld.captureSnapshot(),bytes,&error));
+    assert(decodeSimulationSnapshot(bytes,decoded,&error));
+    const auto& restoredRoute=decoded.world.characters.front();
+    const auto afterLoad=buildResidentResourceOutcomeIndex(
+        restoredRoute,savedWorld.world().minute);
+    assert(afterLoad.find(101,routeKey).succeeded);
+    bool routeEpisodeSurvived=false;
+    for(const auto& memory:restoredRoute.memory.entries)
+        if(memory.where=="resource-node:101"
+           &&memory.tags.size()==3
+           &&memory.tags[0]=="navigation_experience"
+           &&memory.tags[1]==routeKey
+           &&memory.tags[2]=="route-failed")
+            routeEpisodeSurvived=true;
+    assert(routeEpisodeSurvived);
 }

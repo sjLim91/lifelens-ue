@@ -108,12 +108,20 @@ inline ResidentResourceOutcomeIndex buildResidentResourceOutcomeIndex(
     // Exactly one personal-memory pass. Do not call the single-source
     // compatibility helper inside a resource-node comparison loop.
     for(const auto& memory:actor.memory.entries){
+        // A Core navigation failure happened BEFORE extraction. It is
+        // firsthand spatial evidence, but never an executed Gather failure.
+        const bool gathered=memory.tags.size()==3
+            &&memory.tags[0]=="action_experience";
+        const bool routeFailed=memory.tags.size()==3
+            &&memory.tags[0]=="navigation_experience"
+            &&memory.tags[2]=="route-failed"
+            &&memory.what=="Core 이동 경로 실패로 자원 채집을 시작하지 못했다";
         if(memory.source!=MemorySource::DirectWitness ||!memory.witnessed
            ||memory.sourceCharacter!=actor.id ||memory.who!=actor.id
            ||memory.minute<0 ||memory.minute>currentMinute
            ||static_cast<std::int64_t>(currentMinute)-memory.minute
                 >ResidentResourceOutcomeHorizonMinutes
-           ||memory.tags.size()!=3 ||memory.tags[0]!="action_experience"
+           ||(!gathered &&!routeFailed)
            ||memory.tags[1].rfind("Civilization:Gather:",0)!=0
            ||memory.tags[1].size()<=20
            ||!std::isfinite(memory.confidence)
@@ -128,7 +136,10 @@ inline ResidentResourceOutcomeIndex buildResidentResourceOutcomeIndex(
         const std::string failure="실제 문명 행동 "+key+" 수행을 시도했지만 실패했다";
         ResidentResourceOutcomePreference incoming;
         double magnitude=0.0;
-        if(memory.tags[2]=="success" &&memory.what==success){
+        if(routeFailed){
+            incoming.reason=ResidentResourceOutcomeReason::AccessUnavailable;
+            magnitude=-0.06;
+        }else if(memory.tags[2]=="success" &&memory.what==success){
             incoming.succeeded=true;
             incoming.reason=ResidentResourceOutcomeReason::Success;
             magnitude=ResidentResourceSuccessPreferenceLimit;
@@ -169,6 +180,49 @@ inline ResidentResourceOutcomeIndex buildResidentResourceOutcomeIndex(
             selected=incoming;
     }
     return out;
+}
+
+// Called ONLY after the production Core navigation solver reports an actual
+// failed route for a pending Gather. No resource was harvested and no action
+// outcome belief is awarded. Retain one latest failure per resident/source;
+// the short-lived location hypothesis is snapshot-backed and can be refuted
+// by a later real successful Gather at that very source.
+inline bool rememberResidentGatherRouteFailure(
+    Character& actor,const std::string& actionKey,std::uint64_t sourceNode,
+    std::uint64_t contextToken,int minute)
+{
+    if(!actor.alive ||actor.id==0 ||minute<0 ||sourceNode==0
+       ||contextToken==0 ||actionKey.rfind("Civilization:Gather:",0)!=0
+       ||actionKey.size()<=20) return false;
+    const std::string source="resource-node:"+std::to_string(sourceNode);
+    const std::string outcome="Core 이동 경로 실패로 자원 채집을 시작하지 못했다";
+    for(auto& memory:actor.memory.entries){
+        if(memory.source!=MemorySource::DirectWitness ||!memory.witnessed
+           ||memory.sourceCharacter!=actor.id ||memory.who!=actor.id
+           ||memory.where!=source ||memory.tags.size()!=3
+           ||memory.tags[0]!="navigation_experience"
+           ||memory.tags[1]!=actionKey ||memory.tags[2]!="route-failed"
+           ||memory.what!=outcome) continue;
+        if(memory.minute>=minute) return false;
+        memory.minute=minute;
+        memory.confidence=1.0;
+        return true;
+    }
+    MemoryRecord memory;
+    memory.who=actor.id;
+    memory.sourceCharacter=actor.id;
+    memory.what=outcome;
+    memory.where=source;
+    memory.minute=minute;
+    memory.source=MemorySource::DirectWitness;
+    memory.witnessed=true;
+    memory.confidence=1.0;
+    memory.importance=0.42;
+    memory.emotionValence=-0.25;
+    memory.emotionIntensity=0.35;
+    memory.tags={"navigation_experience",actionKey,"route-failed"};
+    actor.memory.add(std::move(memory));
+    return true;
 }
 
 // Compatibility for isolated single-source callers. Candidate loops should

@@ -47,6 +47,9 @@ jobs:
         run: cmake --build build -j2
       - name: Core regression suite
         run: ctest --test-dir build --output-on-failure
+      # Native proof from two unmodified New Game worlds, no injected intent.
+      - name: AL-1 native production resident witness
+        run: ctest --test-dir build --verbose -R 'test_al1_production_closed_loop'
       - name: Deterministic harness
         run: |
           ./build/ll_harness --days 1 --seed 42 > /tmp/harness-first.txt
