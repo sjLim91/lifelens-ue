@@ -48,6 +48,12 @@ struct ResidentAIPersonalAuditMetrics {
     std::uint64_t civilizationSuccessEvidence=0,civilizationFailureEvidence=0;
     std::uint64_t firsthandCivilizationMemories=0,knownTechniqueRecords=0;
     bool alive=false;
+    // Per-resident, per-intent input lifecycle. Do not infer a completed
+    // Core action from a proposal or a token that stopped being pending.
+    std::array<std::uint64_t,FullCognitiveCatalogCount>
+        catalogSelected{},catalogNotOffered{},catalogNoEligibleTarget{},
+        catalogSubmitted{},catalogAccepted{},catalogRejected{},
+        catalogRejectedByValidator{},catalogRejectedAfterValidator{};
     // Core tokens increase monotonically; one watermark per context/phase
     // bounds duplicate suppression by residents rather than event history.
     std::array<std::uint64_t,ObservedOpportunityContextCount*2> lastVerifiedTokens{};
@@ -246,6 +252,7 @@ inline bool residentAIProxyProposal(
     const auto request=sim.observeCognitiveRequest(
         actor,CognitiveTriggerKind::Reflection);
     if(request.actor!=actor) return false;
+    auto& personal=stats.residents[actor];
     CognitiveProposal proposal;
     proposal.actor=actor;
     proposal.priority=0.9;
@@ -259,6 +266,7 @@ inline bool residentAIProxyProposal(
     if(catalogPolicy){
         proposal.intent=fullCatalog[catalogSlot];
         ++stats.catalogSelected[catalogSlot];
+        ++personal.catalogSelected[catalogSlot];
     }else if(policy==ResidentAIPairedPolicy::CoreOpportunityFour){
         switch(slot%4){
             case 0: proposal.intent=CognitiveIntentKind::TeachKnowledge; break;
@@ -307,11 +315,17 @@ inline bool residentAIProxyProposal(
        &&proposal.targetResident==0){
         if(chosenOpportunity<CognitiveOpportunityIntentCount)
             ++stats.opportunityNoEligibleTarget[chosenOpportunity];
-        if(catalogPolicy) ++stats.catalogNoEligibleTarget[catalogSlot];
+        if(catalogPolicy){
+            ++stats.catalogNoEligibleTarget[catalogSlot];
+            ++personal.catalogNoEligibleTarget[catalogSlot];
+        }
         return false;
     }
     if(!residentAIHasAllowedIntent(request,proposal.intent)){
-        if(catalogPolicy) ++stats.catalogNotOffered[catalogSlot];
+        if(catalogPolicy){
+            ++stats.catalogNotOffered[catalogSlot];
+            ++personal.catalogNotOffered[catalogSlot];
+        }
         return false;
     }
     for(const auto& memory:request.memories){
@@ -320,10 +334,12 @@ inline bool residentAIProxyProposal(
            &&memory.tags[0]=="action_experience")
             ++stats.firsthandOutcomesVisibleToProxy;
     }
-    auto& personal=stats.residents[actor];
     ++stats.proposalsAttempted;
     ++personal.proposalsAttempted;
-    if(catalogPolicy) ++stats.catalogSubmitted[catalogSlot];
+    if(catalogPolicy){
+        ++stats.catalogSubmitted[catalogSlot];
+        ++personal.catalogSubmitted[catalogSlot];
+    }
     const std::size_t opportunity=cognitiveOpportunityIndex(proposal.intent);
     if(opportunity<CognitiveOpportunityIntentCount)
         ++stats.opportunityProposalsAttempted[opportunity];
@@ -339,7 +355,10 @@ inline bool residentAIProxyProposal(
     if(accepted){
         ++stats.proposalsAccepted;
         ++personal.proposalsAccepted;
-        if(catalogPolicy) ++stats.catalogAccepted[catalogSlot];
+        if(catalogPolicy){
+            ++stats.catalogAccepted[catalogSlot];
+            ++personal.catalogAccepted[catalogSlot];
+        }
         if(opportunity<CognitiveOpportunityIntentCount)
             ++stats.opportunityProposalsAccepted[opportunity];
     }else{
@@ -347,9 +366,14 @@ inline bool residentAIProxyProposal(
         ++personal.proposalsRejected;
         if(catalogPolicy){
             ++stats.catalogRejected[catalogSlot];
-            if(validation.accepted)
+            ++personal.catalogRejected[catalogSlot];
+            if(validation.accepted){
                 ++stats.catalogRejectedAfterValidator[catalogSlot];
-            else ++stats.catalogRejectedByValidator[catalogSlot];
+                ++personal.catalogRejectedAfterValidator[catalogSlot];
+            }else{
+                ++stats.catalogRejectedByValidator[catalogSlot];
+                ++personal.catalogRejectedByValidator[catalogSlot];
+            }
         }
     }
     return accepted;
@@ -454,7 +478,23 @@ inline void appendResidentAIPersonalMetricsJson(
            <<"\"success\":"<<m.verifiedCoreSuccesses[i]
            <<",\"failure\":"<<m.verifiedCoreFailures[i]<<"}";
     }
-    out<<",\"tradeJourneyReturns\":"<<m.verifiedTradeJourneyReturns<<"}}";
+    out<<",\"tradeJourneyReturns\":"<<m.verifiedTradeJourneyReturns
+       <<"},\"catalogIntentInputs\":{";
+    const auto catalog=cognitiveStrategicIntentCatalog();
+    for(std::size_t i=0;i<catalog.size();++i){
+        if(i) out<<",";
+        out<<"\""<<cognitiveIntentName(catalog[i])<<"\":{"
+           <<"\"selected\":"<<m.catalogSelected[i]
+           <<",\"notOffered\":"<<m.catalogNotOffered[i]
+           <<",\"noEligibleTarget\":"<<m.catalogNoEligibleTarget[i]
+           <<",\"submitted\":"<<m.catalogSubmitted[i]
+           <<",\"accepted\":"<<m.catalogAccepted[i]
+           <<",\"rejected\":"<<m.catalogRejected[i]
+           <<",\"rejectedByValidator\":"<<m.catalogRejectedByValidator[i]
+           <<",\"rejectedAfterValidator\":"<<m.catalogRejectedAfterValidator[i]
+           <<"}";
+    }
+    out<<"}}";
 }
 
 inline void appendResidentAIPairedMetricsJson(
