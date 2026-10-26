@@ -66,6 +66,12 @@ def _metric(value, path):
     labels = set(verified) - {"tradeJourneyReturns"}
     if not labels or labels != set(attributed):
         raise ValueError(f"{path}: verified and attributed kinds differ")
+    # Core's completed journey-return counter is genuine execution evidence,
+    # not a model proposal. It previously bypassed validation and reporting.
+    # Legacy reports that predate the field stay readable as unavailable.
+    return_count = (_count(verified["tradeJourneyReturns"],
+                           f"{path}.tradeJourneyReturns")
+                    if "tradeJourneyReturns" in verified else None)
     real = {}
     temporal = {}
     for label in sorted(labels):
@@ -85,7 +91,7 @@ def _metric(value, path):
             or temporal[label]["temporallyMatchedFailure"]
                 > real[label]["failure"]):
             raise ValueError(f"{path}: matched outcomes exceed Core truth {label}")
-    return counts, real, temporal, intent_counts
+    return counts, real, temporal, intent_counts, return_count
 
 
 def analyze(report):
@@ -97,10 +103,14 @@ def analyze(report):
         raise ValueError("missing simulation identity or paired baseline evidence")
     if not report["matchedInitialResidents"]:
         raise ValueError("paired cohorts did not start from the same residents")
-    baseline, base_real, base_temporal, base_intents = _metric(report.get("baseline"), "baseline")
-    proxy, proxy_real, proxy_temporal, proxy_intents = _metric(report.get("proxy"), "proxy")
+    baseline, base_real, base_temporal, base_intents, base_returns = _metric(
+        report.get("baseline"), "baseline")
+    proxy, proxy_real, proxy_temporal, proxy_intents, proxy_returns = _metric(
+        report.get("proxy"), "proxy")
     if set(base_intents) != set(proxy_intents):
         raise ValueError("paired cohorts must report the same intent catalog kinds")
+    if (base_returns is None) != (proxy_returns is None):
+        raise ValueError("paired cohorts must agree on trade return evidence availability")
     keys = ("proposalsAttempted", "proposalsAccepted", "proposalsRejected",
             "observedCivilizationPendingStarts", "observedSocialPendingStarts",
             "civilizationSuccessEvidence", "civilizationFailureEvidence",
@@ -156,6 +166,13 @@ def analyze(report):
             }
             for kind in sorted(base_temporal)
         },
+        "verifiedTradeJourneyReturns": ({
+            "available": True,
+            "baseline": base_returns,
+            "proxy": proxy_returns,
+            "deltaProxyMinusBaseline": proxy_returns - base_returns,
+            "notCausalProof": True,
+        } if base_returns is not None else {"available": False}),
         "verifiedCoreOutcomes": {
             kind: {
                 "baseline": base_real[kind],

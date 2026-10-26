@@ -85,6 +85,38 @@ class TestPairedAuditAnalysis(unittest.TestCase):
         )
         self.assertFalse(out["causalImprovementDemonstrated"])
 
+    def test_verified_trade_returns_are_not_model_success(self):
+        src = fixture()
+        src["proxy"]["verifiedCoreOutcomes"]["tradeJourneyReturns"] = 2
+        out = analyze(src)
+        returns = out["verifiedTradeJourneyReturns"]
+        self.assertTrue(returns["available"])
+        self.assertEqual(returns["baseline"], 0)
+        self.assertEqual(returns["proxy"], 2)
+        self.assertEqual(returns["deltaProxyMinusBaseline"], 2)
+        self.assertTrue(returns["notCausalProof"])
+        self.assertFalse(out["causalImprovementDemonstrated"])
+
+        # A malformed or false return count must never appear as a verified
+        # Core trip; accepted proposals cannot substitute for journey returns.
+        for malformed in (-1, True, 0.5, "3"):
+            bad = copy.deepcopy(src)
+            bad["proxy"]["verifiedCoreOutcomes"]["tradeJourneyReturns"] = malformed
+            with self.subTest(malformed=malformed):
+                with self.assertRaisesRegex(ValueError, "tradeJourneyReturns"):
+                    analyze(bad)
+
+    def test_legacy_trade_return_evidence_has_explicit_unknown_state(self):
+        old = fixture()
+        del old["baseline"]["verifiedCoreOutcomes"]["tradeJourneyReturns"]
+        del old["proxy"]["verifiedCoreOutcomes"]["tradeJourneyReturns"]
+        self.assertEqual(analyze(old)["verifiedTradeJourneyReturns"],
+                         {"available": False})
+        mismatched = copy.deepcopy(old)
+        mismatched["proxy"]["verifiedCoreOutcomes"]["tradeJourneyReturns"] = 0
+        with self.assertRaisesRegex(ValueError, "trade return evidence availability"):
+            analyze(mismatched)
+
     def test_mismatched_catalog_intent_sets_must_not_compare(self):
         src = fixture()
         src["proxy"]["catalogIntentInputs"]["OtherIntent"] = (
