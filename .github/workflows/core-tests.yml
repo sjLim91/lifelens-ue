@@ -47,35 +47,9 @@ jobs:
         run: cmake --build build -j2
       - name: Core regression suite
         run: ctest --test-dir build --output-on-failure
-      # This reads actual Core events from two unmodified New Game worlds.
-      # Keep seed, resident ID and event minute visible in the CI log instead
-      # of reporting a hypothetical / directly injected "AI execution".
+      # Native proof from two unmodified New Game worlds, no injected intent.
       - name: AL-1 native production resident witness
-        run: ctest --test-dir build --verbose -R '^test_al1_production_closed_loop
-        run: |
-          ./build/ll_harness --days 1 --seed 42 > /tmp/harness-first.txt
-          ./build/ll_harness --days 1 --seed 42 > /tmp/harness-second.txt
-          cmp /tmp/harness-first.txt /tmp/harness-second.txt
-      - name: Long-run verifier regression
-        if: steps.scope.outputs.long_run == 'true'
-        run: python3 Tools/test_verify_sleep_longrun.py
-      - name: Relevant Core changes or nightly 365-day verification
-        if: steps.scope.outputs.long_run == 'true'
-        run: |
-          for seed in 874213954 874213955 2; do
-            ./build/ll_balance_audit --days 365 --seed "$seed" --checkpoints 100,365 --sleep-diagnostics > "candidate-$seed.log"
-          done
-          python3 Tools/verify_sleep_longrun.py candidate-*.log > sleep-longrun-metrics.json
-      - name: Upload long-run diagnostics
-        if: always() && steps.scope.outputs.long_run == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: weather-sleep-longrun
-          path: |
-            candidate-*.log
-            sleep-longrun-metrics.json
-          if-no-files-found: ignore
-
+        run: ctest --test-dir build --verbose -R 'test_al1_production_closed_loop'
       - name: Deterministic harness
         run: |
           ./build/ll_harness --days 1 --seed 42 > /tmp/harness-first.txt
