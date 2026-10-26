@@ -130,7 +130,11 @@ inline void rememberCivilizationAttemptOutcome(
            ||memory.tags[0]!="action_experience"
            ||memory.tags[1]!=key
            ||memory.tags[2]!=outcome
-           ||memory.minute!=minute) continue;
+           ||memory.minute!=minute
+           ||memory.source!=MemorySource::DirectWitness
+           ||!memory.witnessed
+           ||memory.sourceCharacter!=actor.id
+           ||memory.who!=actor.id) continue;
         memory.what="실제 문명 행동 "+key
             +(succeeded ? " 수행에 성공했다" : " 수행을 시도했지만 실패했다");
         if(!succeeded &&cause!=ResidentGatherFailureCause::Unknown
