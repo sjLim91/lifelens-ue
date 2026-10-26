@@ -98,26 +98,21 @@ inline bool residentAIHasConfirmedLostGatherSource(
     if(belief==nullptr ||belief->contradictionCount==0
        ||belief->lastUpdatedMinute>minute) return false;
 
-    const std::string prefix="실제 문명 행동 "+key
-        +" 수행을 시도했지만 실패했다 (직접 확인한 원인: ";
-    const std::string exhausted=prefix+"source-exhausted)";
-    const std::string removed=prefix+"source-removed)";
-    int latest=-1;
-    bool confirmed=false;
-    for(const MemoryRecord& memory:actor.memory.entries){
-        const auto succeeded=residentAIVerifiedGatherOutcome(
-            actor,memory,key,minute);
-        if(!succeeded.has_value()) continue;
-        // A same-minute VERIFIED success wins regardless of memory order.
-        if(memory.minute>latest){
-            latest=memory.minute;
-            confirmed=!*succeeded
-                &&(memory.what==exhausted ||memory.what==removed);
-        }else if(memory.minute==latest &&*succeeded){
-            confirmed=false;
-        }
+    // A verified exhausted/removed source remains unavailable even after
+    // this resident succeeds at a DIFFERENT node of the same material.
+    // Reuse the same actor/witness/Core-text contract as per-node replanning,
+    // so a fabricated success cannot erase an authentic loss.
+    const auto evidence=buildResidentResourceOutcomeIndex(actor,minute);
+    for(const auto& entry:evidence.entries){
+        if(entry.first.first!=key) continue;
+        const auto& result=entry.second;
+        if(result.hasEvidence &&!result.succeeded
+           &&result.reason==ResidentResourceOutcomeReason::SourceUnavailable
+           &&result.minute>=0
+           &&static_cast<std::int64_t>(minute)-result.minute<=1440)
+            return true;
     }
-    return confirmed &&latest>=0 &&minute-latest<=1440;
+    return false;
 }
 
 // A witnessed failure at source A remains part of the resident's personal
