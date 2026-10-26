@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include "CognitiveDecisionJournal.h"
@@ -39,9 +40,32 @@ inline double residentCognitivePartnerExperienceFactor(
         const char* prefix=token?tokenPrefix:localFactPrefix;
         const std::string id=memory.where.substr(
             std::char_traits<char>::length(prefix));
-        return !id.empty() &&id!="0"
-            &&std::all_of(id.begin(),id.end(),
-                [](unsigned char ch){return ch>='0' &&ch<='9';});
+        if(id.empty() ||id.front()=='0' ||id.size()>20) return false;
+        std::uint64_t parsed=0;
+        for(const char ch:id){
+            if(ch<'0' ||ch>'9') return false;
+            const auto digit=static_cast<std::uint64_t>(ch-'0');
+            if(parsed>(std::numeric_limits<std::uint64_t>::max()-digit)/10)
+                return false;
+            parsed=parsed*10+digit;
+        }
+        if(parsed==0) return false;
+        if(localFact)
+            return memory.what=="실제 지역 교역 대상 "
+                +std::to_string(partner)+" 물품 교환 완료 (Core exchange fact)";
+        const std::string outcomePrefix="실제 행동 "+key+" 대상 "
+            +std::to_string(partner)+" 결과: ";
+        if(key=="CoreContext:Teaching")
+            return memory.tags[2]=="success"
+                ?memory.what==outcomePrefix+"teaching-advanced"
+                :(memory.what==outcomePrefix+"comprehension-failed"
+                  ||memory.what==outcomePrefix+"clarity-or-trust-failed"
+                  ||memory.what==outcomePrefix+"teaching-core-rejected");
+        if(key=="CoreContext:Trade")
+            return memory.tags[2]=="success"
+                ?memory.what==outcomePrefix+"trade-exchanged"
+                :memory.what==outcomePrefix+"trade-core-rejected";
+        return false;
     };
     int latestMinute=-1;
     bool latestSucceeded=false;

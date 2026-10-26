@@ -151,6 +151,24 @@ int main()
     }
     assert(residentCognitivePartnerExperienceFactor(
         forged,alternate,"CoreContext:Trade",initialMinute+11)==1.0);
+    // Counterfeit context codes do not change another resident's real
+    // preference, even when the copied witness flags and token look plausible.
+    auto fakeRecovery=alternateHistory;
+    for(auto& memory:fakeRecovery.memory.entries)
+        if(memory.who==alternate &&memory.tags.size()==3
+           &&memory.tags[1]=="CoreContext:Trade"){
+            memory.tags[2]="success";
+            memory.what="I successfully traded according to my AI";
+        }
+    assert(residentCognitivePartnerExperienceFactor(
+        fakeRecovery,alternate,"CoreContext:Trade",initialMinute+11)==1.0);
+    auto forgedId=alternateHistory;
+    for(auto& memory:forgedId.memory.entries)
+        if(memory.who==alternate &&memory.tags.size()==3
+           &&memory.tags[1]=="CoreContext:Trade")
+            memory.where="core-context-token:18446744073709551616";
+    assert(residentCognitivePartnerExperienceFactor(
+        forgedId,alternate,"CoreContext:Trade",initialMinute+11)==1.0);
     // Same-minute success wins in either iteration order, preventing
     // non-deterministic conclusions from a reordered saved memory list.
     Character sameMinute=alternateHistory;
@@ -160,6 +178,8 @@ int main()
             auto success=memory;
             success.tags[2]="success";
             success.where="core-context-token:1006";
+            success.what="실제 행동 CoreContext:Trade 대상 "
+                +std::to_string(alternate)+" 결과: trade-exchanged";
             sameMinute.memory.add(success);
             break;
         }
