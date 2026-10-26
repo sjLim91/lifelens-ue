@@ -83,8 +83,11 @@ class TestM0IntentCloseout(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "at least 2"):
             closeout(self.write(seeds=(11,)))
         paths = self.write()
+        # A third seed with only one day cannot camouflage seed 22 missing day
+        # 1000. Total file count is still >=6.
+        third = self.write(seeds=(33,), days=(100,))[0]
         with self.assertRaisesRegex(ValueError, "missing days"):
-            closeout(paths[:-1] + [paths[-2]])
+            closeout(paths[:-1] + [third])
         # Even with six files, duplicate day cannot count as another horizon.
         with self.assertRaisesRegex(ValueError, "duplicate seed/day"):
             closeout(paths[:5] + [paths[0]])
