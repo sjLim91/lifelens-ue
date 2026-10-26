@@ -169,6 +169,40 @@ inline bool residentAIHasRecentSourcedGatherFailure(
     return false;
 }
 
+// Keep the SAME resident tool/water goal after a verified failure at one
+// ingredient source. Core may offer another real node of the exact material.
+// Never retry a personally failed node by merely choosing the closest raw
+// source, and never conjure a missing ingredient or bypass Core execution.
+inline CivilizationUtilityDecision chooseResidentAIFreshIngredientGather(
+    const World& world,const Character& resident,GridPos position,
+    MaterialKind material,const SettlementPopulation* population=nullptr)
+{
+    CivilizationUtilityDecision gather;
+    if(material==MaterialKind::Unknown) return gather;
+    const auto index=buildResidentResourceOutcomeIndex(resident,world.minute);
+    CivilizationUtilityDecision keyDecision;
+    keyDecision.intent=CivilizationIntent::Gather;
+    keyDecision.material=material;
+    const std::string key=civilizationActionExperienceKey(keyDecision);
+    std::vector<ResourceNodeId> rejected;
+    // Action memory is bounded. Exclude at most four real source failures
+    // rather than walking unbounded node lists or retrying failed sources.
+    for(std::size_t tries=0;tries<=4;++tries){
+        gather=bestGatherDecisionAtPosition(
+            world,resident,position,population,material,&rejected);
+        if(gather.intent!=CivilizationIntent::Gather
+           ||gather.material!=material ||gather.resourceNode==0)
+            return {};
+        const auto outcome=index.find(gather.resourceNode,key);
+        if(!outcome.hasEvidence ||outcome.succeeded)
+            return gather;
+        // A real Core failure at A makes B eligible under the existing
+        // physical affordance rules. Source access remains checked by Core.
+        rejected.push_back(gather.resourceNode);
+    }
+    return {};
+}
+
 // A Core recipe can explain the next prerequisite for an AI resident.
 // This only chooses an existing legal raw-material Gather affordance;
 // it never manufactures ingredients, knowledge, water, or new actions.
@@ -195,8 +229,8 @@ chooseResidentAIMissingRecipeMaterial(
                 ingredient.kind,ingredient.material,
                 ingredient.anyMaterial)>=ingredient.quantity)
             continue;
-        const auto gather=bestGatherDecisionAtPosition(
-            world,resident,position,population,ingredient.material);
+        const auto gather=chooseResidentAIFreshIngredientGather(
+            world,resident,position,ingredient.material,population);
         if(gather.intent==CivilizationIntent::Gather
            &&gather.material==ingredient.material)
             return gather;
@@ -243,8 +277,8 @@ chooseResidentAIMissingExperimentMaterial(
                ingredient.kind,ingredient.material,ingredient.anyMaterial)
                   >=ingredient.quantity)
             continue;
-        const auto gather=bestGatherDecisionAtPosition(
-            world,resident,position,population,ingredient.material);
+        const auto gather=chooseResidentAIFreshIngredientGather(
+            world,resident,position,ingredient.material,population);
         if(gather.intent==CivilizationIntent::Gather
            &&gather.material==ingredient.material)
             return gather;
