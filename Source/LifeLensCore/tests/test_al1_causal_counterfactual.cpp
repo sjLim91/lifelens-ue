@@ -7,6 +7,7 @@
 
 #include "lifelens/ResidentCivilizationOutcomeLearning.h"
 #include "lifelens/ResidentSensedResourceAgency.h"
+#include "lifelens/ResidentLiveRecoveryEvidence.h"
 
 using namespace lifelens;
 
@@ -111,6 +112,19 @@ static void runPair(WorldSeed seed)
     const auto learned=chooseResidentSensedResourceGoal(
         withReceipt,withReceipt.characters[0],position,relationships,
         strategicChoice,nullptr,false);
+
+    // The exact provenance inspectable at the Core pending issuance site
+    // exists ONLY when firsthand memory explains the substituted source.
+    const auto witnessed=observeResidentLiveRecoveryEvidence(
+        withReceipt,withReceipt.characters[0],position,strategicChoice,learned);
+    assert(witnessed &&witnessed->actor==1
+        &&witnessed->failedSource==101 &&witnessed->selectedSource==103
+        &&witnessed->firsthandFailureMinute==480
+        &&witnessed->selectionMinute==480
+        &&!witnessed->directNavigationFailure);
+    assert(!observeResidentLiveRecoveryEvidence(
+        withoutReceipt,withoutReceipt.characters[0],position,
+        strategicChoice,noLearn));
 
     // Same cognition owner, same material, different real Core source:
     // causal contrast is the only difference between the paired worlds.
