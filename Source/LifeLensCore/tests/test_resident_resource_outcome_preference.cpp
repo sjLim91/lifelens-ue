@@ -1,6 +1,7 @@
 #include "lifelens/ResidentResourceOutcomePreference.h"
 #include "lifelens/ResidentGatherHypothesis.h"
 #include "lifelens/ResidentCivilizationOutcomeLearning.h"
+#include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
