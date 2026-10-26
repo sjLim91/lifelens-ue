@@ -4,6 +4,7 @@
 #include "lifelens/AutonomousSocialGoalRouting.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/ResidentSensedResourceAgency.h"
+#include "lifelens/ResidentLiveRecoveryEvidence.h"
 #include "lifelens/ResidentAICompletedPlanGuard.h"
 #include "lifelens/ResidentUnifiedAgency.h"
 #include "lifelens/ResidentCognitiveCarePreference.h"
@@ -2403,6 +2404,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     // first probe did not choose Civilization. Cache that pure result once.
     UnifiedUtilityDecision cadenceDecision;
     const UnifiedUtilityDecision* sharedCadenceDecision=nullptr;
+    std::optional<ResidentLiveRecoveryEvidence> liveRecovery;
     if(planningAllowed
        && !urgentProvisionRequired
        && !criticalSurvivalPressure
@@ -2438,6 +2440,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         const auto embodiedGoal=chooseResidentSensedResourceGoal(
             world_,c,r.pos,relationships_,agency,&residentPopulation,
             hasUrgentPhysicalNeed,&socialKnowledge_,&households_);
+        liveRecovery=observeResidentLiveRecoveryEvidence(
+            world_,c,r.pos,agency,embodiedGoal);
         cadenceDecision=embodiedGoal.agency.decision;
     }
 
@@ -2447,7 +2451,32 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     if(planningAllowed
        && !criticalSurvivalPressure
        && urgentPhysicalGoal==Goal::Idle
-       && tryCivilizationDecision(c,r,sharedCadenceDecision)) return;
+       && tryCivilizationDecision(c,r,sharedCadenceDecision)){
+        // Never log an unexecuted cognition proposal or a hypothetical
+        // recovery. Evidence becomes an observable production decision only
+        // after Core actually issues the matching pending Gather token.
+        if(liveRecovery &&r.pendingContext.active()
+           &&r.pendingContext.kind==ContextActionKind::Civilization
+           &&r.pendingContext.civilization.intent==CivilizationIntent::Gather
+           &&r.pendingContext.civilization.resourceNode
+               ==liveRecovery->selectedSource){
+            emit(c.name+" AL1_CORE_RESOURCE_REPLAN actor="
+                +std::to_string(liveRecovery->actor)
+                +" failed_source="
+                +std::to_string(liveRecovery->failedSource)
+                +" selected_source="
+                +std::to_string(liveRecovery->selectedSource)
+                +" failure_minute="
+                +std::to_string(liveRecovery->firsthandFailureMinute)
+                +" decision_minute="
+                +std::to_string(liveRecovery->selectionMinute)
+                +" pending_token="
+                +std::to_string(r.pendingContext.token)
+                +" firsthand_navigation_failure="
+                +(liveRecovery->directNavigationFailure ? "1" : "0"));
+        }
+        return;
+    }
     if(planningAllowed && !hasUrgentPhysicalNeed
        && trySocialDecision(c,r,sharedCadenceDecision)) return;
 
