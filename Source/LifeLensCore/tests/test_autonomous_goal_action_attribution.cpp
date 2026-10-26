@@ -86,7 +86,7 @@ int main()
     // A late duplicate ACK with the SAME token but another minute must not
     // retrain this resident. New Core tokens are independent physical actions.
     CHECK(!rememberAutonomousGoalActionOutcome(
-        learner,secondLink,5002,111,Verdict::ProgressButNotAchieved));
+        learner,link,5001,111,Verdict::ProgressButNotAchieved));
     auto secondLink=link; secondLink.token=5002;
     auto thirdLink=link; thirdLink.token=5003;
     auto reachedLink=link; reachedLink.token=5004;
@@ -94,7 +94,7 @@ int main()
         22,autonomousGoalProgressProposition(SocialIntent::Approach));
     CHECK(learnerBelief &&learnerBelief->contradictionCount==1);
     CHECK(rememberAutonomousGoalActionOutcome(
-        learner,link,5001,111,Verdict::ProgressButNotAchieved));
+        learner,secondLink,5002,111,Verdict::ProgressButNotAchieved));
     CHECK(learner.memory.entries.size()==1);
     CHECK(learnerBelief->supportCount==1);
     CHECK(rememberAutonomousGoalActionOutcome(
