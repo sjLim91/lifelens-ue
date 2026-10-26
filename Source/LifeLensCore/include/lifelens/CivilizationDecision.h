@@ -1405,6 +1405,31 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const InnovationPressureContextSnapshot innovationContext=
         observeInnovationPressureContext(
             world,self,authoritativePosition,population);
+    // Genuine property-based composition: the Core examines carried
+    // materials, derives a head/handle/binding assembly and tests it as a
+    // physical experiment. No predeclared TechniqueId or reward exists.
+    // Optional invention never outbids urgent physiological care.
+    if(requestedTechnique==TechniqueId::None
+       &&self.personality.curiosity>=0.55
+       &&std::max({self.needs.hunger,self.needs.thirst,
+                   self.needs.sleep,self.needs.bladder,self.needs.hygiene})
+           <0.48){
+        const auto design=proposeMaterialComposition(self.civilization.inventory);
+        if(design &&self.civilization.inventory.count(
+                design->resultingTool,design->head)==0){
+            CivilizationUtilityDecision candidate;
+            candidate.intent=CivilizationIntent::Experiment;
+            candidate.experiment=ExperimentKind::ComposeMaterials;
+            candidate.technique=TechniqueId::None;
+            candidate.material=design->head;
+            candidate.item=design->resultingTool;
+            candidate.utility=clampCivilization01(
+                0.13+0.19*self.personality.curiosity
+                +0.15*design->testedPerformance
+                +0.09*self.civilization.learningSkill);
+            considerCivilizationDecision(best,candidate);
+        }
+    }
     for(const ExperimentKind kind:CivilizationExperimentCatalog){
         const TechniqueId technique=experimentTechnique(kind);
         if(technique==TechniqueId::None
@@ -3288,7 +3313,15 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                     cultivationExperimentOpportunityAvailable(
                         world,self,authoritativePosition,population);
             }
-            result.experiment=attemptExperiment(context,self.civilization.inventory,self.civilization.knowledge);
+            if(decision.experiment==ExperimentKind::ComposeMaterials){
+                // Recompute from actual inventory at execution; a proposal
+                // cannot supply imaginary component identities or outputs.
+                result.experiment=attemptMaterialComposition(
+                    context,self.civilization.inventory);
+            }else{
+                result.experiment=attemptExperiment(
+                    context,self.civilization.inventory,self.civilization.knowledge);
+            }
             result.executed=result.experiment.attempted;
             result.success=result.experiment.success;
             result.event=result.experiment.event;
