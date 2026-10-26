@@ -133,6 +133,30 @@ int main()
     assert(!residentAIHasRecentRepeatedGatherFailure(
         borrowed,MaterialKind::PlantFood,world.minute));
 
+    // A believable memory tag is not an executed Core outcome. Even when
+    // an authentic failed-attempt belief exists, forged narration cannot
+    // create a failure or a success that erases genuine learning.
+    Character inventedFailures=resident;
+    for(auto& memory:inventedFailures.memory.entries)
+        if(memory.tags.size()==3 &&memory.tags[1]==key)
+            memory.what="a model invented a Gather failure";
+    assert(!residentAIHasRecentRepeatedGatherFailure(
+        inventedFailures,MaterialKind::PlantFood,482));
+    Character wrongSubject=resident;
+    for(auto& memory:wrongSubject.memory.entries)
+        if(memory.tags.size()==3 &&memory.tags[1]==key)
+            memory.who=999;
+    assert(!residentAIHasRecentRepeatedGatherFailure(
+        wrongSubject,MaterialKind::PlantFood,482));
+    Character fakeRecovery=resident;
+    MemoryRecord inventedSuccess=fakeRecovery.memory.entries.front();
+    inventedSuccess.minute=483;
+    inventedSuccess.tags[2]="success";
+    inventedSuccess.what="the model said the attempt succeeded";
+    fakeRecovery.memory.entries.push_back(inventedSuccess);
+    assert(residentAIHasRecentRepeatedGatherFailure(
+        fakeRecovery,MaterialKind::PlantFood,483));
+
     // Core source memory distinguishes a repeatedly failing REAL node A
     // from a different living source B of the same material. Before personal
     // experience, equally stocked provision sources preserve vector order.
@@ -164,6 +188,28 @@ int main()
         rememberCivilizationAttemptOutcome(
             searching,attemptedA,minute,false,
             ResidentGatherFailureCause::ResourceAccessUnavailable);
+    // Source removal/exhaustion must use a verified actor-owned Core
+    // record. Later counterfeit "success" cannot reset confirmed loss.
+    Character lostSource=searching;
+    rememberCivilizationAttemptOutcome(
+        lostSource,attemptedA,484,false,
+        ResidentGatherFailureCause::SourceExhausted);
+    assert(residentAIHasConfirmedLostGatherSource(
+        lostSource,MaterialKind::PlantFood,484));
+    MemoryRecord counterfeitSuccess=lostSource.memory.entries.back();
+    counterfeitSuccess.minute=485;
+    counterfeitSuccess.tags[2]="success";
+    counterfeitSuccess.what="a made-up successful Gather result";
+    lostSource.memory.entries.push_back(counterfeitSuccess);
+    assert(residentAIHasConfirmedLostGatherSource(
+        lostSource,MaterialKind::PlantFood,485));
+    counterfeitSuccess.what="실제 문명 행동 "+key+" 수행에 성공했다";
+    counterfeitSuccess.who=999; // someone else's actual record
+    counterfeitSuccess.minute=486;
+    lostSource.memory.entries.push_back(counterfeitSuccess);
+    assert(residentAIHasConfirmedLostGatherSource(
+        lostSource,MaterialKind::PlantFood,486));
+
     AcceptedCognitiveDecision sourceThought=thought;
     sourceThought.minute=480;
     const auto ranked=bestGatherDecisionAtPosition(
