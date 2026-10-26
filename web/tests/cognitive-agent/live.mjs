@@ -7,6 +7,24 @@ const { ResidentAIController, LIVE_AI_BUDGET, liveActionableCognitiveRequest,
   await source('cognition/live-resident-ai.ts');
 const { parseCognitiveRequest } = await source('cognition/cognitive-contract.ts');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+const { ResidentAISessionAudit } = await source('cognition/resident-ai-session-audit.ts');
+{
+  const audit=new ResidentAISessionAudit();
+  assert(audit.begin({minute:480,worldSeed:'1',populationSeed:'2',
+    generationVersion:1},'local-ai','free-local'));
+  const memory={source:'DirectWitness',witnessed:true,
+    tags:['action_experience','Civilization:Gather:Water','failure'],minute:481};
+  audit.inference({actor:'1',minute:480,memories:[memory]});
+  audit.inference({actor:'1',minute:480,memories:[{...memory,minute:-1}]});
+  audit.inference({actor:'1',minute:480,memories:[{...memory,minute:480-1441}]});
+  audit.inference({actor:'1',minute:480,memories:[{...memory,minute:479}]});
+  const result=audit.snapshot();
+  assert.equal(result?.modelRequests,4);
+  assert.equal(result?.requestsWithFirsthandExperience,1,
+    'future/expired/malformed direct witness cannot count as observed evidence');
+}
+
+
 
 {
   const base = {
@@ -397,8 +415,8 @@ const provider = {
 
   assert.equal(audit.begin(next, 'local-ai', 'test-model'), true);
   audit.observe(next, base, 'local-ai');
-  audit.inference({ memories: [{
-    source: 'DirectWitness', witnessed: true,
+  audit.inference({ minute: 487, memories: [{
+    minute: 487, source: 'DirectWitness', witnessed: true,
     tags: ['action_experience', 'Civilization:Gather:PlantFood', 'failure'],
   }] });
   audit.result('recorded');
