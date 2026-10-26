@@ -415,8 +415,8 @@ const provider = {
 
   assert.equal(audit.begin(next, 'local-ai', 'test-model'), true);
   audit.observe(next, base, 'local-ai');
-  audit.inference({ memories: [{
-    source: 'DirectWitness', witnessed: true,
+  audit.inference({ minute: 487, memories: [{
+    minute: 487, source: 'DirectWitness', witnessed: true,
     tags: ['action_experience', 'Civilization:Gather:PlantFood', 'failure'],
   }] });
   audit.result('recorded');
