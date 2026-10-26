@@ -1415,8 +1415,8 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
                    self.needs.sleep,self.needs.bladder,self.needs.hygiene})
            <0.48){
         const auto design=proposeMaterialComposition(self.civilization.inventory);
-        if(design &&self.civilization.inventory.count(
-                design->resultingTool,design->head)==0){
+        if(design &&materialCompositionWorthTesting(
+                self.civilization.inventory,*design)){
             CivilizationUtilityDecision candidate;
             candidate.intent=CivilizationIntent::Experiment;
             candidate.experiment=ExperimentKind::ComposeMaterials;
