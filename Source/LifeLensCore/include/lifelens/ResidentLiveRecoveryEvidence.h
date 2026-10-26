@@ -17,6 +17,7 @@ struct ResidentLiveRecoveryEvidence {
     ResourceNodeId selectedSource=0;
     MaterialKind material=MaterialKind::Unknown;
     int firsthandFailureMinute=-1;
+    std::uint64_t failedPendingToken=0;
     int selectionMinute=-1;
     bool directNavigationFailure=false;
 };
@@ -88,12 +89,15 @@ observeResidentLiveRecoveryEvidence(
            &&memory.who==actor.id
            &&memory.where=="resource-node:"
                 +std::to_string(result.failedSource)
-           &&memory.tags.size()==3
+           &&(memory.tags.size()==3 ||memory.tags.size()==4)
            &&memory.tags[0]=="navigation_experience"
            &&memory.tags[1]==key
            &&memory.tags[2]=="route-failed"
-           &&memory.what=="Core 이동 경로 실패로 자원 채집을 시작하지 못했다")
+           &&memory.what=="Core 이동 경로 실패로 자원 채집을 시작하지 못했다"){
             result.directNavigationFailure=true;
+            result.failedPendingToken=
+                residentGatherRouteFailurePendingToken(memory);
+        }
     return result;
 }
 
