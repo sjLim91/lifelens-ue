@@ -134,6 +134,7 @@ int main()
         &&routeEvidence->failedSource==101
         &&routeEvidence->selectedSource==103
         &&routeEvidence->firsthandFailureMinute==480
+        &&routeEvidence->failedPendingToken==47001
         &&routeEvidence->directNavigationFailure);
     const auto noRecovery=chooseResidentSensedResourceGoal(
         routeWorld,routeWorld.characters[1],position,relationships,
