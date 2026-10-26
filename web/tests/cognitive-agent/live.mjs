@@ -9,6 +9,22 @@ const { parseCognitiveRequest } = await source('cognition/cognitive-contract.ts'
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 const { ResidentAISessionAudit } = await source('cognition/resident-ai-session-audit.ts');
 {
+  const audit = new ResidentAISessionAudit();
+  const world={minute:480,worldSeed:'1',populationSeed:'2',
+    generationVersion:1,livingResidents:2};
+  const living=[{id:'1',alive:true,beliefs:[]},
+                {id:'2',alive:true,beliefs:[]}];
+  assert(audit.begin(world,'baseline',null));
+  audit.observe(world,living,'baseline');
+  audit.observe({...world,minute:481},living.slice(0,1),'baseline');
+  assert.equal(audit.snapshot().coverageGap,true,
+    'missing observed resident is an incomplete audit sample, not zero evidence');
+  assert.equal(audit.snapshot().comparableWithinObservedWindow,false);
+  audit.finish('stopped');
+  assert.equal(audit.snapshot().comparableWithinObservedWindow,false);
+}
+
+{
   const audit=new ResidentAISessionAudit();
   assert(audit.begin({minute:480,worldSeed:'1',populationSeed:'2',
     generationVersion:1},'local-ai','free-local'));
