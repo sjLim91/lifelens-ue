@@ -23,6 +23,12 @@ inline std::string civilizationActionExperienceKey(
        ||decision.intent==CivilizationIntent::Explore){
         label+=':';
         label+=materialName(decision.material);
+    }else if(decision.intent==CivilizationIntent::Experiment
+             &&decision.experiment==ExperimentKind::ComposeMaterials){
+        // The Core determines which physical head material was actually
+        // consumed. Never group every composition as Experiment:None.
+        label+=":MaterialComposition:";
+        label+=materialName(decision.material);
     }else if(decision.intent==CivilizationIntent::Craft
              ||decision.intent==CivilizationIntent::Experiment){
         label+=':';
