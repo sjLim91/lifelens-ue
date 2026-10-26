@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <iostream>
@@ -16,6 +17,7 @@ using namespace lifelens;
 // It witnesses the ordinary production New Game -> Simulation::step() path.
 struct Witness {
     std::map<ResourceNodeId,int> residentIssuedGather;
+    std::map<ResourceNodeId,std::set<std::uint64_t>> sourcePendingTokens;
     std::set<std::pair<ResourceNodeId,int>> observedOutcomes;
     ResourceNodeId completedSource=0;
     int completedMinute=-1;
@@ -45,6 +47,10 @@ int main()
                        &&pending.resourceNode!=0)
                         witness.residentIssuedGather.emplace(
                             pending.resourceNode,sim.world().minute);
+                    if(pending.civilizationIntent==CivilizationIntent::Gather
+                       &&pending.resourceNode!=0 &&pending.token!=0)
+                        witness.sourcePendingTokens[pending.resourceNode]
+                            .insert(pending.token);
                     if(witness.completedMinute>=0
                        &&sim.world().minute>witness.completedMinute
                        &&(pending.civilizationIntent!=CivilizationIntent::Gather
@@ -83,7 +89,30 @@ int main()
                        &&memory.tags[1]==key
                        &&memory.tags[2]=="success")
                         personallyRecorded=true;
-                if(personallyRecorded){
+                // A firsthand memory alone does not prove which pending
+                // Core command actually extracted the resource. The token
+                // must match the real issued Gather command and the live
+                // Core harvest result log, including actor, source and amount.
+                bool sameIssuedTokenExecuted=false;
+                const auto issued=witness.sourcePendingTokens.find(
+                    actual.resourceNode);
+                if(issued!=witness.sourcePendingTokens.end()){
+                    for(const auto token:issued->second){
+                        const std::string resultMarker=
+                            "AL1_CORE_GATHER_RESULT actor="
+                            +std::to_string(actor.id)
+                            +" pending_token="+std::to_string(token)
+                            +" source="+std::to_string(actual.resourceNode)
+                            +" actual_quantity="+std::to_string(actual.quantity);
+                        const bool matched=std::any_of(
+                            sim.logs().begin(),sim.logs().end(),
+                            [&](const std::string& log){
+                                return log.find(resultMarker)!=std::string::npos;
+                            });
+                        if(matched){sameIssuedTokenExecuted=true;break;}
+                    }
+                }
+                if(personallyRecorded &&sameIssuedTokenExecuted){
                     witness.completedSource=actual.resourceNode;
                     witness.completedMinute=actual.minute;
                 }
@@ -94,11 +123,13 @@ int main()
                  <<" resident="<<actorWithChain
                  <<" source="<<sourceWithChain
                  <<" outcome_minute="<<recordedMinute
-                 <<" followup="<<(actorWithChain!=0)<<"\n";
+                 <<" followup="<<(actorWithChain!=0)
+                 <<" matched_core_gather_token="<<(actorWithChain!=0)<<"\n";
         witnessedAnyFullChain=witnessedAnyFullChain||actorWithChain!=0;
     }
-    // This establishes an actual Core Gather -> direct memory -> another
-    // production decision, NOT the causal effect of that memory on preference
+    // This establishes an actual issued Core token -> physically executed
+    // Gather -> firsthand memory -> another production decision, NOT the
+    // causal effect of that memory on preference
     // and NOT completed AL-1 acceptance.
     assert(witnessedAnyFullChain);
     return 0;

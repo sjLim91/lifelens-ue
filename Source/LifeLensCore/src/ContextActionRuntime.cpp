@@ -433,6 +433,16 @@ bool Simulation::completeContextAction(
                     break;
                 case CivilizationEventType::Gathered:
                     log<<" "<<materialName(result.event.material)<<" x"<<result.event.quantity;
+                    // A successful harvest is Core-owned, not a submitted
+                    // cognitive goal or merely a pending movement. Attach the
+                    // matched pending token to the existing action log so a
+                    // true AL1_CORE_RESOURCE_REPLAN issuance can be reconciled
+                    // with the eventual extracted resource, without another
+                    // persistent field, phantom result, or extra log entry.
+                    log<<" AL1_CORE_GATHER_RESULT actor="<<actor.id
+                       <<" pending_token="<<token
+                       <<" source="<<resourceNode
+                       <<" actual_quantity="<<result.event.quantity;
                     break;
                 case CivilizationEventType::Stored:
                     log<<" "<<materialName(result.event.material)<<" x"<<result.event.quantity;
