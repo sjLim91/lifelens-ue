@@ -196,6 +196,34 @@ class TestPairedAuditAnalysis(unittest.TestCase):
             counterfeit["proxy"]["catalogIntentInputs"].pop("ImproveShelter"))
         self.assertFalse(analyze(counterfeit)["intentLifecycle"]["all14IntentsObserved"])
 
+    def test_catalog_presence_does_not_claim_all_intents_were_selected(self):
+        src = fixture()
+        zero = {key: 0 for key in src["baseline"]["catalogIntentInputs"][
+            "ImproveFoodSecurity"]}
+        from Tools.analyze_resident_ai_paired import CANONICAL_INTENTS
+        for name in CANONICAL_INTENTS - {"ImproveFoodSecurity"}:
+            src["baseline"]["catalogIntentInputs"][name] = dict(zero)
+            src["proxy"]["catalogIntentInputs"][name] = dict(zero)
+        report = analyze(src)
+        lifecycle = report["intentLifecycle"]
+        self.assertTrue(lifecycle["all14IntentsObserved"])
+        self.assertFalse(lifecycle["all14IntentsActuallySelected"])
+        self.assertTrue(lifecycle["selectedIsNotCoreCompletion"])
+        self.assertEqual(lifecycle["activelySelectedIntents"],
+                         ["ImproveFoodSecurity"])
+        self.assertEqual(set(lifecycle["neverSelectedIntents"]),
+                         CANONICAL_INTENTS - {"ImproveFoodSecurity"})
+        self.assertFalse(report["causalImprovementDemonstrated"])
+
+        # A zero-row catalog must not become proof of 14 lived goals.
+        src["baseline"]["catalogIntentInputs"]["ImproveWaterSecurity"] = {
+            **zero, "selected": 1, "notOffered": 1,
+        }
+        out = analyze(src)["intentLifecycle"]
+        self.assertIn("ImproveWaterSecurity", out["activelySelectedIntents"])
+        self.assertNotIn("ImproveWaterSecurity", out["neverSelectedIntents"])
+        self.assertFalse(out["all14IntentsActuallySelected"])
+
     def test_invalid_evidence_never_silently_passes(self):
         variants = []
         bad = fixture()
