@@ -149,10 +149,17 @@ export function residentAIObservedTrigger(
     const lost = kind === 'failure'
       && (memory.what === prefix + 'source-exhausted)'
         || memory.what === prefix + 'source-removed)');
-    const prior = latestLost.get(key);
+    // An authentic success at node B never restores a lost node A.
+    // Core writes resource-node:<id> for executed Gather outcomes; keep
+    // older generic memories in their own legacy bucket rather than
+    // pretending their missing source ID names the same physical place.
+    const source = /^resource-node:[1-9][0-9]*$/.test(memory.where)
+      ? memory.where : 'legacy-unspecified-source';
+    const sourceKey = key + ':' + source;
+    const prior = latestLost.get(sourceKey);
     if (!prior || memory.minute > prior.minute
       || (memory.minute === prior.minute && (!lost || prior.lost))) {
-      latestLost.set(key, { minute: memory.minute, lost });
+      latestLost.set(sourceKey, { minute: memory.minute, lost });
     }
   }
 

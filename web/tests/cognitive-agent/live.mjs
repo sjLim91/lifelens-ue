@@ -509,6 +509,28 @@ const provider = {
       ], what:'실제 문명 행동 Civilization:Gather:PlantFood 수행에 성공했다',
     }],
   }), 'Reflection', 'new firsthand success supersedes older resource loss');
+  const lostAtA = {...newFailure, where:'resource-node:301'};
+  const succeededAtB = {
+    ...newFailure, minute:480, where:'resource-node:302',
+    tags:['action_experience','Civilization:Gather:PlantFood','success'],
+    what:'실제 문명 행동 Civilization:Gather:PlantFood 수행에 성공했다',
+  };
+  assert.equal(residentAIObservedTrigger({
+    ...base, memories:[lostAtA,succeededAtB],
+  }), 'ResourceScarcity',
+  'success at B must not pretend the lost resource at A recovered');
+  assert.equal(residentAIObservedTrigger({
+    ...base, memories:[succeededAtB,lostAtA],
+  }), 'ResourceScarcity', 'per-source evidence is insertion-order independent');
+  assert.equal(residentAIObservedTrigger({
+    ...base, memories:[lostAtA,{...succeededAtB,where:'resource-node:301'}],
+  }), 'Reflection', 'only verified success at A restores A');
+  assert.equal(residentAIObservedTrigger({
+    ...base, memories:[lostAtA,{...succeededAtB,where:'resource-node:302',
+      minute:479}],
+  }), 'ResourceScarcity',
+  'same-minute success at a different source cannot erase loss');
+
   assert.equal(residentAIObservedTrigger({
     ...base, memories:[{
       ...newFailure, tags:['action_experience','Civilization:Gather:Water','failure'],
