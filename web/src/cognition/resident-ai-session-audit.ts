@@ -128,6 +128,15 @@ export class ResidentAISessionAudit {
     report.livingResidentsAtEnd = typeof world.livingResidents === 'number'
       ? world.livingResidents : residents.filter(r => r.alive === true).length;
 
+    // A disappeared readable actor may represent incomplete observation
+    // rather than a world outcome. Never call an intermittent sample paired
+    // evidence, even when the global Core minute advances normally.
+    const readable = new Set(
+      residents.filter(r => Array.isArray(r.beliefs)).map(r => r.id));
+    if ([...this.previous.keys()].some(id => !readable.has(id))) {
+      report.coverageGap = true;
+      report.comparableWithinObservedWindow = false;
+    }
     for (const resident of residents) {
       if (!Array.isArray(resident.beliefs)) continue;
       report.readableEvidenceResidentSamples++;
