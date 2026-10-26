@@ -350,6 +350,11 @@ int main()
         .find(101,routeKey).hasEvidence);
     // A later confirmed harvest of this same source supersedes spatial
     // uncertainty; a prior blocked path is not perpetual world truth.
+    world.minute=103;
+    const auto genuineHarvest=executeCivilizationDecisionAtPosition(
+        world,routeLearner,attempted,{4,4});
+    assert(genuineHarvest.executed &&genuineHarvest.success
+        &&genuineHarvest.event.quantity>0);
     record(routeLearner,101,103,true);
     assert(buildResidentResourceOutcomeIndex(routeLearner,103)
         .find(101,routeKey).succeeded);
@@ -377,4 +382,24 @@ int main()
     const int minute=savedWorld.world().minute;
     assert(residentResourceOutcomePreference(restored,101,key,minute).utilityAdjustment
         ==residentResourceOutcomePreference(learned,101,key,minute).utilityAdjustment);
+
+    // Existing binary snapshot retains the actor's distinct route-failure
+    // episode as well as the later physically confirmed success.
+    savedWorld.world().characters.front().memory=routeLearner.memory;
+    savedWorld.world().characters.front().beliefs=routeLearner.beliefs;
+    assert(encodeSimulationSnapshot(savedWorld.captureSnapshot(),bytes,&error));
+    assert(decodeSimulationSnapshot(bytes,decoded,&error));
+    const auto& restoredRoute=decoded.world.characters.front();
+    const auto afterLoad=buildResidentResourceOutcomeIndex(
+        restoredRoute,savedWorld.world().minute);
+    assert(afterLoad.find(101,routeKey).succeeded);
+    bool routeEpisodeSurvived=false;
+    for(const auto& memory:restoredRoute.memory.entries)
+        if(memory.where=="resource-node:101"
+           &&memory.tags.size()==3
+           &&memory.tags[0]=="navigation_experience"
+           &&memory.tags[1]==routeKey
+           &&memory.tags[2]=="route-failed")
+            routeEpisodeSurvived=true;
+    assert(routeEpisodeSurvived);
 }
