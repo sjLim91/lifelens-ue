@@ -158,7 +158,10 @@ export class ResidentAISessionAudit {
   inference(request: CognitiveRequestDto): void {
     if (!this.running || !this.report) return;
     this.report.modelRequests++;
-    if (request.memories.some(m => m.source === 'DirectWitness'
+    if (request.memories.some(m => Number.isSafeInteger(m.minute)
+      && m.minute >= 0 && m.minute <= request.minute
+      && request.minute - m.minute <= 1440
+      && m.source === 'DirectWitness'
       && m.witnessed === true && Array.isArray(m.tags)
       && (m.tags[0] === 'action_experience'
         || m.tags[0] === 'goal_action_feedback'
