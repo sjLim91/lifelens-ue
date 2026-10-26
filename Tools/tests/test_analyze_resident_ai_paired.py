@@ -169,7 +169,7 @@ class TestPairedAuditAnalysis(unittest.TestCase):
         src["proxy"]["catalogIntentInputs"]["OtherIntent"] = (
             src["proxy"]["catalogIntentInputs"].pop("ImproveFoodSecurity")
         )
-        with self.assertRaisesRegex(ValueError, "same intent catalog kinds"):
+        with self.assertRaisesRegex(ValueError, "unknown strategic intent"):
             analyze(src)
 
     def test_complete_14_kind_coverage_is_explicit_not_assumed(self):
@@ -194,7 +194,8 @@ class TestPairedAuditAnalysis(unittest.TestCase):
             counterfeit["baseline"]["catalogIntentInputs"].pop("ImproveShelter"))
         counterfeit["proxy"]["catalogIntentInputs"]["InventedIntent"] = (
             counterfeit["proxy"]["catalogIntentInputs"].pop("ImproveShelter"))
-        self.assertFalse(analyze(counterfeit)["intentLifecycle"]["all14IntentsObserved"])
+        with self.assertRaisesRegex(ValueError, "unknown strategic intent"):
+            analyze(counterfeit)
 
     def test_catalog_presence_does_not_claim_all_intents_were_selected(self):
         src = fixture()
@@ -223,6 +224,17 @@ class TestPairedAuditAnalysis(unittest.TestCase):
         self.assertIn("ImproveWaterSecurity", out["activelySelectedIntents"])
         self.assertNotIn("ImproveWaterSecurity", out["neverSelectedIntents"])
         self.assertFalse(out["all14IntentsActuallySelected"])
+
+    def test_invented_catalog_is_not_a_new_resident_ability(self):
+        evidence = fixture()
+        for cohort in ("baseline", "proxy"):
+            evidence[cohort]["catalogIntentInputs"]["InventedMindControl"] = {
+                "selected": 0, "notOffered": 0, "noEligibleTarget": 0,
+                "submitted": 0, "accepted": 0, "rejected": 0,
+                "rejectedByValidator": 0, "rejectedAfterValidator": 0,
+            }
+        with self.assertRaisesRegex(ValueError, "unknown strategic intent"):
+            analyze(evidence)
 
     def test_invalid_evidence_never_silently_passes(self):
         variants = []
