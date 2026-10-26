@@ -342,6 +342,27 @@ await test('Core request parser is bounded and rejects malformed runtime context
   );
 });
 
+await test('Core cognition minute and local source IDs retain exact native bounds',()=>{
+  const valid=request('1',100,['ImproveFoodSecurity']);
+  for(const minute of [0.5,2147483648,Number.MAX_SAFE_INTEGER+1,
+                       Number.POSITIVE_INFINITY])
+    assert.throws(()=>parseCognitiveRequest({...valid,minute}),/minute/);
+  if(valid.memories.length){
+    assert.throws(()=>parseCognitiveRequest({...valid,memories:[
+      {...valid.memories[0],minute:101},
+    ]}),/memory minute/);
+  }
+  const perception={source:'CoreRuntimeProximity',proximityOnly:true,
+    observerX:0,observerY:0,radiusCells:1,resources:[
+      {nodeId:'18446744073709551616',material:'Stone',
+       distanceCells:0,abundance:'Present'}]};
+  assert.throws(()=>parseCognitiveRequest({...valid,localPerception:perception}),
+    /local resource/);
+  assert.doesNotThrow(()=>parseCognitiveRequest({...valid,localPerception:{
+    ...perception,resources:[{...perception.resources[0],
+      nodeId:'18446744073709551615'}]}}));
+});
+
 await test('issued context identities stay lossless and incomplete receipts fail closed',()=>{
   const legacy=request();
   const issued={...legacy,worldSeed:'18446744073709551615',
