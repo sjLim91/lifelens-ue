@@ -3,7 +3,6 @@ import type {
 } from './cognitive-contract';
 import { CognitionScheduler } from './cognition-scheduler';
 import type { CognitiveProvider } from './cognitive-provider';
-import { LocalCognitionProvider, isLoopbackCognitionUrl, discoverAutomaticLocalCognition } from './local-cognition-provider';
 import { ResidentAISessionAudit } from './resident-ai-session-audit';
 import { createBrowserResidentCognition, BUILTIN_RESIDENT_MODEL } from './browser-cognition-provider';
 import type { Resident, WorldOverview } from '../runtime/core-types';
@@ -277,6 +276,13 @@ function worldIdentity(world: WorldOverview): string {
   ]);
 }
 
+export function residentAIStatusText(state: ResidentAIState): string {
+  if (state.suspended) return 'Qwen 추론 일시 중지 · Core 시간 계산 중';
+  if (state.discovering) return 'Qwen 모델 준비 중 · 첫 실행에는 다운로드가 필요합니다';
+  if (state.enabled && state.configuration) return 'Qwen 연결됨 · 주민별 판단을 순서대로 처리합니다';
+  return 'Qwen 추론 미연결 · 다른 모델로 전환하지 않습니다';
+}
+
 export class ResidentAIController {
   private readonly listeners = new Set<() => void>();
   // Keep only a bounded visible history; inference fairness covers ALL living
@@ -306,7 +312,6 @@ export class ResidentAIController {
   private activeProviderName: string | null = null;
   private consecutiveInferenceFailures = 0;
   private lastAutoDiscovery = -Infinity;
-  private autoDiscoveryAbort: AbortController | null = null;
   private autoDiscoveryGeneration = 0;
 
   constructor(
@@ -345,8 +350,6 @@ export class ResidentAIController {
   }
   attach(source: ResidentAISource): void {
     this.disposed = false;
-    this.autoDiscoveryAbort?.abort();
-    this.autoDiscoveryAbort = null;
     this.autoDiscoveryGeneration += 1;
     this.lastBrowserModelAttempt = -Infinity;
     this.browserModelLoading = false;
@@ -357,8 +360,8 @@ export class ResidentAIController {
   }
   // Production LifeLens always starts ONE resident cognition stream when the
   // Core becomes available. No operator-facing on/off switch or model setup.
-  // An absent native local service is an unavailable inference accelerator,
-  // NOT an absent person; the same resident continues embodied Core agency.
+  // Unavailable Qwen is reported honestly; no alternative model takes over.
+  // Existing Core survival and physical execution continue independently.
   startAutomatically(): void {
     if (this.disposed || !this.source) return;
     this.automaticallyRunning = true;
@@ -367,35 +370,11 @@ export class ResidentAIController {
   }
   private async discoverAutomatically(): Promise<void> {
     if (!this.automaticallyRunning || this.disposed || !this.source
-      || this.autoDiscoveryAbort || this.scheduler) return;
-    const controller = new AbortController();
-    this.autoDiscoveryAbort = controller;
-    const generation = ++this.autoDiscoveryGeneration;
-    const source = this.source;
+      || this.scheduler || this.browserModelLoading) return;
     this.lastAutoDiscovery = this.now();
-    this.update({ discovering: true });
-    // Bounded wait: browsers may silently block a localhost model endpoint.
-    const timeout = setTimeout(() => controller.abort(), 2500);
-    try {
-      const config = await discoverAutomaticLocalCognition(controller.signal);
-      if (!controller.signal.aborted && config
-        && !this.disposed && this.automaticallyRunning
-        && this.source === source && this.autoDiscoveryGeneration === generation) {
-        this.configure(config.baseUrl, config.model);
-      }
-    } catch {
-      // Missing local inference must not stop the world or fabricate a model.
-    } finally {
-      clearTimeout(timeout);
-      if (this.autoDiscoveryAbort === controller) {
-        this.autoDiscoveryAbort = null;
-        this.update({ discovering: false });
-        // No native model server? Load the free language engine IN the
-        // browser itself when hardware supports WebGPU. One resident agency
-        // owns the resulting single provider; no user click or toggle.
-        if (!this.scheduler) void this.prepareBrowserReasoning();
-      }
-    }
+    // Production has exactly one language model. Never scan localhost or
+    // silently replace Qwen with the first model installed on this device.
+    await this.prepareBrowserReasoning();
   }
   private async prepareBrowserReasoning(): Promise<void> {
     if (!this.automaticallyRunning || this.disposed || !this.source
@@ -434,20 +413,17 @@ export class ResidentAIController {
     } finally {
       if (this.source === source && this.autoDiscoveryGeneration === generation){
         this.browserModelLoading = false;
-        if (!this.autoDiscoveryAbort)
-          this.update({ discovering: false });
+        this.update({ discovering: false });
       }
     }
   }
-  configure(baseUrl: string, model: string): boolean {
-    if (!isLoopbackCognitionUrl(baseUrl)
-      || !model.trim() || model.length > 200) return false;
-    this.update({ configuration: { baseUrl, model: model.trim() } });
-    this.rebuildScheduler();
-    return true;
+  // Compatibility guard for old callers: external models are no longer a
+  // production configuration option, even when their name contains Qwen.
+  configure(_baseUrl: string, _model: string): boolean {
+    return false;
   }
-  // Deterministic local fakes are injected only by tests; the production
-  // configuration path is restricted to loopback/local inference servers.
+  // Provider injection is retained for deterministic contract tests. The
+  // production factory above always loads the one pinned Qwen model.
   setProvider(provider: CognitiveProvider): void {
     this.scheduler?.dispose();
     this.resetWorld();
@@ -461,28 +437,10 @@ export class ResidentAIController {
   }
   private rebuildScheduler(): void {
     this.scheduler?.dispose();
-    const config = this.state.configuration;
-    // Browser WebGPU is an in-process engine, never an HTTP endpoint.
-    // When Core/WASM reattaches, the old scheduler has been disposed and a
-    // fresh browser engine must be loaded by the existing automatic path.
-    // Do NOT pass the 'browser-webgpu' identity into LocalCognitionProvider:
-    // that path only accepts real 127.0.0.1/localhost URLs and throws.
-    if(config?.baseUrl === 'browser-webgpu'){
-      this.scheduler = null;
-      this.activeProviderName = null;
-      this.consecutiveInferenceFailures = 0;
-      this.update({ configuration: null });
-      return;
-    }
-    this.scheduler = config && this.source && !this.disposed
-      ? new CognitionScheduler(
-        new LocalCognitionProvider(config),
-        () => this.source?.worldOverview().minute ?? NaN,
-        LIVE_AI_BUDGET,
-      )
-      : null;
-    this.activeProviderName = this.scheduler ? 'local-openai-compatible' : null;
+    this.scheduler = null;
+    this.activeProviderName = null;
     this.consecutiveInferenceFailures = 0;
+    this.update({ configuration: null });
   }
   setEnabled(enabled: boolean): boolean {
     if (enabled && (!this.scheduler || !this.source || this.disposed)) return false;
@@ -521,8 +479,6 @@ export class ResidentAIController {
     this.disposed = true;
     this.automaticallyRunning = false;
     this.lastBrowserModelAttempt = -Infinity;
-    this.autoDiscoveryAbort?.abort();
-    this.autoDiscoveryAbort = null;
     this.autoDiscoveryGeneration += 1;
     this.resetWorld();
     this.scheduler?.dispose();
@@ -547,7 +503,7 @@ export class ResidentAIController {
     this.observedResidents = residents;
     this.sessionAudit.observe(world, residents,
       this.state.enabled && this.scheduler ? 'local-ai' : 'baseline');
-    if (this.automaticallyRunning && !this.scheduler && !this.autoDiscoveryAbort
+    if (this.automaticallyRunning && !this.scheduler
       && !this.browserModelLoading
       && this.now() - this.lastAutoDiscovery >= 60000)
       void this.discoverAutomatically();
@@ -706,3 +662,4 @@ export class ResidentAIController {
 }
 
 export const residentAI = new ResidentAIController();
+

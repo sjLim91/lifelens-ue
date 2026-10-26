@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { source } from './compile.mjs';
-const { ShadowObserver, SHADOW_BUDGET } = await source('cognition/shadow-observer.ts');
+const { ShadowObserver, SHADOW_BUDGET, shadowObserver } = await source('cognition/shadow-observer.ts');
 const { CognitionScheduler } = await source('cognition/cognition-scheduler.ts');
 const { LocalCognitionProvider, cognitiveSystemPrompt } = await source('cognition/local-cognition-provider.ts');
 const { parseCognitiveProposal, parseCognitiveRequest } = await source('cognition/cognitive-contract.ts');
@@ -237,3 +237,19 @@ await test('Core mutation/save APIs and Korean literals are absent from new obse
 console.log(`Cognitive Shadow Mode: ${passed} tests passed`);
 // Include the new live resident-to-Core path in the existing cognition CI gate.
 await import('./live.mjs');
+
+
+await test('production shadow cannot start a second inference engine',async()=>{
+  let calls=0;
+  const f=fixture();
+  shadowObserver.attach(f.source);
+  assert.equal(shadowObserver.configure('http://localhost:8080','other'),false);
+  shadowObserver.setProvider({name:'other',reason:async()=>{calls++;return null;}});
+  shadowObserver.setEnabled(true);
+  shadowObserver.setAutomatic(true);
+  shadowObserver.observe(f.world,f.residents,'1');
+  await shadowObserver.sample('1');
+  assert.equal(calls,0);
+  assert.equal(shadowObserver.getSnapshot().enabled,false);
+  shadowObserver.dispose(); f.controller.dispose();
+});

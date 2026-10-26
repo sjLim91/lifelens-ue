@@ -1,5 +1,6 @@
 import {
   parseCognitiveProposal,
+  cognitiveProposalJsonSchema,
   type CognitiveProposalDto,
   type CognitiveRequestDto,
 } from './cognitive-contract';
@@ -12,13 +13,14 @@ import { cognitiveSystemPrompt } from './local-cognition-provider';
 // The first download can be large; WebGPU availability does not guarantee
 // enough VRAM. This is not a paid API, cloud language service or second NPC.
 export const BUILTIN_RESIDENT_MODEL =
-  'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
+  'Qwen3-1.7B-q4f16_1-MLC';
 
 interface BrowserChatRequest {
   messages: Array<{ role: 'system' | 'user'; content: string }>;
   temperature: number;
   max_tokens: number;
-  response_format: { type: 'json_object' };
+  response_format: { type: 'json_object'; schema: string };
+  extra_body: { enable_thinking: false };
 }
 
 export interface BrowserChatEngine {
@@ -59,7 +61,14 @@ export class BrowserCognitionProvider implements CognitiveProvider {
         ],
         temperature: 0,
         max_tokens: 180,
-        response_format: { type: 'json_object' },
+        // Constrain generation itself, then still validate against Core.
+        response_format: {
+          type: 'json_object',
+          schema: JSON.stringify(cognitiveProposalJsonSchema(request)),
+        },
+        // Real-time residents need a short decision, not an unbounded
+        // reasoning transcript consuming the JSON output budget.
+        extra_body: { enable_thinking: false },
       });
     } catch {
       throw new CognitiveProviderError(
@@ -115,3 +124,4 @@ export async function createBrowserResidentCognition(
     return null;
   }
 }
+

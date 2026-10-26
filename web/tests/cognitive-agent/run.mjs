@@ -170,11 +170,20 @@ await test('embedded WebGPU model can reason locally with no server or cloud key
     }}}};
   });
   assert.equal(loadedModel,BUILTIN_RESIDENT_MODEL);
+  assert.equal(loadedModel,'Qwen3-1.7B-q4f16_1-MLC');
   assert(provider instanceof BrowserCognitionProvider);
   const actual=await provider.reason(req,new AbortController().signal);
   assert.equal(actual.intent,'ImproveFoodSecurity');
   assert.equal(observed.temperature,0);
   assert.equal(observed.response_format.type,'json_object');
+  assert.deepEqual(JSON.parse(observed.response_format.schema), cognitiveProposalJsonSchema(req));
+  assert.equal(observed.extra_body.enable_thinking,false);
+  const second=request('8',121,['ImproveWaterSecurity']);
+  const scoped=new BrowserCognitionProvider({chat:{completions:{create:async input=>{
+    assert.deepEqual(JSON.parse(input.response_format.schema),cognitiveProposalJsonSchema(second));
+    return {choices:[{message:{content:JSON.stringify(proposal(second))}}]};
+  }}}});
+  assert.equal((await scoped.reason(second,new AbortController().signal)).actor,'8');
   assert(!JSON.stringify(observed).includes('api.openai.com'));
   assert.equal((await createBrowserResidentCognition(()=>true,
     async()=>{throw Error('GPU out of memory');})),null);
@@ -833,3 +842,4 @@ await test('a throwing context reader settles null and leaves the scheduler usab
 console.log(`Cognitive agent Web adapter: ${passed} tests passed`);
 
 await import('./shadow.mjs');
+

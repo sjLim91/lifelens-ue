@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { CognitiveIntent } from '../cognition/cognitive-contract';
-import { residentAI } from '../cognition/live-resident-ai';
+import { residentAI, residentAIStatusText } from '../cognition/live-resident-ai';
 import type { Resident } from '../runtime/core-types';
 import { formatCognitiveIntent } from '../localization/korean';
 
@@ -16,20 +16,14 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
   const auditReport = residentAI.getAuditReport();
 
   return <section className="resident-ai-live-config">
-    <strong>주민 AI · 항상 실행</strong>
+    <strong>주민 AI · Qwen 단일 모델</strong>
     <p className="hint">
-      주민마다 고유한 기억·성격·관계·경험을 가진 하나의 사고 주체가
-      목표와 행동을 결정합니다. 세계의 물리·이동·자원·건강 결과는
-      Core가 검증합니다. 실행 중인 주민 AI를 켜거나 끄는 조작은 없습니다.
+      Qwen이 주민마다 고유한 기억·성격·관계·경험을 받아 판단을 제안합니다.
+      실제 행동과 세계의 물리·이동·자원·건강 결과는 Core가 검증하고 실행합니다.
+      모델이 준비되지 않으면 언어 추론은 대기하며 Core의 기본 생존 처리는 계속됩니다.
     </p>
-    <p role="status">
-      주민 AI 실행 중 · 무료 로컬 추론 {' '}
-      {localInference
-        ? `연결됨 (${localInference.model})`
-        : state.discovering
-          ? '무료 추론 자동 검색·모델 준비 중 (첫 실행 시 큰 다운로드 가능)'
-          : '추론 장치 연결 대기 (주민 생활은 계속됨)'}
-    </p>
+    <p role="status">{residentAIStatusText(state)}</p>
+    {localInference && <p className="hint">사용 모델: {localInference.model}</p>}
     <p className="hint">
       인지 제안 Core 승인 {state.accepted}회 · 거부/오류 {state.rejected}회
     </p>
@@ -60,11 +54,11 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
           </p>
         : <p className="hint">현재 기록된 실행 감사 구간 없음</p>}
       <p className="hint">
-        무료 로컬 언어 추론 엔진을 찾지 못하면 해당 추론은 연결 대기 상태로 표시합니다.
-        WebGPU가 지원되면 무료 경량 모델을 브라우저 안에서 자동 다운로드·실행합니다.
-        첫 실행 시 상당한 데이터와 GPU 메모리가 필요하며, 일부 모바일 브라우저에서는
-        모델 추론이 지원되지 않을 수 있습니다. 그때에도 동일 주민의 생활은 계속됩니다.
+        Qwen 모델을 이 기기에 다운로드하여 실행합니다. 모델 호출 요금은 없으며
+        첫 다운로드와 GPU 메모리가 필요합니다. WebGPU 미지원·메모리 부족·오류 시
+        다른 AI로 전환하지 않고 Qwen 연결 대기로 표시합니다.
       </p>
     </details>
   </section>;
 }
+

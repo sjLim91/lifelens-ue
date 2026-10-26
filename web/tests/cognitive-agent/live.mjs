@@ -3,7 +3,7 @@ import { source } from './compile.mjs';
 
 const { ResidentAIController, LIVE_AI_BUDGET, liveActionableCognitiveRequest,
   residentAIObservedTrigger, residentAIExecutionBudget, BROWSER_MODEL_RETRY_MS,
-  INFERENCE_RECOVERY_FAILURE_THRESHOLD } =
+  INFERENCE_RECOVERY_FAILURE_THRESHOLD, residentAIStatusText } =
   await source('cognition/live-resident-ai.ts');
 const { parseCognitiveRequest } = await source('cognition/cognitive-contract.ts');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -785,53 +785,32 @@ const provider = {
   }),'RepeatedFailure','indirect rumors cannot erase firsthand repeated failures');
 }
 
-// Production auto-start must require no human click or manual model name.
-// A free localhost model may appear later and joins the SAME resident agency.
+// Even a healthy native server must never supersede the pinned Qwen model.
 {
-  const previousFetch=globalThis.fetch;
-  const seen=[];
-  let online=false;
-  globalThis.fetch=async (url,init) => {
-    const address=String(url);
-    seen.push({address,method:init?.method});
-    assert(address.startsWith('http://127.0.0.1:'));
-    if (!online) throw Error('local model absent');
-    if (init?.method==='GET') return new Response(JSON.stringify({
-      data:[{id:'free-local-reasoner'}],
-    }),{status:200});
-    const request=JSON.parse(init.body).messages[1].content;
-    const actor=JSON.parse(request).actor;
-    return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({
-      actor, intent:'CooperateWithResident', priority:.85,
-      targetResident:actor==='1'?'2':'1', rationale:'실제 관계를 확인한다',
-    })}}]}),{status:200});
+  const previousFetch = globalThis.fetch;
+  let networkCalls = 0;
+  globalThis.fetch = async () => {
+    networkCalls++;
+    return new Response(JSON.stringify({data:[{id:'another-model'}]}));
   };
   try {
-    const f=fixture();
+    let loads = 0;
+    const f = fixture(undefined, async () => { loads++; return provider; });
+    assert.equal(f.controller.configure('http://127.0.0.1:11434','another-model'),false);
+    assert.equal(f.controller.configure('http://127.0.0.1:11434','qwen'),false);
     f.controller.startAutomatically();
     await tick();
-    await tick();
-    assert.equal(f.controller.getSnapshot().enabled,true);
-    assert.equal(f.controller.getSnapshot().automatic,true);
-    assert.equal(f.controller.getSnapshot().configuration,null);
-    assert.equal(f.submitted.length,0,'no invented language response');
-    online=true;
-    for(let i=0;i<13;++i) f.advance();
+    assert.equal(loads,1);
+    assert.equal(networkCalls,0,'Qwen startup must not probe any local service');
+    assert.equal(f.controller.getSnapshot().configuration.model,'Qwen3-1.7B-q4f16_1-MLC');
     f.controller.observe(f.world,f.residents);
     await tick();
-    await tick();
-    assert.equal(f.controller.getSnapshot().configuration?.model,
-      'free-local-reasoner');
-    f.controller.observe(f.world,f.residents);
-    await tick();
-    assert.equal(f.submitted.length,1,
-      'auto-started resident must reason without a manual start button');
-    assert.equal(f.submitted[0].proposal.actor,'1');
-    assert(seen.every(x=>x.address.includes('127.0.0.1')));
+    assert.equal(f.submitted.length,1);
+    assert.match(residentAIStatusText(f.controller.getSnapshot()),/Qwen 연결됨/);
+    f.controller.suspend(true);
+    assert.match(residentAIStatusText(f.controller.getSnapshot()),/일시 중지/);
     f.controller.dispose();
-  } finally {
-    globalThis.fetch=previousFetch;
-  }
+  } finally { globalThis.fetch = previousFetch; }
 }
 
 {
@@ -864,7 +843,7 @@ const provider = {
     assert(BROWSER_MODEL_RETRY_MS>=300000);
     assert.equal(loads,2,'recover after the bounded cooldown');
     assert.equal(f.controller.getSnapshot().configuration?.model,
-      'Qwen2.5-0.5B-Instruct-q4f16_1-MLC');
+      'Qwen3-1.7B-q4f16_1-MLC');
     assert.equal(f.controller.getSnapshot().automatic,true);
     f.controller.observe(f.world,f.residents);
     await tick();
@@ -1022,49 +1001,26 @@ const provider = {
 }
 
 {
-  // A native free loopback model that starts returning HTTP failures should
-  // be rediscovered without paid API fallback or human on/off controls.
-  const previousFetch=globalThis.fetch;
-  let postAttempts=0,discoveryCount=0;
-  globalThis.fetch=async (url,init)=>{
-    assert(String(url).startsWith('http://127.0.0.1:'));
-    if(init?.method==='GET'){
-      discoveryCount++;
-      return new Response(JSON.stringify({data:[{id:'local-free-model'}]}),
-        {status:200});
-    }
-    postAttempts++;
-    if(postAttempts<=INFERENCE_RECOVERY_FAILURE_THRESHOLD)
-      return new Response('unavailable',{status:503});
-    const req=JSON.parse(JSON.parse(init.body).messages[1].content);
-    return new Response(JSON.stringify({choices:[{message:{
-      content:JSON.stringify({actor:req.actor,intent:'CooperateWithResident',
-        targetResident:req.actor==='1'?'2':'1',priority:.8,rationale:'관계'}),
-    }}]}),{status:200});
-  };
-  try{
-    const f=fixture();
-    assert.equal(f.controller.configure('http://127.0.0.1:11434',
-      'local-free-model'),true);
+  const previousFetch = globalThis.fetch;
+  let networkCalls = 0;
+  globalThis.fetch = async () => { networkCalls++; throw Error('must not probe'); };
+  try {
+    let finish;
+    const f=fixture(undefined,()=>new Promise(resolve=>{finish=resolve;}));
     f.controller.startAutomatically();
-    for(let i=0;i<INFERENCE_RECOVERY_FAILURE_THRESHOLD;++i){
-      if(i>0)f.advance();
-      f.controller.observe(f.world,f.residents);
-      await tick();
-    }
-    assert.equal(postAttempts,INFERENCE_RECOVERY_FAILURE_THRESHOLD);
-    assert.equal(f.controller.getSnapshot().configuration,null);
-    f.advance();
-    f.controller.observe(f.world,f.residents);
-    await tick();await tick();
-    assert(discoveryCount>=1);
-    assert.equal(f.controller.getSnapshot().configuration?.model,'local-free-model');
-    f.controller.observe(f.world,f.residents);
+    assert.match(residentAIStatusText(f.controller.getSnapshot()),/준비 중/);
+    finish(null);
     await tick();
-    assert.equal(f.submitted.length,1);
-    assert.equal(f.controller.getSnapshot().automatic,true);
+    assert.match(residentAIStatusText(f.controller.getSnapshot()),/추론 미연결/);
+    for(let i=0;i<61;++i) f.advance();
+    f.controller.observe(f.world,f.residents);
+    finish(null);
+    await tick();
+    assert.equal(networkCalls,0,'unavailable Qwen must not fall back to another AI');
+    assert.equal(f.submitted.length,0);
     f.controller.dispose();
-  }finally{globalThis.fetch=previousFetch;}
+  } finally { globalThis.fetch=previousFetch; }
 }
 
 console.log('Live Resident AI: independent actor context, Core handoff, cancellation PASS');
+
