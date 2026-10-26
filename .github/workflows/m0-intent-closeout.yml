@@ -66,7 +66,7 @@ jobs:
       - name: Require 14 intents and verified resident evidence for 6 real timelines
         run: |
           python3 -m unittest Tools.tests.test_m0_intent_closeout -v
-          python3 Tools/m0_intent_closeout.py \
+          python3 -m Tools.m0_intent_closeout \
             m0-evidence/m0-real-intent-*/paired.json \
             --output m0-evidence/m0-intent-closeout.json
       - name: Preserve per-resident outcomes and unknown causal paths
