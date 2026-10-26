@@ -70,8 +70,6 @@ export function CognitiveShadowPanel({ resident, residents, controller = shadowO
   resident: Resident; residents: Resident[]; controller?: ShadowObserver;
 }) {
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
-  const [endpoint, setEndpoint] = useState(state.configuration?.baseUrl ?? 'http://127.0.0.1:8080');
-  const [model, setModel] = useState(state.configuration?.model ?? '');
   const [inspectedActor, setInspectedActor] = useState<string | null>(null);
   const [coreGoalPreview, setCoreGoalPreview] = useState<AutonomousGoalPreview | null>(null);
   const shownGoals = inspectedActor === resident.id
@@ -121,32 +119,16 @@ export function CognitiveShadowPanel({ resident, residents, controller = shadowO
         )
       )}
     </section>
-    <form onSubmit={(event) => {
-      event.preventDefault();
-      if (controller.configure(endpoint, model)) controller.setEnabled(true);
-    }}>
-      <label>{L.endpoint}<input type="url" value={state.enabled ? state.configuration?.baseUrl ?? endpoint : endpoint} disabled={state.enabled}
-        maxLength={300} onChange={(event) => setEndpoint(event.target.value)} /></label>
-      <label>{L.model}<input value={state.enabled ? state.configuration?.model ?? model : model} maxLength={200} disabled={state.enabled}
-        onChange={(event) => setModel(event.target.value)} /></label>
-      {state.enabled
-        ? <button type="button" onClick={() => controller.setEnabled(false)}>{L.disable}</button>
-        : <button type="submit">{L.enable}</button>}
-    </form>
-    <label className="cognitive-shadow-auto"><input type="checkbox" checked={state.automatic}
-      onChange={(event) => controller.setAutomatic(event.target.checked)} />{L.automatic}</label>
-    <button type="button" disabled={!state.enabled || state.suspended || !!state.pendingActor || resident.alive !== true}
-      onClick={() => { void controller.sample(resident.id); }}>{L.sample}</button>
-    <p role="status">{formatCognitionState(state.status)}</p>
-    <p className="hint">{L.budget}</p>
+    <p className="hint">{L.singleModelNote}</p>
     <p>{L.currentAction}: <b>{residentStatusText(resident, residents)}</b></p>
     {records[0] && records[0] !== latest && <p role="status">
       {L.reason}: {formatCognitionState(records[0].outcome.reason)}
     </p>}
-    {latest ? <RecordDetails record={latest} residents={residents} /> : <p>{L.empty}</p>}
+    {latest && <RecordDetails record={latest} residents={residents} />}
     {records.length > 1 && <details><summary>{L.history}</summary>
       {records.filter((record) => record !== latest).map((record) =>
         <RecordDetails key={record.id} record={record} residents={residents} />)}
     </details>}
   </details>;
 }
+

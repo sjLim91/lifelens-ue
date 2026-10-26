@@ -1,5 +1,27 @@
 # LifeLens Cognitive Agent Layer v1
 
+## 2026-10-26 모델 정책 — Qwen 하나로 통합
+
+사용자 승인: 현재보다 적합한 무료 모델을 선정하고 필요하면 교체한다. 기본 주민 언어 추론 모델은 **Qwen3-1.7B-q4f16_1-MLC** 하나로 정한다. 기존 Qwen2.5 0.5B는 기본 실행에서 교체하며, Ollama/LM Studio/llama.cpp의 첫 모델 자동 탐색·대체 전환과 별도 Shadow 모델 연결은 제품 경로에서 사용하지 않는다.
+
+- 선정 이유: 현재 고정 WebLLM 0.2.86 지원 목록, Apache-2.0 모델 라이선스, 4비트 로컬 실행, 모바일을 포함한 실행 부담과 판단 능력의 균형. WebLLM의 해당 구성 VRAM 추정은 약 2,037 MB이며 **브라우저/3D 렌더러 메모리는 별도**다. 기기별 실행 보장은 아니다.
+- 비교: 기존 0.5B는 실행 부담이 작지만 복합 판단 개선 여지가 있다. Qwen3.5 2B는 같은 목록에서 약 2,245 MB 및 low_resource_required=false, 4B는 더 큰 메모리를 요구한다. 최신/최대 모델을 무조건 기본값으로 채택하지 않는다.
+- **이는 현재 제약에 따른 선정이며 실기기 A/B로 최적 성능을 입증한 결과는 아니다.** 실제 모델 품질·지연·메모리 검증은 추후 동일 Core 문맥/seed에서 측정한다. stub 회귀 통과를 실제 Qwen 추론 성공으로 보고하지 않는다.
+- WebLLM의 non-thinking 옵션을 명시하여 짧은 결정 JSON을 요청한다. Core 허용 intent/actor/target schema로 생성 출력을 제한하고 수신 후에도 Core 계약 검증을 유지한다. 모델 자유 텍스트는 실행 권한이 아니다.
+- 주민별 기억·성격·관계·계획은 독립이다. 하나의 모델 연산 자원을 공유하되 동시 추론은 1개이며 시효·취소·늦은 결과 차단을 유지한다.
+- Qwen 미지원/다운로드 실패/메모리 부족이면 '추론 미연결'로 표시한다. 다른 모델이나 클라우드로 자동 대체하지 않는다. Core의 기존 생존·물리 실행은 유지하며 이를 Qwen의 실제 판단으로 표시하지 않는다.
+- 이 정책은 모든 결정을 Qwen으로 이관하거나 Core Utility/물리 로직을 삭제했다는 뜻이 아니다. G1의 목표→행동→학습 연결은 별도 미완 작업이다.
+- 기존 모델 캐시는 다른 앱·사용자 데이터와 구분 없이 삭제하지 않는다. 이전 가중치는 더 이상 로드하지 않으며 캐시 정리는 모델별 삭제 지원 검증 후 수행한다.
+- 기존 M1-07의 다중 provider 방향 및 M11-05의 browser/PC 비교는 이 단일 모델 제품 정책에 맞춰 읽는다. no-LM 실행은 오류·생존 회귀 대조군이지 두 번째 사용자 AI 모드가 아니다.
+
+검증: 로컬 cognition adapter 32개, Shadow 계약 16개, live controller 회귀 및 production Shadow 차단 통과. 전체 Web/WASM/CI와 배포 상태는 PR의 정확한 head 결과로 따로 확인한다. 실제 GPU 모델 로딩·추론 품질·Android 성능은 미측정이다.
+
+근거:
+- [Qwen3-1.7B 공식 모델·라이선스](https://huggingface.co/Qwen/Qwen3-1.7B)
+- [WebLLM 0.2.86 모델 목록·VRAM 추정](https://github.com/mlc-ai/web-llm/blob/v0.2.86/src/config.ts)
+- [WebLLM 응답 schema 및 enable_thinking API](https://github.com/mlc-ai/web-llm/blob/v0.2.86/src/openai_api_protocols/chat_completion.ts)
+
+
 > **2026-10-12 최신 권한 경계 계약:** [자율 인공생명 권한·책임·인과 경계 v1](architecture/AUTONOMOUS_LIFE_AUTHORITY_BOUNDARIES_v1_2026-10-12.md). 기존 본 문서는 COG 단계별 배경/상세 계약이며, 자율 목표 생성·행동 조합의 Core authority·관찰 진실·인과·저장 및 문명 비강제 원칙은 이 링크의 상위 경계를 따른다. 실제 구현 상태는 항상 최신 main과 PR/CI로 확인한다.
 
 ## 1. 목표
@@ -313,3 +335,4 @@ Core의 실제 자원/기술/위치/관계 feasibility가 항상 최종 authorit
 `Thought -> Intention -> Core-validated Goal -> Action -> Outcome -> Memory -> Reflection`
 
 이 인지 루프가 기존 LifeLens의 자율 생존/사회/문명 시스템 위에서 동작하는 것이다.
+

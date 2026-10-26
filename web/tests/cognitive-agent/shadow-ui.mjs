@@ -17,7 +17,12 @@ try {
   const controller = { subscribe: () => () => {}, getSnapshot: () => state };
   const render = () => renderToStaticMarkup(createElement(CognitiveShadowPanel, { resident, residents: [resident], controller }));
   let html = render();
-  assert(html.includes('value="local-model"'), 'active configuration appears after panel remount');
+  assert(!html.includes('value="local-model"'));
+  assert(!html.includes('<form'), 'no secondary model configuration form');
+  assert(!html.includes('type="url"'), 'no external endpoint selector');
+  assert(html.includes('Qwen 단일 모델'));
+  assert(html.includes('Qwen 추론 미연결'));
+  assert(!html.includes('주민 AI · 항상 실행'));
   assert(!html.includes('free-local-fixture'), 'provider enum is registered in Korean');
   assert(html.startsWith('<details')); assert(!/<details[^>]*\bopen\b/.test(html), 'advanced UI is closed by default');
   for (const text of ['고급 관찰', '관찰 시뮬레이션 시각', '현재 실제 행동', '관찰 당시 실제 행동', '식량 확보 개선', '판단 이유', '성격', '감정', '중요 기억', '중요 신념', '관계', '현재 욕구', '실행 안 함']) assert(html.includes(text), text);
@@ -28,3 +33,4 @@ try {
   assert(!/ImproveFoodSecurity|invalid_json|provider_error/.test(html), 'enum tokens are localized');
   console.log('PASS Shadow resident detail: collapsed UI, Korean labels, context, status, latest valid result');
 } finally { rmSync(temporary, { recursive: true, force: true }); }
+

@@ -63,6 +63,7 @@ export class ShadowObserver {
   constructor(
     private readonly now: () => number = () => performance.now(),
     private readonly timeoutMs = SHADOW_BUDGET.timeoutMs,
+    private readonly inferenceAllowed = true,
   ) {}
   getSnapshot = (): ShadowSnapshot => this.state;
   subscribe = (listener: () => void): (() => void) => {
@@ -91,6 +92,7 @@ export class ShadowObserver {
     }
   }
   configure(baseUrl: string, model: string): boolean {
+    if (!this.inferenceAllowed) return false;
     if (!isLoopbackCognitionUrl(baseUrl) || !model.trim() || model.length > 200) {
       this.setEnabled(false);
       this.update({ status: 'configuration_error' });
@@ -102,6 +104,7 @@ export class ShadowObserver {
   }
   // Uses the same free-local abstraction; injection also permits deterministic tests.
   setProvider(provider: CognitiveProvider): void {
+    if (!this.inferenceAllowed) return;
     this.resetWorld();
     this.provider = provider;
     this.replaceScheduler();
@@ -114,6 +117,7 @@ export class ShadowObserver {
       : null;
   }
   setEnabled(enabled: boolean): void {
+    if (enabled && !this.inferenceAllowed) return;
     if (enabled && (!this.scheduler || this.disposed)) {
       this.update({ status: 'configuration_error' });
       return;
@@ -240,4 +244,7 @@ export class ShadowObserver {
     this.update({ pendingActor: null, status: 'ready', records: records.filter((entry) => actors.includes(entry.actor)) });
   }
 }
-export const shadowObserver = new ShadowObserver();
+// Production Shadow remains a read-only Core inspector, never a second model.
+// Isolated class instances retain the legacy provider harness for regression tests.
+export const shadowObserver = new ShadowObserver(undefined, undefined, false);
+

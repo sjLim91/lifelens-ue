@@ -888,7 +888,8 @@ export const KOREAN_AUTONOMOUS_GOAL_LABELS = {
 
 export const KOREAN_SHADOW_LABELS = {
   title: '고급 관찰 · 인지 에이전트',
-  description: '로컬 모델이 Core 문맥을 읽어 제안만 생성합니다. 실제 행동과 저장 데이터에는 적용하지 않습니다.',
+  description: 'Core가 제공한 목표와 실제 행동을 읽기 전용으로 관찰합니다.',
+  singleModelNote: '언어 추론은 Qwen 하나만 사용합니다. 별도 모델 연결과 그림자 추론은 사용하지 않습니다.',
   endpoint: '로컬 서버 주소', model: '로컬 모델 이름',
   enable: '관찰 켜기', disable: '관찰 끄기 · 요청 취소', automatic: '선택 주민 자동 관찰',
   sample: '현재 문맥 관찰', resident: '주민', time: '관찰 시뮬레이션 시각',
@@ -948,3 +949,4 @@ export function formatCognitiveProvider(value: string): string {
     'deterministic-free-local-fixture': '결정적 로컬 검증 제공자',
   }, '로컬 제공자');
 }
+
