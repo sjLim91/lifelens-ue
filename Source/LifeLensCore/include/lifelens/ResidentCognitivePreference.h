@@ -53,18 +53,18 @@ inline double residentCognitivePartnerExperienceFactor(
         if(localFact)
             return memory.what=="실제 지역 교역 대상 "
                 +std::to_string(partner)+" 물품 교환 완료 (Core exchange fact)";
-        const std::string prefix="실제 행동 "+key+" 대상 "
+        const std::string outcomePrefix="실제 행동 "+key+" 대상 "
             +std::to_string(partner)+" 결과: ";
         if(key=="CoreContext:Teaching")
             return memory.tags[2]=="success"
-                ?memory.what==prefix+"teaching-advanced"
-                :(memory.what==prefix+"comprehension-failed"
-                  ||memory.what==prefix+"clarity-or-trust-failed"
-                  ||memory.what==prefix+"teaching-core-rejected");
+                ?memory.what==outcomePrefix+"teaching-advanced"
+                :(memory.what==outcomePrefix+"comprehension-failed"
+                  ||memory.what==outcomePrefix+"clarity-or-trust-failed"
+                  ||memory.what==outcomePrefix+"teaching-core-rejected");
         if(key=="CoreContext:Trade")
             return memory.tags[2]=="success"
-                ?memory.what==prefix+"trade-exchanged"
-                :memory.what==prefix+"trade-core-rejected";
+                ?memory.what==outcomePrefix+"trade-exchanged"
+                :memory.what==outcomePrefix+"trade-core-rejected";
         return false;
     };
     int latestMinute=-1;
