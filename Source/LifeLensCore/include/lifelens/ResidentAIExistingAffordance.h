@@ -120,27 +120,15 @@ inline bool residentAIRecentGatherSourceFailed(
     gather.intent=CivilizationIntent::Gather;
     gather.material=material;
     const std::string key=civilizationActionExperienceKey(gather);
-    const std::string location="resource-node:"+std::to_string(node);
-    int latest=-1;
-    bool failed=false;
-    for(const auto& memory:actor.memory.entries){
-        if(memory.source!=MemorySource::DirectWitness
-           ||!memory.witnessed ||memory.sourceCharacter!=actor.id
-           ||memory.minute<0 ||memory.minute>nowMinute
-           ||nowMinute-memory.minute>ResidentAgencyGoalHorizonMinutes
-           ||memory.where!=location ||memory.tags.size()!=3
-           ||memory.tags[0]!="action_experience"
-           ||memory.tags[1]!=key
-           ||(memory.tags[2]!="success" &&memory.tags[2]!="failure"))
-            continue;
-        if(memory.minute>latest){
-            latest=memory.minute;
-            failed=memory.tags[2]=="failure";
-        }else if(memory.minute==latest &&memory.tags[2]=="success"){
-            failed=false;
-        }
-    }
-    return latest>=0 &&failed;
+    // Both "any failed source" and "this failed source" must use the SAME
+    // Core-authored exact-message / actor / time / source evidence contract.
+    // Tags or a purported firsthand flag alone are not executed actions.
+    const auto evidence=buildResidentResourceOutcomeIndex(actor,nowMinute)
+        .find(node,key);
+    return evidence.hasEvidence &&!evidence.succeeded
+        &&evidence.minute>=0
+        &&static_cast<std::int64_t>(nowMinute)-evidence.minute
+            <=ResidentAgencyGoalHorizonMinutes;
 }
 
 inline bool residentAIHasRecentSourcedGatherFailure(
