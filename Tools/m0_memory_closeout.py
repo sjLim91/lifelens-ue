@@ -24,11 +24,18 @@ AGE_KEYS = ("age_lt_1d_entries", "age_1to7d_entries",
 def _native_tag_breakdown(path: Path, seed: str) -> dict[int, dict]:
     """Native per-record primary tags + age partitions, NEVER guessed from text."""
     by_day: dict[int, dict] = {}
+    active_checkpoint_day = None
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         if not line.strip():
             continue
         item = json.loads(line)
-        if item.get("type") != "resident" or item.get("day") not in DAYS:
+        if item.get("type") in ("daily", "checkpoint"):
+            active_checkpoint_day = (item.get("day")
+                                     if item.get("type") == "checkpoint" else None)
+            continue
+        if (item.get("type") != "resident"
+                or item.get("day") != active_checkpoint_day
+                or item.get("day") not in DAYS):
             continue
         if item.get("seed") != seed:
             raise ValueError(f"{path}:{number} wrong seed in resident attribution")
