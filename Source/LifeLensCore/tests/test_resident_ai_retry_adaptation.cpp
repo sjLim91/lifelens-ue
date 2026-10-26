@@ -210,6 +210,20 @@ int main()
     assert(residentAIHasConfirmedLostGatherSource(
         lostSource,MaterialKind::PlantFood,486));
 
+    // A real success at a different node is NOT proof the exhausted
+    // source recovered. This previously cleared material-wide loss.
+    CivilizationUtilityDecision otherSource=attemptedA;
+    otherSource.resourceNode=302;
+    rememberCivilizationAttemptOutcome(lostSource,otherSource,487,true);
+    assert(residentAIHasConfirmedLostGatherSource(
+        lostSource,MaterialKind::PlantFood,487));
+    assert(residentAIRecentGatherSourceFailed(
+        lostSource,MaterialKind::PlantFood,301,480,487));
+    // A real successful attempt at the SAME source resolves that loss.
+    rememberCivilizationAttemptOutcome(lostSource,attemptedA,488,true);
+    assert(!residentAIHasConfirmedLostGatherSource(
+        lostSource,MaterialKind::PlantFood,488));
+
     AcceptedCognitiveDecision sourceThought=thought;
     sourceThought.minute=480;
     const auto ranked=bestGatherDecisionAtPosition(
