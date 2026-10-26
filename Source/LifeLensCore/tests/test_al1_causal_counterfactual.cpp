@@ -121,6 +121,7 @@ static void runPair(WorldSeed seed)
         &&witnessed->failedSource==101 &&witnessed->selectedSource==103
         &&witnessed->firsthandFailureMinute==480
         &&witnessed->selectionMinute==480
+        &&witnessed->failedPendingToken==0
         &&!witnessed->directNavigationFailure);
     assert(!observeResidentLiveRecoveryEvidence(
         withoutReceipt,withoutReceipt.characters[0],position,
