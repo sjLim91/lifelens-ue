@@ -3,6 +3,8 @@
 #include <iostream>
 #include "lifelens/CivilizationDecision.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
+#include "lifelens/Simulation.h"
+#include "lifelens/SimulationSnapshotCodec.h"
 
 using namespace lifelens;
 
@@ -170,5 +172,49 @@ int main()
         world,autonomous,{0,0});
     assert(urgent.experiment!=ExperimentKind::ComposeMaterials);
     assert(world.resourceNodes.empty());
+
+    // Real composite outputs are physical World inventory, not ephemeral Web
+    // descriptions. Their measured quality, durability and quantity must
+    // survive a binary Core snapshot/load with the resident's identity.
+    Simulation persistent(5151);
+    persistent.setupNewGame();
+    auto& sourceResident=persistent.world().characters.front();
+    sourceResident.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Flint,40,0.8,1.0});
+    sourceResident.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Wood,40,0.8,1.0});
+    sourceResident.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Fiber,40,0.8,1.0});
+    CivilizationUtilityDecision physicallyExecuted=decision;
+    bool invented=false;
+    for(int trial=0;trial<20 &&!invented;++trial){
+        persistent.world().minute=720+trial;
+        const auto actual=executeCivilizationDecisionAtPosition(
+            persistent.world(),sourceResident,physicallyExecuted,{0,0});
+        assert(actual.executed);
+        invented=actual.success;
+    }
+    assert(invented);
+    const auto beforeSave=sourceResident.civilization.inventory.stacks();
+    const auto snapshot=persistent.captureSnapshot();
+    std::vector<std::uint8_t> binary;
+    std::string error;
+    assert(encodeSimulationSnapshot(snapshot,binary,&error));
+    SimulationStateSnapshot decoded;
+    assert(decodeSimulationSnapshot(binary,decoded,&error));
+    Simulation reload(1);
+    assert(reload.restoreSnapshot(decoded,&error));
+    const auto& afterSave=reload.world().characters.front()
+        .civilization.inventory.stacks();
+    assert(beforeSave.size()==afterSave.size());
+    for(std::size_t i=0;i<beforeSave.size();++i){
+        assert(beforeSave[i].kind==afterSave[i].kind);
+        assert(beforeSave[i].material==afterSave[i].material);
+        assert(beforeSave[i].quantity==afterSave[i].quantity);
+        assert(beforeSave[i].quality==afterSave[i].quality);
+        assert(beforeSave[i].durability==afterSave[i].durability);
+    }
+    assert(reload.world().characters.front().civilization.inventory.count(
+        ItemKind::StoneCuttingTool,MaterialKind::Flint)>0);
     std::cout<<"material-based physical tool trial with resource cost and Core replay PASS\n";
 }
