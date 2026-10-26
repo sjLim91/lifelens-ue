@@ -1,5 +1,14 @@
 # LifeLens 마스터플랜 86개 개발단위 추적표
 
+## 2026-10-26 AL-1 단일 주민 폐루프 실행 (구현/검증 계속)
+
+- **AL-1 인수 상태: 🚧 진행**. 원래 완료 **6/86·진행 20/86·미완 60/86 유지**. 이미 완료된 M0 5개를 재개발하지 않음.
+- [#973](https://github.com/sjLim91/lifelens-ue/pull/973): Core 경로탐색이 실제 Gather 이동 실패를 통보할 때만 배우는 개인별 `navigation_experience` 기록과 소스별 다음 선택 입력 연결. 정확한 head `2f200da3f4e26c51e190319c0796bfd29332ec63`의 [Core 164/164 + 365일 검증](https://github.com/sjLim91/lifelens-ue/actions/runs/40296468663), [WASM](https://github.com/sjLim91/lifelens-ue/actions/runs/40296468671), [Web](https://github.com/sjLim91/lifelens-ue/actions/runs/40296468624), [Preflight](https://github.com/sjLim91/lifelens-ue/actions/runs/40296468591), [M0-03](https://github.com/sjLim91/lifelens-ue/actions/runs/40296468759), [M0-04](https://github.com/sjLim91/lifelens-ue/actions/runs/40296468688) 성공 후 main `4308e11c7ec4d3a2b2cff60a9fe95405d7501c3d` 병합 완료.
+- 위 CI의 **주입 없는 새 게임 실제 Core tick**: seed `874213954`, 주민 `4`, Gather 결과 `minute=492`, 이후 다른 문명행동 선택 관찰. seed `4242001`, 주민 `4`, Gather 결과 `minute=504`, 이후 다른 문명행동 선택 관찰. [원본 로그](https://github.com/sjLim91/lifelens-ue/actions/runs/40296468663) `AL1_PRODUCTION_WITNESS`. 이 값은 실제 채집 및 직접 기억/후속 결정의 **연속성**이며 그 다음 선택의 원인이 개인 기억인지 입증하지 않음.
+- [#974](https://github.com/sjLim91/lifelens-ue/pull/974): 위 실제 길찾기 실패 기억을 비긴급 Gather 결정의 물리적 대체 소스로 **선택까지 연결**. source-specific 기억/대체 접근 경로·물리 채집·타 주민 기억 격리 회귀를 추가함. 정확한 head CI와 main 병합 결과에 따라 상태 정정해야 하며 여기서는 **진행**으로만 기록.
+- **후속 AL-1 미완 조건**: Qwen 등 하나의 주민 전략 목표에서도 동일한 직접 실패 경험을 이어받는 실행 복구, 실제 새 게임에서 *경험 전/후 차이*의 비교, 단일 Goal→Core 결과→경험→인과적 후속 결정 증거. 고정 2개 시드의 연속성과 완전한 개인 학습을 혼용 금지.
+
+
 ## 2026-10-26 CURRENT — 최우선순위 재집중 및 상태 정정
 
 - 현재 실행 정책은 [자율 인공생명 마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 상단의 **2026-10-26 우선순위 개정**이다. G1 자율인공생명체의 실제 문제 발견→계획→행동→재계획→학습을 단일 최우선 목표로 삼는다. 기존 병렬 트랙 기록은 역사이며 신규 side lane 착수 근거로 사용하지 않는다.
