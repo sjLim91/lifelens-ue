@@ -647,6 +647,21 @@ inline std::optional<ComposedMaterialDesign> proposeMaterialComposition(
     return best;
 }
 
+// Mere possession of an old tool does not prohibit invention. Only an
+// already-owned tool with equal-or-better tested performance AND durability
+// makes this physical material hypothesis redundant for this resident.
+inline bool materialCompositionWorthTesting(
+    const Inventory& inventory,const ComposedMaterialDesign& design)
+{
+    for(const auto& stack:inventory.stacks())
+        if(stack.quantity>0 &&stack.kind==design.resultingTool
+           &&stack.material==design.head
+           &&stack.quality>=design.testedPerformance-1e-9
+           &&stack.durability>=design.testedDurability-1e-9)
+            return false;
+    return true;
+}
+
 inline ExperimentResult attemptMaterialComposition(
     const ExperimentContext& context,Inventory& inventory)
 {
