@@ -447,6 +447,37 @@ int main()
         TechniqueId::BronzeAxe,KnowledgeLevel::Observed,0.5);
     apprentice.civilization.inventory.add({
         ItemKind::RawMaterial,MaterialKind::Charcoal,3,0.75,1.0});
+    // With no furnace, exactly the same observed BronzeAxe goal begins a
+    // physical furnace project rather than conjuring an operational smelter.
+    World missingFurnace=metallurgy;
+    missingFurnace.facilities.clear();
+    ConstructedFacility firePit;
+    firePit.id=9006;
+    firePit.kind=FacilityKind::FirePit;
+    firePit.pos={0,0};
+    firePit.state=FacilityState::Operational;
+    firePit.active=true;
+    firePit.durability=1.0;
+    missingFurnace.facilities.push_back(firePit);
+    const auto furnaceAction=chooseResidentAIKnowledgePrerequisiteStep(
+        missingFurnace,apprentice,{0,0},TechnologyId::BronzeAxe,
+        nullptr,&thought);
+    assert(furnaceAction.intent==CivilizationIntent::Craft
+        &&furnaceAction.facilityKind==FacilityKind::Furnace
+        &&furnaceAction.facilityAction==FacilityBuildAction::Plan
+        &&furnaceAction.hasFacilityTarget);
+    assert(!hasOperationalFurnace(missingFurnace));
+    assert(missingFurnace.facilities.size()==1);
+    const auto site=executeCivilizationDecisionAtPosition(
+        missingFurnace,apprentice,furnaceAction,
+        furnaceAction.facilityTargetPos);
+    assert(site.executed &&site.success);
+    assert(primitiveFurnaceProjectNear(
+        missingFurnace,furnaceAction.facilityTargetPos)!=nullptr);
+    assert(!hasOperationalFurnace(missingFurnace));
+    assert(apprentice.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Bronze)==0);
+
     const auto tinPrerequisite=chooseResidentAIKnowledgePrerequisiteStep(
         metallurgy,apprentice,{0,0},TechnologyId::BronzeAxe,nullptr,&thought);
     assert(tinPrerequisite.intent==CivilizationIntent::Gather
