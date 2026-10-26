@@ -380,8 +380,8 @@ inline CivilizationUtilityDecision chooseResidentAIComposedToolExperiment(
                    actor.needs.hygiene})>=0.48) return result;
     const auto composition=proposeMaterialComposition(
         actor.civilization.inventory);
-    if(!composition ||actor.civilization.inventory.count(
-            composition->resultingTool,composition->head)>0)
+    if(!composition ||!materialCompositionWorthTesting(
+            actor.civilization.inventory,*composition))
         return result;
     result.intent=CivilizationIntent::Experiment;
     result.experiment=ExperimentKind::ComposeMaterials;
