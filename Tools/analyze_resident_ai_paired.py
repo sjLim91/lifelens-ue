@@ -91,7 +91,29 @@ def _metric(value, path):
             or temporal[label]["temporallyMatchedFailure"]
                 > real[label]["failure"]):
             raise ValueError(f"{path}: matched outcomes exceed Core truth {label}")
-    return counts, real, temporal, intent_counts, return_count
+    # This is a Core pending-token observation ledger, not an action
+    # completion count. Old archived reports may not contain it.
+    tokens = value.get("tokenLifecycle")
+    token_counts = None
+    if tokens is not None:
+        if not isinstance(tokens, dict) or set(tokens) != labels:
+            raise ValueError(f"{path}: token lifecycle kinds differ from Core outcomes")
+        token_counts = {}
+        for label in sorted(labels):
+            row = tokens[label]
+            if not isinstance(row, dict):
+                raise ValueError(f"{path}: invalid token lifecycle {label}")
+            fields = ("observedStarts", "temporalIntentTargetMatches",
+                      "noLongerPendingUnclassified", "replacedByAnotherToken")
+            counts_for_kind = {
+                field: _count(row.get(field), f"{path}.{label}.{field}")
+                for field in fields
+            }
+            if any(counts_for_kind[field] > counts_for_kind["observedStarts"]
+                   for field in fields[1:]):
+                raise ValueError(f"{path}: token lifecycle exceeds observed starts {label}")
+            token_counts[label] = counts_for_kind
+    return counts, real, temporal, intent_counts, return_count, token_counts
 
 
 def analyze(report):
@@ -103,14 +125,16 @@ def analyze(report):
         raise ValueError("missing simulation identity or paired baseline evidence")
     if not report["matchedInitialResidents"]:
         raise ValueError("paired cohorts did not start from the same residents")
-    baseline, base_real, base_temporal, base_intents, base_returns = _metric(
+    baseline, base_real, base_temporal, base_intents, base_returns, base_tokens = _metric(
         report.get("baseline"), "baseline")
-    proxy, proxy_real, proxy_temporal, proxy_intents, proxy_returns = _metric(
+    proxy, proxy_real, proxy_temporal, proxy_intents, proxy_returns, proxy_tokens = _metric(
         report.get("proxy"), "proxy")
     if set(base_intents) != set(proxy_intents):
         raise ValueError("paired cohorts must report the same intent catalog kinds")
     if (base_returns is None) != (proxy_returns is None):
         raise ValueError("paired cohorts must agree on trade return evidence availability")
+    if (base_tokens is None) != (proxy_tokens is None):
+        raise ValueError("paired cohorts must agree on token lifecycle availability")
     keys = ("proposalsAttempted", "proposalsAccepted", "proposalsRejected",
             "observedCivilizationPendingStarts", "observedSocialPendingStarts",
             "civilizationSuccessEvidence", "civilizationFailureEvidence",
@@ -166,6 +190,27 @@ def analyze(report):
             }
             for kind in sorted(base_temporal)
         },
+        # A temporal intent-target match is NOT proof of an executed
+        # action. Surface pending/replaced/unclassified paths rather than
+        # silently translating them into success, failure or zero.
+        "pendingTokenLifecycle": ({
+            "available": True,
+            "notVerifiedGoalCompletion": True,
+            "perKind": {
+                kind: {
+                    stage: {
+                        "baseline": base_tokens[kind][stage],
+                        "proxy": proxy_tokens[kind][stage],
+                        "deltaProxyMinusBaseline": (
+                            proxy_tokens[kind][stage] - base_tokens[kind][stage]
+                        ),
+                    }
+                    for stage in ("observedStarts", "temporalIntentTargetMatches",
+                                  "noLongerPendingUnclassified", "replacedByAnotherToken")
+                }
+                for kind in sorted(base_tokens)
+            },
+        } if base_tokens is not None else {"available": False}),
         "verifiedTradeJourneyReturns": ({
             "available": True,
             "baseline": base_returns,
