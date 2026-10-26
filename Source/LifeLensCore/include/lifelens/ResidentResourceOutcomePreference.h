@@ -98,6 +98,28 @@ inline bool newerOutcome(
 
 } // namespace resident_resource_outcome_detail
 
+// A v2 real navigation episode links the initial failed Core pending token
+// to the subsequently issued recovery token. A legacy three-tag episode is
+// still valid learning, but has no auditable original token.
+inline std::uint64_t residentGatherRouteFailurePendingToken(
+    const MemoryRecord& memory)
+{
+    if(memory.tags.size()!=4) return 0;
+    const auto& tag=memory.tags[3];
+    constexpr std::size_t prefix=14; // "context-token:"
+    if(tag.rfind("context-token:",0)!=0 ||tag.size()<=prefix
+       ||tag[prefix]=='0') return 0;
+    std::uint64_t token=0;
+    for(std::size_t i=prefix;i<tag.size();++i){
+        if(tag[i]<'0'||tag[i]>'9') return 0;
+        const auto digit=static_cast<std::uint64_t>(tag[i]-'0');
+        if(token>(std::numeric_limits<std::uint64_t>::max()-digit)/10)
+            return 0;
+        token=token*10+digit;
+    }
+    return token;
+}
+
 inline ResidentResourceOutcomeIndex buildResidentResourceOutcomeIndex(
     const Character& actor,int currentMinute)
 {
@@ -112,7 +134,9 @@ inline ResidentResourceOutcomeIndex buildResidentResourceOutcomeIndex(
         // firsthand spatial evidence, but never an executed Gather failure.
         const bool gathered=memory.tags.size()==3
             &&memory.tags[0]=="action_experience";
-        const bool routeFailed=memory.tags.size()==3
+        const bool routeFailed=(memory.tags.size()==3
+                ||(memory.tags.size()==4
+                   &&residentGatherRouteFailurePendingToken(memory)!=0))
             &&memory.tags[0]=="navigation_experience"
             &&memory.tags[2]=="route-failed"
             &&memory.what=="Core 이동 경로 실패로 자원 채집을 시작하지 못했다";
@@ -199,13 +223,18 @@ inline bool rememberResidentGatherRouteFailure(
     for(auto& memory:actor.memory.entries){
         if(memory.source!=MemorySource::DirectWitness ||!memory.witnessed
            ||memory.sourceCharacter!=actor.id ||memory.who!=actor.id
-           ||memory.where!=source ||memory.tags.size()!=3
+           ||memory.where!=source
+           ||(memory.tags.size()!=3 &&memory.tags.size()!=4)
            ||memory.tags[0]!="navigation_experience"
            ||memory.tags[1]!=actionKey ||memory.tags[2]!="route-failed"
            ||memory.what!=outcome) continue;
         if(memory.minute>=minute) return false;
         memory.minute=minute;
         memory.confidence=1.0;
+        memory.tags={
+            "navigation_experience",actionKey,"route-failed",
+            "context-token:"+std::to_string(contextToken)
+        };
         return true;
     }
     MemoryRecord memory;
@@ -220,7 +249,10 @@ inline bool rememberResidentGatherRouteFailure(
     memory.importance=0.42;
     memory.emotionValence=-0.25;
     memory.emotionIntensity=0.35;
-    memory.tags={"navigation_experience",actionKey,"route-failed"};
+    memory.tags={
+        "navigation_experience",actionKey,"route-failed",
+        "context-token:"+std::to_string(contextToken)
+    };
     actor.memory.add(std::move(memory));
     return true;
 }
