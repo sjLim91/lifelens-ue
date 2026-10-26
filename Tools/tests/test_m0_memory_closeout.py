@@ -60,6 +60,22 @@ class TestM0MemoryCloseout(unittest.TestCase):
         self.assertEqual(report["analysis"][0]["growthIntervals"][0]
                          ["snapshotBytesDelta"], 210)
 
+    def test_native_daily_and_checkpoint_same_day_do_not_double_count(self):
+        a, b = self.write(11), self.write(22)
+        original = [json.loads(line) for line in b.read_text().splitlines()]
+        repeated = []
+        for index in range(0, len(original), 2):
+            cp, person = original[index:index + 2]
+            # Real ll_balance_audit first emits a daily summary+resident,
+            # then at the same world minute a checkpoint summary+resident.
+            repeated.extend([dict(cp, type="daily"), person, cp, person])
+        b.write_text("".join(json.dumps(row) + "\n" for row in repeated))
+        report = closeout([a, b])
+        self.assertEqual(report["analysis"][1]["checkpoints"][0]
+                         ["resident_count"], 1)
+        self.assertEqual(report["analysis"][1]["checkpoints"][0]
+                         ["memory"]["entries"], 2)
+
     def test_missing_day_rejected(self):
         with self.assertRaisesRegex(ValueError, "missing 100/365/1000"):
             closeout([self.write(11), self.write(22, (100, 1000))])
