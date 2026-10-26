@@ -34,6 +34,9 @@ function validPositiveInteger(value: number): boolean {
 export class CognitionScheduler {
   private readonly queue: QueueItem[] = [];
   private readonly latestByActor = new Map<string, number>();
+  // Keep the Core minute of ACTIVE as well as QUEUED thoughts. Comparing only
+  // queued items lets an older observation cancel a newer running mind.
+  private readonly latestMinuteByActor = new Map<string, number>();
   private readonly activeControllers = new Set<AbortController>();
   private sequence = 0;
   private active = 0;
@@ -67,7 +70,15 @@ export class CognitionScheduler {
 
   submitObserved(request: CognitiveRequestDto): Promise<CognitionOutcome> {
     if (this.disposed) return Promise.resolve(outcome('cancelled'));
-    if (request.allowedIntents.length === 0) return Promise.resolve(outcome('rejected', 'invalid_schema'));
+    if (!Number.isSafeInteger(request.minute) || request.minute < 0
+      || typeof request.actor !== 'string' || request.actor.length === 0
+      || !Array.isArray(request.allowedIntents) || request.allowedIntents.length === 0) {
+      return Promise.resolve(outcome('rejected', 'invalid_schema'));
+    }
+    const latestMinute = this.latestMinuteByActor.get(request.actor);
+    if (latestMinute !== undefined && request.minute < latestMinute) {
+      return Promise.resolve(outcome('stale'));
+    }
     // A queued thought from THIS resident must not reserve the sole free
     // local-model slot against a fresher Core observation from that resident.
     // Replace only a same-actor queued item; never displace another person's
@@ -87,6 +98,7 @@ export class CognitionScheduler {
     }
     const sequence = ++this.sequence;
     this.latestByActor.set(request.actor, sequence);
+    this.latestMinuteByActor.set(request.actor, request.minute);
     return new Promise((resolve) => {
       this.queue.push({ sequence, request, resolve });
       this.pump();
@@ -96,6 +108,7 @@ export class CognitionScheduler {
   reset(): void {
     this.sequence += 1;
     this.latestByActor.clear();
+    this.latestMinuteByActor.clear();
     for (const controller of this.activeControllers) controller.abort();
     while (this.queue.length > 0) {
       this.queue.shift()?.resolve(outcome('cancelled'));
@@ -193,6 +206,7 @@ export class CognitionScheduler {
       this.activeControllers.delete(controller);
       if (this.latestByActor.get(item.request.actor) === item.sequence) {
         this.latestByActor.delete(item.request.actor);
+        this.latestMinuteByActor.delete(item.request.actor);
       }
       this.active = Math.max(0, this.active - 1);
       this.pump();
