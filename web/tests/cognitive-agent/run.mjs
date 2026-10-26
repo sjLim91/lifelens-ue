@@ -117,6 +117,18 @@ await test('loopback model discovery is bounded, unique and credential-free',asy
   );
 });
 
+await test('unsafe local model identities cannot enter discovery or inference',async()=>{
+  const ac=new AbortController();
+  const models=await discoverLocalCognitionModels('http://127.0.0.1:11434',
+    ac.signal,async()=>({ok:true,json:async()=>({data:[
+      {id:'good-local'},{id:'bad\ncontrol'},{id:'x'.repeat(201)},
+    ]})}));
+  assert.deepEqual(models,['good-local']);
+  for(const model of ['x'.repeat(201),'bad\ncontrol'])
+    assert.throws(()=>new LocalCognitionProvider({
+      baseUrl:'http://127.0.0.1:11434',model}),/model/);
+});
+
 await test('automatic model discovery uses only bounded free loopback services', async()=>{
   const called=[];
   const result=await discoverAutomaticLocalCognition(

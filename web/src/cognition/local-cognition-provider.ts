@@ -71,6 +71,8 @@ export async function discoverLocalCognitionModels(
     if (
       typeof entry?.id === 'string'
       && entry.id.trim().length > 0
+      && entry.id.trim().length <= 200
+      && !/[\u0000-\u001f\u007f]/.test(entry.id)
     ) {
       unique.add(entry.id.trim());
     }
@@ -150,7 +152,8 @@ export class LocalCognitionProvider implements CognitiveProvider {
         'LifeLens default cognition provider accepts loopback/local endpoints only',
       );
     }
-    if (!config.model.trim()) {
+    if (!config.model.trim() || config.model.length > 200
+      || /[\u0000-\u001f\u007f]/.test(config.model)) {
       throw new Error('local cognition model name is required');
     }
     this.endpoint = chatCompletionsUrl(config.baseUrl);
