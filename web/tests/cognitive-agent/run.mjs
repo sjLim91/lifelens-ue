@@ -566,6 +566,47 @@ await test('newer request from same resident invalidates the older late response
   scheduler.dispose();
 });
 
+await test('older Core minute cannot cancel a newer active resident thought',async()=>{
+  const entered=[];
+  const resolve=[];
+  const provider={name:'single-resident',reason:req=>new Promise(done=>{
+    entered.push(req.minute);
+    resolve.push(()=>done(proposal(req)));
+  })};
+  const scheduler=new CognitionScheduler(provider,()=>105,{
+    maxConcurrent:2,maxQueued:2,timeoutMs:1000,
+    staleAfterSimulationMinutes:100,
+  });
+  const newest=scheduler.submitObserved(request('1',105));
+  await new Promise(done=>setTimeout(done,0));
+  assert.deepEqual(entered,[105]);
+  assert.equal((await scheduler.submitObserved(request('1',104))).status,'stale',
+    'older observation must not supersede an already active newer mind');
+  assert.deepEqual(entered,[105],
+    'older rejected observation must not call the shared local model');
+  resolve.shift()();
+  assert.equal((await newest).status,'validated',
+    'the newer authentic inference remains authoritative');
+  scheduler.dispose();
+});
+
+await test('scheduler rejects malformed Core minute without consuming inference',async()=>{
+  let calls=0;
+  const scheduler=new CognitionScheduler({
+    name:'must-not-run',reason:async req=>{calls++;return proposal(req);},
+  },()=>100,{
+    maxConcurrent:1,maxQueued:1,timeoutMs:1000,
+    staleAfterSimulationMinutes:100,
+  });
+  for(const minute of [-1,0.25,Number.NaN,Number.POSITIVE_INFINITY,
+                       Number.MAX_SAFE_INTEGER+1]){
+    assert.equal((await scheduler.submitObserved(request('1',minute))).reason,
+      'invalid_schema');
+  }
+  assert.equal(calls,0);
+  scheduler.dispose();
+});
+
 await test('timeout settles even when provider ignores AbortSignal forever',async()=>{
   const provider={
     name:'hung',
