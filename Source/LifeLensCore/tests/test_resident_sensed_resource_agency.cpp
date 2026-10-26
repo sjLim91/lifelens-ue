@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include "lifelens/ResidentSensedResourceAgency.h"
+#include "lifelens/ResidentLiveRecoveryEvidence.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
@@ -124,6 +125,22 @@ int main()
     assert(changed.agency.decision.kind==UnifiedDecisionKind::Civilization);
     assert(changed.agency.decision.civilization.intent==CivilizationIntent::Gather);
     assert(changed.agency.decision.civilization.resourceNode==103);
+    // This branch was learned from a real pre-extraction Core navigation
+    // failure; the audit must not misrepresent it as a failed harvest.
+    const auto routeEvidence=observeResidentLiveRecoveryEvidence(
+        routeWorld,routeWorld.characters[0],position,requestedGather,changed);
+    assert(routeEvidence
+        &&routeEvidence->actor==routeWorld.characters[0].id
+        &&routeEvidence->failedSource==101
+        &&routeEvidence->selectedSource==103
+        &&routeEvidence->firsthandFailureMinute==480
+        &&routeEvidence->directNavigationFailure);
+    const auto noRecovery=chooseResidentSensedResourceGoal(
+        routeWorld,routeWorld.characters[1],position,relationships,
+        requestedGather,nullptr,false);
+    assert(!observeResidentLiveRecoveryEvidence(
+        routeWorld,routeWorld.characters[1],position,
+        requestedGather,noRecovery));
     const auto neighbour=chooseResidentSensedResourceGoal(
         routeWorld,routeWorld.characters[1],position,relationships,
         requestedGather,nullptr,false);
