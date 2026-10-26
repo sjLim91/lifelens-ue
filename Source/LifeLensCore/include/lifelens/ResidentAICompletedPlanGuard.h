@@ -30,24 +30,43 @@ inline bool residentAIPlanAlreadyAttempted(
     for(const MemoryRecord& entry:actor.memory.entries){
         if(entry.source!=MemorySource::DirectWitness
            ||!entry.witnessed ||entry.sourceCharacter!=actor.id
+           ||entry.who!=actor.id
            ||entry.minute<=thought.minute
            ||entry.minute>nowMinute ||entry.tags.size()!=3
            ||entry.tags[0]!="action_experience"
            ||entry.tags[1]!=key)
             continue;
-        if(entry.tags[2]!="success" &&entry.tags[2]!="failure")
-            continue;
+        // Only an executed Core action consumes the resident's plan.
+        // A plausible tag or claimed witnessed flag cannot make an invented
+        // failure block every subsequent physical affordance for 15 minutes.
+        const std::string prefix="실제 문명 행동 "+key;
+        const std::string failed=prefix+" 수행을 시도했지만 실패했다";
+        if(entry.tags[2]=="success"){
+            if(entry.what!=prefix+" 수행에 성공했다") continue;
+        }else if(entry.tags[2]=="failure"){
+            if(entry.what!=failed
+               &&entry.what!=failed+" (직접 확인한 원인: source-removed)"
+               &&entry.what!=failed+" (직접 확인한 원인: source-exhausted)"
+               &&entry.what!=failed+" (직접 확인한 원인: container-missing)"
+               &&entry.what!=failed+" (직접 확인한 원인: access-unavailable)")
+                continue;
+        }else continue;
+        if(candidate.intent!=CivilizationIntent::Gather
+           &&entry.where!="내가 직접 시도한 행동") continue;
         if(candidate.intent==CivilizationIntent::Gather
            &&candidate.resourceNode!=0){
             const std::string source="resource-node:"
                 +std::to_string(candidate.resourceNode);
-            // An attempt at node A says nothing about actually attempting B.
-            // Legacy recollections without a source stay conservatively
-            // protected, rather than assigning an invented source ID.
-            if(entry.where.rfind("resource-node:",0)==0
-               &&entry.where!=source)
-                continue;
+            // Do not trust an arbitrary where string as a legacy record.
+            // Only Core's real legacy source-less form is conservative; an
+            // attempted node A is never credited to node B.
+            if(entry.where!=source
+               &&entry.where!="내가 직접 시도한 행동") continue;
         }
+        if(candidate.intent==CivilizationIntent::Gather
+           &&candidate.resourceNode==0
+           &&entry.where!="내가 직접 시도한 행동"
+           &&entry.where.rfind("resource-node:",0)!=0) continue;
         // This exception applies ONLY to a real successful partial
         // prerequisite gather selected again from a still-unsatisfied Core
         // recipe. A failed attempt or a generic resource goal is NEVER
