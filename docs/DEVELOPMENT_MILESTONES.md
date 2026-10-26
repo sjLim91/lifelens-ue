@@ -1,5 +1,12 @@
 # LifeLens Development Milestones
 
+## 2026-10-26 CURRENT — 자율인공생명체 최우선
+
+사용자 지시에 따른 현재 실행 기준은 [자율 인공생명 마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md)의 **2026-10-26 우선순위 개정**이다. **G1 개인 자율 생명**이 최우선 제품 목표이며, AL-1 실제 주민 폐루프 → AL-2 다단계 계획·재계획 → AL-3 개인 학습·저장 지속성 → AL-4 통합 인수 순서로 진행한다.
+
+COG는 별도 병렬 연구가 아닌 핵심 제품 경로다. 아래 DU-01/Earth structural priority/COG parallel lane 및 과거 순서는 범위·역사 참조로 보존하며 현재 우선순위를 덮어쓰지 않는다. G1 전에는 그래픽·지구·생태·범용 발명·대규모 확장 신규 착수를 보류하고, 자율행동 루프를 직접 막는 생존·인과·저장 결함만 P0 의존성으로 처리한다. Core 권위와 검증 계약은 유지한다.
+
+
 이 문서는 **LifeLens의 canonical execution roadmap**이다.
 
 ## Runtime platform note — 2026-09-29
