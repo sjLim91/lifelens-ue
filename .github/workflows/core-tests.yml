@@ -53,6 +53,9 @@ jobs:
 
       - name: AL-1 genuine Core failure paired causal contrast
         run: ctest --test-dir build --verbose -R 'test_al1_causal_counterfactual'
+
+      - name: AL-1 untouched New Game recovery observation
+        run: ctest --test-dir build --verbose -R 'test_al1_unmodified_replan_observability'
       - name: Deterministic harness
         run: |
           ./build/ll_harness --days 1 --seed 42 > /tmp/harness-first.txt
