@@ -404,28 +404,28 @@ int main()
 
     // A model or another resident can insert a convincingly tagged
     // recollection. Core execution must not overwrite/promote that origin.
-    Character narrated=resident;
-    narrated.memory.entries.clear();
-    narrated.beliefs=BeliefState{};
+    Character narratedProvenance=resident;
+    narratedProvenance.memory.entries.clear();
+    narratedProvenance.beliefs=BeliefState{};
     MemoryRecord hearsay;
-    hearsay.who=narrated.id;
+    hearsay.who=narratedProvenance.id;
     hearsay.sourceCharacter=999;
     hearsay.source=MemorySource::ToldByOther;
     hearsay.witnessed=false;
     hearsay.minute=600;
     hearsay.what="model claimed it completed Gather";
     hearsay.tags={"action_experience",key,"failure"};
-    narrated.memory.add(hearsay);
-    rememberCivilizationAttemptOutcome(narrated,gather,600,false);
-    assert(narrated.memory.entries.front().what
+    narratedProvenance.memory.add(hearsay);
+    rememberCivilizationAttemptOutcome(narratedProvenance,gather,600,false);
+    assert(narratedProvenance.memory.entries.front().what
            =="model claimed it completed Gather");
-    assert(narrated.memory.entries.front().source==MemorySource::ToldByOther);
-    assert(!narrated.memory.entries.front().witnessed);
+    assert(narratedProvenance.memory.entries.front().source==MemorySource::ToldByOther);
+    assert(!narratedProvenance.memory.entries.front().witnessed);
     bool realWitness=false;
-    for(const auto& entry:narrated.memory.entries)
+    for(const auto& entry:narratedProvenance.memory.entries)
         if(entry.source==MemorySource::DirectWitness
-           &&entry.sourceCharacter==narrated.id
-           &&entry.who==narrated.id &&entry.minute==600
+           &&entry.sourceCharacter==narratedProvenance.id
+           &&entry.who==narratedProvenance.id &&entry.minute==600
            &&entry.what=="실제 문명 행동 "+key+
                " 수행을 시도했지만 실패했다")
             realWitness=true;
