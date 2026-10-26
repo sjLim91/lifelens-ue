@@ -236,6 +236,22 @@ class TestPairedAuditAnalysis(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown strategic intent"):
             analyze(evidence)
 
+    def test_invented_core_outcome_kind_never_becomes_civilization(self):
+        raw = fixture()
+        for cohort in ("baseline", "proxy"):
+            raw[cohort]["verifiedCoreOutcomes"]["ImaginaryQuantumTrade"] = {
+                "success": 999, "failure": 0,
+            }
+            raw[cohort]["acceptedIntentToVerifiedOutcome"][
+                "ImaginaryQuantumTrade"] = {
+                    "temporallyMatchedSuccess": 0,
+                    "temporallyMatchedFailure": 0,
+                    "observedWithoutAcceptedIntent": 0,
+                    "noObservedPendingToken": 0,
+                }
+        with self.assertRaisesRegex(ValueError, "unknown Core outcome kind"):
+            analyze(raw)
+
     def test_invalid_evidence_never_silently_passes(self):
         variants = []
         bad = fixture()
