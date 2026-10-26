@@ -53,6 +53,16 @@ inline void rememberCoreContextExperience(
     const char* key=coreContextExperienceKey(event.kind);
     if(key==nullptr) return;
 
+    // A Core completion token represents ONE physical attempt. An
+    // acknowledgement delivered at another minute must never teach twice.
+    const std::string tokenSource="core-context-token:"
+        +std::to_string(event.token);
+    for(const MemoryRecord& m:actor.memory.entries)
+        if(m.where==tokenSource &&m.sourceCharacter==actor.id
+           &&m.source==MemorySource::DirectWitness &&m.witnessed
+           &&m.tags.size()==3 &&m.tags[0]=="action_experience"
+           &&m.tags[1]==key) return;
+
     const std::string proposition=actionExperienceProposition(key);
     const BeliefRecord* prior=actor.beliefs.find(0,proposition);
     const std::size_t priorCount=prior
@@ -97,6 +107,13 @@ inline void rememberVerifiedLocalExchangeExperience(
        ||counterpart==resident.id ||minute<0
        ||registeredExchangeFactId==0) return;
     constexpr const char* action="CoreContext:Trade";
+    const std::string factSource="core-local-exchange-fact:"
+        +std::to_string(registeredExchangeFactId);
+    for(const MemoryRecord& m:resident.memory.entries)
+        if(m.where==factSource &&m.sourceCharacter==resident.id
+           &&m.source==MemorySource::DirectWitness &&m.witnessed
+           &&m.tags.size()==3 &&m.tags[0]=="action_experience"
+           &&m.tags[1]==action) return;
     const std::string proposition=actionExperienceProposition(action);
     const BeliefRecord* before=resident.beliefs.find(0,proposition);
     const std::size_t beforeCount=before

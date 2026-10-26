@@ -61,6 +61,16 @@ int main()
         rememberCoreContextExperience(resident,failed);
         rememberCoreContextExperience(resident,failed); // duplicate ACK
     }
+    // Reordered/late duplicate delivery of a real completion token must
+    // never become an additional firsthand experiment at a newer minute.
+    const auto failedBefore=resident.beliefs.find(
+        0,actionExperienceProposition("CoreContext:Trade"));
+    assert(failedBefore &&failedBefore->contradictionCount==4);
+    rememberCoreContextExperience(resident,{
+        actor,target,201,initialMinute+30,ContextActionKind::Trade,
+        CoreContextOutcomeCode::TradeExchangeRejected});
+    assert(failedBefore->contradictionCount==4);
+
     const auto* belief=resident.beliefs.find(
         0,actionExperienceProposition("CoreContext:Trade"));
     assert(belief &&belief->contradictionCount==4);
