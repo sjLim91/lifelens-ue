@@ -114,7 +114,45 @@ export function residentAIObservedTrigger(
     // exact descriptions. Model narrative must never create two "failures"
     // or invent a success that erases a REAL failure streak. Social context
     // tokens are validated by their distinct existing contract above.
-    if (!livedContext) {
+    if (livedContext) {
+      // Exactly match the Core's stored outcome code AND resident target.
+      // A model-authored narrative with a plausible token and witnessed flag
+      // is not another attempted trade, teaching or care action.
+      const token = /^core-context-token:([1-9][0-9]{0,19})$/.exec(memory.where);
+      const localFact = key === 'CoreContext:Trade'
+        && /^core-local-exchange-fact:([1-9][0-9]{0,19})$/.exec(memory.where);
+      const id = token?.[1] ?? (localFact ? localFact[1] : null);
+      if (!id || BigInt(id) > 18446744073709551615n
+        || !/^[1-9][0-9]{0,19}$/.test(memory.who)) continue;
+      if (localFact) {
+        if (memory.tags[2] !== 'success'
+          || memory.what !== '실제 지역 교역 대상 ' + memory.who
+            + ' 물품 교환 완료 (Core exchange fact)') continue;
+      } else {
+        const completed = {
+          'CoreContext:Teaching': 'teaching-advanced',
+          'CoreContext:Parenting': 'parenting-performed',
+          'CoreContext:Trade': 'trade-exchanged',
+        } as const;
+        const failed = {
+          'CoreContext:Teaching': [
+            'comprehension-failed', 'clarity-or-trust-failed',
+            'teaching-core-rejected',
+          ],
+          'CoreContext:Parenting': ['parenting-core-rejected'],
+          'CoreContext:Trade': ['trade-core-rejected'],
+        } as const;
+        const context = key as keyof typeof completed;
+        const code = memory.what.startsWith(
+          '실제 행동 ' + key + ' 대상 ' + memory.who + ' 결과: ',
+        ) ? memory.what.slice(
+          ('실제 행동 ' + key + ' 대상 ' + memory.who + ' 결과: ').length,
+        ) : '';
+        if (memory.tags[2] === 'success'
+          ? code !== completed[context]
+          : !(failed[context] as readonly string[]).includes(code)) continue;
+      }
+    } else {
       const prefix = '실제 문명 행동 ' + key;
       const validSuccess = memory.tags[2] === 'success'
         && memory.what === prefix + ' 수행에 성공했다';
