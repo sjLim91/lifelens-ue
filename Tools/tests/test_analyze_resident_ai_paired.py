@@ -117,6 +117,53 @@ class TestPairedAuditAnalysis(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "trade return evidence availability"):
             analyze(mismatched)
 
+    def test_real_pending_token_lifecycle_is_not_completed_action(self):
+        report = fixture()
+        report["baseline"]["tokenLifecycle"] = {
+            "KnowledgeTeaching": {
+                "observedStarts": 4,
+                "temporalIntentTargetMatches": 1,
+                "noLongerPendingUnclassified": 2,
+                "replacedByAnotherToken": 1,
+            },
+        }
+        report["proxy"]["tokenLifecycle"] = {
+            "KnowledgeTeaching": {
+                "observedStarts": 6,
+                "temporalIntentTargetMatches": 2,
+                "noLongerPendingUnclassified": 3,
+                "replacedByAnotherToken": 2,
+            },
+        }
+        result = analyze(report)
+        pending = result["pendingTokenLifecycle"]
+        self.assertTrue(pending["available"])
+        self.assertTrue(pending["notVerifiedGoalCompletion"])
+        evidence = pending["perKind"]["KnowledgeTeaching"]
+        self.assertEqual(evidence["observedStarts"]["deltaProxyMinusBaseline"], 2)
+        self.assertEqual(evidence["replacedByAnotherToken"]["proxy"], 2)
+        self.assertFalse(result["causalImprovementDemonstrated"])
+        self.assertEqual(
+            analyze(fixture())["pendingTokenLifecycle"], {"available": False})
+
+        for bad_value in (-1, True, 3.2, "5", 7):
+            bad = copy.deepcopy(report)
+            bad["proxy"]["tokenLifecycle"]["KnowledgeTeaching"][
+                "temporalIntentTargetMatches"] = bad_value
+            with self.subTest(bad_value=bad_value):
+                with self.assertRaises(ValueError):
+                    analyze(bad)
+
+        missing = copy.deepcopy(report)
+        del missing["baseline"]["tokenLifecycle"]
+        with self.assertRaisesRegex(ValueError, "lifecycle availability"):
+            analyze(missing)
+
+        extraneous = copy.deepcopy(report)
+        extraneous["proxy"]["tokenLifecycle"]["InventedOutcome"] = {}
+        with self.assertRaisesRegex(ValueError, "lifecycle kinds"):
+            analyze(extraneous)
+
     def test_mismatched_catalog_intent_sets_must_not_compare(self):
         src = fixture()
         src["proxy"]["catalogIntentInputs"]["OtherIntent"] = (
