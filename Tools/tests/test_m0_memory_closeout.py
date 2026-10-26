@@ -18,6 +18,11 @@ def record(day, seed, entries, snapshot):
             "witnessed_direct_entries": entries,
             "direct_witness_entries": entries,
             "told_by_other_entries": 0, "inferred_entries": 0,
+            "primary_tags": {"social_fact:direct": {
+                "entries": entries, "utf8_text_bytes": entries * 9}},
+            "future_entries": 0, "age_lt_1d_entries": entries,
+            "age_1to7d_entries": 0, "age_7to30d_entries": 0,
+            "age_30to365d_entries": 0, "age_365d_plus_entries": 0,
             "action_experiences_by_key": {"Civilization:Gather": {
                 "entries": min(2, entries),
                 "successful": min(2, entries),
@@ -65,6 +70,20 @@ class TestM0MemoryCloseout(unittest.TestCase):
             closeout([a])
         with self.assertRaisesRegex(ValueError, "duplicate independent seed"):
             closeout([a, a])
+
+    def test_native_tag_bytes_and_age_cannot_be_fabricated(self):
+        a, b = self.write(11), self.write(22)
+        data = [json.loads(line) for line in b.read_text().splitlines()]
+        group = data[1]["memory_attribution"]
+        group["primary_tags"]["social_fact:direct"]["utf8_text_bytes"] += 1000
+        b.write_text("".join(json.dumps(row) + "\n" for row in data))
+        with self.assertRaisesRegex(ValueError, "primary tag text byte mismatch"):
+            closeout([a, b])
+        group["primary_tags"]["social_fact:direct"]["utf8_text_bytes"] -= 1000
+        group["age_lt_1d_entries"] = 0
+        b.write_text("".join(json.dumps(row) + "\n" for row in data))
+        with self.assertRaisesRegex(ValueError, "age and future partition mismatch"):
+            closeout([a, b])
 
     def test_unreconciled_summary_rejected(self):
         a, b = self.write(11), self.write(22)
