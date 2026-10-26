@@ -2470,6 +2470,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
                 +std::to_string(liveRecovery->firsthandFailureMinute)
                 +" decision_minute="
                 +std::to_string(liveRecovery->selectionMinute)
+                +" failed_pending_token="
+                +std::to_string(liveRecovery->failedPendingToken)
                 +" pending_token="
                 +std::to_string(r.pendingContext.token)
                 +" firsthand_navigation_failure="
