@@ -357,8 +357,10 @@ inline CivilizationUtilityDecision chooseResidentAIKnowledgePrerequisiteStep(
         if(kind==ExperimentKind::SmeltCopperOre
            ||kind==ExperimentKind::SmeltTinOre
            ||kind==ExperimentKind::AlloyBronze)
-            ctx.smeltingOpportunityAvailable=
-                smeltingOpportunityAvailable(world,resident,technique);
+            // This is planning a prerequisite BEFORE its ore arrives;
+            // a real operating furnace suffices for the hypothesis. Actual
+            // experiment execution will still require charcoal and ore.
+            ctx.smeltingOpportunityAvailable=hasOperationalFurnace(world);
         if(!experimentPrerequisitesMet(ctx,knowledge)) continue;
         for(const auto& ingredient:experimentRecipe(ctx).inputs){
             if(ingredient.kind!=ItemKind::RawMaterial
