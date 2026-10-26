@@ -402,6 +402,34 @@ int main()
         ==beliefBeforeDuplicate);
     assert(bounded.memory.entries.size()==4);
 
+    // A model or another resident can insert a convincingly tagged
+    // recollection. Core execution must not overwrite/promote that origin.
+    Character narratedProvenance=resident;
+    narratedProvenance.memory.entries.clear();
+    narratedProvenance.beliefs=BeliefState{};
+    MemoryRecord hearsay;
+    hearsay.who=narratedProvenance.id;
+    hearsay.sourceCharacter=999;
+    hearsay.source=MemorySource::ToldByOther;
+    hearsay.witnessed=false;
+    hearsay.minute=600;
+    hearsay.what="model claimed it completed Gather";
+    hearsay.tags={"action_experience",key,"failure"};
+    narratedProvenance.memory.add(hearsay);
+    rememberCivilizationAttemptOutcome(narratedProvenance,gather,600,false);
+    assert(narratedProvenance.memory.entries.front().what
+           =="model claimed it completed Gather");
+    assert(narratedProvenance.memory.entries.front().source==MemorySource::ToldByOther);
+    assert(!narratedProvenance.memory.entries.front().witnessed);
+    bool realWitness=false;
+    for(const auto& entry:narratedProvenance.memory.entries)
+        if(entry.source==MemorySource::DirectWitness
+           &&entry.sourceCharacter==narratedProvenance.id
+           &&entry.who==narratedProvenance.id &&entry.minute==600
+           &&entry.what=="실제 문명 행동 "+key+
+               " 수행을 시도했지만 실패했다")
+            realWitness=true;
+    assert(realWitness);
     // An old failure must not drive exploration forever.
     world.minute=1924;
     thought.minute=1924;
