@@ -152,6 +152,14 @@ int main()
     assert(cognitiveRecovery.agency.decision.civilization.resourceNode==103);
     assert(cognitiveRecovery.agency.decision.civilization.material
         ==MaterialKind::Stone);
+    // Actual urgent survival must be able to preempt this model strategy.
+    const auto urgentCognition=chooseResidentSensedResourceGoal(
+        routeWorld,routeWorld.characters[0],position,relationships,
+        cognitiveGather,nullptr,true);
+    assert(urgentCognition.agency.decision.civilization.resourceNode==101);
+    assert(urgentCognition.agency.authority
+        ==ResidentAgencyAuthority::ResidentCognition);
+
     const auto blockedCognition=cognitiveGather;
     auto changedStrategy=blockedCognition;
     changedStrategy.decision.civilization.intent=CivilizationIntent::Explore;
