@@ -65,7 +65,8 @@ export class BrowserCognitionProvider implements CognitiveProvider {
       throw new CognitiveProviderError(
         'http_error', 'on-device WebGPU inference failed');
     }
-    if (signal.aborted) return null;
+    // A late GPU inference must not re-authorize a disposed old runtime.
+    if (this.disposed || signal.aborted) return null;
     const raw = reply.choices?.[0]?.message?.content;
     if (typeof raw !== 'string' || raw.length === 0 || raw.length > 8192) {
       throw new CognitiveProviderError(

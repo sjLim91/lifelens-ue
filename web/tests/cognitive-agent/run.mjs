@@ -187,6 +187,23 @@ await test('embedded WebGPU model can reason locally with no server or cloud key
     /violated the Core contract/);
 });
 
+await test('disposed browser engine cannot return a delayed resident thought',async()=>{
+  let resolve;
+  const provider=new BrowserCognitionProvider({
+    chat:{completions:{create:()=>new Promise(done=>{resolve=done;})}},
+    unload:async()=>{},
+  });
+  const ac=new AbortController();
+  const pending=provider.reason(request('1',100,['ImproveFoodSecurity']),
+    ac.signal);
+  await new Promise(done=>setTimeout(done,0));
+  await provider.dispose();
+  resolve({choices:[{message:{content:JSON.stringify(
+    proposal(request('1',100,['ImproveFoodSecurity'])))}}]});
+  assert.equal(await pending,null,
+    'obsolete GPU result cannot revive a disposed resident provider');
+});
+
 await test('replacing WebGPU scheduler unloads GPU model once, not on World reset',async()=>{
   const req=request('7',120,['ImproveFoodSecurity']);
   let unloads=0,reasonCalls=0;
