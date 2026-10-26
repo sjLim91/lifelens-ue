@@ -159,8 +159,8 @@ export function parseCognitiveRequest(
   }
   if (
     typeof candidate.minute !== 'number'
-    || !Number.isFinite(candidate.minute)
-    || candidate.minute < 0
+    || !Number.isSafeInteger(candidate.minute)
+    || candidate.minute < 0 || candidate.minute > 2147483647
   ) {
     throw new Error('cognitive request minute is invalid');
   }
@@ -238,6 +238,10 @@ export function parseCognitiveRequest(
   };
   validateEntries(memories, ['who', 'what', 'where'], ['minute', 'recallScore', 'confidence', 'importance', 'emotionValence', 'emotionIntensity']);
   for (const memory of memories) {
+    if (!Number.isSafeInteger(memory.minute) || memory.minute < 0
+      || memory.minute > (candidate.minute as number)) {
+      throw new Error('cognitive memory minute is invalid');
+    }
     if (!Array.isArray(memory.tags) || memory.tags.length > MAX_COGNITIVE_CONTEXT_ENTRIES
       || memory.tags.some((tag) => typeof tag !== 'string' || tag.length > 128)) {
       throw new Error('cognitive memory tags are invalid');
@@ -271,6 +275,7 @@ export function parseCognitiveRequest(
       if (typeof fact.nodeId !== 'string'
         || !/^[1-9][0-9]*$/.test(fact.nodeId)
         || fact.nodeId.length > 20
+        || BigInt(fact.nodeId) > 18446744073709551615n
         || typeof fact.material !== 'string'
         || fact.material.length < 1 || fact.material.length > 24
         || !Number.isSafeInteger(fact.distanceCells)
