@@ -45,6 +45,41 @@ int main()
     for(auto& m:forged.memory.entries) m.sourceCharacter=999;
     assert(!residentAIPlanAlreadyAttempted(forged,thought,food,510));
 
+    // Model-authored tags and copied firsthand flags are NOT executed
+    // actions. Neither false failures nor false successes may consume plans.
+    Character narration=actor;
+    for(auto& memory:narration.memory.entries)
+        memory.what="model says the attempt failed";
+    assert(!residentAIPlanAlreadyAttempted(narration,thought,food,510));
+    Character counterfeitActor=actor;
+    for(auto& memory:counterfeitActor.memory.entries)
+        memory.who=999;
+    assert(!residentAIPlanAlreadyAttempted(
+        counterfeitActor,thought,food,510));
+    Character counterfeitLocation=actor;
+    for(auto& memory:counterfeitLocation.memory.entries)
+        memory.where="model-claimed-an-action";
+    assert(!residentAIPlanAlreadyAttempted(
+        counterfeitLocation,thought,food,510));
+    Character counterfeitCause=actor;
+    for(auto& memory:counterfeitCause.memory.entries){
+        memory.tags[2]="failure";
+        memory.what="실제 문명 행동 Civilization:Gather:PlantFood"
+            " 수행을 시도했지만 실패했다 (직접 확인한 원인: model-says-so)";
+    }
+    assert(!residentAIPlanAlreadyAttempted(
+        counterfeitCause,thought,food,510));
+    // The legitimate Core writer's real failure and success still block an
+    // old plan until a fresh model thought is accepted.
+    Character genuineFailure=actor;
+    for(auto& memory:genuineFailure.memory.entries){
+        memory.tags[2]="failure";
+        memory.what="실제 문명 행동 Civilization:Gather:PlantFood"
+            " 수행을 시도했지만 실패했다 (직접 확인한 원인: source-exhausted)";
+    }
+    assert(residentAIPlanAlreadyAttempted(
+        genuineFailure,thought,food,510));
+
     Character other=actor;
     other.id=9;
     AcceptedCognitiveDecision otherThought=thought;
@@ -85,6 +120,23 @@ int main()
             m.where="내가 직접 시도한 행동";
     assert(residentAIPlanAlreadyAttempted(
         legacy,sourceThought,replacement,504));
+
+    // Source-specific plan blocking must also reject model-authored
+    // invented source locations and the wrong Core-recipient identity.
+    Character fakeSourced=sourced;
+    for(auto& memory:fakeSourced.memory.entries)
+        if(memory.tags.size()==3){
+            memory.where="resource-node:101extra";
+        }
+    assert(!residentAIPlanAlreadyAttempted(
+        fakeSourced,sourceThought,oldSource,504));
+    Character wrongSourceActor=sourced;
+    for(auto& memory:wrongSourceActor.memory.entries) memory.who=99;
+    assert(!residentAIPlanAlreadyAttempted(
+        wrongSourceActor,sourceThought,oldSource,504));
+    // A genuine old-source action cannot block a different real node.
+    assert(!residentAIPlanAlreadyAttempted(
+        sourced,sourceThought,replacement,504));
 
     // A successful partial ingredient collection is normally consumed.
     // Only the caller that has rechecked the STILL-UNMET real recipe can
