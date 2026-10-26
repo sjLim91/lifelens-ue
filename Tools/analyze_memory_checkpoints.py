@@ -27,6 +27,11 @@ def analyze_file(path: Path) -> dict[str, Any]:
     checkpoints: dict[int, dict[str, Any]] = {}
     residents: dict[int, dict[str, dict[str, Any]]] = defaultdict(dict)
     seed: str | None = None
+    # The native auditor records a daily sample and a checkpoint sample at
+    # the SAME minute, each with resident rows. Only residents immediately
+    # following the checkpoint summary belong to the saved-state audit.
+    # Daily resident rows must NOT double-count population or memory.
+    active_checkpoint_day: int | None = None
     with path.open("r", encoding="utf-8") as stream:
         for number, line in enumerate(stream, 1):
             if not line.strip():
@@ -45,11 +50,13 @@ def analyze_file(path: Path) -> dict[str, Any]:
             if type(day) is not int or day not in DAYS:
                 continue
             kind = data.get("type")
+            if kind in ("daily", "checkpoint"):
+                active_checkpoint_day = day if kind == "checkpoint" else None
             if kind == "checkpoint":
                 if day in checkpoints:
                     raise ValueError(f"{path}:{number} duplicate checkpoint day {day}")
                 checkpoints[day] = data
-            elif kind == "resident":
+            elif kind == "resident" and active_checkpoint_day == day:
                 resident = data.get("id")
                 if not isinstance(resident, str) or not resident:
                     raise ValueError(f"{path}:{number} resident id missing")
