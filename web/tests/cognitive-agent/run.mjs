@@ -505,6 +505,19 @@ await test('deterministic fake provider produces repeatable typed proposals',asy
   assert.equal(a.targetResident,'2');
 });
 
+await test('unsafe scheduler configuration cannot allocate limitless inference',()=>{
+  const provider={name:'must-not-run',reason:async()=>null};
+  const valid={maxConcurrent:1,maxQueued:0,timeoutMs:100,
+    staleAfterSimulationMinutes:96};
+  for(const delta of [
+    {maxConcurrent:Number.MAX_SAFE_INTEGER+1},
+    {maxQueued:0.2},{maxQueued:Number.MAX_SAFE_INTEGER+1},
+    {timeoutMs:0.3},{staleAfterSimulationMinutes:0.5},
+  ]) assert.throws(
+    ()=>new CognitionScheduler(provider,()=>100,{...valid,...delta}),
+    /cognition/, 'nonintegral/unsafe config is not a Core inference budget');
+});
+
 await test('scheduler bounds active and waiting work',async()=>{
   const resolvers=[];
   const provider={
