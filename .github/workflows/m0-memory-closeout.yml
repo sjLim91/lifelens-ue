@@ -60,7 +60,7 @@ jobs:
       - name: Require both independent complete Core timelines
         run: |
           python3 -m unittest Tools.tests.test_m0_memory_closeout -v
-          python3 Tools/m0_memory_closeout.py \
+          python3 -m Tools.m0_memory_closeout \
             m0-evidence/m0-real-memory-874213954/metrics.jsonl \
             m0-evidence/m0-real-memory-4242001/metrics.jsonl \
             --output m0-evidence/m0-memory-closeout.json
