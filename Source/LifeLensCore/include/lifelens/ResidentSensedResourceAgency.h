@@ -43,7 +43,8 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
        ||maximumResidentNeed(actor)>=0.55
        ||!actor.alive ||!lifeStageProfile(actor.lifeStage).canWork
        ||cognitiveCharacter(world,actor.id)!=&actor
-       ||prior.authority!=ResidentAgencyAuthority::EmbodiedFallback)
+       ||(prior.authority!=ResidentAgencyAuthority::EmbodiedFallback
+          &&prior.authority!=ResidentAgencyAuthority::ResidentCognition))
         return answer;
     // A real live Core predator encounter suspends OPTIONAL material
     // curiosity: the single resident's existing flee/survival lane retains
@@ -61,6 +62,15 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
            &&baseline.civilization.intent!=CivilizationIntent::Explore)){
         return answer;
     }
+
+    // Cognition retains ownership of its actual strategic intent. Only a
+    // failed Gather route may resolve to another Core-reachable source of
+    // that SAME material. Never run optional embodied curiosity over a model
+    // selected Explore or other strategy.
+    if(prior.authority==ResidentAgencyAuthority::ResidentCognition
+       &&(baseline.kind!=UnifiedDecisionKind::Civilization
+          ||baseline.civilization.intent!=CivilizationIntent::Gather))
+        return answer;
 
     auto request=buildCognitiveRequest(
         actor,relationships,world.minute,CognitiveTriggerKind::Reflection,
@@ -131,13 +141,20 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
                    ||alternative.utility<0.14) break;
                 answer.agency.decision.civilization=alternative;
                 answer.agency.decision.utility=alternative.utility;
-                answer.agency.authority=ResidentAgencyAuthority::PersonalGoal;
-                answer.agency.contextFingerprint=cognitiveRequestFingerprint(
-                    request);
+                if(prior.authority==ResidentAgencyAuthority::EmbodiedFallback){
+                    answer.agency.authority=ResidentAgencyAuthority::PersonalGoal;
+                    answer.agency.contextFingerprint=cognitiveRequestFingerprint(
+                        request);
+                }
+                // Existing accepted cognition stays the sole strategic
+                // owner; the source substitution is merely Core execution
+                // recovery, not a new or competing mind/fingerprint.
                 return answer;
             }
         }
     }
+    if(prior.authority==ResidentAgencyAuthority::ResidentCognition)
+        return answer;
     // Compare candidates on the SAME existing Core score scale. Raw Gather
     // scores are not comparable to the disposition/role/coordination-biased
     // score already held by the single decision slot.
