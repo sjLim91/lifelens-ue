@@ -96,6 +96,54 @@ int main()
     assert(revivedWorld.characters[0].civilization.inventory.stacks().empty());
     assert(revivedWorld.rng==rng &&revivedWorld.minute==495);
 
+    // AL-1: a genuinely failed Core navigation route changes this ONE
+    // resident's next executable Gather source under the ordinary agency
+    // production selector. No AI proposal, fake inventory, or world depletion.
+    World routeWorld=world;
+    routeWorld.resourceNodes.push_back(
+        {103,MaterialKind::Stone,12,12,false,0,
+            {position.x+1,position.y}});
+    ResidentAgencyChoice requestedGather=fallback;
+    requestedGather.decision.civilization.intent=CivilizationIntent::Gather;
+    requestedGather.decision.civilization.resourceNode=101;
+    requestedGather.decision.civilization.material=MaterialKind::Stone;
+    requestedGather.decision.civilization.item=ItemKind::RawMaterial;
+    requestedGather.decision.civilization.utility=0.95;
+    requestedGather.decision.utility=0.95;
+    const auto noFailure=chooseResidentSensedResourceGoal(
+        routeWorld,routeWorld.characters[0],position,relationships,
+        requestedGather,nullptr,false);
+    assert(noFailure.agency.decision.civilization.resourceNode==101);
+    const std::string failedRouteKey="Civilization:Gather:Stone";
+    assert(rememberResidentGatherRouteFailure(
+        routeWorld.characters[0],failedRouteKey,101,47001,480));
+    const auto changed=chooseResidentSensedResourceGoal(
+        routeWorld,routeWorld.characters[0],position,relationships,
+        requestedGather,nullptr,false);
+    assert(changed.agency.authority==ResidentAgencyAuthority::PersonalGoal);
+    assert(changed.agency.decision.kind==UnifiedDecisionKind::Civilization);
+    assert(changed.agency.decision.civilization.intent==CivilizationIntent::Gather);
+    assert(changed.agency.decision.civilization.resourceNode==103);
+    const auto neighbour=chooseResidentSensedResourceGoal(
+        routeWorld,routeWorld.characters[1],position,relationships,
+        requestedGather,nullptr,false);
+    assert(neighbour.agency.decision.civilization.resourceNode==101);
+    GridPos accessible{};
+    assert(resolveCivilizationResourceAccessGridPosition(
+        routeWorld,103,accessible));
+    std::vector<GridPos> actualRoute;
+    assert(buildCoreGroundRoute(routeWorld,position,accessible,1,actualRoute));
+    const int beforeAlternate=routeWorld.resourceNodes.back().quantity;
+    const auto actualGather=executeCivilizationDecisionAtPosition(
+        routeWorld,routeWorld.characters[0],
+        changed.agency.decision.civilization,accessible);
+    assert(actualGather.executed &&actualGather.success
+        &&actualGather.event.quantity>0);
+    assert(routeWorld.resourceNodes.back().quantity
+        ==beforeAlternate-actualGather.event.quantity);
+    assert(routeWorld.resourceNodes.front().quantity==12);
+    assert(routeWorld.characters[1].civilization.inventory.stacks().empty());
+
     // A real scarcity Explore with slightly stronger intrinsic utility must
     // not be displaced by the personal resource curiosity bonus alone.
     auto shortageExplore=fallback;
