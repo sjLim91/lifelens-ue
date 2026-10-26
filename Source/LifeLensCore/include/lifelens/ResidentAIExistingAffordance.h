@@ -354,6 +354,11 @@ inline CivilizationUtilityDecision chooseResidentAIKnowledgePrerequisiteStep(
         ctx.attemptIndex=static_cast<std::uint64_t>(std::max(0,world.minute));
         ctx.kind=kind;
         ctx.material=experimentMaterial(kind);
+        if(kind==ExperimentKind::SmeltCopperOre
+           ||kind==ExperimentKind::SmeltTinOre
+           ||kind==ExperimentKind::AlloyBronze)
+            ctx.smeltingOpportunityAvailable=
+                smeltingOpportunityAvailable(world,resident,technique);
         if(!experimentPrerequisitesMet(ctx,knowledge)) continue;
         for(const auto& ingredient:experimentRecipe(ctx).inputs){
             if(ingredient.kind!=ItemKind::RawMaterial
