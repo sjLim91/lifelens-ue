@@ -138,7 +138,7 @@ inline bool rememberAutonomousGoalActionOutcome(
     const std::string tokenSource="personal-goal-token:"
         +std::to_string(completedToken);
     for(const MemoryRecord& memory:actor.memory.entries)
-        if(memory.where==tokenSource
+        if(memory.where==tokenSource &&memory.minute<=minute
            &&memory.source==MemorySource::DirectWitness
            &&memory.witnessed &&memory.sourceCharacter==actor.id
            &&memory.tags.size()==3
