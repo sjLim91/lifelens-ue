@@ -78,6 +78,17 @@ export class CognitionScheduler {
       || !Array.isArray(request.allowedIntents) || request.allowedIntents.length === 0) {
       return Promise.resolve(outcome('rejected', 'invalid_schema'));
     }
+    // Recheck Core simulation time BEFORE spending local GPU inference.
+    // The final post-provider check remains authoritative when time advances.
+    let observedMinute: number;
+    try { observedMinute = this.simulationMinute(); }
+    catch { return Promise.resolve(outcome('stale')); }
+    if (!Number.isSafeInteger(observedMinute)
+      || observedMinute < request.minute
+      || observedMinute - request.minute >
+        this.config.staleAfterSimulationMinutes) {
+      return Promise.resolve(outcome('stale'));
+    }
     const latestMinute = this.latestMinuteByActor.get(request.actor);
     if (latestMinute !== undefined && request.minute < latestMinute) {
       return Promise.resolve(outcome('stale'));
