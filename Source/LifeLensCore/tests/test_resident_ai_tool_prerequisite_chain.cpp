@@ -60,6 +60,52 @@ int main()
     assert(resident.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::Wood)==0);
 
+    // A source may still advertise material while a real Core access
+    // attempt failed. Tool preparation must pivot from A to a different
+    // viable node B instead of abandoning this resident's chosen goal.
+    World alternate(4466);
+    alternate.minute=480;
+    alternate.resourceNodes.clear();
+    ResourceNode oldWood=wood;
+    oldWood.id=101;
+    alternate.resourceNodes.push_back(oldWood);
+    ResourceNode newWood=wood;
+    newWood.id=202;
+    newWood.pos={1,0};
+    alternate.resourceNodes.push_back(newWood);
+    Character seeking=makeResident();
+    seeking.civilization.knowledge.learn(
+        TechniqueId::DiggingStick,KnowledgeLevel::Reproducible,1.0);
+    const auto initialSource=chooseResidentAIExistingCivilizationAffordance(
+        alternate,seeking,{0,0},thought);
+    assert(initialSource &&initialSource->intent==CivilizationIntent::Gather
+        &&initialSource->resourceNode==101);
+    rememberCivilizationAttemptOutcome(
+        seeking,*initialSource,481,false,
+        ResidentGatherFailureCause::ResourceAccessUnavailable);
+    alternate.minute=482;
+    const auto replacementSource=chooseResidentAIExistingCivilizationAffordance(
+        alternate,seeking,{0,0},thought);
+    assert(replacementSource
+        &&replacementSource->intent==CivilizationIntent::Gather
+        &&replacementSource->material==MaterialKind::Wood
+        &&replacementSource->resourceNode==202);
+    assert(!residentAIPlanAlreadyAttempted(
+        seeking,thought,*replacementSource,alternate.minute));
+    assert(alternate.resourceNodes[0].quantity==15
+        &&alternate.resourceNodes[1].quantity==15);
+    assert(seeking.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Wood)==0);
+    // A genuine success at the original source re-authorizes using it
+    // for an unmet ingredient; the old failure alone cannot freeze it.
+    rememberCivilizationAttemptOutcome(
+        seeking,*initialSource,483,true);
+    alternate.minute=484;
+    const auto refreshed=chooseResidentAIFreshIngredientGather(
+        alternate,seeking,{0,0},MaterialKind::Wood);
+    assert(refreshed.intent==CivilizationIntent::Gather
+        &&refreshed.resourceNode==101);
+
     // After a real gather, with the SAME earlier AI decision, Core offers
     // tool craft instead of gathering repeatedly. No new model turn.
     resident.civilization.inventory.add({
@@ -176,6 +222,12 @@ int main()
     flint.quantity=8;
     flint.maxQuantity=8;
     discovery.resourceNodes.push_back(flint);
+    // The missing material of a *real experiment* uses the same source
+    // learning as an already-known tool recipe, not a scripted NPC fallback.
+    ResourceNode secondFlint=flint;
+    secondFlint.id=405;
+    secondFlint.pos={1,0};
+    discovery.resourceNodes.push_back(secondFlint);
     Character novice=makeResident();
     assert(!novice.civilization.knowledge.knowsAtLeast(
         TechniqueId::SharpFlake,KnowledgeLevel::Reproducible));
@@ -192,6 +244,18 @@ int main()
     assert(novice.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::Flint)==0);
     assert(discovery.resourceNodes.front().quantity==8);
+    rememberCivilizationAttemptOutcome(
+        novice,*seekFlint,481,false,
+        ResidentGatherFailureCause::ResourceAccessUnavailable);
+    discovery.minute=482;
+    const auto differentFlint=chooseResidentAIExistingCivilizationAffordance(
+        discovery,novice,{0,0},thought);
+    assert(differentFlint
+        &&differentFlint->intent==CivilizationIntent::Gather
+        &&differentFlint->material==MaterialKind::Flint
+        &&differentFlint->resourceNode==405);
+    assert(discovery.resourceNodes.front().quantity==8
+        &&discovery.resourceNodes.back().quantity==8);
     novice.civilization.inventory.add({
         ItemKind::RawMaterial,MaterialKind::Flint,2,0.7,0.9});
     const auto experimental=chooseResidentAIExistingCivilizationAffordance(
