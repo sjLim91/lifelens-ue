@@ -1,5 +1,6 @@
 #pragma once
 
+#include <initializer_list>
 #include <optional>
 
 #include "CognitiveDecisionJournal.h"
