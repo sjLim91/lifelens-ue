@@ -100,6 +100,12 @@ try {
     minute: 338, savedAtWallMs: t0, earthOrigin: null,
     snapshotBase64: 'QUJDREVGR0hJSktMTU5PUA==',
   };
+  for(const malformedPadding of ['AAAAAAAAAAAAAB==','AAAAAAAAAAAAAAB=']){
+    assert.throws(()=>assertCheckpointProgress(null,{
+      ...record,snapshotBase64:malformedPadding,
+    }),/유효하지 않은/,
+    'noncanonical unused Base64 bits may not be persisted as Core bytes');
+  }
   assert.equal(MAX_CORE_WORLD_MINUTE, 2147483647,
     'the durable minute must match the authoritative signed Core field');
   assert.doesNotThrow(() => assertCoreMinuteAdvanceCapacity(0, 0));

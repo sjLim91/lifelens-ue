@@ -37,6 +37,15 @@ function database(): Promise<IDBDatabase> {
   });
 }
 
+// A Base64 string may match the alphabet but still have non-zero unused
+// pad bits (e.g. AB==). Core snapshot persistence must be byte-canonical.
+function canonicalBase64(text: string): boolean {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  if (text.endsWith('==')) return alphabet.indexOf(text[text.length - 3]) % 16 === 0;
+  if (text.endsWith('=')) return alphabet.indexOf(text[text.length - 2]) % 4 === 0;
+  return true;
+}
+
 function valid(record: unknown): record is PersistedWorld {
   if (!record || typeof record !== 'object') return false;
   const value = record as Partial<PersistedWorld>;
@@ -64,6 +73,7 @@ function valid(record: unknown): record is PersistedWorld {
     && /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
       value.snapshotBase64,
     )
+    && canonicalBase64(value.snapshotBase64)
     && (value.earthOrigin === null || (
       typeof value.earthOrigin === 'object'
       && Number.isFinite(value.earthOrigin?.latitudeDeg)
