@@ -2,6 +2,7 @@
 
 #include "ResidentCivilizationOutcomeLearning.h"
 #include "CognitiveDecisionJournal.h"
+#include "ResidentResourceOutcomePreference.h"
 
 namespace lifelens {
 
@@ -62,11 +63,20 @@ inline bool residentAIPlanAlreadyAttempted(
             // attempted node A is never credited to node B.
             if(entry.where!=source
                &&entry.where!="내가 직접 시도한 행동") continue;
+            if(entry.where==source){
+                std::uint64_t parsed=0;
+                if(!resident_resource_outcome_detail::parseSourceNode(
+                    entry.where,parsed) ||parsed!=candidate.resourceNode)
+                    continue;
+            }
         }
         if(candidate.intent==CivilizationIntent::Gather
            &&candidate.resourceNode==0
-           &&entry.where!="내가 직접 시도한 행동"
-           &&entry.where.rfind("resource-node:",0)!=0) continue;
+           &&entry.where!="내가 직접 시도한 행동"){
+            std::uint64_t node=0;
+            if(!resident_resource_outcome_detail::parseSourceNode(
+                entry.where,node)) continue;
+        }
         // This exception applies ONLY to a real successful partial
         // prerequisite gather selected again from a still-unsatisfied Core
         // recipe. A failed attempt or a generic resource goal is NEVER
