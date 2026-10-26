@@ -706,6 +706,27 @@ await test('timeout settles even when provider ignores AbortSignal forever',asyn
   scheduler.dispose();
 });
 
+await test('already expired or future Core observations never consume local inference',async()=>{
+  let calls=0;
+  let minute=150;
+  const provider={name:'one-real-mind',reason:async req=>{
+    calls++;return proposal(req);
+  }};
+  const scheduler=new CognitionScheduler(provider,()=>minute,{
+    maxConcurrent:1,maxQueued:0,timeoutMs:100,
+    staleAfterSimulationMinutes:20,
+  });
+  assert.equal((await scheduler.submitObserved(request('1',100))).status,'stale');
+  assert.equal((await scheduler.submitObserved(request('1',151))).status,'stale');
+  assert.equal(calls,0,'outdated and future Core contexts must not use local GPU');
+  assert.equal((await scheduler.submitObserved(request('1',145))).status,'validated');
+  assert.equal(calls,1);
+  minute=Number.NaN;
+  assert.equal((await scheduler.submitObserved(request('2',150))).status,'stale');
+  assert.equal(calls,1);
+  scheduler.dispose();
+});
+
 await test('response is discarded after simulation context becomes stale',async()=>{
   const provider={
     name:'instant',
