@@ -1,5 +1,11 @@
 # LifeLens 마스터플랜 86개 개발단위 추적표
 
+## 2026-10-27 AL-1 자연 발생 재계획 관측 검사
+
+- `test_al1_unmodified_replan_observability`를 실제 `setupNewGame()`과 `Simulation::step()`에 연결하여 기준 시드 `874213954`, `4242001`을 각각 3일 관측. 시험에 모델 결정·캐릭터 필요·자원 노드·위치·펜딩 토큰을 주입하지 않음.
+- **실제로 발행된** `AL1_CORE_RESOURCE_REPLAN` 로그에 대해서만 원본 실패 토큰·현재 발행한 복구 토큰·같은 주민의 직접 기억, 실제 Core 물리 채집의 `AL1_CORE_GATHER_RESULT` 토큰·재고 획득량·직접 성공 기억을 교차 검증. 전혀 발생하지 않을 수 있고 그 경우 `issued=0 physically_completed=0 acceptance=NOT_PROVEN`으로 출력해야 하며, 검사 통과만으로 자연 인과 증명이 되지 않음.
+- 동일 주민의 실제 실패 → 대안 시도 → 성공 → 후속 목표 변화가 두 고정 시드에서 연결되는지 관측 결과를 확인한 뒤에만 G1/AL-1 완료 상태를 변경할 것. 최종 인수 **계속 진행**, 전체 완료 **6/86 유지**.
+
 ## 2026-10-27 AL-1 실제 발행/결과 토큰 연결 추가
 
 - [#978](https://github.com/sjLim91/lifelens-ue/pull/978) 정확한 head `eaa7e255be72e33dae77d0db1382a50a358be695`의 Core 165/165, M0-03/04·Preflight·Web·WASM 성공 후 `main` `1764d328b50b3e98f12a487ae7c33eb5758b68c9` 병합. 수정 없는 New Game seed `874213954`, `4242001`의 주민 ID `4`가 각각 492분·504분에 실제 발행한 Core Gather 명령 토큰과 실제 자원 결과/직접 기억·다음 결정이 일치함을 관측. 실제 실패로 인해 선택이 바뀌었다는 실세계 인과 증거는 별개로 미완.
