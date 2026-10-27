@@ -76,8 +76,9 @@ button:disabled { opacity: .33; cursor: default; }
 
 .chunk-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: .35rem; }
 .hint { margin: .6rem 0 0; color: #77897c; font-size: .67rem; line-height: 1.45; }
-.error-card { position: absolute; z-index: 5; left: 50%; bottom: 22px; transform: translateX(-50%); width: min(560px, calc(100% - 32px)); display: grid; gap: .3rem; padding: 14px 16px; border: 1px solid #624343; border-radius: 10px; background: rgba(38, 24, 24, .96); text-align: center; }
-.error-card span { color: #d9bcbc; font-size: .76rem; word-break: break-word; }
+.error-card { position: absolute; z-index: 5; left: 50%; bottom: 22px; transform: translateX(-50%); width: min(560px, calc(100% - 32px)); max-height: min(50svh, 340px); overflow-y: auto; display: grid; gap: .3rem; padding: 14px 16px; border: 1px solid #624343; border-radius: 10px; background: rgba(38, 24, 24, .96); text-align: center; }
+.error-card span { color: #d9bcbc; font-size: .76rem; overflow-wrap: anywhere; white-space: pre-wrap; }
+.error-card .runtime-retry { justify-self: center; margin-top: 7px; padding: .38rem 1.1rem; color: #f8eeee; background: #56343a; border: 1px solid #9f696f; border-radius: 12px; cursor: pointer; }
 .hidden { display: none !important; }
 
 @media (max-width: 800px) {
