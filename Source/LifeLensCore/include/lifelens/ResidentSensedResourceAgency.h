@@ -77,7 +77,11 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
         cognitiveStrategicIntentCatalog(),
         DefaultCognitiveMemoryContextLimit,DefaultCognitiveBeliefContextLimit,
         DefaultCognitiveRelationshipContextLimit);
-    const auto sensed=observeLocalResourceProximity(world,actor.id,actualPosition);
+    // Search only the Core-authorized eight-cell perceptual envelope, not
+    // every materialized World node. Physical access remains independently
+    // checked by Core navigation before any alternative is adopted.
+    const auto sensed=observeLocalResourceProximity(
+        world,actor.id,actualPosition,ResidentLocalPerceptionMaxRadius);
     if(sensed.actor!=actor.id ||sensed.nearbyResources.empty()) return answer;
     request.localProximityObserved=true;
     request.localObserverPosition=sensed.observerPosition;
