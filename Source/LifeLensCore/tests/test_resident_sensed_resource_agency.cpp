@@ -195,8 +195,39 @@ int main()
                 <<" actor_memory="<<learnedRuntime.world().characters.front()
                     .memory.entries.size()
                 <<" actual_x="<<realOrigin.x
-                <<" actual_y="<<realOrigin.y
-                <<"\n";
+                <<" actual_y="<<realOrigin.y;
+            const auto recalled=buildResidentResourceOutcomeIndex(
+                learnedRuntime.world().characters.front(),
+                learnedRuntime.world().minute-1);
+            for(ResourceNodeId sourceId:{201ULL,202ULL}){
+                const auto& worldNodes=learnedRuntime.world().resourceNodes;
+                const auto nodeIt=std::find_if(worldNodes.begin(),
+                    worldNodes.end(),
+                    [sourceId](const ResourceNode& node){
+                        return node.id==sourceId;
+                    });
+                GridPos access{};
+                std::vector<GridPos> route;
+                const bool resolved=resolveCivilizationResourceAccessGridPosition(
+                    learnedRuntime.world(),sourceId,access);
+                const bool routeValid=resolved
+                    &&buildCoreGroundRoute(
+                        learnedRuntime.world(),realOrigin,access,1,route);
+                const auto experience=recalled.find(
+                    sourceId,"Civilization:Gather:PlantFood");
+                std::cerr<<" source="<<sourceId
+                    <<" exists="<<(nodeIt!=worldNodes.end())
+                    <<" stock="<<(nodeIt!=worldNodes.end()
+                        ?nodeIt->quantity:-1)
+                    <<" experienced="<<experience.hasEvidence
+                    <<" preference="<<experience.utilityAdjustment
+                    <<" route="<<routeValid
+                    <<" route_length="<<route.size()
+                    <<" source_grid="<<(nodeIt!=worldNodes.end()
+                        ?nodeIt->pos.x:-1)<<","<<(nodeIt!=worldNodes.end()
+                        ?nodeIt->pos.y:-1);
+            }
+            std::cerr<<"\n";
         }
         assert(issued.active &&otherIssued.active);
         assert(issued.kind==ContextActionKind::Civilization
