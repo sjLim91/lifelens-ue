@@ -156,6 +156,54 @@ int main()
             &&nativeNonGather.intent==CivilizationIntent::Craft
             &&nativeNonGather.resourceNode==base.resourceNode);
 
+        // Production's ordinary Gather may target a genuinely existing
+        // resource outside the resident's six-cell perception. It MUST
+        // still consider a directly harvested, currently observed local
+        // SAME-material source instead of blindly preserving a long trip.
+        // The only removed information in the control is the receipt.
+        World remoteNativeWorld=foodWorld;
+        GridPos validRemote{};
+        bool remoteFound=false;
+        for(int dx=7;dx<=14 &&!remoteFound;++dx){
+            const GridPos candidate{position.x+dx,position.y};
+            std::vector<GridPos> route;
+            if(coreGroundTraversable(remoteNativeWorld,candidate)
+               &&buildCoreGroundRoute(
+                   remoteNativeWorld,position,candidate,1,route)){
+                validRemote=candidate;
+                remoteFound=true;
+            }
+        }
+        assert(remoteFound);
+        remoteNativeWorld.resourceNodes[0].pos=validRemote;
+        World withoutRemoteMemory=remoteNativeWorld;
+        withoutRemoteMemory.characters[0].memory.entries.clear();
+        auto authorizedRemote=base;
+        auto unlearnedRemote=base;
+        const auto chosenLocal=applyFirsthandSuccessToAuthorizedGather(
+            remoteNativeWorld,remoteNativeWorld.characters[0],
+            position,authorizedRemote);
+        const auto unlearnedFar=applyFirsthandSuccessToAuthorizedGather(
+            withoutRemoteMemory,withoutRemoteMemory.characters[0],
+            position,unlearnedRemote);
+        assert(chosenLocal.changed()
+            &&chosenLocal.previousSource==201
+            &&chosenLocal.preferredSource==202);
+        assert(authorizedRemote.resourceNode==202);
+        assert(!unlearnedFar.changed()
+            &&unlearnedRemote.resourceNode==201);
+        assert(authorizedRemote.material==base.material
+            &&authorizedRemote.intent==base.intent
+            &&authorizedRemote.quantity==base.quantity
+            &&authorizedRemote.utility==base.utility);
+        // Direct memory is NEVER permission to gather a now-exhausted node.
+        remoteNativeWorld.resourceNodes[1].quantity=0;
+        auto exhaustedChoice=base;
+        assert(!applyFirsthandSuccessToAuthorizedGather(
+            remoteNativeWorld,remoteNativeWorld.characters[0],
+            position,exhaustedChoice).changed());
+        assert(exhaustedChoice.resourceNode==201);
+
         assert(foodWorld.resourceNodes[0].quantity==12);
         assert(foodWorld.resourceNodes[1].quantity
             ==noExperience.resourceNodes[1].quantity);
