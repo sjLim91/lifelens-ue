@@ -36,8 +36,18 @@
 #include "SimulationSleepDiagnostics.h"
 #include "SettlementProgression.h"
 #include "SocialCommunicationReadModel.h"
+#include "SocialUtility.h"
 #include "SocietyEconomy.h"
 namespace lifelens {
+// Read-only audit computed by the SAME production Core settlement-population
+// scorer. It is not a new resident decision, authority or issued action.
+struct ResidentCoreGatherLearningWindow {
+    bool actorHasRuntime=false;
+    bool localMaterialPair=false;
+    UnifiedUtilityDecision nativeDecision{};
+    CivilizationUtilityDecision unlearned{};
+    CivilizationUtilityDecision learned{};
+};
 class Simulation {
 public:
     using EventCallback=std::function<void(const std::string&)>;
@@ -78,6 +88,11 @@ public:
         return observeLocalResourceProximity(
             world_,id,position,radiusCells);
     }
+    // Read-only native production-weighted fallback + same local candidates
+    // with/without this resident's verified firsthand source outcomes.
+    // Never mutates World, RNG, personal memory, pending tokens or plans.
+    ResidentCoreGatherLearningWindow observeResidentCoreGatherLearningWindow(
+        CharacterId id,MaterialKind material) const;
     // Exact living human positions owned by Core runtime. Wildlife must not
     // infer people from observer camera, buildings or random coordinates.
     std::vector<GridPos> livingResidentPositions() const {
