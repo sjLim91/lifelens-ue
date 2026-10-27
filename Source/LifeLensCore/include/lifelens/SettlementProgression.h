@@ -781,6 +781,7 @@ inline SettlementFacilityWorkResult workOnSettlementFacility(
     }
     if(project==nullptr || !isSettlementFoundationFacility(project->kind)
        || project->state==FacilityState::Operational
+       || !settlementSleepFacilityGroundUsable(world,*project)
        || !facilityMaterialsComplete(*project) || workAmount<=0.0) return result;
 
     result.facilityId=project->id;
