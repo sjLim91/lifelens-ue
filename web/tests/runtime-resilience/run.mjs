@@ -63,6 +63,24 @@ try {
     }
     assert.equal(loading.validateRuntimeBytes(valid),valid);
   });
+  await test('verified Core WASM bytes feed Emscripten directly without blob or refetch', () => {
+    const source = Uint8Array.from([0,97,115,109,1,0,0,0, 9,11,13]).buffer;
+    const options = loading.emscriptenRuntimeOptions({
+      js: 'export default () => {};', wasmBuffer: source,
+      moduleUrl: './runtime/lifelens_core.js',
+    });
+    assert(options.wasmBinary instanceof Uint8Array);
+    assert.equal(options.wasmBinary.buffer, source,
+      'Core must instantiate the exact network-validated byte pair');
+    assert.deepEqual([...options.wasmBinary], [0,97,115,109,1,0,0,0,9,11,13]);
+    assert.equal(options.locateFile('lifelens_core.wasm'), 'lifelens_core.wasm');
+    assert.equal(options.locateFile('unrelated.bin'), 'unrelated.bin');
+    const bytes = loading.validateRuntimeBytes({
+      js: 'export default () => {};', wasmBuffer: source,
+      moduleUrl: './runtime/lifelens_core.js',
+    });
+    assert.equal(bytes.moduleUrl, './runtime/lifelens_core.js');
+  });
   await test('initialization failure retries a complete second pair', async () => {
     const seen=[];
     const result=await loading.connectRuntimeSources([
@@ -135,6 +153,12 @@ try {
     .replaceAll('../cognition/autonomous-goal-preview','./autonomous-goal-preview')
     .replaceAll('../earth/core-earth-scenario','./core-earth-scenario')
     .replaceAll('../earth/core-earth-solar','./core-earth-solar');
+  assert.match(bridgeSource, /emscriptenRuntimeOptions\(payload\)/,
+    'real bridge must instantiate verified in-memory WASM bytes');
+  assert.match(bridgeSource, /absoluteUrl\.origin === window\.location\.origin/,
+    'browser only imports validated same-origin JS URLs, never remote code directly');
+  assert.doesNotMatch(bridgeSource, /createObjectURL\(\s*new Blob\(\[payload\.wasmBuffer\]/,
+    'browser cannot request an extra WASM blob URL');
   const {LifeLensCoreBridge}=compile('core-bridge',bridgeSource);
   await test('bridge propagates corrupt overview instead of fabricating empty state', () => {
     const bridge=new LifeLensCoreBridge({worldOverviewJson:()=>'{'});
