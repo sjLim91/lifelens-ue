@@ -176,10 +176,17 @@ int main()
             &&issued.resourceNode==202);
         assert(otherIssued.resourceNode==201);
         assert(issued.token!=0 &&otherIssued.token!=0);
-        const int stockBefore=learnedRuntime.world().resourceNodes[1].quantity;
+        const auto stockAt=[&](ResourceNodeId source){
+            const auto& nodes=learnedRuntime.world().resourceNodes;
+            const auto found=std::find_if(nodes.begin(),nodes.end(),
+                [source](const ResourceNode& node){return node.id==source;});
+            assert(found!=nodes.end());
+            return found->quantity;
+        };
+        const int stockBefore=stockAt(202);
         assert(learnedRuntime.completeExternalContextAction(
             owner,issued.token,issued.targetPos));
-        const int newStock=learnedRuntime.world().resourceNodes[1].quantity;
+        const int newStock=stockAt(202);
         assert(newStock<stockBefore);
         assert(learnedRuntime.world().characters.front()
             .civilization.inventory.count(
