@@ -317,8 +317,8 @@ int main()
         frontierWorld.resourceNodes[0].pos={
             otherOrigin.x+2,otherOrigin.y+2
         };
-        assert(chunkCoordForGrid(frontierWorld.resourceNodes[0].pos)
-            !=chunkCoordForGrid(frontierWorld.resourceNodes[1].pos));
+        assert(!(chunkCoordForGrid(frontierWorld.resourceNodes[0].pos)
+            ==chunkCoordForGrid(frontierWorld.resourceNodes[1].pos)));
         auto regionalNative=base;
         const auto regionalChoice=applyFirsthandSuccessToAuthorizedGather(
             frontierWorld,frontierWorld.characters.front(),
