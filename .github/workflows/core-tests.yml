@@ -62,6 +62,9 @@ jobs:
 
       - name: AL-1 real New Game success-memory causal ablation
         run: ctest --test-dir build --verbose -R 'test_al1_natural_success_memory_ablation'
+
+      - name: AL-1 natural memory reuse opportunity census
+        run: ctest --test-dir build --verbose -R 'test_al1_natural_learning_opportunity_audit'
       - name: Deterministic harness
         run: |
           ./build/ll_harness --days 1 --seed 42 > /tmp/harness-first.txt
