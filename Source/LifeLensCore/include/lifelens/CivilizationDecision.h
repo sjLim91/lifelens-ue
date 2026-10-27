@@ -1631,6 +1631,7 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
 
         for(const auto& facility:world.facilities){
             if(facility.kind!=kind
+               || !settlementSleepFacilityGroundUsable(world,facility)
                || manhattan(
                    facility.pos,
                    authoritativePosition)>SettlementServiceRadiusGrid){
