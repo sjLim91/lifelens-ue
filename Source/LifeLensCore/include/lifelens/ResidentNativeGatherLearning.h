@@ -51,6 +51,18 @@ applyFirsthandSuccessToAuthorizedGather(
            world,nativeSource,nativeAccess)) return result;
     const auto nativeDistance=perceptionGridDistance(
         actualPosition,nativeAccess);
+    // A remembered source must not quietly lengthen a fatigued resident's
+    // real physical trip. Compare actual Core routes (not only straight-line
+    // cell distance) against the already-authorized native destination.
+    // A well-rested resident may spend at most ONE extra movement step to
+    // revisit a personally proven source. As fatigue accumulates, allow
+    // only an equal-or-shorter real route. Never refuse a reachable learned
+    // alternative solely because the original native route was impassable.
+    std::vector<GridPos> nativeRoute;
+    const bool nativeReachable=buildCoreGroundRoute(
+        world,actualPosition,nativeAccess,1,nativeRoute);
+    const std::size_t maxExtraTravelSteps=
+        actor.needs.sleep<0.45 ? 1U : 0U;
     const std::string key=std::string("Civilization:Gather:")
         +materialName(selected.material);
     const auto nativeOutcome=experience.find(nativeSource,key);
@@ -90,6 +102,9 @@ applyFirsthandSuccessToAuthorizedGather(
         if(score<=bestScore+1e-12) continue;
         std::vector<GridPos> route;
         if(!buildCoreGroundRoute(world,actualPosition,access,1,route))
+            continue;
+        if(nativeReachable
+           &&route.size()>nativeRoute.size()+maxExtraTravelSteps)
             continue;
         bestScore=score;
         bestSource=knownSource;
