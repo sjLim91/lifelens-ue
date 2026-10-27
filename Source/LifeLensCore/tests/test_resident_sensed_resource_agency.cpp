@@ -50,6 +50,35 @@ int main()
         {101,MaterialKind::Stone,12,12,false,0,{position.x+2,position.y}},
         {102,MaterialKind::Stone,12,12,false,0,{position.x+40,position.y}}
     };
+    // AL-1: Core permits at most eight observable cells. Old production
+    // personal-goal sensing accidentally used the six-cell default, hiding
+    // real local choices between cells 7 and 8. Verify the envelope and
+    // twelve-fact cap without inventing remote stock or route permission.
+    World extendedSight=world;
+    extendedSight.resourceNodes.push_back(
+        {104,MaterialKind::Stone,12,12,false,0,
+            {position.x+7,position.y}});
+    const auto six=observeLocalResourceProximity(
+        extendedSight,1,position,6);
+    const auto eight=observeLocalResourceProximity(
+        extendedSight,1,position,ResidentLocalPerceptionMaxRadius);
+    const auto contains=[](const ResidentLocalPerception& view,
+                           ResourceNodeId node){
+        return std::any_of(view.nearbyResources.begin(),
+            view.nearbyResources.end(),
+            [node](const ObservedLocalResource& candidate){
+                return candidate.nodeId==node;
+            });
+    };
+    assert(!contains(six,104));
+    assert(contains(eight,104));
+    assert(contains(six,101) &&contains(eight,101));
+    assert(!contains(eight,102)); // distant node remains unseen
+    assert(eight.radiusCells==ResidentLocalPerceptionMaxRadius);
+    assert(eight.nearbyResources.size()<=ResidentLocalPerceptionMaxFacts);
+    assert(extendedSight.rng==world.rng &&extendedSight.minute==world.minute);
+    assert(extendedSight.characters[0].memory.entries.empty());
+
     ResidentAgencyChoice fallback;
     fallback.decision.kind=UnifiedDecisionKind::Civilization;
     fallback.decision.civilization.intent=CivilizationIntent::Explore;
