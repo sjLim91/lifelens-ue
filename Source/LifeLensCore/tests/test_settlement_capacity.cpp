@@ -528,5 +528,58 @@ int main()
     assert(timedSleeper.needs.sleep<0.20);
     assert(timedSleep.world().facilities.back().usageCount==1);
 
+    // A pre-fix saved world can contain a completed bed on a steep hillside.
+    // Do not mutate/delete its persisted identity, but never advertise unsafe
+    // ground as sleep capacity, resident sleep service or a repair obligation.
+    // Its missing capacity must permit a NEW, safely sited paid construction.
+    Simulation legacySimulation(820042);
+    legacySimulation.setupNewGame();
+    World& legacy=legacySimulation.world();
+    Character& legacyResident=legacy.characters.front();
+    legacyResident.needs.sleep=0.82;
+    const GridPos legacyCenter=legacy.initialStartRegionCenterGrid();
+    GridPos steep{};
+    bool foundSteep=false;
+    for(int dy=-24;dy<=24 && !foundSteep;++dy){
+        for(int dx=-24;dx<=24;++dx){
+            const GridPos candidate{legacyCenter.x+dx,legacyCenter.y+dy};
+            if(!settlementSleepFoundationGroundIsLevel(
+                    legacy,candidate,FacilityKind::SleepingPlace)){
+                steep=candidate;
+                foundSteep=true;
+                break;
+            }
+        }
+    }
+    assert(foundSteep);
+    ConstructedFacility oldBed=completedFixture(
+        991100,FacilityKind::SleepingPlace,steep,
+        legacyResident.id,legacy.minute);
+    legacy.facilities.push_back(oldBed);
+    const auto& savedBed=legacy.facilities.back();
+    assert(savedBed.active && savedBed.state==FacilityState::Operational);
+    assert(savedBed.pos.x==steep.x && savedBed.pos.y==steep.y);
+    assert(operationalSettlementFacilityNear(
+        legacy,FacilityKind::SleepingPlace,steep,0)==nullptr);
+    assert(bestOperationalSleepFacility(legacy,steep,0)==nullptr);
+    const auto oldDemand=observeSettlementFacilityDemand(
+        legacy,legacyResident.id,FacilityKind::SleepingPlace,steep);
+    assert(oldDemand.operationalCapacity==0);
+    assert(oldDemand.committedCapacity==0);
+    assert(oldDemand.canPlan());
+    const double emergencyRecovery=sleepRecoveryPerMinuteAt(legacy,steep,nullptr);
+    assert(sleepRecoveryPerMinuteAt(legacy,steep,&savedBed)==emergencyRecovery);
+    const auto replacement=chooseSettlementFacilitySite(
+        legacy,legacyResident.id,FacilityKind::SleepingPlace,legacyCenter);
+    assert(replacement.available);
+    assert(settlementSleepFoundationGroundIsLevel(
+        legacy,replacement.pos,FacilityKind::SleepingPlace));
+    assert(!facilityFootprintsConflict(
+        FacilityKind::SleepingPlace,replacement.pos,
+        savedBed.kind,savedBed.pos));
+    assert(legacy.facilities.size()==1);
+    assert(legacy.facilities[0].id==991100
+        && legacy.facilities[0].state==FacilityState::Operational);
+
     std::cout << "Settlement capacity, local demand, paid construction, maintenance, persistence and runtime wiring passed\n";
 }
