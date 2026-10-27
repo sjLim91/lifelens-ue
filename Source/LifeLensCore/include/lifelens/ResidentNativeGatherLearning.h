@@ -97,7 +97,7 @@ applyFirsthandSuccessToAuthorizedGather(
         // a DIFFERENT chunk must not silently cancel that regional trip.
         // Personal learning refines a choice WITHIN its original physical
         // destination region; it does not override world expansion.
-        if(chunkCoordForGrid(access)!=chunkCoordForGrid(nativeAccess))
+        if(!(chunkCoordForGrid(access)==chunkCoordForGrid(nativeAccess)))
             continue;
         const auto distance=perceptionGridDistance(
             actualPosition,access);
