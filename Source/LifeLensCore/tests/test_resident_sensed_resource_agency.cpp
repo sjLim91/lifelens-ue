@@ -112,6 +112,65 @@ int main()
     requestedGather.decision.civilization.item=ItemKind::RawMaterial;
     requestedGather.decision.civilization.utility=0.95;
     requestedGather.decision.utility=0.95;
+
+    // A genuinely executed Core Gather success (not a model claim) teaches
+    // this resident a short-lived preferred source in its SAME-material
+    // optional Gather slot. Use equal geometry and identical post-action
+    // inventory/stocks in both worlds; only the direct success receipt
+    // differs. The Core's unmodified choice still prefers the smaller id.
+    World learnedSuccessWorld=world;
+    learnedSuccessWorld.resourceNodes.push_back(
+        {103,MaterialKind::Stone,12,12,false,0,world.resourceNodes[0].pos});
+    auto successful103=requestedGather.decision.civilization;
+    successful103.resourceNode=103;
+    const auto successfulAttempt=executeCivilizationDecisionAtPosition(
+        learnedSuccessWorld,learnedSuccessWorld.characters[0],
+        successful103,world.resourceNodes[0].pos);
+    assert(successfulAttempt.executed &&successfulAttempt.success
+        &&successfulAttempt.event.quantity>0);
+    rememberCivilizationAttemptOutcome(
+        learnedSuccessWorld.characters[0],successful103,480,true);
+    World withoutSuccessMemory=learnedSuccessWorld;
+    withoutSuccessMemory.characters[0].memory.entries.clear();
+    const auto unlearnedSuccessChoice=chooseResidentSensedResourceGoal(
+        withoutSuccessMemory,withoutSuccessMemory.characters[0],
+        position,relationships,requestedGather,nullptr,false);
+    const auto learnedSuccessChoice=chooseResidentSensedResourceGoal(
+        learnedSuccessWorld,learnedSuccessWorld.characters[0],
+        position,relationships,requestedGather,nullptr,false);
+    assert(unlearnedSuccessChoice.agency.decision.civilization.resourceNode==101);
+    assert(learnedSuccessChoice.agency.decision.civilization.resourceNode==103);
+    assert(learnedSuccessChoice.agency.authority
+        ==ResidentAgencyAuthority::PersonalGoal);
+    assert(learnedSuccessChoice.agency.decision.civilization.material
+        ==MaterialKind::Stone);
+    assert(withoutSuccessMemory.resourceNodes[1].quantity
+        ==learnedSuccessWorld.resourceNodes[1].quantity);
+    assert(withoutSuccessMemory.rng==learnedSuccessWorld.rng);
+    const auto otherSuccessChoice=chooseResidentSensedResourceGoal(
+        learnedSuccessWorld,learnedSuccessWorld.characters[1],
+        position,relationships,requestedGather,nullptr,false);
+    assert(otherSuccessChoice.agency.decision.civilization.resourceNode==101);
+    ResidentAgencyChoice strategySuccess=requestedGather;
+    strategySuccess.authority=ResidentAgencyAuthority::ResidentCognition;
+    strategySuccess.cognitiveIntent=CognitiveIntentKind::ImproveFoodSecurity;
+    strategySuccess.contextFingerprint=88442;
+    const auto heldStrategy=chooseResidentSensedResourceGoal(
+        learnedSuccessWorld,learnedSuccessWorld.characters[0],
+        position,relationships,strategySuccess,nullptr,false);
+    assert(heldStrategy.agency.authority
+        ==ResidentAgencyAuthority::ResidentCognition);
+    assert(heldStrategy.agency.contextFingerprint==88442
+        &&heldStrategy.agency.cognitiveIntent
+            ==CognitiveIntentKind::ImproveFoodSecurity);
+    assert(heldStrategy.agency.decision.civilization.resourceNode==103);
+    auto urgentSuccess=learnedSuccessWorld.characters[0];
+    urgentSuccess.needs.sleep=1.0;
+    assert(chooseResidentSensedResourceGoal(
+        learnedSuccessWorld,urgentSuccess,position,relationships,
+        requestedGather,nullptr,false).agency.decision.civilization.resourceNode
+            ==101);
+
     const auto noFailure=chooseResidentSensedResourceGoal(
         routeWorld,routeWorld.characters[0],position,relationships,
         requestedGather,nullptr,false);
