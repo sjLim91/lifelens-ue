@@ -26,6 +26,8 @@ struct OpportunityCounts {
     int subsequentSameMaterialCoreGathers=0;
     int issuedLearnedChoiceTokens=0;
     int completedLearnedChoiceTokens=0;
+    int nativeLearnedIssuedTokens=0;
+    int nativeLearnedCompletedTokens=0;
 };
 
 struct Window {
@@ -226,6 +228,58 @@ static void auditSeed(WorldSeed seed)
               !=std::string::npos)
             ++counts.issuedLearnedChoiceTokens;
     }
+    // Observe only truly issued pending Gather actions from unmodified New
+    // Game actors. Match the SAME actor/source/context token to an actual
+    // later Core extraction. Zero observations remain NOT_PROVEN; a changed
+    // score, hypothetical candidate or stale pending token is not acceptance.
+    struct Issued {
+        std::string actor;
+        std::string token;
+        std::string source;
+    };
+    std::vector<Issued> issued;
+    const auto field=[](const std::string& event,
+                        const std::string& key)->std::string {
+        const std::size_t at=event.find(key);
+        if(at==std::string::npos) return {};
+        const auto begin=at+key.size();
+        auto end=begin;
+        while(end<event.size() &&event[end]>='0' &&event[end]<='9')
+            ++end;
+        return event.substr(begin,end-begin);
+    };
+    for(const auto& event:sim.logs()){
+        if(event.find("AL1_CORE_NATIVE_GATHER_LEARNED_TOKEN actor=")
+             ==std::string::npos) continue;
+        const Issued receipt{
+            field(event," actor="),
+            field(event," pending_token="),
+            field(event," learned_source=")
+        };
+        assert(!receipt.actor.empty() &&!receipt.token.empty()
+            &&!receipt.source.empty());
+        ++counts.nativeLearnedIssuedTokens;
+        issued.push_back(receipt);
+    }
+    for(const auto& issuedToken:issued){
+        const std::string marker=
+            "AL1_CORE_GATHER_RESULT actor="+issuedToken.actor
+            +" pending_token="+issuedToken.token
+            +" source="+issuedToken.source
+            +" actual_quantity=";
+        const bool completed=std::any_of(
+            sim.logs().begin(),sim.logs().end(),
+            [&](const std::string& event){
+                const auto at=event.find(marker);
+                if(at==std::string::npos) return false;
+                const std::string amount=field(
+                    event.substr(at)," actual_quantity=");
+                return !amount.empty() &&std::stoull(amount)>0;
+            });
+        if(completed) ++counts.nativeLearnedCompletedTokens;
+    }
+    assert(counts.nativeLearnedCompletedTokens
+        <=counts.nativeLearnedIssuedTokens);
     // Do not infer an execution from a token issuer alone. The separate
     // AL1_CORE_GATHER_RESULT source/token audit in the main ablation test
     // remains the authoritative per-token evidence.
@@ -247,6 +301,14 @@ static void auditSeed(WorldSeed seed)
              <<counts.subsequentSameMaterialCoreGathers
              <<" actual_learned_core_tokens="
              <<counts.issuedLearnedChoiceTokens
+             <<" native_learned_gather_tokens="
+             <<counts.nativeLearnedIssuedTokens
+             <<" native_learned_gather_completed="
+             <<counts.nativeLearnedCompletedTokens
+             <<" native_gather_acceptance="
+             <<(counts.nativeLearnedCompletedTokens>0
+                 ? "ISSUED_AND_EXECUTED"
+                 : "NOT_PROVEN")
              <<" acceptance=DIAGNOSTIC_ONLY"
              <<"\n";
 }
