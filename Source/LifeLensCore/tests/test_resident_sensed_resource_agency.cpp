@@ -75,9 +75,12 @@ int main()
     // second identical World; no model text, bonus food or forced goal.
     {
         World foodWorld=world;
-        // The real harvest receipt must be temporally valid for the Core
-        // New Game snapshot used in the identical-memory ablation below.
-        foodWorld.minute=0;
+        // A fresh real New Game begins at 08:00 (minute 480), not 00:00.
+        // Fresh firsthand Gather memory must be recorded at that real Core
+        // time. Recording at 00:00 aged its 0.03 confidence-weighted benefit
+        // by eight hours before the FIRST decision: the <=2-cell detour
+        // penalty then correctly outweighed it, masking actual learning.
+        foodWorld.minute=world.minute;
         foodWorld.resourceNodes={
             {201,MaterialKind::PlantFood,12,12,false,0,
                 {position.x+1,position.y}},
@@ -130,6 +133,7 @@ int main()
         Simulation learnedRuntime(77,0,4);
         learnedRuntime.setupNewGame();
         auto liveSnapshot=learnedRuntime.captureSnapshot();
+        assert(liveSnapshot.world.minute==foodWorld.minute);
         const CharacterId owner=liveSnapshot.world.characters.front().id;
         assert(owner==foodWorld.characters.front().id);
         liveSnapshot.runtime.at(owner).pos=position;
