@@ -38,17 +38,22 @@ applyFirsthandSuccessToAuthorizedGather(
 
     const auto nearby=observeLocalResourceProximity(
         world,actor.id,actualPosition);
-    const auto baselineFact=std::find_if(
-        nearby.nearbyResources.begin(),nearby.nearbyResources.end(),
-        [&](const ObservedLocalResource& fact){
-            return fact.nodeId==selected.resourceNode
-                &&fact.material==selected.material;
-        });
-    // Never convert a resident's distant/unknown source into a newly
-    // invented knowledge of all World resources.
-    if(baselineFact==nearby.nearbyResources.end()) return result;
-    const ResourceNodeId nativeSource=baselineFact->nodeId;
-    const int nativeDistance=baselineFact->distanceCells;
+    // The native Core can legitimately choose a globally materialized
+    // Gather source OUTSIDE the resident's local sensory envelope. The
+    // earlier personal-memory refinement silently refused to compare a
+    // firsthand-successful LOCAL source in that case. The baseline is not
+    // a new observation: it is the already-authorized Core resource target.
+    // Alternative sources must still be genuinely sensed here and now.
+    const ResourceNodeId nativeSource=selected.resourceNode;
+    const ResourceNode* existing=findCivilizationResourceNodeSpatial(
+        world,nativeSource);
+    if(existing==nullptr ||existing->material!=selected.material
+       ||existing->quantity<=0) return result;
+    GridPos nativeAccess{};
+    if(!resolveCivilizationResourceAccessGridPosition(
+           world,nativeSource,nativeAccess)) return result;
+    const int nativeDistance=static_cast<int>(
+        perceptionGridDistance(actualPosition,nativeAccess));
     const std::string key=std::string("Civilization:Gather:")
         +materialName(selected.material);
     const auto nativeOutcome=experience.find(nativeSource,key);
@@ -82,6 +87,10 @@ applyFirsthandSuccessToAuthorizedGather(
     if(bestSource==nativeSource) return result;
     result={nativeSource,bestSource,bestSuccessMinute};
     selected.resourceNode=bestSource;
+    // This never grants remote omniscience: only the original Core-issued
+    // source may be outside the resident's <=12 direct local observations.
+    // All replacement candidates require direct source success, CURRENT
+    // local presence and a separately verified physical travel route.
     // All Core-owned goal, intent, material, quantity and utility
     // fields remain unchanged. Actual target and route are later resolved
     // from the refined live source by the SAME pending-token authority.
