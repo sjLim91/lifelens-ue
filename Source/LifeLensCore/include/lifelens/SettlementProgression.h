@@ -715,10 +715,19 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySiteFromDemand(
 
         const double habitability=settlementTerrainHabitabilityScore(world,candidate,kind);
         if(habitability<=-1000.0) return;
+        // A level bed beyond a resident's lived activity range is not a
+        // useful sleep service. Physical flatness is still a hard gate above;
+        // only valid ground is ranked, with near safe sites preferred over
+        // remote scenic sites. No facility is granted or moved for free.
+        const int accessDistance=manhattan(candidate,center);
+        const double localSleepAccessCost=
+            kind==FacilityKind::SleepingPlace ? 0.028*accessDistance
+            : kind==FacilityKind::Shelter ? 0.020*accessDistance
+            : 0.0;
         const double score=
             settlementActivityCenterScore(world,candidate,kind)
             +settlementResidentActivityScore(world,candidate,population)
-            +habitability;
+            +habitability-localSleepAccessCost;
         // Traversal order breaks score ties deterministically.
         if(!found || score>bestScore+1e-12){
             found=true;
@@ -730,6 +739,24 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySiteFromDemand(
     for(std::size_t i=0;i<offsets.size();++i){
         const GridPos offset=offsets[(start+i)%offsets.size()];
         considerSite({center.x+offset.x,center.y+offset.y});
+    }
+    // Flat footholds are often between the original sparse 32 probes.
+    // Search another bounded set of near-field compass/diagonal positions.
+    // A resident must not roam across distant terrain just because the
+    // sparse probes missed safe ground beside their everyday activity.
+    // Preserve seed-deterministic probe ordering, overlap and water guards.
+    for(int radius=2;radius<=12;radius+=2){
+        const int half=radius/2;
+        const std::array<GridPos,8> localRing={
+            GridPos{radius,0},GridPos{half,half},
+            GridPos{0,radius},GridPos{-half,half},
+            GridPos{-radius,0},GridPos{-half,-half},
+            GridPos{0,-radius},GridPos{half,-half}
+        };
+        for(std::size_t i=0;i<localRing.size();++i){
+            const GridPos offset=localRing[(start+i)%localRing.size()];
+            considerSite({center.x+offset.x,center.y+offset.y});
+        }
     }
     // Real footprints/resources can fill the inner cluster before local demand
     // is met. Search bounded outer rings rather than overlap existing buildings
