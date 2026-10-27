@@ -214,6 +214,11 @@ export function startObserverEngine(): () => void {
     void saveCheckpoint(Date.now());
   }
 
+  // BFCache restoration may fire pageshow without a visibilitychange.
+  function onWorldPageShow(): void {
+    if (document.visibilityState === 'visible') onWorldVisibility();
+  }
+
   let angle: number = OBSERVER_CAMERA_CONTRACT.defaultAngleRadians;
   let elevation: number = OBSERVER_CAMERA_CONTRACT.defaultElevationRadians;
   const compactViewport = window.matchMedia(
@@ -458,7 +463,6 @@ export function startObserverEngine(): () => void {
     // Start the new world's wall-clock baseline after that synchronous work.
     simulationClock?.resetAccumulator();
     if (persist) {
-      
       void saveCheckpoint(Date.now());
     }
   }
@@ -655,7 +659,6 @@ export function startObserverEngine(): () => void {
       threeWorldRenderer?.breakFootTrafficContinuity();
       simulationClock?.resetAccumulator();
       if (!stopped) {
-        
         void saveCheckpoint(Date.now());
         if (document.visibilityState === 'visible') simulationClock?.start();
       }
@@ -764,10 +767,10 @@ export function startObserverEngine(): () => void {
   
   document.addEventListener('visibilitychange', onWorldVisibility);
   window.addEventListener('pagehide', onWorldPageHide);
+  window.addEventListener('pageshow', onWorldPageShow);
   const checkpointTimer = window.setInterval(() => {
     if (!fastForwardRunning
       && document.visibilityState === 'visible' && worldSession) {
-      
       void saveCheckpoint(Date.now());
     }
   }, 15000);
@@ -777,6 +780,7 @@ export function startObserverEngine(): () => void {
     window.clearInterval(checkpointTimer);
     document.removeEventListener('visibilitychange', onWorldVisibility);
     window.removeEventListener('pagehide', onWorldPageHide);
+    window.removeEventListener('pageshow', onWorldPageShow);
     stopped = true;
     // Flush already-captured checkpoint writes before another tab may
     // acquire Core authority; no new writes after stopped becomes true.
