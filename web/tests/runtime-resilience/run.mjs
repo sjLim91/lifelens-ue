@@ -9,6 +9,7 @@ import ts from 'typescript';
 import './world-session.mjs';
 import './world-lifecycle.mjs';
 import './offline-world.mjs';
+import './paused-world.mjs';
 import './world-writer-lease.mjs';
 import './render-failover.mjs';
 
