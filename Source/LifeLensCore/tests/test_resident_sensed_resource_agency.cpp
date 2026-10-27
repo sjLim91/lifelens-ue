@@ -306,6 +306,27 @@ int main()
             revisitWorld,revisitWorld.characters.front(),position,
             expiredChoice).changed());
 
+        // A known earlier site must NOT hijack a legitimate native Gather
+        // heading into a different chunk: that trip can enable further
+        // territorial discovery and downstream shelter construction.
+        World frontierWorld=foodWorld;
+        const ChunkCoord recalledChunk=chunkCoordForGrid(
+            frontierWorld.resourceNodes[1].pos);
+        const ChunkCoord otherChunk{recalledChunk.x+1,recalledChunk.y};
+        const GridPos otherOrigin=chunkOriginGrid(otherChunk);
+        frontierWorld.resourceNodes[0].pos={
+            otherOrigin.x+2,otherOrigin.y+2
+        };
+        assert(chunkCoordForGrid(frontierWorld.resourceNodes[0].pos)
+            !=chunkCoordForGrid(frontierWorld.resourceNodes[1].pos));
+        auto regionalNative=base;
+        const auto regionalChoice=applyFirsthandSuccessToAuthorizedGather(
+            frontierWorld,frontierWorld.characters.front(),
+            position,regionalNative);
+        assert(!regionalChoice.changed() &&regionalNative.resourceNode==201);
+        // Same on-the-ground region, actual receipt, accessible stock:
+        // earlier learned choice above must remain allowed.
+
         assert(foodWorld.resourceNodes[0].quantity==12);
         assert(foodWorld.resourceNodes[1].quantity
             ==noExperience.resourceNodes[1].quantity);
