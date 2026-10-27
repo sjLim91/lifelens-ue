@@ -25,6 +25,7 @@ import type {
 import {
   connectRuntimeSources,
   DEFAULT_RUNTIME_LOAD_POLICY,
+  emscriptenRuntimeOptions,
   readRuntimeResponse,
   withRuntimeDeadline,
   type RuntimeBytes,
@@ -66,7 +67,7 @@ async function loadRuntimeFromBase(base: string, policy: RuntimeLoadPolicy): Pro
     readRuntimeResponse(`${base}runtime/lifelens_core.js`, response => response.text(), policy.requestTimeoutMs),
     readRuntimeResponse(`${base}runtime/lifelens_core.wasm`, response => response.arrayBuffer(), policy.requestTimeoutMs),
   ]);
-  return { js, wasmBuffer };
+  return { js, wasmBuffer, moduleUrl: `${base}runtime/lifelens_core.js` };
 }
 
 async function loadBackendRuntime(policy: RuntimeLoadPolicy): Promise<RuntimeBytes> {
@@ -98,35 +99,60 @@ export class LifeLensCoreBridge {
   }
 
   private static async initialize(payload: RuntimeBytes, policy: RuntimeLoadPolicy): Promise<LifeLensCoreBridge> {
+    // Emscripten accepts an existing Uint8Array as wasmBinary. Supplying the
+    // exact validated download avoids a SECOND fetch(blob:...) which can fail
+    // in Android in-app browsers / restricted WebViews. It also prevents
+    // a mismatched JS/WASM pair being loaded during a Pages publish.
+    // Still supply locateFile: Emscripten's blob import.meta.url cannot
+    // resolve a relative WASM URL. wasmBinary prevents network fetching.
+    const options = emscriptenRuntimeOptions(payload);
+    type ModuleFactory = (options?: unknown) => Promise<CoreModule>;
+    type FactoryModule = { default?: ModuleFactory };
+    let factoryModule: FactoryModule | null = null;
+    let directImportFailure: string | null = null;
 
-    const jsUrl = URL.createObjectURL(
-      new Blob([payload.js], { type: 'text/javascript' }),
-    );
-    const wasmUrl = URL.createObjectURL(
-      new Blob([payload.wasmBuffer], { type: 'application/wasm' }),
-    );
+    // Import a same-origin real URL first. Native module URLs work in mobile
+    // browsers that reject executable blob URLs. Loading validated byte pairs
+    // remains mandatory; a remote raw GitHub module is NEVER executed here.
+    if (payload.moduleUrl && typeof document !== 'undefined') {
+      const absoluteUrl = new URL(payload.moduleUrl, document.baseURI);
+      if (absoluteUrl.origin === window.location.origin) {
+        try {
+          factoryModule = await withRuntimeDeadline(
+            import(/* @vite-ignore */ absoluteUrl.href) as Promise<FactoryModule>,
+            policy.initializationTimeoutMs,
+            'LifeLensCore same-origin module import',
+          );
+        } catch (error) {
+          directImportFailure = error instanceof Error ? error.message : String(error);
+        }
+      }
+    }
 
+    let temporaryModuleUrl: string | null = null;
     try {
-      const wasmModule = await withRuntimeDeadline(
-        import(
-          /* @vite-ignore */
-          jsUrl
-        ) as Promise<{ default?: (options?: unknown) => Promise<CoreModule> }>,
-        policy.initializationTimeoutMs,
-        'LifeLensCore JavaScript module import',
-      );
-
-      if (typeof wasmModule.default !== 'function') {
+      if (!factoryModule) {
+        temporaryModuleUrl = URL.createObjectURL(
+          new Blob([payload.js], { type: 'text/javascript' }),
+        );
+        try {
+          factoryModule = await withRuntimeDeadline(
+            import(/* @vite-ignore */ temporaryModuleUrl) as Promise<FactoryModule>,
+            policy.initializationTimeoutMs,
+            'LifeLensCore fallback module import',
+          );
+        } catch (error) {
+          const blobFailure = error instanceof Error ? error.message : String(error);
+          throw new Error(directImportFailure
+            ? `same-origin import: ${directImportFailure}; blob import: ${blobFailure}`
+            : `blob import: ${blobFailure}`);
+        }
+      }
+      if (typeof factoryModule.default !== 'function') {
         throw new Error('Emscripten module factory not found');
       }
-
       const module = await withRuntimeDeadline(
-        wasmModule.default({
-          locateFile(path: string): string {
-            if (path.endsWith('.wasm')) return wasmUrl;
-            return path;
-          },
-        }),
+        factoryModule.default(options),
         policy.initializationTimeoutMs,
         'LifeLensCore WASM initialization',
       );
@@ -134,7 +160,6 @@ export class LifeLensCoreBridge {
       if (!module.LifeLensWebClient) {
         throw new Error('LifeLensWebClient binding unavailable');
       }
-
       const client = new module.LifeLensWebClient();
       try {
         for (const method of ['newGame', 'runMinutes', 'worldOverviewJson', 'residentsJson', 'terrainWindowJson'] as const) {
@@ -146,8 +171,7 @@ export class LifeLensCoreBridge {
         throw error;
       }
     } finally {
-      URL.revokeObjectURL(jsUrl);
-      URL.revokeObjectURL(wasmUrl);
+      if (temporaryModuleUrl) URL.revokeObjectURL(temporaryModuleUrl);
     }
   }
 

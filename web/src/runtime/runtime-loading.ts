@@ -12,6 +12,8 @@ export const DEFAULT_RUNTIME_LOAD_POLICY: Readonly<RuntimeLoadPolicy> = {
 export interface RuntimeBytes {
   js: string;
   wasmBuffer: ArrayBuffer;
+  /** Optional same-origin ESM URL: avoid executable blob imports on mobile. */
+  moduleUrl?: string;
 }
 
 /** The deadline includes reading the response body, not only receiving headers. */
@@ -60,6 +62,18 @@ export async function withRuntimeDeadline<T>(
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Emscripten uses the exact downloaded/validated WASM bytes. No blob URL,
+ * second network request, or relative import.meta.url lookup is required. */
+export function emscriptenRuntimeOptions(payload: RuntimeBytes): {
+  wasmBinary: Uint8Array;
+  locateFile: (path: string) => string;
+} {
+  return {
+    wasmBinary: new Uint8Array(payload.wasmBuffer),
+    locateFile: (path: string) => path,
+  };
 }
 
 /** Detect HTML fallback pages / truncated artifacts before importing executable JS. */
