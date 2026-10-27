@@ -528,6 +528,43 @@ int main()
     assert(timedSleeper.needs.sleep<0.20);
     assert(timedSleep.world().facilities.back().usageCount==1);
 
+    // Exact equivalence of optimized legacy chunk sampling and the original
+    // nine continuous-surface probes, including negative chunk boundaries.
+    // Native v3+ keeps the full continuous 3x3 footprint sampling.
+    auto fullNineProbe=[](const World& terrain,GridPos pos,FacilityKind kind){
+        const int radius=facilityFootprintRadiusGrid(kind);
+        const double threshold=kind==FacilityKind::SleepingPlace?0.012:0.018;
+        const auto identity=terrain.genesisIdentity();
+        double low=deriveContinuousSurfaceElevation01(identity,pos);
+        double high=low;
+        for(int dy:{-radius,0,radius}){
+            for(int dx:{-radius,0,radius}){
+                const double h=deriveContinuousSurfaceElevation01(
+                    identity,{pos.x+dx,pos.y+dy});
+                low=std::min(low,h);
+                high=std::max(high,h);
+            }
+        }
+        return high-low<=threshold;
+    };
+    for(const WorldGenerationVersion version:{2u,3u}){
+        Simulation slopeProof(820042,0,version);
+        slopeProof.setupNewGame();
+        const auto& gradeWorld=slopeProof.world();
+        const GridPos origin=gradeWorld.initialStartRegionCenterGrid();
+        for(int dy=-36;dy<=36;dy+=9){
+            for(int dx=-36;dx<=36;dx+=9){
+                const GridPos site{origin.x+dx,origin.y+dy};
+                for(const FacilityKind kind:{
+                        FacilityKind::SleepingPlace,FacilityKind::Shelter}){
+                    assert(settlementSleepFoundationGroundIsLevel(
+                        gradeWorld,site,kind)==fullNineProbe(
+                            gradeWorld,site,kind));
+                }
+            }
+        }
+    }
+
     // A pre-fix saved world can contain a completed bed on a steep hillside.
     // Do not mutate/delete its persisted identity, but never advertise unsafe
     // ground as sleep capacity, resident sleep service or a repair obligation.
