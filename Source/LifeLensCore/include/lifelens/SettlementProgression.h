@@ -404,8 +404,11 @@ inline bool settlementSleepFoundationGroundIsLevel(
 {
     if(kind!=FacilityKind::SleepingPlace && kind!=FacilityKind::Shelter)
         return true;
-    const int radius=kind==FacilityKind::SleepingPlace ? 3 : 5;
-    const double maximumRange=kind==FacilityKind::SleepingPlace ? 0.012 : 0.020;
+    // This is the real occupied foundation radius, not a point on the
+    // visual mesh. A bedding sheet spans several Core grid cells (32 cells
+    // per 8 scene units), so a 1-cell sample would miss the hill underneath.
+    const int radius=facilityFootprintRadiusGrid(kind);
+    const double maximumRange=kind==FacilityKind::SleepingPlace ? 0.012 : 0.018;
     const WorldGenesisIdentity identity=world.genesisIdentity();
     const double center=deriveContinuousSurfaceElevation01(identity,pos);
     double minimum=center,maximum=center;
