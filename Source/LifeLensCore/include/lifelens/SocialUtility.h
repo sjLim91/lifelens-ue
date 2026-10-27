@@ -648,7 +648,8 @@ inline constexpr int UrgentSurvivalKnownResourceRadiusGrid =
 inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    bool applyFirsthandSourceLearning=true)
 {
     const auto provisionDecision =
         [&](Goal goal, MaterialKind material, double need) {
@@ -755,6 +756,51 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
                     if(nearestNode==nullptr ||huntDistance+3<nearestNodeDistance){
                         hunt.utility=socialClamp01(0.80+0.20*need);
                         return hunt;
+                    }
+                }
+                // AL-1: this is ALREADY the resident's legitimate urgent
+                // Food Gather goal, not an optional competing AI. Once Core
+                // has identified the nearest REACHABLE source, let firsthand
+                // completed Gather outcomes distinguish equally accessible
+                // real sources. A short <=2-cell detour is the hard bound;
+                // survival Retrieve/Hunt, bodily urgency and Core navigation
+                // authority remain untouched. No memory => exact old choice.
+                if(nearestNode!=nullptr &&applyFirsthandSourceLearning
+                   &&material==MaterialKind::PlantFood){
+                    const auto outcomes=buildResidentResourceOutcomeIndex(
+                        self,world.minute);
+                    if(!outcomes.entries.empty()){
+                        const std::string key="Civilization:Gather:PlantFood";
+                        const auto nearestExperience=outcomes.find(
+                            nearestNode->id,key);
+                        double bestScore=nearestExperience.utilityAdjustment;
+                        for(const ResourceNode& node:world.resourceNodes){
+                            if(node.id==0 ||node.quantity<=0
+                               ||node.material!=material
+                               ||node.id==nearestNode->id) continue;
+                            const GridPos nodePos=
+                                civilizationDecisionResourcePosition(world,node);
+                            const int distance=std::max(
+                                std::abs(nodePos.x-authoritativePosition.x),
+                                std::abs(nodePos.y-authoritativePosition.y));
+                            if(distance>nearestNodeDistance+2
+                               ||distance>UrgentSurvivalKnownResourceRadiusGrid)
+                                continue;
+                            const auto experience=outcomes.find(node.id,key);
+                            const double score=experience.utilityAdjustment
+                                -0.025*static_cast<double>(
+                                    distance-nearestNodeDistance);
+                            if(score<=bestScore+1e-12) continue;
+                            GridPos access{};
+                            std::vector<GridPos> route;
+                            if(!resolveCivilizationResourceAccessGridPosition(
+                                   world,node.id,access)
+                               ||!buildCoreGroundRoute(
+                                   world,authoritativePosition,access,1,route))
+                                continue;
+                            nearestNode=&node;
+                            bestScore=score;
+                        }
                     }
                 }
                 if(nearestNode!=nullptr){

@@ -2436,6 +2436,43 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         urgentProvisionDecision.utility=urgentProvision.utility;
         if(tryCivilizationDecision(
                c,r,&urgentProvisionDecision)){
+            // Log only AFTER the real Core issued the exact Gather pending
+            // token. A memory score change or hypothetical fallback is NOT
+            // AL-1 action evidence. The counterfactual uses the identical
+            // living World with the personal source preference disabled.
+            if(urgentProvision.intent==CivilizationIntent::Gather
+               &&urgentProvision.material==MaterialKind::PlantFood
+               &&r.pendingContext.active()
+               &&r.pendingContext.kind==ContextActionKind::Civilization
+               &&r.pendingContext.civilization.intent==CivilizationIntent::Gather
+               &&r.pendingContext.civilization.resourceNode
+                   ==urgentProvision.resourceNode){
+                const auto ordinary=urgentSurvivalProvisionDecisionAtPosition(
+                    world_,c,r.pos,false);
+                if(ordinary.intent==CivilizationIntent::Gather
+                   &&ordinary.material==urgentProvision.material
+                   &&ordinary.resourceNode!=urgentProvision.resourceNode){
+                    const auto personal=buildResidentResourceOutcomeIndex(
+                        c,world_.minute);
+                    const auto experienced=personal.find(
+                        urgentProvision.resourceNode,
+                        "Civilization:Gather:PlantFood");
+                    if(experienced.hasEvidence &&experienced.succeeded
+                       &&experienced.reason
+                           ==ResidentResourceOutcomeReason::Success){
+                        emit(c.name+" AL1_CORE_URGENT_FOOD_LEARNED_TOKEN actor="
+                            +std::to_string(c.id)
+                            +" baseline_source="
+                            +std::to_string(ordinary.resourceNode)
+                            +" learned_source="
+                            +std::to_string(urgentProvision.resourceNode)
+                            +" direct_success_minute="
+                            +std::to_string(experienced.minute)
+                            +" pending_token="
+                            +std::to_string(r.pendingContext.token));
+                    }
+                }
+            }
             return;
         }
     }
