@@ -64,6 +64,18 @@ export async function withRuntimeDeadline<T>(
   }
 }
 
+/** Emscripten uses the exact downloaded/validated WASM bytes. No blob URL,
+ * second network request, or relative import.meta.url lookup is required. */
+export function emscriptenRuntimeOptions(payload: RuntimeBytes): {
+  wasmBinary: Uint8Array;
+  locateFile: (path: string) => string;
+} {
+  return {
+    wasmBinary: new Uint8Array(payload.wasmBuffer),
+    locateFile: (path: string) => path,
+  };
+}
+
 /** Detect HTML fallback pages / truncated artifacts before importing executable JS. */
 export function validateRuntimeBytes(payload: RuntimeBytes): RuntimeBytes {
   if (!payload.js.trim() || /^\s*</.test(payload.js)) {
