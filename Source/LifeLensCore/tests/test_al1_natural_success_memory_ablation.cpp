@@ -2,6 +2,8 @@
 #include <cassert>
 #include <cstdint>
 #include <iostream>
+#include <map>
+#include <set>
 #include <string>
 
 #include "lifelens/Simulation.h"
@@ -127,11 +129,50 @@ static void inspectSeed(WorldSeed seed)
     bool differentIssuedAction=false;
     int firstDifferenceMinute=-1;
     int matchedMinutes=0;
-    constexpr int CompareMinutes=180;
+    std::size_t observedLogs=0;
+    int observedLearnedTokens=0;
+    int executedLearnedTokens=0;
+    std::map<std::uint64_t,ResourceNodeId> reportedTokens;
+    std::set<std::uint64_t> executedTokens;
+    const std::string marker="AL1_CORE_SUCCESS_MEMORY_CHOICE actor="
+        +std::to_string(actorId);
+    constexpr int CompareMinutes=1440; // full one-day firsthand-memory horizon
     for(int m=0;m<CompareMinutes;++m){
         replay.step();
         ablated.step();
         assert(replay.world().minute==ablated.world().minute);
+        const auto& observed=replay.logs();
+        while(observedLogs<observed.size()){
+            const auto& message=observed[observedLogs++];
+            if(message.find(marker)!=std::string::npos){
+                const auto parse=[&](const std::string& field){
+                    const std::size_t at=message.find(field);
+                    assert(at!=std::string::npos);
+                    return std::stoull(message.substr(at+field.size()));
+                };
+                const auto token=parse(" pending_token=");
+                const auto selected=parse(" selected_source=");
+                assert(token>0 &&selected>0);
+                const auto pending=replay.observePendingContextAction(actorId);
+                // Same-tick genuinely issued token, not a model proposal.
+                assert(pending.active &&pending.token==token
+                    &&pending.kind==ContextActionKind::Civilization
+                    &&pending.civilizationIntent==CivilizationIntent::Gather
+                    &&pending.resourceNode==selected);
+                assert(reportedTokens.emplace(token,selected).second);
+                ++observedLearnedTokens;
+            }
+            if(message.find("AL1_CORE_GATHER_RESULT actor="
+                +std::to_string(actorId))!=std::string::npos){
+                for(const auto& [token,selected]:reportedTokens){
+                    if(message.find(" pending_token="+std::to_string(token)
+                        +" source="+std::to_string(selected))
+                            !=std::string::npos
+                       &&executedTokens.insert(token).second)
+                        ++executedLearnedTokens;
+                }
+            }
+        }
         const auto a=replay.observePendingContextAction(actorId);
         const auto b=ablated.observePendingContextAction(actorId);
         const bool different=
@@ -158,6 +199,8 @@ static void inspectSeed(WorldSeed seed)
              <<" different_issued_choice="<<differentIssuedAction
              <<" first_difference_minute="<<firstDifferenceMinute
              <<" compared_minutes="<<matchedMinutes
+             <<" actual_learned_token_count="<<observedLearnedTokens
+             <<" physically_completed_learned_tokens="<<executedLearnedTokens
              <<" acceptance="
              <<(differentIssuedAction
                     ?"ACTUAL_CHOICE_CAUSALITY_OBSERVED":"NOT_PROVEN")
