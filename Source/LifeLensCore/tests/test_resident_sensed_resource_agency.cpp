@@ -133,7 +133,19 @@ int main()
         const CharacterId owner=liveSnapshot.world.characters.front().id;
         assert(owner==foodWorld.characters.front().id);
         liveSnapshot.runtime.at(owner).pos=position;
-        liveSnapshot.world.resourceNodes=foodWorld.resourceNodes;
+        // Preserve every generated natural patch/resource identity and its
+        // immutable max/biome provenance. Replacing generated nodes wholesale
+        // would correctly fail Core snapshot validation. Harvest their current
+        // stock through the existing Inventory-backed resource operation;
+        // the two test food sources are additional explicit live objects.
+        for(auto& node:liveSnapshot.world.resourceNodes){
+            Inventory removedStock;
+            node.harvest(node.quantity,removedStock);
+            node.regenerationPerDay=0;
+        }
+        liveSnapshot.world.resourceNodes.insert(
+            liveSnapshot.world.resourceNodes.end(),
+            foodWorld.resourceNodes.begin(),foodWorld.resourceNodes.end());
         liveSnapshot.world.storageSites.clear();
         for(auto& resident:liveSnapshot.world.characters){
             if(resident.id!=owner){
