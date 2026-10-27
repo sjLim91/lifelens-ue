@@ -25,6 +25,7 @@ import type {
 import {
   connectRuntimeSources,
   DEFAULT_RUNTIME_LOAD_POLICY,
+  emscriptenRuntimeOptions,
   readRuntimeResponse,
   withRuntimeDeadline,
   type RuntimeBytes,
@@ -102,13 +103,9 @@ export class LifeLensCoreBridge {
     // exact validated download avoids a SECOND fetch(blob:...) which can fail
     // in Android in-app browsers / restricted WebViews. It also prevents
     // a mismatched JS/WASM pair being loaded during a Pages publish.
-    const wasmBinary = new Uint8Array(payload.wasmBuffer);
-    const options = {
-      wasmBinary,
-      // Still set locateFile: Emscripten's blob module uses a nonhierarchical
-      // import.meta.url and cannot resolve new URL("core.wasm", blob:...).
-      locateFile(path: string): string { return path; },
-    };
+    // Still supply locateFile: Emscripten's blob import.meta.url cannot
+    // resolve a relative WASM URL. wasmBinary prevents network fetching.
+    const options = emscriptenRuntimeOptions(payload);
     type ModuleFactory = (options?: unknown) => Promise<CoreModule>;
     type FactoryModule = { default?: ModuleFactory };
     let factoryModule: FactoryModule | null = null;
