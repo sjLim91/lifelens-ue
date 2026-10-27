@@ -262,9 +262,28 @@ int main()
     // Spawn is only an entry coordinate. Move the lived activity anchor away
     // from it and prove new settlement infrastructure follows activity instead.
     const GridPos emergentCenter{layoutCenter.x+12,layoutCenter.y};
+    // Activity-center fixture must itself occupy a safe, level foundation.
+    // A simulated legacy hillside bed is deliberately NOT a usable center.
+    const GridPos preferredAnchor{emergentCenter.x+3,emergentCenter.y};
+    GridPos validAnchor{};
+    bool foundValidAnchor=false;
+    for(int radius=0;radius<=24 && !foundValidAnchor;++radius){
+        for(int dy=-radius;dy<=radius && !foundValidAnchor;++dy){
+            for(int dx=-radius;dx<=radius;++dx){
+                if(std::abs(dx)+std::abs(dy)!=radius) continue;
+                const GridPos probe{preferredAnchor.x+dx,preferredAnchor.y+dy};
+                if(!settlementSleepFoundationGroundIsLevel(
+                       layout,probe,FacilityKind::SleepingPlace)) continue;
+                validAnchor=probe;
+                foundValidAnchor=true;
+                break;
+            }
+        }
+    }
+    CHECK(foundValidAnchor);
     ConstructedFacility anchorFacility=makeFacilityConstructionSite(
         1,FacilityKind::SleepingPlace,
-        {emergentCenter.x+3,emergentCenter.y},planner.id,layout.minute);
+        validAnchor,planner.id,layout.minute);
     CHECK(anchorFacility.id!=0);
     for(auto& requirement:anchorFacility.requirements){
         requirement.delivered=requirement.required;
