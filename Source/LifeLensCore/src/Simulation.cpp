@@ -2109,6 +2109,78 @@ bool Simulation::tryCivilizationDecision(
         havePopulation=true;
     }
 
+    // AL-1: refine an ALREADY AUTHORIZED native Gather, not the choice of
+    // whether to Gather. In unmodified New Games, successful firsthand
+    // experience otherwise only affected a rare nonurgent curiosity branch,
+    // even when the resident later chose the SAME-material Gather natively.
+    // Compare only the <=12 genuinely observed living sources. A learned
+    // destination must keep the same material, stay within a two-cell access
+    // detour, and pass the actual ground route solver before Core issues its
+    // pending command. No model reward, free resources or invented route.
+    ResourceNodeId memoryReplacedNativeSource=0;
+    int directGatherSuccessMinute=-1;
+    if(decision.civilization.intent==CivilizationIntent::Gather
+       &&decision.civilization.resourceNode!=0
+       &&decision.civilization.material!=MaterialKind::Unknown){
+        const auto experience=buildResidentResourceOutcomeIndex(
+            c,world_.minute);
+        if(!experience.entries.empty()){
+            const auto nearby=observeLocalResourceProximity(
+                world_,c.id,r.pos);
+            const auto baselineFact=std::find_if(
+                nearby.nearbyResources.begin(),nearby.nearbyResources.end(),
+                [&](const ObservedLocalResource& fact){
+                    return fact.nodeId==decision.civilization.resourceNode
+                        &&fact.material==decision.civilization.material;
+                });
+            if(baselineFact!=nearby.nearbyResources.end()){
+                const ResourceNodeId nativeSource=baselineFact->nodeId;
+                const int nativeDistance=baselineFact->distanceCells;
+                const std::string actionKey=std::string(
+                    "Civilization:Gather:")
+                    +materialName(decision.civilization.material);
+                const auto nativeOutcome=experience.find(
+                    nativeSource,actionKey);
+                double bestScore=nativeOutcome.utilityAdjustment;
+                ResourceNodeId bestSource=nativeSource;
+                int bestSuccessMinute=-1;
+                for(const auto& fact:nearby.nearbyResources){
+                    if(fact.nodeId==nativeSource
+                       ||fact.material!=decision.civilization.material
+                       ||fact.distanceCells>nativeDistance+2)
+                        continue;
+                    const auto result=experience.find(
+                        fact.nodeId,actionKey);
+                    if(!result.hasEvidence ||!result.succeeded
+                       ||result.reason!=ResidentResourceOutcomeReason::Success)
+                        continue;
+                    const double score=result.utilityAdjustment
+                        -0.012*static_cast<double>(
+                            std::max(0,fact.distanceCells-nativeDistance));
+                    if(score<=bestScore+1e-12) continue;
+                    GridPos access{};
+                    std::vector<GridPos> route;
+                    if(!resolveCivilizationResourceAccessGridPosition(
+                            world_,fact.nodeId,access)
+                       ||!buildCoreGroundRoute(
+                            world_,r.pos,access,1,route))
+                        continue;
+                    bestScore=score;
+                    bestSource=fact.nodeId;
+                    bestSuccessMinute=result.minute;
+                }
+                if(bestSource!=nativeSource){
+                    decision.civilization.resourceNode=bestSource;
+                    // The action goal, material, utility arbitration and
+                    // required quantity are unchanged. Core will resolve
+                    // target/route and perform extraction as usual.
+                    memoryReplacedNativeSource=nativeSource;
+                    directGatherSuccessMinute=bestSuccessMinute;
+                }
+            }
+        }
+    }
+
     PendingContextAction pending;
     pending.token=issueContextActionToken();
     pending.kind=ContextActionKind::Civilization;
@@ -2126,6 +2198,23 @@ bool Simulation::tryCivilizationDecision(
     }
 
     r.pendingContext=pending;
+    if(memoryReplacedNativeSource!=0
+       &&pending.civilization.intent==CivilizationIntent::Gather
+       &&pending.civilization.resourceNode
+           !=memoryReplacedNativeSource){
+        emit(c.name+" AL1_CORE_NATIVE_GATHER_LEARNED_TOKEN actor="
+            +std::to_string(c.id)
+            +" native_source="
+            +std::to_string(memoryReplacedNativeSource)
+            +" learned_source="
+            +std::to_string(pending.civilization.resourceNode)
+            +" material="
+            +std::string(materialName(pending.civilization.material))
+            +" direct_success_minute="
+            +std::to_string(directGatherSuccessMinute)
+            +" pending_token="
+            +std::to_string(pending.token));
+    }
     r.civilizationActive=false;
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
