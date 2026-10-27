@@ -27,6 +27,27 @@ inline bool settlementSleepFoundationGroundIsLevel(
     const int radius=facilityFootprintRadiusGrid(kind);
     const double maximumRange=kind==FacilityKind::SleepingPlace ? 0.012 : 0.018;
     const WorldGenesisIdentity identity=world.genesisIdentity();
+    // Legacy generation v1/v2 has exactly one physical elevation per chunk.
+    // Avoid repeatedly generating nine identical macro noise samples every
+    // minute for every existing bed. The extrema of the affected chunks are
+    // mathematically identical to the original 3x3 sample for these versions.
+    if(identity.generationVersion<ContinuousTerrainGenerationVersion){
+        const ChunkCoord minChunk=chunkCoordForGrid(
+            {pos.x-radius,pos.y-radius});
+        const ChunkCoord maxChunk=chunkCoordForGrid(
+            {pos.x+radius,pos.y+radius});
+        if(minChunk==maxChunk) return true;
+        double minimum=1.0,maximum=0.0;
+        for(int y=minChunk.y;y<=maxChunk.y;++y){
+            for(int x=minChunk.x;x<=maxChunk.x;++x){
+                const double height=deriveMacroRegionFacts(identity,{x,y}).elevation;
+                minimum=std::min(minimum,height);
+                maximum=std::max(maximum,height);
+                if(maximum-minimum>maximumRange) return false;
+            }
+        }
+        return true;
+    }
     const double center=deriveContinuousSurfaceElevation01(identity,pos);
     double minimum=center,maximum=center;
     for(const int dy:{-radius,0,radius}){
