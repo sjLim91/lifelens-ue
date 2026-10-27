@@ -9,7 +9,7 @@ const engine = ts.transpileModule(readFileSync(resolve(root, 'observer-engine.ts
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 },
 }).outputText;
 const start = engine.indexOf('function onWorldVisibility()');
-const end = engine.indexOf('let angle:', start);
+const end = engine.indexOf('let angle ', start);
 assert(start >= 0 && end > start, 'production page lifecycle handlers must exist');
 assert(!engine.includes('resumeOfflineWorld('));
 assert(!engine.includes('elapsedOfflineMinutes('));
