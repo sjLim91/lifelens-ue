@@ -55,11 +55,6 @@ static bool recentlyWitnessedSuccess(
         ResourceNodeId node=0;
         if(!resident_resource_outcome_detail::parseSourceNode(
                memory.where,node)) continue;
-        const std::string label=memory.tags[1].substr(
-            std::string("Civilization:Gather:").size());
-        for(const auto& live:resident.civilization.inventory.stacks()){
-            (void)live; // never infer material from inventory; source below
-        }
         // The source/material identity is an immutable Core enum on the
         // actual node, not text parsed from a model or inferred memory.
         // The caller checks the source against the current live World.
