@@ -2284,6 +2284,43 @@ bool Simulation::trySocialDecision(
     return true;
 }
 
+ResidentCoreGatherLearningWindow
+Simulation::observeResidentCoreGatherLearningWindow(
+    CharacterId id,MaterialKind material) const
+{
+    ResidentCoreGatherLearningWindow out;
+    if(id==0 ||material==MaterialKind::Unknown) return out;
+    const auto runtimeIt=runtime_.find(id);
+    if(runtimeIt==runtime_.end()) return out;
+    const auto residentIt=std::find_if(
+        world_.characters.begin(),world_.characters.end(),
+        [id](const Character& candidate){return candidate.id==id;});
+    if(residentIt==world_.characters.end() ||!residentIt->alive) return out;
+    const Character& actor=*residentIt;
+    const GridPos position=runtimeIt->second.pos;
+    const SettlementPopulation population=settlementPopulation();
+    out.actorHasRuntime=true;
+    out.nativeDecision=chooseUnifiedUtilityDecisionAtPosition(
+        world_,actor,relationships_,position,0.18,0.14,&population,
+        &socialKnowledge_,&households_);
+
+    const auto perception=observeLocalResourceProximity(
+        world_,actor.id,position);
+    std::vector<ResourceNodeId> allowed;
+    for(const auto& fact:perception.nearbyResources)
+        if(fact.nodeId!=0 &&fact.material==material)
+            allowed.push_back(fact.nodeId);
+    if(allowed.size()<2) return out;
+    out.localMaterialPair=true;
+    const auto witnessed=buildResidentResourceOutcomeIndex(
+        actor,world_.minute);
+    out.unlearned=bestGatherDecisionAtPosition(
+        world_,actor,position,&population,material,nullptr,nullptr,&allowed);
+    out.learned=bestGatherDecisionAtPosition(
+        world_,actor,position,&population,material,nullptr,&witnessed,&allowed);
+    return out;
+}
+
 void Simulation::beginPlan(Character& c,Runtime& r){
     if(!c.alive || requiresDirectCare(c.lifeStage)){
         clearRuntimeActivity(r);
