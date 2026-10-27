@@ -104,7 +104,7 @@ static void auditSeed(WorldSeed seed)
                     GridPos position{};
                     if(sim.runtimePosition(resident.id,position)){
                         const auto local=sim.observeResidentLocalPerception(
-                            resident.id);
+                            resident.id,ResidentLocalPerceptionMaxRadius);
                         std::vector<ResourceNodeId> allowed;
                         for(const auto& fact:local.nearbyResources)
                             if(fact.material==w.material &&fact.nodeId!=0)
