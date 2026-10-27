@@ -49,7 +49,7 @@ observeResidentLiveSuccessLearningEvidence(
         return std::nullopt;
 
     const auto local=observeLocalResourceProximity(
-        world,resident.id,position);
+        world,resident.id,position,ResidentLocalPerceptionMaxRadius);
     if(local.actor!=resident.id) return std::nullopt;
     std::vector<ResourceNodeId> allowed;
     allowed.reserve(local.nearbyResources.size());
