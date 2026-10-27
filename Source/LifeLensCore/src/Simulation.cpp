@@ -4,6 +4,7 @@
 #include "lifelens/AutonomousSocialGoalRouting.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/ResidentSensedResourceAgency.h"
+#include "lifelens/ResidentNativeGatherLearning.h"
 #include "lifelens/ResidentLiveRecoveryEvidence.h"
 #include "lifelens/ResidentLiveSuccessLearningEvidence.h"
 #include "lifelens/ResidentGatherRouteRecovery.h"
@@ -2109,6 +2110,9 @@ bool Simulation::tryCivilizationDecision(
         havePopulation=true;
     }
 
+    const auto firsthandGather=applyFirsthandSuccessToAuthorizedGather(
+        world_,c,r.pos,decision.civilization);
+
     PendingContextAction pending;
     pending.token=issueContextActionToken();
     pending.kind=ContextActionKind::Civilization;
@@ -2126,6 +2130,23 @@ bool Simulation::tryCivilizationDecision(
     }
 
     r.pendingContext=pending;
+    if(firsthandGather.changed()
+       &&pending.civilization.intent==CivilizationIntent::Gather
+       &&pending.civilization.resourceNode
+           ==firsthandGather.preferredSource){
+        emit(c.name+" AL1_CORE_NATIVE_GATHER_LEARNED_TOKEN actor="
+            +std::to_string(c.id)
+            +" native_source="
+            +std::to_string(firsthandGather.previousSource)
+            +" learned_source="
+            +std::to_string(pending.civilization.resourceNode)
+            +" material="
+            +std::string(materialName(pending.civilization.material))
+            +" direct_success_minute="
+            +std::to_string(firsthandGather.firsthandSuccessMinute)
+            +" pending_token="
+            +std::to_string(pending.token));
+    }
     r.civilizationActive=false;
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
