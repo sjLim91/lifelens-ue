@@ -135,8 +135,14 @@ function WorldViewport({
       >
         <strong>시뮬레이션 코어 연결 실패</strong>
         <span id="errorText">
-          {'시뮬레이션 코어를 불러오지 못했습니다. 다시 실행해 주세요.'}
+          {snapshot.runtime.errorMessage
+            ? snapshot.runtime.errorMessage.slice(0, 650)
+            : '시뮬레이션 코어를 불러오지 못했습니다. 다시 실행해 주세요.'}
         </span>
+        <button type="button" className="runtime-retry"
+          onClick={() => window.location.reload()}>
+          다시 연결
+        </button>
       </div>
     </section>
   );
