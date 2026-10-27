@@ -165,10 +165,39 @@ int main()
         Simulation counterfactual(77,0,4);
         assert(counterfactual.restoreSnapshot(baselineSnapshot,&error));
         counterfactual.setExternalPhysicalExecution(true);
+        GridPos realOrigin{};
+        assert(learnedRuntime.runtimePosition(owner,realOrigin));
+        const auto plannedBefore=urgentSurvivalProvisionDecisionAtPosition(
+            learnedRuntime.world(),learnedRuntime.world().characters.front(),
+            realOrigin);
+        const auto nativeBefore=urgentSurvivalProvisionDecisionAtPosition(
+            counterfactual.world(),counterfactual.world().characters.front(),
+            realOrigin);
         learnedRuntime.step();
         counterfactual.step();
         const auto issued=learnedRuntime.observePendingContextAction(owner);
         const auto otherIssued=counterfactual.observePendingContextAction(owner);
+        if(!issued.active ||!otherIssued.active
+           ||issued.kind!=ContextActionKind::Civilization
+           ||issued.civilizationIntent!=CivilizationIntent::Gather
+           ||issued.material!=MaterialKind::PlantFood
+           ||issued.resourceNode!=202 ||otherIssued.resourceNode!=201){
+            std::cerr<<"AL1_FOOD_CORE_CONTEXT_FAILURE"
+                <<" planned_intent="<<static_cast<int>(plannedBefore.intent)
+                <<" planned_source="<<plannedBefore.resourceNode
+                <<" native_intent="<<static_cast<int>(nativeBefore.intent)
+                <<" native_source="<<nativeBefore.resourceNode
+                <<" live_kind="<<static_cast<int>(issued.kind)
+                <<" live_intent="<<static_cast<int>(issued.civilizationIntent)
+                <<" live_material="<<materialName(issued.material)
+                <<" live_source="<<issued.resourceNode
+                <<" baseline_source="<<otherIssued.resourceNode
+                <<" actor_memory="<<learnedRuntime.world().characters.front()
+                    .memory.entries.size()
+                <<" actual_x="<<realOrigin.x
+                <<" actual_y="<<realOrigin.y
+                <<"\n";
+        }
         assert(issued.active &&otherIssued.active);
         assert(issued.kind==ContextActionKind::Civilization
             &&issued.civilizationIntent==CivilizationIntent::Gather
