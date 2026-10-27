@@ -150,7 +150,6 @@ export function startObserverEngine(): () => void {
   let activeEarthOrigin: PersistedWorld['earthOrigin'] = null;
   let pendingSaves: Promise<void> = Promise.resolve();
   let storageBanner: HTMLDivElement | null = null;
-  let storageFailed = false;
   let worldWriterLease: WorldWriterLease | null = null;
 
   function storageStatus(message: string | null): void {
@@ -183,7 +182,6 @@ export function startObserverEngine(): () => void {
         earthOrigin: activeEarthOrigin,
       };
     } catch (error) {
-      storageFailed = true;
       storageStatus('자동 저장 실패: ' + String(error));
       return Promise.resolve();
     }
@@ -193,9 +191,7 @@ export function startObserverEngine(): () => void {
       () => writePersistedWorld(checkpoint),
     );
     return pendingSaves.then(() => {
-      storageFailed = false;
     }, error => {
-      storageFailed = true;
       storageStatus('월드 저장 실패: ' + String(error));
     });
   }
