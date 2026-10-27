@@ -75,6 +75,9 @@ int main()
     // second identical World; no model text, bonus food or forced goal.
     {
         World foodWorld=world;
+        // The real harvest receipt must be temporally valid for the Core
+        // New Game snapshot used in the identical-memory ablation below.
+        foodWorld.minute=0;
         foodWorld.resourceNodes={
             {201,MaterialKind::PlantFood,12,12,false,0,
                 {position.x+1,position.y}},
