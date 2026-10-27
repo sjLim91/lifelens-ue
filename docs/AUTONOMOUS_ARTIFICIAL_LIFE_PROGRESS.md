@@ -1,3 +1,10 @@
+## 2026-10-27 AL-1 실제 새 게임 성공 기억 인과 대조 (다음 통합 검증)
+
+- `test_al1_natural_success_memory_ablation`: 조작 없는 2개 고정 New Game의 **실제 Core Gather 성공** 및 직접 성공 기억을 포착하고 완전 동일한 Core 스냅샷·RNG·위치·자원 잔량·다른 주민 상태로 분기한다. 대조군에는 **해당 행위자가 실제 경험한 특정 성공 기억 한 건만 제거**한다. 복원한 동일 Core를 180분 더 실행해 실제 발행된 pending context의 대상/의도 차이를 비교.
+- **학습 선호 변화를 검증하는 것과 실제 행동 선택 변화를 구분**: `learned_preference`와 `without_memory_preference`를 따로 출력하며, 실제 명령이 달라지지 않았다면 `different_issued_choice=0 acceptance=NOT_PROVEN`으로 명시한다. 효과가 확인되기 전에는 AL-1 인수 완료 불가.
+- 이 관측은 실제 성공 경험에 대한 기억 제거 대조이며, 처음부터 자원이나 목표를 인위적으로 지급/선정하는 상황이 아니다. 대조군과 동일 시작 조건에서 실제 후속 행동이 달라지는지 확인해야 한다. 자연 발생 이동 실패 회복과는 독립적인 인수 증거다.
+- 앞선 #979 필수 CI 병합 조건을 유지하기 위해 이 추가 검증은 후속 작업 브랜치에 보관하고, 기존 head CI를 무효화하지 않음.
+
 ## 2026-10-27 AL-1 실제 실패 시 즉각 Core 재계획
 
 - [#979](https://github.com/sjLim91/lifelens-ue/pull/979) 이전 Core exact-head(9dcb9b5f) [166/166](https://github.com/sjLim91/lifelens-ue/actions/runs/40348120395) 및 M0-03/04 성공. 자연 실행 3일 기준 두 시드 모두 `issued=0 physically_completed=0`: **자연 발생 후속 실패 회복은 미증명**, 표본 안에서 실패 자체가 안 발생한 것으로만 해석. CI 성공을 G1 성공으로 혼동하지 않음.
