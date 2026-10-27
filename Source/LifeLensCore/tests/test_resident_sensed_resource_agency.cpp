@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include "lifelens/ResidentSensedResourceAgency.h"
+#include "lifelens/ResidentNativeGatherLearning.h"
 #include "lifelens/ResidentLiveRecoveryEvidence.h"
 #include "lifelens/ResidentLiveSuccessLearningEvidence.h"
 #include "lifelens/ResidentGatherRouteRecovery.h"
@@ -122,6 +123,39 @@ int main()
         assert(lived.intent==CivilizationIntent::Gather
             &&lived.resourceNode==202
             &&lived.material==MaterialKind::PlantFood);
+        // The resident's ordinary, native Gather has already been
+        // authorized before this AL-1 path. It may only refine the
+        // physical SOURCE using genuinely completed firsthand receipts;
+        // the Gather goal, material, utility, quantity and route safety
+        // remain owned by the native Core. A memory-free counterfactual
+        // must issue its original source unchanged.
+        auto nativeWithExperience=base;
+        auto nativeWithoutExperience=base;
+        const auto memoryChoice=applyFirsthandSuccessToAuthorizedGather(
+            foodWorld,foodWorld.characters.front(),position,
+            nativeWithExperience);
+        const auto noMemoryChoice=applyFirsthandSuccessToAuthorizedGather(
+            noExperience,noExperience.characters.front(),position,
+            nativeWithoutExperience);
+        assert(memoryChoice.changed());
+        assert(memoryChoice.previousSource==201
+            &&memoryChoice.preferredSource==202
+            &&memoryChoice.firsthandSuccessMinute==foodWorld.minute);
+        assert(nativeWithExperience.resourceNode==202);
+        assert(!noMemoryChoice.changed()
+            &&nativeWithoutExperience.resourceNode==201);
+        assert(nativeWithExperience.intent==base.intent
+            &&nativeWithExperience.material==base.material
+            &&nativeWithExperience.quantity==base.quantity
+            &&nativeWithExperience.utility==base.utility);
+        auto nativeNonGather=base;
+        nativeNonGather.intent=CivilizationIntent::Craft;
+        const auto protectedChoice=applyFirsthandSuccessToAuthorizedGather(
+            foodWorld,foodWorld.characters.front(),position,nativeNonGather);
+        assert(!protectedChoice.changed()
+            &&nativeNonGather.intent==CivilizationIntent::Craft
+            &&nativeNonGather.resourceNode==base.resourceNode);
+
         assert(foodWorld.resourceNodes[0].quantity==12);
         assert(foodWorld.resourceNodes[1].quantity
             ==noExperience.resourceNodes[1].quantity);
