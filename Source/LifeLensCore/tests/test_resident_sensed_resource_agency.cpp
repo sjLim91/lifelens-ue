@@ -69,6 +69,118 @@ int main()
     assert(world.rng==rng &&world.minute==480);
     assert(!*autonomousGoalSatisfiedByTruth(world,relationships,*selected.personalGoal));
 
+    // AL-1: an actual Core-executed food harvest teaches the SAME resident
+    // which of TWO currently reachable food sources to select during its
+    // ordinary urgent Hunger Gather. Only direct memory differs from a
+    // second identical World; no model text, bonus food or forced goal.
+    {
+        World foodWorld=world;
+        foodWorld.resourceNodes={
+            {201,MaterialKind::PlantFood,12,12,false,0,
+                {position.x+1,position.y}},
+            {202,MaterialKind::PlantFood,12,12,false,0,
+                {position.x+2,position.y}}
+        };
+        CivilizationUtilityDecision harvested;
+        harvested.intent=CivilizationIntent::Gather;
+        harvested.material=MaterialKind::PlantFood;
+        harvested.item=ItemKind::RawMaterial;
+        harvested.resourceNode=202;
+        harvested.quantity=2;
+        const auto actualHarvest=executeCivilizationDecisionAtPosition(
+            foodWorld,foodWorld.characters.front(),harvested,
+            foodWorld.resourceNodes[1].pos);
+        assert(actualHarvest.executed &&actualHarvest.success
+            &&actualHarvest.event.quantity>0);
+        rememberCivilizationAttemptOutcome(
+            foodWorld.characters.front(),harvested,foodWorld.minute,true);
+        const int collected=foodWorld.characters.front().civilization.inventory.count(
+            ItemKind::RawMaterial,MaterialKind::PlantFood);
+        assert(collected>0);
+        // Genuine consumption of prior collected food; a resident still
+        // needs to gather again later, as opposed to inventing scarcity.
+        assert(foodWorld.characters.front().civilization.inventory.remove(
+            ItemKind::RawMaterial,MaterialKind::PlantFood,collected));
+        foodWorld.characters.front().needs.hunger=0.95;
+        World noExperience=foodWorld;
+        noExperience.characters.front().memory.entries.clear();
+        const auto base=urgentSurvivalProvisionDecisionAtPosition(
+            noExperience,noExperience.characters.front(),position);
+        const auto lived=urgentSurvivalProvisionDecisionAtPosition(
+            foodWorld,foodWorld.characters.front(),position);
+        const auto disabled=urgentSurvivalProvisionDecisionAtPosition(
+            foodWorld,foodWorld.characters.front(),position,false);
+        assert(base.intent==CivilizationIntent::Gather
+            &&base.resourceNode==201);
+        assert(disabled.resourceNode==base.resourceNode);
+        assert(lived.intent==CivilizationIntent::Gather
+            &&lived.resourceNode==202
+            &&lived.material==MaterialKind::PlantFood);
+        assert(foodWorld.resourceNodes[0].quantity==12);
+        assert(foodWorld.resourceNodes[1].quantity
+            ==noExperience.resourceNodes[1].quantity);
+        assert(foodWorld.rng==noExperience.rng);
+
+        // Now run the EXACT Core planning/physical pending-token authority.
+        // The resident's learned source must be issued AND actually harvested,
+        // not merely preferred in a read-only shadow candidate.
+        Simulation learnedRuntime(77,0,4);
+        learnedRuntime.setupNewGame();
+        auto liveSnapshot=learnedRuntime.captureSnapshot();
+        const CharacterId owner=liveSnapshot.world.characters.front().id;
+        assert(owner==foodWorld.characters.front().id);
+        liveSnapshot.runtime.at(owner).pos=position;
+        liveSnapshot.world.resourceNodes=foodWorld.resourceNodes;
+        liveSnapshot.world.storageSites.clear();
+        for(auto& resident:liveSnapshot.world.characters){
+            if(resident.id!=owner){
+                resident.alive=false;
+                resident.deathMinute=liveSnapshot.world.minute;
+            }else{
+                resident.memory=foodWorld.characters.front().memory;
+                resident.civilization.inventory=Inventory{};
+                resident.needs={0.95,0.05,0.05,0.05,0.05};
+            }
+        }
+        auto baselineSnapshot=liveSnapshot;
+        baselineSnapshot.world.characters.front().memory.entries.clear();
+        std::string error;
+        assert(learnedRuntime.restoreSnapshot(liveSnapshot,&error));
+        learnedRuntime.setExternalPhysicalExecution(true);
+        Simulation counterfactual(77,0,4);
+        assert(counterfactual.restoreSnapshot(baselineSnapshot,&error));
+        counterfactual.setExternalPhysicalExecution(true);
+        learnedRuntime.step();
+        counterfactual.step();
+        const auto issued=learnedRuntime.observePendingContextAction(owner);
+        const auto otherIssued=counterfactual.observePendingContextAction(owner);
+        assert(issued.active &&otherIssued.active);
+        assert(issued.kind==ContextActionKind::Civilization
+            &&issued.civilizationIntent==CivilizationIntent::Gather
+            &&issued.material==MaterialKind::PlantFood
+            &&issued.resourceNode==202);
+        assert(otherIssued.resourceNode==201);
+        assert(issued.token!=0 &&otherIssued.token!=0);
+        const int stockBefore=learnedRuntime.world().resourceNodes[1].quantity;
+        assert(learnedRuntime.completeExternalContextAction(
+            owner,issued.token,issued.targetPos));
+        const int newStock=learnedRuntime.world().resourceNodes[1].quantity;
+        assert(newStock<stockBefore);
+        assert(learnedRuntime.world().characters.front()
+            .civilization.inventory.count(
+                ItemKind::RawMaterial,MaterialKind::PlantFood)>0);
+        assert(std::any_of(learnedRuntime.logs().begin(),
+            learnedRuntime.logs().end(),[](const std::string& line){
+                return line.find("AL1_CORE_URGENT_FOOD_LEARNED_TOKEN")
+                    !=std::string::npos;
+            }));
+        assert(!std::any_of(counterfactual.logs().begin(),
+            counterfactual.logs().end(),[](const std::string& line){
+                return line.find("AL1_CORE_URGENT_FOOD_LEARNED_TOKEN")
+                    !=std::string::npos;
+            }));
+    }
+
     // Production resident-goal choice must re-evaluate firsthand evidence
     // against the LIVE source, not permanently obey a stale depletion belief.
     World revivedWorld=world;
