@@ -31,7 +31,7 @@ const factory = new Function(
   'document', 'Date', 'worldSession', 'simulationClock', 'saveCheckpoint',
   `let stopped = false, fastForwardRunning = false;
   ${code}
-  return { onWorldVisibility, onWorldPageHide };`,
+  return { onWorldVisibility, onWorldPageHide, onWorldPageShow };`,
 );
 const lifecycle = factory(documentStub, { now: () => now }, world, clockStub,
   time => { checkpointTimes.push(time); return Promise.resolve(); });
@@ -49,6 +49,11 @@ assert.deepEqual(checkpointTimes, [1790000000000],
 lifecycle.onWorldPageHide();
 assert.equal(calls.at(-1), 'stop');
 assert.equal(checkpointTimes.at(-1), now);
+lifecycle.onWorldPageShow();
+assert.deepEqual(calls.slice(-2), ['reset', 'start'],
+  'BFCache pageshow must restart at the stored Core minute without replay');
+assert.equal(checkpointTimes.length, 2);
+
 
 // Independently exercise production SimulationClock under throttled mobile timers.
 const source = ts.transpileModule(
