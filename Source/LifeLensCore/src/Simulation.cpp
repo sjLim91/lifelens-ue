@@ -4,6 +4,8 @@
 #include "lifelens/AutonomousSocialGoalRouting.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/ResidentSensedResourceAgency.h"
+#include "lifelens/ResidentLiveRecoveryEvidence.h"
+#include "lifelens/ResidentGatherRouteRecovery.h"
 #include "lifelens/ResidentAICompletedPlanGuard.h"
 #include "lifelens/ResidentUnifiedAgency.h"
 #include "lifelens/ResidentCognitiveCarePreference.h"
@@ -2403,6 +2405,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     // first probe did not choose Civilization. Cache that pure result once.
     UnifiedUtilityDecision cadenceDecision;
     const UnifiedUtilityDecision* sharedCadenceDecision=nullptr;
+    std::optional<ResidentLiveRecoveryEvidence> liveRecovery;
     if(planningAllowed
        && !urgentProvisionRequired
        && !criticalSurvivalPressure
@@ -2438,6 +2441,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         const auto embodiedGoal=chooseResidentSensedResourceGoal(
             world_,c,r.pos,relationships_,agency,&residentPopulation,
             hasUrgentPhysicalNeed,&socialKnowledge_,&households_);
+        liveRecovery=observeResidentLiveRecoveryEvidence(
+            world_,c,r.pos,agency,embodiedGoal);
         cadenceDecision=embodiedGoal.agency.decision;
     }
 
@@ -2447,7 +2452,34 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     if(planningAllowed
        && !criticalSurvivalPressure
        && urgentPhysicalGoal==Goal::Idle
-       && tryCivilizationDecision(c,r,sharedCadenceDecision)) return;
+       && tryCivilizationDecision(c,r,sharedCadenceDecision)){
+        // Never log an unexecuted cognition proposal or a hypothetical
+        // recovery. Evidence becomes an observable production decision only
+        // after Core actually issues the matching pending Gather token.
+        if(liveRecovery &&r.pendingContext.active()
+           &&r.pendingContext.kind==ContextActionKind::Civilization
+           &&r.pendingContext.civilization.intent==CivilizationIntent::Gather
+           &&r.pendingContext.civilization.resourceNode
+               ==liveRecovery->selectedSource){
+            emit(c.name+" AL1_CORE_RESOURCE_REPLAN actor="
+                +std::to_string(liveRecovery->actor)
+                +" failed_source="
+                +std::to_string(liveRecovery->failedSource)
+                +" selected_source="
+                +std::to_string(liveRecovery->selectedSource)
+                +" failure_minute="
+                +std::to_string(liveRecovery->firsthandFailureMinute)
+                +" decision_minute="
+                +std::to_string(liveRecovery->selectionMinute)
+                +" failed_pending_token="
+                +std::to_string(liveRecovery->failedPendingToken)
+                +" pending_token="
+                +std::to_string(r.pendingContext.token)
+                +" firsthand_navigation_failure="
+                +(liveRecovery->directNavigationFailure ? "1" : "0"));
+        }
+        return;
+    }
     if(planningAllowed && !hasUrgentPhysicalNeed
        && trySocialDecision(c,r,sharedCadenceDecision)) return;
 
@@ -4014,22 +4046,68 @@ void Simulation::step(){
                                 c,r,"outbound trade route failed");
                         }
                     }else{
-                        // A blocked approach is a real lived event, not a
-                        // failed extraction. Keep it separate from Gather
-                        // execution receipts and feed only the actor's own
-                        // bounded source preference on subsequent planning.
+                        // Only a TRUE failed Core navigation attempt may
+                        // produce this resident's firsthand route memory.
+                        // Keep it separate from Gather extraction receipts.
+                        std::optional<CivilizationUtilityDecision> recovered;
+                        ResourceNodeId failedSource=0;
+                        std::uint64_t failedToken=0;
                         if(r.pendingContext.kind==ContextActionKind::Civilization
                            &&r.pendingContext.civilization.intent
                                ==CivilizationIntent::Gather){
-                            const auto& gather=r.pendingContext.civilization;
-                            rememberResidentGatherRouteFailure(
-                                c,civilizationActionExperienceKey(gather),
-                                gather.resourceNode,r.pendingContext.token,
-                                world_.minute);
+                            const auto gather=r.pendingContext.civilization;
+                            failedSource=gather.resourceNode;
+                            failedToken=r.pendingContext.token;
+                            if(rememberResidentGatherRouteFailure(
+                                   c,civilizationActionExperienceKey(gather),
+                                   failedSource,failedToken,world_.minute)){
+                                const auto population=settlementPopulation();
+                                recovered=chooseResidentGatherRecoveryAfterCoreRouteFailure(
+                                    world_,c,r.pos,gather,&population);
+                            }
                         }
                         emit(c.name+" context action route failed");
                         r.pendingContext.clear();
                         clearNavigation(r);
+
+                        // A physically safe, SAME-material local alternative
+                        // may continue the already authorized Gather now.
+                        // Waiting for a future 15-minute optional cognition
+                        // tick used to strand real route failures. This calls
+                        // the exact same Core token issuer, routing and
+                        // extraction boundary as an ordinary chosen Gather.
+                        // If no valid alternative exists, retain the existing
+                        // failed-action backoff and normal future planning.
+                        if(recovered){
+                            UnifiedUtilityDecision continuation;
+                            continuation.kind=UnifiedDecisionKind::Civilization;
+                            continuation.civilization=*recovered;
+                            continuation.utility=recovered->utility;
+                            if(tryCivilizationDecision(
+                                   c,r,&continuation)
+                               &&r.pendingContext.active()
+                               &&r.pendingContext.kind
+                                   ==ContextActionKind::Civilization
+                               &&r.pendingContext.civilization.resourceNode
+                                   ==recovered->resourceNode){
+                                emit(c.name+" AL1_CORE_RESOURCE_REPLAN actor="
+                                    +std::to_string(c.id)
+                                    +" failed_source="
+                                    +std::to_string(failedSource)
+                                    +" selected_source="
+                                    +std::to_string(recovered->resourceNode)
+                                    +" failure_minute="
+                                    +std::to_string(world_.minute)
+                                    +" decision_minute="
+                                    +std::to_string(world_.minute)
+                                    +" failed_pending_token="
+                                    +std::to_string(failedToken)
+                                    +" pending_token="
+                                    +std::to_string(r.pendingContext.token)
+                                    +" firsthand_navigation_failure=1");
+                                continue;
+                            }
+                        }
                         r.penaltyUntilMinute=std::max(
                             r.penaltyUntilMinute,
                             world_.minute+5);

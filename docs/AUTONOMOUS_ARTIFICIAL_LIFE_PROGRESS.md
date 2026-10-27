@@ -1,4 +1,29 @@
+## 2026-10-27 AL-1 실제 실패 시 즉각 Core 재계획
+
+- [#979](https://github.com/sjLim91/lifelens-ue/pull/979) 이전 Core exact-head(9dcb9b5f) [166/166](https://github.com/sjLim91/lifelens-ue/actions/runs/40348120395) 및 M0-03/04 성공. 자연 실행 3일 기준 두 시드 모두 `issued=0 physically_completed=0`: **자연 발생 후속 실패 회복은 미증명**, 표본 안에서 실패 자체가 안 발생한 것으로만 해석. CI 성공을 G1 성공으로 혼동하지 않음.
+- 이번 구현: 실제 `Simulation::step`에서 이동 경로 실패가 발생해 동일 주민이 Core 실패 기억을 작성한 직후, 별도 AI나 허위 Gather 없이 **기존 채집 의도·재료 그대로** 현재 반경 8칸의 실제 관측 자원 후보 중 Core 경로로 접근 가능한 곳을 재선택하여 동일 `tryCivilizationDecision` 발행기로 이어감. 대안 없거나 긴급한 타 생존 필요가 우선이면 기존 5분 재계획 대기 유지. 원본 실패 토큰→복구 토큰→물리적 채집 결과는 실제로 발생했을 때만 로그로 검증.
+- WASM의 `apt-get install emscripten`이 기존 20분 작업 제한에 걸려 취소되는 문제가 관측되어 timeout 45분·권장 패키지 생략으로 수정. 실제 통합 CI에서 확인 전까지 머지하지 않음.
+- AL-1 및 G1은 **진행 중**, 전체 마스터플랜 **6/86 완료 유지**. 강한 인수 조건은 조작 없는 New Game에서 자연 발생 실패→실제 채집 회복→원본/새 토큰 일치가 관측되는 것이다.
+
 # LifeLens 마스터플랜 86개 개발단위 추적표
+
+## 2026-10-27 AL-1 자연 발생 재계획 관측 검사
+
+- `test_al1_unmodified_replan_observability`를 실제 `setupNewGame()`과 `Simulation::step()`에 연결하여 기준 시드 `874213954`, `4242001`을 각각 3일 관측. 시험에 모델 결정·캐릭터 필요·자원 노드·위치·펜딩 토큰을 주입하지 않음.
+- **실제로 발행된** `AL1_CORE_RESOURCE_REPLAN` 로그에 대해서만 원본 실패 토큰·현재 발행한 복구 토큰·같은 주민의 직접 기억, 실제 Core 물리 채집의 `AL1_CORE_GATHER_RESULT` 토큰·재고 획득량·직접 성공 기억을 교차 검증. 전혀 발생하지 않을 수 있고 그 경우 `issued=0 physically_completed=0 acceptance=NOT_PROVEN`으로 출력해야 하며, 검사 통과만으로 자연 인과 증명이 되지 않음.
+- 동일 주민의 실제 실패 → 대안 시도 → 성공 → 후속 목표 변화가 두 고정 시드에서 연결되는지 관측 결과를 확인한 뒤에만 G1/AL-1 완료 상태를 변경할 것. 최종 인수 **계속 진행**, 전체 완료 **6/86 유지**.
+
+## 2026-10-27 AL-1 실제 발행/결과 토큰 연결 추가
+
+- [#978](https://github.com/sjLim91/lifelens-ue/pull/978) 정확한 head `eaa7e255be72e33dae77d0db1382a50a358be695`의 Core 165/165, M0-03/04·Preflight·Web·WASM 성공 후 `main` `1764d328b50b3e98f12a487ae7c33eb5758b68c9` 병합. 수정 없는 New Game seed `874213954`, `4242001`의 주민 ID `4`가 각각 492분·504분에 실제 발행한 Core Gather 명령 토큰과 실제 자원 결과/직접 기억·다음 결정이 일치함을 관측. 실제 실패로 인해 선택이 바뀌었다는 실세계 인과 증거는 별개로 미완.
+- #977의 원본 실패 토큰 기억·발행 연결 개발을 **새 main에 이식**하는 후속 PR로 진행하며, CI 성공 전 병합·완료 판정 금지.
+
+## 2026-10-26 AL-1 실측 인과 검증 / 실제 Core 결정 발행 연결
+
+- [#976](https://github.com/sjLim91/lifelens-ue/pull/976) 정확한 head `ef76c5fd8925ab1a838f0de46de7e4bcee3e4071`: [Core 165/165, 실제 365일, 두 시드 대조 실험](https://github.com/sjLim91/lifelens-ue/actions/runs/40313455906) · [M0-03 100/365/1000일 두 시드](https://github.com/sjLim91/lifelens-ue/actions/runs/40313455881) · [M0-04 장기 기억](https://github.com/sjLim91/lifelens-ue/actions/runs/40313455831) · Web/WASM/Preflight 모두 통과 후 `main` `fe5e28acf8aca0e031c528697e7e2da74873e4fd` 병합 완료.
+- 대조 시드 `77`, `73144`: 동일한 원래 Core 상태에서 실제 Core 접근 거부 결과의 직접 경험을 받은 주민은 자원 `101→103`으로 바꾸고 실제 채집 `3`개, 동일 자원 `101`을 추후 실제 성공하면 판단을 되돌림. 경험 기록이 없는 쪽은 `101`을 유지. 이는 **통제된 Core 인과 대비**이지 자연 발생 New Game 전과정의 인과 검증이나 실제 Qwen 추론 증명은 아니다.
+- 이 단계에서는 `Simulation::beginPlan()`에서 Core pending context 토큰 발행이 성공한 경우에만 `AL1_CORE_RESOURCE_REPLAN` 실측 로그를 기록하도록 연결하는 중이다. 주민 ID·실패 자원·변경 자원·직접 경험 시각·결정 시각·발행 토큰 및 실제 이동 실패 여부를 구분한다. 가상의 모델 제안, 실제 발행되지 않은 의도, 테스트 대조 실험 결과를 자연 실행 이벤트로 꾸미지 않는다. 로그가 없는 세계에서는 실측 발생이 입증되지 않은 것으로 간주한다.
+- **AL-1 인수 상태 그대로 🚧 진행**: 로그를 실제 무개입 New Game에서 관찰하여 동일 주민 개인 경험→다음 실제 Core pending 선택→결과까지 토큰 일치 증거로 묶고 장기 재현해야 한다. 전체 완료 `6/86`은 이 근거만으로 변경하지 않는다.
 
 ## 2026-10-26 AL-1 단일 주민 폐루프 실행 (구현/검증 계속)
 
