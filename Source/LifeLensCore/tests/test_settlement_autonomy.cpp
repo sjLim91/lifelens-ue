@@ -60,6 +60,26 @@ int main()
     actor.needs.sleep=0.58;
 
     const GridPos center=world.initialStartRegionCenterGrid();
+    // A high settlement-activity score must never allow a woven bed on a
+    // physically steep Core surface. A failed construction must not mutate it.
+    bool observedSteepSite=false;
+    for(int dy=-24;dy<=24 && !observedSteepSite;++dy){
+        for(int dx=-24;dx<=24;++dx){
+            const GridPos candidate{center.x+dx,center.y+dy};
+            if(settlementFacilitySiteBlocked(world,candidate,FacilityKind::SleepingPlace)
+               || settlementSleepFoundationGroundIsLevel(
+                   world,candidate,FacilityKind::SleepingPlace))
+                continue;
+            observedSteepSite=true;
+            const std::size_t facilitiesBefore=world.facilities.size();
+            CHECK(establishSettlementFacilityProject(
+                world,actor.id,FacilityKind::SleepingPlace,candidate)==nullptr);
+            CHECK(world.facilities.size()==facilitiesBefore);
+            break;
+        }
+    }
+    CHECK(observedSteepSite);
+
 
     // Sleep pressure creates a real SleepingPlace construction plan.
     const double sleepPressure=settlementFacilityNeedPressure(

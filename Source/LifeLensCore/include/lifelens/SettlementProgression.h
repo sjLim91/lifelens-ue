@@ -390,6 +390,40 @@ struct SettlementFacilitySiteOpportunity {
     GridPos pos{};
 };
 
+/** A bed or shelter needs actual continuous terrain support across its
+ * footprint, not just a flat-looking center sample. The site planner already
+ * rewards flatness but could previously build on steep ground if proximity to
+ * water/residents compensated the soft score. This is a hard physical gate.
+ *
+ * Sample the true generation-versioned 3D heightfield, rather than sculpting
+ * presentation-only terraces or changing the whole terrain for one building.
+ * Core elevations are normalized [0,1]; the Web maps 1.0 to 48 world units.
+ */
+inline bool settlementSleepFoundationGroundIsLevel(
+    const World& world, GridPos pos, FacilityKind kind)
+{
+    if(kind!=FacilityKind::SleepingPlace && kind!=FacilityKind::Shelter)
+        return true;
+    // This is the real occupied foundation radius, not a point on the
+    // visual mesh. A bedding sheet spans several Core grid cells (32 cells
+    // per 8 scene units), so a 1-cell sample would miss the hill underneath.
+    const int radius=facilityFootprintRadiusGrid(kind);
+    const double maximumRange=kind==FacilityKind::SleepingPlace ? 0.012 : 0.018;
+    const WorldGenesisIdentity identity=world.genesisIdentity();
+    const double center=deriveContinuousSurfaceElevation01(identity,pos);
+    double minimum=center,maximum=center;
+    for(const int dy:{-radius,0,radius}){
+        for(const int dx:{-radius,0,radius}){
+            const double h=deriveContinuousSurfaceElevation01(
+                identity,{pos.x+dx,pos.y+dy});
+            minimum=std::min(minimum,h);
+            maximum=std::max(maximum,h);
+            if(maximum-minimum>maximumRange) return false;
+        }
+    }
+    return true;
+}
+
 inline double settlementFunctionalAffinity(
     FacilityKind planned,
     FacilityKind existing)
@@ -673,16 +707,27 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySiteFromDemand(
     bool found=false;
     double bestScore=-1.0e9;
     const auto considerSite=[&](GridPos candidate){
-        if(settlementFacilitySiteBlocked(world,candidate,kind)) return;
+        if(settlementFacilitySiteBlocked(world,candidate,kind)
+           || !settlementSleepFoundationGroundIsLevel(world,candidate,kind))
+            return;
         if(population && !observeSettlementFacilityDemand(
             world,planner,kind,candidate,population).canPlan()) return;
 
         const double habitability=settlementTerrainHabitabilityScore(world,candidate,kind);
         if(habitability<=-1000.0) return;
+        // A level bed beyond a resident's lived activity range is not a
+        // useful sleep service. Physical flatness is still a hard gate above;
+        // only valid ground is ranked, with near safe sites preferred over
+        // remote scenic sites. No facility is granted or moved for free.
+        const int accessDistance=manhattan(candidate,center);
+        const double localSleepAccessCost=
+            kind==FacilityKind::SleepingPlace ? 0.028*accessDistance
+            : kind==FacilityKind::Shelter ? 0.020*accessDistance
+            : 0.0;
         const double score=
             settlementActivityCenterScore(world,candidate,kind)
             +settlementResidentActivityScore(world,candidate,population)
-            +habitability;
+            +habitability-localSleepAccessCost;
         // Traversal order breaks score ties deterministically.
         if(!found || score>bestScore+1e-12){
             found=true;
@@ -694,6 +739,24 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySiteFromDemand(
     for(std::size_t i=0;i<offsets.size();++i){
         const GridPos offset=offsets[(start+i)%offsets.size()];
         considerSite({center.x+offset.x,center.y+offset.y});
+    }
+    // Flat footholds are often between the original sparse 32 probes.
+    // Search another bounded set of near-field compass/diagonal positions.
+    // A resident must not roam across distant terrain just because the
+    // sparse probes missed safe ground beside their everyday activity.
+    // Preserve seed-deterministic probe ordering, overlap and water guards.
+    for(int radius=2;radius<=12;radius+=2){
+        const int half=radius/2;
+        const std::array<GridPos,8> localRing={
+            GridPos{radius,0},GridPos{half,half},
+            GridPos{0,radius},GridPos{-half,half},
+            GridPos{-radius,0},GridPos{-half,-half},
+            GridPos{0,-radius},GridPos{half,-half}
+        };
+        for(std::size_t i=0;i<localRing.size();++i){
+            const GridPos offset=localRing[(start+i)%localRing.size()];
+            considerSite({center.x+offset.x,center.y+offset.y});
+        }
     }
     // Real footprints/resources can fill the inner cluster before local demand
     // is met. Search bounded outer rings rather than overlap existing buildings
@@ -738,7 +801,8 @@ inline ConstructedFacility* establishSettlementFacilityProject(
        || !facilityKindConstructible(kind)
        || !observeSettlementFacilityDemand(
            world,planner,kind,pos,population).canPlan()
-       || settlementFacilitySiteBlocked(world,pos,kind)) return nullptr;
+       || settlementFacilitySiteBlocked(world,pos,kind)
+       || !settlementSleepFoundationGroundIsLevel(world,pos,kind)) return nullptr;
 
     ConstructedFacility facility=makeFacilityConstructionSite(
         nextFacilityId(world.facilities),kind,pos,planner,world.minute);

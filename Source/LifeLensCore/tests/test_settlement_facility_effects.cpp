@@ -72,9 +72,24 @@ static GridPos findHarshUnblockedPosition(const World& world)
             {start.x-radius,start.y-radius}
         }};
         for(const ChunkCoord coord:candidates){
-            const GridPos pos=chunkOriginGrid(coord);
-            if(settlementFacilitySiteBlocked(
-                world,pos,FacilityKind::Shelter)) continue;
+            // The scenario needs harsh weather AND a physically buildable
+            // shelter foundation. Chunk origin alone can be a steep ridge.
+            const GridPos origin=chunkOriginGrid(coord);
+            GridPos pos{};
+            bool foundLevelFoundation=false;
+            for(int dy=0;dy<32 && !foundLevelFoundation;dy+=8){
+                for(int dx=0;dx<32;dx+=8){
+                    const GridPos candidate{origin.x+dx,origin.y+dy};
+                    if(settlementFacilitySiteBlocked(
+                            world,candidate,FacilityKind::Shelter)
+                       || !settlementSleepFoundationGroundIsLevel(
+                            world,candidate,FacilityKind::Shelter)) continue;
+                    pos=candidate;
+                    foundLevelFoundation=true;
+                    break;
+                }
+            }
+            if(!foundLevelFoundation) continue;
             const EnvironmentalConsequenceProfile consequence=
                 deriveEnvironmentalConsequences(
                     deriveDynamicEnvironment(

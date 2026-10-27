@@ -68,6 +68,8 @@ int main()
         }
         for(const auto& existing:world.facilities)
             assert(!facilityFootprintsConflict(FacilityKind::SleepingPlace,site.pos,existing.kind,existing.pos));
+        assert(settlementSleepFoundationGroundIsLevel(
+            world,site.pos,FacilityKind::SleepingPlace));
         auto* project=establishSettlementFacilityProject(world,owner,FacilityKind::SleepingPlace,site.pos,&population);
         assert(project && !project->active && project->constructionWork==0.0);
         const FacilityId id=project->id;
