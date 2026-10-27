@@ -12,6 +12,8 @@ export const DEFAULT_RUNTIME_LOAD_POLICY: Readonly<RuntimeLoadPolicy> = {
 export interface RuntimeBytes {
   js: string;
   wasmBuffer: ArrayBuffer;
+  /** Optional same-origin ESM URL: avoid executable blob imports on mobile. */
+  moduleUrl?: string;
 }
 
 /** The deadline includes reading the response body, not only receiving headers. */
