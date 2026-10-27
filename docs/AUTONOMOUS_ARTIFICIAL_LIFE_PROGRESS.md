@@ -1,3 +1,10 @@
+## 2026-10-27 AL-1 직접 성공 기억 → 실제 토큰 발행 출처 검증
+
+- **새 제품 로그** `AL1_CORE_SUCCESS_MEMORY_CHOICE`: 같은 주민이 비긴급 기존 `Gather` 목적을 유지한 채, **직접 성공 기억** 때문에 같은 재료의 다른 현재 관측·Core 접근 가능한 원천을 선택하고, `tryCivilizationDecision`으로 진짜 `pendingContext.token`을 발행한 **이후에만** 주민/이전 원천/학습 원천/직접 기억 분/선택 분/새 토큰을 남긴다. 언어모델 제안·선호 점수 변화·단순 기획은 성공으로 기록하지 않음.
+- 읽기 전용 `observeResidentLiveSuccessLearningEvidence`는 **동일 Core 후보를 기억 미적용/직접 기억 적용으로 재평가**해 순위가 실제 뒤집힌 경우만 인정한다. 진짜 직접 성공 기억의 출처·시각과 자원/재료/동일 주민/현지 관측/물리 경로를 검증하며 전언·다른 주민·단순한 Core 기본 순위를 배제한다.
+- `test_al1_natural_success_memory_ablation`은 원래 180분 대신 **직접 기억 유효기간 1440분까지** 동일 World/RNG 쌍을 실행해 실제 발행된 개인 학습 토큰 수와 동일 토큰의 진짜 Core 채집 결과 수를 따로 보고한다. 원래의 `different_issued_choice` 지표도 유지하며, 여전히 0이면 `acceptance=NOT_PROVEN`으로 분명히 남긴다.
+- 모든 새 test/CI를 통과하고 실제 무개입 새 게임에서 차이가 관측되기 전에는 **AL-1/G1 미완료, 마스터플랜 6/86 유지**.
+
 ## 2026-10-27 AL-1 실제 성공 경험 → 동일 주민의 자원 선택 연결
 
 - [#979](https://github.com/sjLim91/lifelens-ue/pull/979) 모든 exact-head 11개 워크플로 통과 뒤 `main` **`8852d3def3d4a87fbd2a49df137daee75a424cfb`** 병합. Core 실제 길찾기 실패 시 즉시 같은 재료의 다른 접근 가능한 자원으로 명령 토큰을 다시 발행하는 제품 동작 반영.

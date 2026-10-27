@@ -5,6 +5,7 @@
 #include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/ResidentSensedResourceAgency.h"
 #include "lifelens/ResidentLiveRecoveryEvidence.h"
+#include "lifelens/ResidentLiveSuccessLearningEvidence.h"
 #include "lifelens/ResidentGatherRouteRecovery.h"
 #include "lifelens/ResidentAICompletedPlanGuard.h"
 #include "lifelens/ResidentUnifiedAgency.h"
@@ -2406,6 +2407,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     UnifiedUtilityDecision cadenceDecision;
     const UnifiedUtilityDecision* sharedCadenceDecision=nullptr;
     std::optional<ResidentLiveRecoveryEvidence> liveRecovery;
+    std::optional<ResidentLiveSuccessLearningEvidence> liveSuccessLearning;
     if(planningAllowed
        && !urgentProvisionRequired
        && !criticalSurvivalPressure
@@ -2443,6 +2445,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
             hasUrgentPhysicalNeed,&socialKnowledge_,&households_);
         liveRecovery=observeResidentLiveRecoveryEvidence(
             world_,c,r.pos,agency,embodiedGoal);
+        liveSuccessLearning=observeResidentLiveSuccessLearningEvidence(
+            world_,c,r.pos,agency,embodiedGoal,&residentPopulation);
         cadenceDecision=embodiedGoal.agency.decision;
     }
 
@@ -2453,6 +2457,31 @@ void Simulation::beginPlan(Character& c,Runtime& r){
        && !criticalSurvivalPressure
        && urgentPhysicalGoal==Goal::Idle
        && tryCivilizationDecision(c,r,sharedCadenceDecision)){
+        // A memorized SUCCESS only becomes evidence of learned real-world
+        // action when the SAME production Core issues the exact Gather token
+        // for the alternate source. Future execution is independently
+        // accounted for in AL1_CORE_GATHER_RESULT with that token.
+        if(liveSuccessLearning &&r.pendingContext.active()
+           &&r.pendingContext.kind==ContextActionKind::Civilization
+           &&r.pendingContext.civilization.intent==CivilizationIntent::Gather
+           &&r.pendingContext.civilization.resourceNode
+               ==liveSuccessLearning->learnedSource
+           &&r.pendingContext.civilization.material
+               ==liveSuccessLearning->material){
+            emit(c.name+" AL1_CORE_SUCCESS_MEMORY_CHOICE actor="
+                +std::to_string(liveSuccessLearning->actor)
+                +" prior_source="
+                +std::to_string(liveSuccessLearning->originalSource)
+                +" selected_source="
+                +std::to_string(liveSuccessLearning->learnedSource)
+                +" firsthand_success_minute="
+                +std::to_string(liveSuccessLearning->firsthandSuccessMinute)
+                +" decision_minute="
+                +std::to_string(liveSuccessLearning->choiceMinute)
+                +" pending_token="
+                +std::to_string(r.pendingContext.token));
+        }
+
         // Never log an unexecuted cognition proposal or a hypothetical
         // recovery. Evidence becomes an observable production decision only
         // after Core actually issues the matching pending Gather token.

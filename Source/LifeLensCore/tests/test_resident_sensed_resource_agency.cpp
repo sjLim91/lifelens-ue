@@ -5,6 +5,7 @@
 #include <vector>
 #include "lifelens/ResidentSensedResourceAgency.h"
 #include "lifelens/ResidentLiveRecoveryEvidence.h"
+#include "lifelens/ResidentLiveSuccessLearningEvidence.h"
 #include "lifelens/ResidentGatherRouteRecovery.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
@@ -142,6 +143,31 @@ int main()
     assert(learnedSuccessChoice.agency.decision.civilization.resourceNode==103);
     assert(learnedSuccessChoice.agency.authority
         ==ResidentAgencyAuthority::PersonalGoal);
+    const auto actualLearnedEvidence=observeResidentLiveSuccessLearningEvidence(
+        learnedSuccessWorld,learnedSuccessWorld.characters[0],position,
+        requestedGather,learnedSuccessChoice);
+    assert(actualLearnedEvidence
+        &&actualLearnedEvidence->actor==1
+        &&actualLearnedEvidence->originalSource==101
+        &&actualLearnedEvidence->learnedSource==103
+        &&actualLearnedEvidence->material==MaterialKind::Stone
+        &&actualLearnedEvidence->firsthandSuccessMinute==480
+        &&actualLearnedEvidence->choiceMinute==480);
+    assert(!observeResidentLiveSuccessLearningEvidence(
+        withoutSuccessMemory,withoutSuccessMemory.characters[0],position,
+        requestedGather,unlearnedSuccessChoice));
+    // Neither hearsay nor another mind's directly witnessed event can
+    // create a firsthand learned-choice receipt for this resident.
+    World rumourWorld=learnedSuccessWorld;
+    for(auto& memory:rumourWorld.characters[0].memory.entries)
+        if(memory.where=="resource-node:103"
+           &&memory.tags.size()==3
+           &&memory.tags[2]=="success")
+            memory.source=MemorySource::ToldByOther;
+    assert(!observeResidentLiveSuccessLearningEvidence(
+        rumourWorld,rumourWorld.characters[0],position,
+        requestedGather,learnedSuccessChoice));
+
     assert(learnedSuccessChoice.agency.decision.civilization.material
         ==MaterialKind::Stone);
     assert(withoutSuccessMemory.resourceNodes[1].quantity
@@ -164,6 +190,13 @@ int main()
         &&heldStrategy.agency.cognitiveIntent
             ==CognitiveIntentKind::ImproveFoodSecurity);
     assert(heldStrategy.agency.decision.civilization.resourceNode==103);
+    const auto cognitiveEvidence=observeResidentLiveSuccessLearningEvidence(
+        learnedSuccessWorld,learnedSuccessWorld.characters[0],position,
+        strategySuccess,heldStrategy);
+    assert(cognitiveEvidence
+        &&cognitiveEvidence->actor==1
+        &&cognitiveEvidence->learnedSource==103);
+
     auto urgentSuccess=learnedSuccessWorld.characters[0];
     urgentSuccess.needs.sleep=1.0;
     assert(chooseResidentSensedResourceGoal(
