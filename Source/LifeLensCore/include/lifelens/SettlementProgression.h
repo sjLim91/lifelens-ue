@@ -34,7 +34,8 @@ inline bool hasOperationalSettlementFacility(const World& world,FacilityKind kin
     for(const auto& facility:world.facilities){
         if(facility.kind==kind
            && facility.state==FacilityState::Operational
-           && facility.active) return true;
+           && facility.active
+           && settlementSleepFacilityGroundUsable(world,facility)) return true;
     }
     return false;
 }
@@ -496,7 +497,8 @@ inline double settlementActivityCenterScore(
 {
     double score=0.0;
     for(const auto& facility:world.facilities){
-        if(!facilityOperationalAndActive(facility)) continue;
+        if(!facilityOperationalAndActive(facility)
+           || !settlementSleepFacilityGroundUsable(world,facility)) continue;
         const int distance=manhattan(candidate,facility.pos);
         const int safeDistance=
             facilityMinimumCenterDistanceGrid(planned,facility.kind);
