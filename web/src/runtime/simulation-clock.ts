@@ -95,15 +95,18 @@ export class SimulationClock {
   }
 
   private readonly handleVisibilityChange = (): void => {
-    if (document.visibilityState !== 'visible') return;
-
-    // Browser throttling must never become an unbounded history jump.
-    // We catch up only inside the canonical simulation work budget.
-    this.tick();
-    this.refresh();
+    // Hidden time is discarded, never converted to simulation minutes.
+    this.resetAccumulator();
+    if (document.visibilityState === 'visible') this.refresh();
   };
 
   private tick(): void {
+    // Explicit hidden pages pause; older/browserless test contexts do not
+    // expose visibilityState and must retain ordinary foreground clock work.
+    if (document.visibilityState === 'hidden') {
+      this.resetAccumulator();
+      return;
+    }
     const now = Date.now();
     const elapsed = Math.max(
       0,

@@ -1,4 +1,3 @@
-import { REAL_MS_PER_SIMULATION_MINUTE_AT_1X } from './lifelens-contract';
 
 // One authoritative Core world per browser profile. Saved content remains on
 // this device; GitHub Pages cannot process or synchronize it while offline.
@@ -185,9 +184,8 @@ export async function writePersistedWorld(record: PersistedWorld): Promise<void>
 }
 
 // Native LifeLensCore World::minute is a signed 32-bit integer. Validate
-// the requested advance BEFORE invoking Core, even if the wall-time debt is a
-// safe JavaScript integer. Both interactive skip-days and offline replay use
-// the same exclusive authority; never wrap a living world into negative time.
+// the requested advance BEFORE invoking Core. Explicit user-selected day skips
+// remain valid, while reconnect restores the saved minute without extra ticks.
 export function assertCoreMinuteAdvanceCapacity(
   currentMinute: number,
   advanceMinutes: number,
@@ -200,31 +198,3 @@ export function assertCoreMinuteAdvanceCapacity(
   }
 }
 
-// Only finite, bounded wall-clock math may feed Core catch-up decisions.
-// Browsers can report a rolled-back time, corrupted storage values, or a
-// gigantic clock jump. None should produce NaN/Infinity/fractional ticks.
-export function elapsedOfflineMinutes(savedAtWallMs: number, nowWallMs: number): number {
-  if (!Number.isSafeInteger(savedAtWallMs)
-    || !Number.isSafeInteger(nowWallMs)
-    || nowWallMs <= savedAtWallMs
-    || !Number.isFinite(REAL_MS_PER_SIMULATION_MINUTE_AT_1X)
-    || REAL_MS_PER_SIMULATION_MINUTE_AT_1X <= 0) return 0;
-  const elapsed = (nowWallMs - savedAtWallMs) / REAL_MS_PER_SIMULATION_MINUTE_AT_1X;
-  if (!Number.isFinite(elapsed) || elapsed <= 0) return 0;
-  return Math.min(Number.MAX_SAFE_INTEGER, Math.floor(elapsed));
-}
-
-export function wallTimeAfterAdvance(startWallMs: number, minutes: number): number {
-  if (!Number.isSafeInteger(startWallMs) || startWallMs < 0
-    || !Number.isSafeInteger(minutes) || minutes < 0
-    || !Number.isFinite(REAL_MS_PER_SIMULATION_MINUTE_AT_1X)
-    || REAL_MS_PER_SIMULATION_MINUTE_AT_1X <= 0) {
-    throw Error('월드 시간 복원에 유효하지 않은 Core 분·시계 값이 전달됐습니다.');
-  }
-  if (minutes === 0) return startWallMs;
-  const advanced = startWallMs + minutes * REAL_MS_PER_SIMULATION_MINUTE_AT_1X;
-  if (!Number.isFinite(advanced) || advanced > Number.MAX_SAFE_INTEGER) {
-    return Number.MAX_SAFE_INTEGER;
-  }
-  return Math.max(startWallMs, Math.floor(advanced));
-}

@@ -56,7 +56,6 @@ try {
     const dependencies = {
       worldSession: { createWorld: seed => { calls.push('world:' + seed); } },
       fastForwardRunning: running,
-      catchupRunning: false,
       saveCheckpoint: () => { calls.push('save-world'); },
       generateWorldSeed: () => '123',
       characterLayer: null,
@@ -68,7 +67,7 @@ try {
       refresh: () => { calls.push('refresh'); },
     };
     const createWorld = new Function(...Object.keys(dependencies),
-      'let centerX,centerY,followResidents,localPanX,localPanZ,residentSnapshot,terrain,activeEarthOrigin,timelineAnchorMs;\n'
+      'let centerX,centerY,followResidents,localPanX,localPanZ,residentSnapshot,terrain,activeEarthOrigin;\n'
       + engine.slice(begin, end) + '\nreturn createWorld;')(...Object.values(dependencies));
     return { createWorld, clock, renderer, calls };
   }

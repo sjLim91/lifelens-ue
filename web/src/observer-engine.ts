@@ -5,8 +5,7 @@ import { LifeLensCoreBridge } from './runtime/core-bridge';
 import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
 import { SimulationClock } from './runtime/simulation-clock';
 import { acquireWorldWriterLease, type WorldWriterLease } from './runtime/world-writer-lease';
-import { assertCoreMinuteAdvanceCapacity, elapsedOfflineMinutes, readPersistedWorld,
-  wallTimeAfterAdvance, writePersistedWorld,
+import { assertCoreMinuteAdvanceCapacity, readPersistedWorld, writePersistedWorld,
   type PersistedWorld } from './runtime/offline-world-store';
 import {
   OBSERVER_CAMERA_CONTRACT,
@@ -148,25 +147,21 @@ export function startObserverEngine(): () => void {
   let followResidents = false;
   let simulationClock: SimulationClock | null = null;
   let fastForwardRunning = false;
-  let catchupRunning = false;
-  let timelineAnchorMs = Date.now();
   let activeEarthOrigin: PersistedWorld['earthOrigin'] = null;
   let pendingSaves: Promise<void> = Promise.resolve();
-  let offlineBanner: HTMLDivElement | null = null;
-  let catchupFailed = false;
-  let storageFailed = false;
+  let storageBanner: HTMLDivElement | null = null;
   let worldWriterLease: WorldWriterLease | null = null;
 
-  function offlineStatus(message: string | null): void {
+  function storageStatus(message: string | null): void {
     if (stopped) return;
-    if (message === null) { offlineBanner?.remove(); offlineBanner = null; return; }
-    if (!offlineBanner) {
-      offlineBanner = document.createElement('div');
-      offlineBanner.className = 'offline-world-banner';
-      offlineBanner.setAttribute('role', 'status');
-      canvas.parentElement?.appendChild(offlineBanner);
+    if (message === null) { storageBanner?.remove(); storageBanner = null; return; }
+    if (!storageBanner) {
+      storageBanner = document.createElement('div');
+      storageBanner.className = 'offline-world-banner';
+      storageBanner.setAttribute('role', 'status');
+      canvas.parentElement?.appendChild(storageBanner);
     }
-    offlineBanner.textContent = message;
+    storageBanner.textContent = message;
   }
 
   function saveCheckpoint(savedAtWallMs: number): Promise<void> {
@@ -187,8 +182,7 @@ export function startObserverEngine(): () => void {
         earthOrigin: activeEarthOrigin,
       };
     } catch (error) {
-      storageFailed = true;
-      offlineStatus('자동 저장 실패: ' + String(error));
+      storageStatus('자동 저장 실패: ' + String(error));
       return Promise.resolve();
     }
     // Commit strictly in observation order even if one IndexedDB transaction
@@ -197,86 +191,32 @@ export function startObserverEngine(): () => void {
       () => writePersistedWorld(checkpoint),
     );
     return pendingSaves.then(() => {
-      storageFailed = false;
     }, error => {
-      storageFailed = true;
-      offlineStatus('월드 저장 실패: ' + String(error));
+      storageStatus('월드 저장 실패: ' + String(error));
     });
   }
 
-  async function resumeOfflineWorld(): Promise<void> {
-    if (!worldSession || stopped || catchupRunning || fastForwardRunning) return;
-    const savedAt = timelineAnchorMs;
-    const debt = elapsedOfflineMinutes(savedAt, Date.now());
-    if (debt <= 0) { simulationClock?.start(); return; }
-    catchupRunning = true;
-    simulationClock?.stop();
-    residentAI.suspend(true);
-    shadowObserver.suspend(true);
-    let advanced = 0;
-    let nextCheckpoint = MINUTES_PER_DAY;
-    try {
-      let currentCoreMinute = Number(ownedCore?.worldOverview().minute);
-      assertCoreMinuteAdvanceCapacity(currentCoreMinute, 0);
-      while (!stopped) {
-        const target = elapsedOfflineMinutes(savedAt, Date.now());
-        const remaining = target - advanced;
-        if (remaining <= 0) break;
-        const step = Math.min(240, remaining);
-        assertCoreMinuteAdvanceCapacity(currentCoreMinute, step);
-        worldSession.runMinutes(step);
-        currentCoreMinute += step;
-        advanced += step;
-        timelineAnchorMs = wallTimeAfterAdvance(savedAt, advanced);
-        if (advanced >= nextCheckpoint) {
-          await saveCheckpoint(timelineAnchorMs);
-          if (storageFailed) throw Error('월드 저장 실패로 복원을 중단합니다.');
-          nextCheckpoint = advanced + MINUTES_PER_DAY;
-        }
-        if (advanced % 720 === 0 || remaining <= 240) {
-          offlineStatus('미접속 시간의 삶 복원 중 · '
-            + Math.floor(advanced / MINUTES_PER_DAY) + '일 / '
-            + Math.floor(target / MINUTES_PER_DAY) + '일');
-        }
-        await yieldToBrowser();
-      }
-      if (!stopped) {
-        refreshSafely();
-        await saveCheckpoint(timelineAnchorMs);
-        if (storageFailed) throw Error('월드 저장 실패로 복원을 중단합니다.');
-        offlineStatus(null);
-      }
-    } catch (error) {
-      // Never mark unprocessed wall time as processed. The next session can
-      // resume from the last durable Core checkpoint without losing history.
-      console.error('LifeLens offline continuation failed', error);
-      catchupFailed = true;
-      offlineStatus('오프라인 삶 복원에 실패했습니다: ' + String(error));
-      await saveCheckpoint(timelineAnchorMs);
-    } finally {
-      catchupRunning = false;
-      if (!stopped && !catchupFailed) {
-        residentAI.suspend(false);
-        shadowObserver.suspend(false);
-        simulationClock?.start();
-      }
-    }
-  }
-
+  // Page exit/hide freezes the Core: reopening does not replay elapsed time.
   function onWorldVisibility(): void {
-    if (!worldSession || catchupRunning || catchupFailed || fastForwardRunning || stopped) return;
+    if (!worldSession || stopped || fastForwardRunning) return;
     if (document.visibilityState !== 'visible') {
       simulationClock?.stop();
-      timelineAnchorMs = Date.now();
-      void saveCheckpoint(timelineAnchorMs);
-    } else {
-      void resumeOfflineWorld();
+      void saveCheckpoint(Date.now());
+      return;
     }
+    simulationClock?.resetAccumulator();
+    simulationClock?.start();
   }
+
   function onWorldPageHide(): void {
     if (!worldSession || stopped) return;
-    if (!catchupRunning) timelineAnchorMs = Date.now();
-    void saveCheckpoint(timelineAnchorMs);
+    simulationClock?.stop();
+    void saveCheckpoint(Date.now());
+  }
+
+  // BFCache restoration may fire pageshow without a visibilitychange.
+  function onWorldPageShow(): void {
+    if (document.visibilityState === 'visible') onWorldVisibility();
   }
 
   let angle: number = OBSERVER_CAMERA_CONTRACT.defaultAngleRadians;
@@ -478,7 +418,7 @@ export function startObserverEngine(): () => void {
   }
   
   function createWorld(seed: string): void {
-    if (!worldSession || fastForwardRunning || catchupRunning) return;
+    if (!worldSession || fastForwardRunning) return;
     const requestedSeed = seed.trim();
     const effectiveSeed = requestedSeed || generateWorldSeed();
     worldSession.createWorld(effectiveSeed);
@@ -487,7 +427,7 @@ export function startObserverEngine(): () => void {
   }
 
   function createEarthWorld(latitude: number, longitude: number): boolean {
-    if (!worldSession || fastForwardRunning || catchupRunning || catchupFailed
+    if (!worldSession || fastForwardRunning
       || !Number.isFinite(latitude) || !Number.isFinite(longitude))
       return false;
     const seed = generateWorldSeed();
@@ -523,8 +463,7 @@ export function startObserverEngine(): () => void {
     // Start the new world's wall-clock baseline after that synchronous work.
     simulationClock?.resetAccumulator();
     if (persist) {
-      timelineAnchorMs = Date.now();
-      void saveCheckpoint(timelineAnchorMs);
+      void saveCheckpoint(Date.now());
     }
   }
 
@@ -644,7 +583,7 @@ export function startObserverEngine(): () => void {
   }
 
   async function fastForwardDays(days: number): Promise<void> {
-    if (!worldSession || fastForwardRunning || catchupRunning || catchupFailed) return;
+    if (!worldSession || fastForwardRunning) return;
 
     const requestedDays = Math.floor(Number(days));
     if (
@@ -720,9 +659,8 @@ export function startObserverEngine(): () => void {
       threeWorldRenderer?.breakFootTrafficContinuity();
       simulationClock?.resetAccumulator();
       if (!stopped) {
-        timelineAnchorMs = Date.now();
-        void saveCheckpoint(timelineAnchorMs);
-        simulationClock?.start();
+        void saveCheckpoint(Date.now());
+        if (document.visibilityState === 'visible') simulationClock?.start();
       }
     }
   }
@@ -751,7 +689,7 @@ export function startObserverEngine(): () => void {
         console.warn(`LifeLens simulation ${phase} failed; clock remains active`, error);
       },
     });
-    simulationClock.start();
+    if (document.visibilityState === 'visible') simulationClock.start();
   }
   
   const unbindActions = observerActions.bind({
@@ -808,7 +746,7 @@ export function startObserverEngine(): () => void {
           || Number(overview.minute) !== saved.minute) {
           throw Error('복원된 세계의 식별자나 시간이 저장된 기록과 다릅니다.');
         }
-        timelineAnchorMs = saved.savedAtWallMs;
+        // Old wall timestamps only order saves; never imply skipped Core minutes.
         activeEarthOrigin = saved.earthOrigin;
         resetAfterWorldCreated(false);
       } else {
@@ -816,7 +754,6 @@ export function startObserverEngine(): () => void {
       }
       observerStore.setRuntime('ready');
       startSimulationClock();
-      if (saved) await resumeOfflineWorld();
     } catch (error) {
       worldWriterLease?.release();
       worldWriterLease = null;
@@ -830,11 +767,11 @@ export function startObserverEngine(): () => void {
   
   document.addEventListener('visibilitychange', onWorldVisibility);
   window.addEventListener('pagehide', onWorldPageHide);
+  window.addEventListener('pageshow', onWorldPageShow);
   const checkpointTimer = window.setInterval(() => {
-    if (!catchupRunning && !catchupFailed && !fastForwardRunning
+    if (!fastForwardRunning
       && document.visibilityState === 'visible' && worldSession) {
-      timelineAnchorMs = Date.now();
-      void saveCheckpoint(timelineAnchorMs);
+      void saveCheckpoint(Date.now());
     }
   }, 15000);
 
@@ -843,6 +780,7 @@ export function startObserverEngine(): () => void {
     window.clearInterval(checkpointTimer);
     document.removeEventListener('visibilitychange', onWorldVisibility);
     window.removeEventListener('pagehide', onWorldPageHide);
+    window.removeEventListener('pageshow', onWorldPageShow);
     stopped = true;
     // Flush already-captured checkpoint writes before another tab may
     // acquire Core authority; no new writes after stopped becomes true.
@@ -857,7 +795,7 @@ export function startObserverEngine(): () => void {
     cameraInput.dispose();
     threeWorldRenderer?.dispose();
     renderFailureBanner?.remove();
-    offlineBanner?.remove();
+    storageBanner?.remove();
     // Yielded fast-forward work retains its Core until it finishes.
     if (!fastForwardRunning) ownedCore?.dispose();
     worldSession = null;
