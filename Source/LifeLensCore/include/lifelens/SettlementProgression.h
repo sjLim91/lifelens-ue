@@ -92,7 +92,8 @@ inline const ConstructedFacility* operationalSettlementFacilityNear(
     const ConstructedFacility* best=nullptr;
     int bestDistance=std::max(0,maxDistance)+1;
     for(const auto& facility:world.facilities){
-        if(facility.kind!=kind || !facilityOperationalAndActive(facility)) continue;
+        if(facility.kind!=kind || !facilityOperationalAndActive(facility)
+           || !settlementSleepFacilityGroundUsable(world,facility)) continue;
         const int distance=manhattan(facility.pos,pos);
         if(distance>std::max(0,maxDistance)) continue;
         if(best==nullptr || distance<bestDistance
@@ -113,7 +114,8 @@ inline ConstructedFacility* operationalSettlementFacilityNear(
     ConstructedFacility* best=nullptr;
     int bestDistance=std::max(0,maxDistance)+1;
     for(auto& facility:world.facilities){
-        if(facility.kind!=kind || !facilityOperationalAndActive(facility)) continue;
+        if(facility.kind!=kind || !facilityOperationalAndActive(facility)
+           || !settlementSleepFacilityGroundUsable(world,facility)) continue;
         const int distance=manhattan(facility.pos,pos);
         if(distance>std::max(0,maxDistance)) continue;
         if(best==nullptr || distance<bestDistance
@@ -181,7 +183,8 @@ inline const ConstructedFacility* nearestOperationalSleepFacility(
     int bestDistance=0;
     for(const auto& facility:world.facilities){
         if(!facilityProvidesSleep(facility.kind)
-           || !facilityOperationalAndActive(facility)) continue;
+           || !facilityOperationalAndActive(facility)
+           || !settlementSleepFacilityGroundUsable(world,facility)) continue;
         const int distance=manhattan(facility.pos,pos);
         if(best==nullptr || distance<bestDistance
            || (distance==bestDistance
@@ -242,6 +245,7 @@ inline double sleepRecoveryPerMinuteAt(
     // Protection belongs to the facility actually occupied, never its village
     // or proximity. Callers supply a facility only after physical arrival.
     const bool occupied=facility!=nullptr && facilityOperationalAndActive(*facility)
+        && settlementSleepFacilityGroundUsable(world,*facility)
         && facilityProvidesSleep(facility->kind)
         && facility->pos.x==pos.x && facility->pos.y==pos.y;
     const bool protectedSleep=occupied && facilityProvidesWeatherProtection(facility->kind);
