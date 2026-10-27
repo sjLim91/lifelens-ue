@@ -101,7 +101,9 @@ export class SimulationClock {
   };
 
   private tick(): void {
-    if (document.visibilityState !== 'visible') {
+    // Explicit hidden pages pause; older/browserless test contexts do not
+    // expose visibilityState and must retain ordinary foreground clock work.
+    if (document.visibilityState === 'hidden') {
       this.resetAccumulator();
       return;
     }
