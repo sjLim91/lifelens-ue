@@ -11,6 +11,7 @@
 #include "EnvironmentalConsequences.h"
 #include "PhysiologyBalance.h"
 #include "SleepEnvironment.h"
+#include "SleepGroundSite.h"
 #include "Facility.h"
 #include "PrimitiveSanitation.h"
 #include "SettlementDemand.h"
@@ -33,7 +34,8 @@ inline bool hasOperationalSettlementFacility(const World& world,FacilityKind kin
     for(const auto& facility:world.facilities){
         if(facility.kind==kind
            && facility.state==FacilityState::Operational
-           && facility.active) return true;
+           && facility.active
+           && settlementSleepFacilityGroundUsable(world,facility)) return true;
     }
     return false;
 }
@@ -91,7 +93,8 @@ inline const ConstructedFacility* operationalSettlementFacilityNear(
     const ConstructedFacility* best=nullptr;
     int bestDistance=std::max(0,maxDistance)+1;
     for(const auto& facility:world.facilities){
-        if(facility.kind!=kind || !facilityOperationalAndActive(facility)) continue;
+        if(facility.kind!=kind || !facilityOperationalAndActive(facility)
+           || !settlementSleepFacilityGroundUsable(world,facility)) continue;
         const int distance=manhattan(facility.pos,pos);
         if(distance>std::max(0,maxDistance)) continue;
         if(best==nullptr || distance<bestDistance
@@ -112,7 +115,8 @@ inline ConstructedFacility* operationalSettlementFacilityNear(
     ConstructedFacility* best=nullptr;
     int bestDistance=std::max(0,maxDistance)+1;
     for(auto& facility:world.facilities){
-        if(facility.kind!=kind || !facilityOperationalAndActive(facility)) continue;
+        if(facility.kind!=kind || !facilityOperationalAndActive(facility)
+           || !settlementSleepFacilityGroundUsable(world,facility)) continue;
         const int distance=manhattan(facility.pos,pos);
         if(distance>std::max(0,maxDistance)) continue;
         if(best==nullptr || distance<bestDistance
@@ -180,7 +184,8 @@ inline const ConstructedFacility* nearestOperationalSleepFacility(
     int bestDistance=0;
     for(const auto& facility:world.facilities){
         if(!facilityProvidesSleep(facility.kind)
-           || !facilityOperationalAndActive(facility)) continue;
+           || !facilityOperationalAndActive(facility)
+           || !settlementSleepFacilityGroundUsable(world,facility)) continue;
         const int distance=manhattan(facility.pos,pos);
         if(best==nullptr || distance<bestDistance
            || (distance==bestDistance
@@ -241,6 +246,7 @@ inline double sleepRecoveryPerMinuteAt(
     // Protection belongs to the facility actually occupied, never its village
     // or proximity. Callers supply a facility only after physical arrival.
     const bool occupied=facility!=nullptr && facilityOperationalAndActive(*facility)
+        && settlementSleepFacilityGroundUsable(world,*facility)
         && facilityProvidesSleep(facility->kind)
         && facility->pos.x==pos.x && facility->pos.y==pos.y;
     const bool protectedSleep=occupied && facilityProvidesWeatherProtection(facility->kind);
@@ -287,6 +293,7 @@ inline int settlementRepairMaterialDemand(
     if(material==MaterialKind::Unknown) return 0;
     int demand=0;
     for(const auto& facility:world.facilities){
+        if(!settlementSleepFacilityGroundUsable(world,facility)) continue;
         if(settlementFacilityNeedsMaintenance(facility)){
             if(facilityRepairMaterial(facility.kind)==material) ++demand;
             continue;
@@ -307,6 +314,7 @@ inline FacilityRepairResult repairSettlementFacility(
     for(auto& facility:world.facilities){
         if(facility.id!=facilityId
            || !isSettlementFoundationFacility(facility.kind)) continue;
+        if(!settlementSleepFacilityGroundUsable(world,facility)) return {};
         if(settlementFacilityCanRestore(facility)){
             return restoreRuinedConstructedFacility(
                 facility,
@@ -390,39 +398,6 @@ struct SettlementFacilitySiteOpportunity {
     GridPos pos{};
 };
 
-/** A bed or shelter needs actual continuous terrain support across its
- * footprint, not just a flat-looking center sample. The site planner already
- * rewards flatness but could previously build on steep ground if proximity to
- * water/residents compensated the soft score. This is a hard physical gate.
- *
- * Sample the true generation-versioned 3D heightfield, rather than sculpting
- * presentation-only terraces or changing the whole terrain for one building.
- * Core elevations are normalized [0,1]; the Web maps 1.0 to 48 world units.
- */
-inline bool settlementSleepFoundationGroundIsLevel(
-    const World& world, GridPos pos, FacilityKind kind)
-{
-    if(kind!=FacilityKind::SleepingPlace && kind!=FacilityKind::Shelter)
-        return true;
-    // This is the real occupied foundation radius, not a point on the
-    // visual mesh. A bedding sheet spans several Core grid cells (32 cells
-    // per 8 scene units), so a 1-cell sample would miss the hill underneath.
-    const int radius=facilityFootprintRadiusGrid(kind);
-    const double maximumRange=kind==FacilityKind::SleepingPlace ? 0.012 : 0.018;
-    const WorldGenesisIdentity identity=world.genesisIdentity();
-    const double center=deriveContinuousSurfaceElevation01(identity,pos);
-    double minimum=center,maximum=center;
-    for(const int dy:{-radius,0,radius}){
-        for(const int dx:{-radius,0,radius}){
-            const double h=deriveContinuousSurfaceElevation01(
-                identity,{pos.x+dx,pos.y+dy});
-            minimum=std::min(minimum,h);
-            maximum=std::max(maximum,h);
-            if(maximum-minimum>maximumRange) return false;
-        }
-    }
-    return true;
-}
 
 inline double settlementFunctionalAffinity(
     FacilityKind planned,
@@ -522,7 +497,8 @@ inline double settlementActivityCenterScore(
 {
     double score=0.0;
     for(const auto& facility:world.facilities){
-        if(!facilityOperationalAndActive(facility)) continue;
+        if(!facilityOperationalAndActive(facility)
+           || !settlementSleepFacilityGroundUsable(world,facility)) continue;
         const int distance=manhattan(candidate,facility.pos);
         const int safeDistance=
             facilityMinimumCenterDistanceGrid(planned,facility.kind);
@@ -834,6 +810,7 @@ inline SettlementFacilityWorkResult workOnSettlementFacility(
     }
     if(project==nullptr || !isSettlementFoundationFacility(project->kind)
        || project->state==FacilityState::Operational
+       || !settlementSleepFacilityGroundUsable(world,*project)
        || !facilityMaterialsComplete(*project) || workAmount<=0.0) return result;
 
     result.facilityId=project->id;

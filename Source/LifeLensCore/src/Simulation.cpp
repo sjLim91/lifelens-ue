@@ -2019,7 +2019,9 @@ Simulation::nearestAvailableOperationalSleepFacility(
     struct Candidate { const ConstructedFacility* facility; double cost; int travelLimit; };
     std::vector<Candidate> candidates;
     for(const auto& facility:world_.facilities){
-        if(!facilityProvidesSleep(facility.kind) || !facilityOperationalAndActive(facility)) continue;
+        if(!facilityProvidesSleep(facility.kind)
+           || !facilityOperationalAndActive(facility)
+           || !settlementSleepFacilityGroundUsable(world_,facility)) continue;
         if(!sleepFacilityHasCapacityFor(requester,facility)){
             if(diagnostics!=nullptr && facilityProvidesWeatherProtection(facility.kind)) ++diagnostics->shelterRejectedCapacity;
             continue;
