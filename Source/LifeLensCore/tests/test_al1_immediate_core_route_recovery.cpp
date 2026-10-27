@@ -6,6 +6,7 @@
 
 #include "lifelens/Simulation.h"
 #include "lifelens/CoreNavigation.h"
+#include "lifelens/ResidentLocalPerception.h"
 #include "lifelens/ResidentResourceOutcomePreference.h"
 
 using namespace lifelens;
