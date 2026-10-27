@@ -1,5 +1,5 @@
-// Offline time and persistence must use canonical Core minutes, not a UI
-// clock or a regenerated copy of the same WorldSeed.
+// A paused Core world's saved minute is canonical. Saved wall timestamps
+// guard write order, not any automatic offline simulation.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -10,7 +10,6 @@ const source = readFileSync(resolve(root, 'runtime/offline-world-store.ts'), 'ut
 const js = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText;
-const actualMinuteMs = 120000 / 1440;
 const persistent = new Map();
 const oldDB = globalThis.indexedDB;
 globalThis.indexedDB = {
@@ -63,38 +62,15 @@ globalThis.indexedDB = {
 try {
   const exports = {};
   new Function('exports', 'require', js)(exports, name => {
-    assert.equal(name, './lifelens-contract');
-    return { REAL_MS_PER_SIMULATION_MINUTE_AT_1X: actualMinuteMs };
+    throw Error('Persistence must not depend on wall-time simulation: ' + name);
   });
   const { readPersistedWorld, writePersistedWorld, assertCheckpointProgress,
-    elapsedOfflineMinutes, wallTimeAfterAdvance, MAX_CORE_WORLD_MINUTE,
-    assertCoreMinuteAdvanceCapacity } = exports;
+    MAX_CORE_WORLD_MINUTE, assertCoreMinuteAdvanceCapacity } = exports;
+  assert.equal(exports.elapsedOfflineMinutes, undefined);
+  assert.equal(exports.wallTimeAfterAdvance, undefined);
   assert.equal(await readPersistedWorld(), null);
   const t0 = 1790000000000;
-  assert.equal(elapsedOfflineMinutes(t0, t0 - 60000), 0,
-    'clock rollback cannot reverse life');
-  assert.equal(elapsedOfflineMinutes(t0, t0), 0);
-  assert.equal(elapsedOfflineMinutes(t0, t0 + 120000), 1440,
-    'two real minutes are one Core day at the established 1x pace');
-  assert.equal(elapsedOfflineMinutes(t0, t0 + 120000 + 500), 1446);
-  assert.equal(wallTimeAfterAdvance(t0, 1440), t0 + 120000);
-  assert.equal(elapsedOfflineMinutes(Number.NaN, t0), 0);
-  assert.equal(elapsedOfflineMinutes(t0, Number.POSITIVE_INFINITY), 0);
-  assert.equal(elapsedOfflineMinutes(t0, t0 + 1.5), 0);
-  assert.equal(elapsedOfflineMinutes(t0, t0 + 42), 0,
-    'fractional Core minutes are never rounded up');
-  const hugeOffline = elapsedOfflineMinutes(0, Number.MAX_SAFE_INTEGER);
-  assert(Number.isSafeInteger(hugeOffline) && hugeOffline > 0,
-    'absurd wall-clock jumps cannot escape safe integer Core minutes');
-  assert.equal(wallTimeAfterAdvance(t0, 0), t0);
-  assert.equal(wallTimeAfterAdvance(Number.MAX_SAFE_INTEGER - 5, 1440),
-    Number.MAX_SAFE_INTEGER, 'overflowing wall time saturates at a safe timestamp');
-  assert.throws(() => wallTimeAfterAdvance(t0, Number.NaN), /유효하지 않은/);
-  assert.throws(() => wallTimeAfterAdvance(t0, Number.POSITIVE_INFINITY), /유효하지 않은/);
-  assert.throws(() => wallTimeAfterAdvance(t0, -1), /유효하지 않은/);
-  assert.throws(() => wallTimeAfterAdvance(t0, 0.5), /유효하지 않은/);
-  assert.throws(() => wallTimeAfterAdvance(Number.NaN, 100), /유효하지 않은/);
-
+  // Reconnection never interprets the historical saved timestamp as a tick debt.
   const record = {
     key: 'active-world', schemaVersion: 1, worldSeed: '18446744073709551615',
     minute: 338, savedAtWallMs: t0, earthOrigin: null,
@@ -175,7 +151,7 @@ try {
   await writePersistedWorld(record);
   assert.deepEqual(await readPersistedWorld(), record);
   const later = { ...record, minute: 1778,
-    savedAtWallMs: wallTimeAfterAdvance(t0, 1440) };
+    savedAtWallMs: t0 + 120000 };
   await writePersistedWorld(later);
   assert.deepEqual(await readPersistedWorld(), later,
     'newer Core snapshot must atomically supersede the older checkpoint');
@@ -235,7 +211,7 @@ try {
   await assert.rejects(readPersistedWorld(), /손상/);
   assert.equal(persistent.get('active-world').minute, 1778,
     'corrupt checkpoint cannot be silently overwritten by reading');
-  console.log('PASS offline time accounting, Core checkpoint durability and corruption rejection');
+  console.log('PASS paused-world persistence and corruption rejection');
 } finally {
   if (oldDB === undefined) delete globalThis.indexedDB;
   else globalThis.indexedDB = oldDB;
