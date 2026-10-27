@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include "World.h"
+#include "SleepGroundSite.h"
 
 namespace lifelens {
 
@@ -74,7 +75,8 @@ inline SettlementFacilityDemand observeSettlementFacilityDemand(
 
     for(const auto& facility : world.facilities){
         if(facility.kind != kind || facility.state == FacilityState::Ruined
-           || manhattan(facility.pos, anchor) > SettlementServiceRadiusGrid) continue;
+           || manhattan(facility.pos, anchor) > SettlementServiceRadiusGrid
+           || !settlementSleepFacilityGroundUsable(world,facility)) continue;
         if(facilityOperationalAndActive(facility)){
             result.operationalCapacity += capacity;
             result.committedCapacity += capacity;
@@ -94,7 +96,8 @@ inline const ConstructedFacility* settlementConstructionProjectNear(
     int bestDistance = SettlementServiceRadiusGrid + 1;
     for(const auto& facility : world.facilities){
         if(facility.kind != kind || (facility.state != FacilityState::Planned
-           && facility.state != FacilityState::UnderConstruction)) continue;
+           && facility.state != FacilityState::UnderConstruction)
+           || !settlementSleepFacilityGroundUsable(world,facility)) continue;
         const int distance = manhattan(facility.pos, anchor);
         if(distance < bestDistance
            || (best && distance == bestDistance && facility.id < best->id)){
