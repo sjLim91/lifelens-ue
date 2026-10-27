@@ -92,6 +92,13 @@ applyFirsthandSuccessToAuthorizedGather(
         if(!resolveCivilizationResourceAccessGridPosition(
                world,knownSource,access))
             continue;
+        // An already authorized Gather into another terrain chunk may
+        // open a new settlement/resource frontier. A remembered source in
+        // a DIFFERENT chunk must not silently cancel that regional trip.
+        // Personal learning refines a choice WITHIN its original physical
+        // destination region; it does not override world expansion.
+        if(chunkCoordForGrid(access)!=chunkCoordForGrid(nativeAccess))
+            continue;
         const auto distance=perceptionGridDistance(
             actualPosition,access);
         if(distance>nativeDistance+2)
