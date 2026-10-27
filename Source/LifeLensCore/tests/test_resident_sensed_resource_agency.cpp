@@ -277,6 +277,15 @@ int main()
             &&changedRevisit.preferredSource==202
             &&withRevisit.resourceNode==202);
         assert(!unchangedRevisit.changed()&&noRevisit.resourceNode==201);
+        // A physically exhausted resident must not spend an EXTRA travel
+        // step for memory preference: protect ordinary sleep recovery.
+        World exhaustedResident=revisitWorld;
+        exhaustedResident.characters.front().needs.sleep=0.80;
+        auto noDetour=nativeFar;
+        const auto tired=applyFirsthandSuccessToAuthorizedGather(
+            exhaustedResident,exhaustedResident.characters.front(),
+            position,noDetour);
+        assert(!tired.changed() &&noDetour.resourceNode==201);
         // The success at node 202 can never be credited to resident 2.
         auto strangerChoice=nativeFar;
         assert(!applyFirsthandSuccessToAuthorizedGather(
