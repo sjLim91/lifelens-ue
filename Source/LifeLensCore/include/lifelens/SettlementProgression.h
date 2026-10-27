@@ -292,6 +292,7 @@ inline int settlementRepairMaterialDemand(
     if(material==MaterialKind::Unknown) return 0;
     int demand=0;
     for(const auto& facility:world.facilities){
+        if(!settlementSleepFacilityGroundUsable(world,facility)) continue;
         if(settlementFacilityNeedsMaintenance(facility)){
             if(facilityRepairMaterial(facility.kind)==material) ++demand;
             continue;
@@ -312,6 +313,7 @@ inline FacilityRepairResult repairSettlementFacility(
     for(auto& facility:world.facilities){
         if(facility.id!=facilityId
            || !isSettlementFoundationFacility(facility.kind)) continue;
+        if(!settlementSleepFacilityGroundUsable(world,facility)) return {};
         if(settlementFacilityCanRestore(facility)){
             return restoreRuinedConstructedFacility(
                 facility,
