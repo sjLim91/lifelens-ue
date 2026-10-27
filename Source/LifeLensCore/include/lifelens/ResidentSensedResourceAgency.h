@@ -153,6 +153,63 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
             }
         }
     }
+    // A REAL personally completed Gather may teach this SAME resident
+    // which currently sensed site is dependable. Unlike a language-model
+    // thought this is never a new strategic goal or permission to Gather:
+    // only the source of the already chosen, nonurgent SAME-material
+    // Gather may change. Compare the same live candidates both WITH and
+    // WITHOUT direct firsthand evidence: if ordinary Core already favored
+    // that source, do not falsely label the choice as learned.
+    if(baseline.kind==UnifiedDecisionKind::Civilization
+       &&baseline.civilization.intent==CivilizationIntent::Gather
+       &&baseline.civilization.resourceNode!=0
+       &&baseline.civilization.material!=MaterialKind::Unknown){
+        const auto material=baseline.civilization.material;
+        std::vector<ResourceNodeId> allowed;
+        allowed.reserve(sensed.nearbyResources.size());
+        for(const auto& source:sensed.nearbyResources)
+            if(source.nodeId!=0 &&source.material==material)
+                allowed.push_back(source.nodeId);
+        if(std::find(allowed.begin(),allowed.end(),
+                     baseline.civilization.resourceNode)!=allowed.end()
+           &&allowed.size()>=2){
+            const auto native=bestGatherDecisionAtPosition(
+                world,actor,actualPosition,population,material,
+                nullptr,nullptr,&allowed);
+            const auto learned=bestGatherDecisionAtPosition(
+                world,actor,actualPosition,population,material,
+                nullptr,&sourceOutcomes,&allowed);
+            const auto direct=sourceOutcomes.find(
+                learned.resourceNode,std::string("Civilization:Gather:")
+                    +materialName(material));
+            GridPos access{};
+            std::vector<GridPos> route;
+            if(native.intent==CivilizationIntent::Gather
+               &&native.resourceNode==baseline.civilization.resourceNode
+               &&learned.intent==CivilizationIntent::Gather
+               &&learned.resourceNode!=native.resourceNode
+               &&direct.hasEvidence &&direct.succeeded
+               &&direct.reason==ResidentResourceOutcomeReason::Success
+               &&std::isfinite(learned.utility)
+               &&learned.utility>=0.14
+               &&resolveCivilizationResourceAccessGridPosition(
+                   world,learned.resourceNode,access)
+               &&buildCoreGroundRoute(
+                   world,actualPosition,access,1,route)){
+                answer.agency.decision.civilization=learned;
+                answer.agency.decision.utility=learned.utility;
+                if(prior.authority==ResidentAgencyAuthority::EmbodiedFallback){
+                    answer.agency.authority=ResidentAgencyAuthority::PersonalGoal;
+                    answer.agency.contextFingerprint=
+                        cognitiveRequestFingerprint(request);
+                }
+                // Accepted resident cognition, when present, still owns its
+                // SAME strategic intent/fingerprint. Only Core chooses which
+                // observed same-material site to physically attempt.
+                return answer;
+            }
+        }
+    }
     if(prior.authority==ResidentAgencyAuthority::ResidentCognition)
         return answer;
     // Compare candidates on the SAME existing Core score scale. Raw Gather

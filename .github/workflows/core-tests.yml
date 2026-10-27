@@ -59,6 +59,9 @@ jobs:
 
       - name: AL-1 controlled Core same-tick route recovery
         run: ctest --test-dir build --verbose -R 'test_al1_immediate_core_route_recovery'
+
+      - name: AL-1 real New Game success-memory causal ablation
+        run: ctest --test-dir build --verbose -R 'test_al1_natural_success_memory_ablation'
       - name: Deterministic harness
         run: |
           ./build/ll_harness --days 1 --seed 42 > /tmp/harness-first.txt
