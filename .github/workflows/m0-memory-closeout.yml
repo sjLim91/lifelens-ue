@@ -1,3 +1,5 @@
+# M0-04 is signed off. Do not rerun 2x1000-day worlds on every
+# AL-1/Core source edit. Keep manual dispatch and M0 evidence-tool changes.
 name: LifeLens M0-04 Multi-Seed Memory Closeout
 
 on:
@@ -7,7 +9,6 @@ on:
       - 'Tools/tests/test_m0_memory_closeout.py'
       - '.github/workflows/m0-memory-closeout.yml'
       - 'Tools/analyze_memory_checkpoints.py'
-      - 'Source/LifeLensCore/**'
   workflow_dispatch:
 
 permissions:

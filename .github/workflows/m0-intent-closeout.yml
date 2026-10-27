@@ -1,9 +1,11 @@
+# M0-03 is signed off. Do not rerun six 100/365/1000-day worlds
+# for ordinary AL-1/Core changes. Retain explicit dispatch and rerun when
+# the M0 evidence analyzers, tests or this workflow itself change.
 name: LifeLens M0-03 14-Intent Real Core Closeout
 
 on:
   pull_request:
     paths:
-      - 'Source/LifeLensCore/**'
       - 'Tools/m0_intent_closeout.py'
       - 'Tools/tests/test_m0_intent_closeout.py'
       - 'Tools/analyze_resident_ai_paired.py'
