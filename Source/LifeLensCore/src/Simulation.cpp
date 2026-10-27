@@ -2305,7 +2305,7 @@ Simulation::observeResidentCoreGatherLearningWindow(
         &socialKnowledge_,&households_);
 
     const auto perception=observeLocalResourceProximity(
-        world_,actor.id,position);
+        world_,actor.id,position,ResidentLocalPerceptionMaxRadius);
     std::vector<ResourceNodeId> allowed;
     for(const auto& fact:perception.nearbyResources)
         if(fact.nodeId!=0 &&fact.material==material)
