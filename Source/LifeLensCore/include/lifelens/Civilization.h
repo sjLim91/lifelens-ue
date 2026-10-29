@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
+#include <utility>
 #include <string>
 #include <vector>
 #include "Ids.h"
@@ -519,7 +521,10 @@ enum class ExperimentKind {
     AlloyBronze,
     CastBronzeAxe,
     CastBronzePick,
-    WeavePrimitiveWrap
+    WeavePrimitiveWrap,
+    // Generic, physical-material-driven join experiment. Unlike Technique
+    // discoveries this does not pre-name a recipe or grant knowledge.
+    ComposeMaterials
 };
 
 enum class CivilizationEventType {
@@ -578,6 +583,124 @@ struct ExperimentResult {
     ItemStack output{};
     CivilizationEvent event{};
 };
+
+inline double civilizationRoll(const ExperimentContext& context);
+
+// One resident's genuine material-composition trial. Unlike a fixed recipe,
+// head/handle/binding are found among ACTUAL carried raw materials and chosen
+// from Core physical properties. The result is an existing functional tool
+// family with measured quality/durability; a novel named technology is NOT
+// automatically discovered and no new saved enum is needed for the artifact.
+struct ComposedMaterialDesign {
+    MaterialKind head=MaterialKind::Unknown;
+    MaterialKind handle=MaterialKind::Unknown;
+    MaterialKind binding=MaterialKind::Unknown;
+    ItemKind resultingTool=ItemKind::RawMaterial;
+    double testedPerformance=0.0;
+    double testedDurability=0.0;
+};
+
+inline std::optional<ComposedMaterialDesign> proposeMaterialComposition(
+    const Inventory& inventory)
+{
+    std::optional<ComposedMaterialDesign> best;
+    for(const auto& head:inventory.stacks()){
+        if(head.kind!=ItemKind::RawMaterial ||head.quantity<=0) continue;
+        const auto h=materialProperties(head.material);
+        if(h.hardness<0.45 ||h.sharpnessPotential<0.18) continue;
+        for(const auto& handle:inventory.stacks()){
+            if(handle.kind!=ItemKind::RawMaterial ||handle.quantity<=0
+               ||head.material==handle.material) continue;
+            const auto grip=materialProperties(handle.material);
+            if(grip.flexibility<0.25 ||grip.hardness<0.20) continue;
+            for(const auto& binder:inventory.stacks()){
+                if(binder.kind!=ItemKind::RawMaterial ||binder.quantity<=0
+                   ||binder.material==head.material
+                   ||binder.material==handle.material) continue;
+                const auto join=materialProperties(binder.material);
+                if(join.flexibility<0.75 ||join.hardness>0.25) continue;
+                const double sharpness=std::clamp(
+                    h.sharpnessPotential*(0.58+0.42*h.hardness)
+                    *(0.55+0.45*join.flexibility),0.0,1.0);
+                const double impact=std::clamp(
+                    h.hardness*(0.65+0.35*grip.hardness)
+                    *(1.0-0.35*h.brittleness),0.0,1.0);
+                ComposedMaterialDesign candidate;
+                candidate.head=head.material;
+                candidate.handle=handle.material;
+                candidate.binding=binder.material;
+                candidate.resultingTool=sharpness>=impact
+                    ?ItemKind::StoneCuttingTool:ItemKind::StoneHammer;
+                candidate.testedPerformance=std::max(sharpness,impact);
+                candidate.testedDurability=std::clamp(
+                    0.35+0.32*join.flexibility+0.20*grip.flexibility
+                    -0.18*h.brittleness,0.10,1.0);
+                // Stable, resource-grounded tie-break; no RNG in a proposal.
+                if(!best ||candidate.testedPerformance>best->testedPerformance
+                   ||(candidate.testedPerformance==best->testedPerformance
+                      &&static_cast<int>(candidate.head)<
+                         static_cast<int>(best->head)))
+                    best=candidate;
+            }
+        }
+    }
+    return best;
+}
+
+// Mere possession of an old tool does not prohibit invention. Only an
+// already-owned tool with equal-or-better tested performance AND durability
+// makes this physical material hypothesis redundant for this resident.
+inline bool materialCompositionWorthTesting(
+    const Inventory& inventory,const ComposedMaterialDesign& design)
+{
+    for(const auto& stack:inventory.stacks())
+        if(stack.quantity>0 &&stack.kind==design.resultingTool
+           &&stack.material==design.head
+           &&stack.quality>=design.testedPerformance-1e-9
+           &&stack.durability>=design.testedDurability-1e-9)
+            return false;
+    return true;
+}
+
+inline ExperimentResult attemptMaterialComposition(
+    const ExperimentContext& context,Inventory& inventory)
+{
+    ExperimentResult result;
+    result.event.actor=context.actor;
+    result.event.material=context.material;
+    result.event.technique=TechniqueId::None;
+    if(context.actor==0 ||context.kind!=ExperimentKind::ComposeMaterials)
+        return result;
+    const auto choice=proposeMaterialComposition(inventory);
+    if(!choice ||choice->head!=context.material) return result;
+    Inventory consumed=inventory;
+    if(!consumed.remove(ItemKind::RawMaterial,choice->head,1)
+       ||!consumed.remove(ItemKind::RawMaterial,choice->handle,1)
+       ||!consumed.remove(ItemKind::RawMaterial,choice->binding,1))
+        return result;
+    // A real failed trial destroys its consumed inputs; a successful one
+    // produces ONE physical object. The World RNG state is untouched.
+    inventory=std::move(consumed);
+    result.attempted=true;
+    result.roll=civilizationRoll(context);
+    result.successChance=std::clamp(
+        0.12+0.38*choice->testedPerformance
+        +0.20*std::clamp(context.learningSkill,0.0,1.0)
+        +0.14*std::clamp(context.curiosity,0.0,1.0),0.0,0.85);
+    if(result.roll>=result.successChance){
+        result.event.type=CivilizationEventType::ExperimentFailed;
+        return result;
+    }
+    result.success=true;
+    result.producedItem=true;
+    result.output={choice->resultingTool,choice->head,1,
+        choice->testedPerformance,choice->testedDurability};
+    inventory.add(result.output);
+    result.event.type=CivilizationEventType::Crafted;
+    result.event.item=result.output.kind;
+    result.event.quantity=1;
+    return result;
+}
 
 struct Ingredient {
     ItemKind kind=ItemKind::RawMaterial;

@@ -367,6 +367,33 @@ inline CivilizationUtilityDecision chooseResidentAIToolPrerequisite(
     return best;
 }
 
+// A genuinely resident-owned experimental tool goal may test a new physical
+// material combination when no known recipe/prerequisite has a better legal
+// next step. This shares the ONE resident agency and Core execution boundary.
+inline CivilizationUtilityDecision chooseResidentAIComposedToolExperiment(
+    const Character& actor)
+{
+    CivilizationUtilityDecision result;
+    if(!actor.alive ||actor.id==0 ||actor.personality.curiosity<0.55
+       ||std::max({actor.needs.hunger,actor.needs.thirst,
+                   actor.needs.sleep,actor.needs.bladder,
+                   actor.needs.hygiene})>=0.48) return result;
+    const auto composition=proposeMaterialComposition(
+        actor.civilization.inventory);
+    if(!composition ||!materialCompositionWorthTesting(
+            actor.civilization.inventory,*composition))
+        return result;
+    result.intent=CivilizationIntent::Experiment;
+    result.experiment=ExperimentKind::ComposeMaterials;
+    result.material=composition->head;
+    result.item=composition->resultingTool;
+    result.technique=TechniqueId::None;
+    result.utility=clampCivilization01(
+        0.24+0.22*composition->testedPerformance
+        +0.18*actor.personality.curiosity);
+    return result;
+}
+
 // Translate an accepted resident's *strategic preference* into ONE existing
 // Core-authorized affordance candidate. This is never an action execution:
 // normal Civilization routing, inventory, terrain, path and outcome checks
@@ -451,6 +478,13 @@ chooseResidentAIExistingCivilizationAffordance(
                    actor,thought,candidate,world.minute))
                 candidate=chooseResidentAIToolPrerequisite(
                     world,actor,actorPosition,settlementPopulation,&thought);
+            if(candidate.intent==CivilizationIntent::None){
+                const auto composition=chooseResidentAIComposedToolExperiment(actor);
+                if(composition.intent==CivilizationIntent::Experiment
+                   &&!residentAIPlanAlreadyAttempted(
+                       actor,thought,composition,world.minute))
+                    candidate=composition;
+            }
             // A missing tool may require collecting a REAL ingredient or a
             // Core experiment, not a magical craft on this same tick.
             if(candidate.intent!=CivilizationIntent::Craft
