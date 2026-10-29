@@ -36,14 +36,11 @@ applyFirsthandSuccessToAuthorizedGather(
         actor,world.minute);
     if(experience.entries.empty()) return result;
 
-    const auto nearby=observeLocalResourceProximity(
-        world,actor.id,actualPosition);
-    // The native Core can legitimately choose a globally materialized
-    // Gather source OUTSIDE the resident's local sensory envelope. The
-    // earlier personal-memory refinement silently refused to compare a
-    // firsthand-successful LOCAL source in that case. The baseline is not
-    // a new observation: it is the already-authorized Core resource target.
-    // Alternative sources must still be genuinely sensed here and now.
+    // Unlike a first encounter, a resident can revisit a source which
+    // THEY ACTUALLY HARVESTED from, even when it is no longer in view.
+    // Candidate identities come exclusively from strict firsthand, dated
+    // Gather receipts on this actor. This is not a World-wide resource scan,
+    // hearsay, an inferred proximity hint, or an AI-generated destination.
     const ResourceNodeId nativeSource=selected.resourceNode;
     const ResourceNode* existing=findCivilizationResourceNodeSpatial(
         world,nativeSource);
@@ -52,45 +49,81 @@ applyFirsthandSuccessToAuthorizedGather(
     GridPos nativeAccess{};
     if(!resolveCivilizationResourceAccessGridPosition(
            world,nativeSource,nativeAccess)) return result;
-    const int nativeDistance=static_cast<int>(
-        perceptionGridDistance(actualPosition,nativeAccess));
+    const auto nativeDistance=perceptionGridDistance(
+        actualPosition,nativeAccess);
+    // A remembered source must not quietly lengthen a fatigued resident's
+    // real physical trip. Compare actual Core routes (not only straight-line
+    // cell distance) against the already-authorized native destination.
+    // A well-rested resident may spend at most ONE extra movement step to
+    // revisit a personally proven source. As fatigue accumulates, allow
+    // only an equal-or-shorter real route. Never refuse a reachable learned
+    // alternative solely because the original native route was impassable.
+    std::vector<GridPos> nativeRoute;
+    const bool nativeReachable=buildCoreGroundRoute(
+        world,actualPosition,nativeAccess,1,nativeRoute);
+    const std::size_t maxExtraTravelSteps=
+        actor.needs.sleep<0.45 ? 1U : 0U;
     const std::string key=std::string("Civilization:Gather:")
         +materialName(selected.material);
     const auto nativeOutcome=experience.find(nativeSource,key);
     double bestScore=nativeOutcome.utilityAdjustment;
     ResourceNodeId bestSource=nativeSource;
     int bestSuccessMinute=-1;
-    for(const auto& fact:nearby.nearbyResources){
-        if(fact.nodeId==nativeSource
-           ||fact.material!=selected.material
-           ||fact.distanceCells>nativeDistance+2)
+    // A bound on strictly personal episodic candidates, not global nodes.
+    // The indexed receipt order is deterministic and never advances RNG.
+    int evaluatedMemories=0;
+    constexpr int MaxPersonallyRememberedGatherSources=24;
+    for(const auto& entry:experience.entries){
+        if(entry.first.first!=key
+           ||entry.first.second==nativeSource
+           ||!entry.second.hasEvidence
+           ||!entry.second.succeeded
+           ||entry.second.reason!=ResidentResourceOutcomeReason::Success)
             continue;
-        const auto learned=experience.find(fact.nodeId,key);
-        if(!learned.hasEvidence ||!learned.succeeded
-           ||learned.reason!=ResidentResourceOutcomeReason::Success)
+        if(++evaluatedMemories>MaxPersonallyRememberedGatherSources)
+            break;
+        const ResourceNodeId knownSource=entry.first.second;
+        const ResourceNode* node=findCivilizationResourceNodeSpatial(
+            world,knownSource);
+        if(node==nullptr ||node->material!=selected.material
+           ||node->quantity<=0)
             continue;
-        const double score=learned.utilityAdjustment
-            -0.012*static_cast<double>(
-                std::max(0,fact.distanceCells-nativeDistance));
-        if(score<=bestScore+1e-12) continue;
         GridPos access{};
-        std::vector<GridPos> route;
         if(!resolveCivilizationResourceAccessGridPosition(
-                world,fact.nodeId,access)
-           ||!buildCoreGroundRoute(
-                world,actualPosition,access,1,route))
+               world,knownSource,access))
+            continue;
+        // An already authorized Gather into another terrain chunk may
+        // open a new settlement/resource frontier. A remembered source in
+        // a DIFFERENT chunk must not silently cancel that regional trip.
+        // Personal learning refines a choice WITHIN its original physical
+        // destination region; it does not override world expansion.
+        if(!(chunkCoordForGrid(access)==chunkCoordForGrid(nativeAccess)))
+            continue;
+        const auto distance=perceptionGridDistance(
+            actualPosition,access);
+        if(distance>nativeDistance+2)
+            continue;
+        const double score=entry.second.utilityAdjustment
+            -0.012*static_cast<double>(
+                std::max<std::int64_t>(0,distance-nativeDistance));
+        if(score<=bestScore+1e-12) continue;
+        std::vector<GridPos> route;
+        if(!buildCoreGroundRoute(world,actualPosition,access,1,route))
+            continue;
+        if(nativeReachable
+           &&route.size()>nativeRoute.size()+maxExtraTravelSteps)
             continue;
         bestScore=score;
-        bestSource=fact.nodeId;
-        bestSuccessMinute=learned.minute;
+        bestSource=knownSource;
+        bestSuccessMinute=entry.second.minute;
     }
     if(bestSource==nativeSource) return result;
     result={nativeSource,bestSource,bestSuccessMinute};
     selected.resourceNode=bestSource;
-    // This never grants remote omniscience: only the original Core-issued
-    // source may be outside the resident's <=12 direct local observations.
-    // All replacement candidates require direct source success, CURRENT
-    // local presence and a separately verified physical travel route.
+    // Neither a prior success nor an old position grants new-world facts.
+    // Only the resident's own time-bounded executed Gather receipts are
+    // eligible; the Core resolves CURRENT physical stock and route before
+    // approving a replacement. No unvisited source is inferred as known.
     // All Core-owned goal, intent, material, quantity and utility
     // fields remain unchanged. Actual target and route are later resolved
     // from the refined live source by the SAME pending-token authority.

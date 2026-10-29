@@ -204,6 +204,129 @@ int main()
             position,exhaustedChoice).changed());
         assert(exhaustedChoice.resourceNode==201);
 
+        // AL-1 revisit: the same resident actually harvested from a
+        // source that is now OUTSIDE the six-cell direct perception.
+        // Remembered successful travel is not omniscience: ONLY this exact
+        // firsthand source may compete, and its CURRENT stock/real route
+        // must still be verified by the native Core.
+        World revisitWorld=world;
+        GridPos basePos{};
+        GridPos recalledPos{};
+        bool foundRevisitPair=false;
+        for(int delta=6;delta<=14 &&!foundRevisitPair;++delta){
+            for(const GridPos direction:{
+                GridPos{1,0},GridPos{0,1},GridPos{-1,0},GridPos{0,-1}
+            }){
+                GridPos near{position.x+direction.x*delta,
+                             position.y+direction.y*delta};
+                GridPos far{position.x+direction.x*(delta+1),
+                            position.y+direction.y*(delta+1)};
+                std::vector<GridPos> nearRoute;
+                std::vector<GridPos> farRoute;
+                if(!coreGroundTraversable(revisitWorld,near)
+                   ||!coreGroundTraversable(revisitWorld,far)
+                   ||!buildCoreGroundRoute(
+                       revisitWorld,position,near,1,nearRoute)
+                   ||!buildCoreGroundRoute(
+                       revisitWorld,position,far,1,farRoute))
+                    continue;
+                basePos=near;
+                recalledPos=far;
+                foundRevisitPair=true;
+                break;
+            }
+        }
+        assert(foundRevisitPair);
+        assert(perceptionGridDistance(position,recalledPos)>6);
+        revisitWorld.minute=480;
+        revisitWorld.resourceNodes={
+            {201,MaterialKind::PlantFood,12,12,false,0,basePos},
+            {202,MaterialKind::PlantFood,12,12,false,0,recalledPos}
+        };
+        const auto firsthandRevisit=executeCivilizationDecisionAtPosition(
+            revisitWorld,revisitWorld.characters.front(),harvested,
+            recalledPos);
+        assert(firsthandRevisit.executed &&firsthandRevisit.success
+            &&firsthandRevisit.event.quantity>0);
+        rememberCivilizationAttemptOutcome(
+            revisitWorld.characters.front(),harvested,
+            revisitWorld.minute,true);
+        const int previouslyHarvested=
+            revisitWorld.characters.front().civilization.inventory.count(
+                ItemKind::RawMaterial,MaterialKind::PlantFood);
+        assert(previouslyHarvested>0);
+        assert(revisitWorld.characters.front().civilization.inventory.remove(
+            ItemKind::RawMaterial,MaterialKind::PlantFood,
+            previouslyHarvested));
+        revisitWorld.characters.front().needs.hunger=0.95;
+        World noRevisitReceipt=revisitWorld;
+        noRevisitReceipt.characters.front().memory.entries.clear();
+        const auto nativeFar=urgentSurvivalProvisionDecisionAtPosition(
+            noRevisitReceipt,noRevisitReceipt.characters.front(),position);
+        assert(nativeFar.intent==CivilizationIntent::Gather
+            &&nativeFar.resourceNode==201);
+        auto withRevisit=nativeFar;
+        auto noRevisit=nativeFar;
+        const auto changedRevisit=applyFirsthandSuccessToAuthorizedGather(
+            revisitWorld,revisitWorld.characters.front(),position,withRevisit);
+        const auto unchangedRevisit=applyFirsthandSuccessToAuthorizedGather(
+            noRevisitReceipt,noRevisitReceipt.characters.front(),
+            position,noRevisit);
+        assert(changedRevisit.changed()
+            &&changedRevisit.previousSource==201
+            &&changedRevisit.preferredSource==202
+            &&withRevisit.resourceNode==202);
+        assert(!unchangedRevisit.changed()&&noRevisit.resourceNode==201);
+        // A physically exhausted resident must not spend an EXTRA travel
+        // step for memory preference: protect ordinary sleep recovery.
+        World exhaustedResident=revisitWorld;
+        exhaustedResident.characters.front().needs.sleep=0.80;
+        auto noDetour=nativeFar;
+        const auto tired=applyFirsthandSuccessToAuthorizedGather(
+            exhaustedResident,exhaustedResident.characters.front(),
+            position,noDetour);
+        assert(!tired.changed() &&noDetour.resourceNode==201);
+        // The success at node 202 can never be credited to resident 2.
+        auto strangerChoice=nativeFar;
+        assert(!applyFirsthandSuccessToAuthorizedGather(
+            revisitWorld,revisitWorld.characters.back(),position,
+            strangerChoice).changed());
+        assert(strangerChoice.resourceNode==201);
+        // No stock => no permitted replacement, despite the real memory.
+        revisitWorld.resourceNodes[1].quantity=0;
+        auto emptyChoice=nativeFar;
+        assert(!applyFirsthandSuccessToAuthorizedGather(
+            revisitWorld,revisitWorld.characters.front(),position,
+            emptyChoice).changed());
+        // Stale memory outside its real horizon cannot redirect the mind.
+        revisitWorld.resourceNodes[1].quantity=10;
+        revisitWorld.minute+=ResidentResourceOutcomeHorizonMinutes+1;
+        auto expiredChoice=nativeFar;
+        assert(!applyFirsthandSuccessToAuthorizedGather(
+            revisitWorld,revisitWorld.characters.front(),position,
+            expiredChoice).changed());
+
+        // A known earlier site must NOT hijack a legitimate native Gather
+        // heading into a different chunk: that trip can enable further
+        // territorial discovery and downstream shelter construction.
+        World frontierWorld=foodWorld;
+        const ChunkCoord recalledChunk=chunkCoordForGrid(
+            frontierWorld.resourceNodes[1].pos);
+        const ChunkCoord otherChunk{recalledChunk.x+1,recalledChunk.y};
+        const GridPos otherOrigin=chunkOriginGrid(otherChunk);
+        frontierWorld.resourceNodes[0].pos={
+            otherOrigin.x+2,otherOrigin.y+2
+        };
+        assert(!(chunkCoordForGrid(frontierWorld.resourceNodes[0].pos)
+            ==chunkCoordForGrid(frontierWorld.resourceNodes[1].pos)));
+        auto regionalNative=base;
+        const auto regionalChoice=applyFirsthandSuccessToAuthorizedGather(
+            frontierWorld,frontierWorld.characters.front(),
+            position,regionalNative);
+        assert(!regionalChoice.changed() &&regionalNative.resourceNode==201);
+        // Same on-the-ground region, actual receipt, accessible stock:
+        // earlier learned choice above must remain allowed.
+
         assert(foodWorld.resourceNodes[0].quantity==12);
         assert(foodWorld.resourceNodes[1].quantity
             ==noExperience.resourceNodes[1].quantity);

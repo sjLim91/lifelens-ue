@@ -70,7 +70,7 @@ static bool recentlyWitnessedSuccess(
     return source!=0;
 }
 
-static void auditSeed(WorldSeed seed)
+static OpportunityCounts auditSeed(WorldSeed seed)
 {
     Simulation sim(seed);
     sim.setupNewGame();
@@ -311,8 +311,24 @@ static void auditSeed(WorldSeed seed)
                  : "NOT_PROVEN")
              <<" acceptance=DIAGNOSTIC_ONLY"
              <<"\n";
+    return counts;
 }
 int main(){
-    auditSeed(874213954ULL);
-    auditSeed(4242001ULL);
+    const auto first=auditSeed(874213954ULL);
+    const auto second=auditSeed(4242001ULL);
+    // Regression gate ONLY for the authentic, zero-injection, previously
+    // proven native Gather learning loop. It must issue AND physically
+    // complete its own changed Core token on BOTH independent New Games.
+    // The separate goal-planning AL-1 acceptance remains NOT_PROVEN.
+    const bool genuinelyExecutedBoth=
+        first.nativeLearnedCompletedTokens>0
+        &&second.nativeLearnedCompletedTokens>0;
+    std::cout<<"AL1_NATIVE_GATHER_NATURAL_CAUSAL_GATE first_issued="
+        <<first.nativeLearnedIssuedTokens
+        <<" first_completed="<<first.nativeLearnedCompletedTokens
+        <<" second_issued="<<second.nativeLearnedIssuedTokens
+        <<" second_completed="<<second.nativeLearnedCompletedTokens
+        <<" passed="<<genuinelyExecutedBoth
+        <<" full_al1_acceptance=NOT_PROVEN\n";
+    assert(genuinelyExecutedBoth);
 }
