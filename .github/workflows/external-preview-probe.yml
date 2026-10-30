@@ -73,32 +73,27 @@ jobs:
 
           echo "LIFELENS_PREVIEW_PASS=$LAUNCH"
 
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Verify the published Web actually boots the WASM Core in a browser
         shell: bash
         run: |
           set -euo pipefail
-          # Curl-only probes cannot detect broken dynamic imports, WASM
-          # initialization, IndexedDB/lease boot, or render-level failures.
           browser=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)
           test -n "$browser" || { echo 'Headless Chrome is missing on this runner'; exit 1; }
           echo "Headless browser: $browser"
-          for attempt in 1 2 3; do
+          for attempt in 1 2; do
             # Fresh origin, no user data deletion. The Web app itself must create
             # a genuine initial 4-person Core world with no injected fixture.
             url="https://sjlim91.github.io/lifelens-ue/?live-core-probe=${GITHUB_RUN_ID}-${attempt}"
-            timeout 90s "$browser" --headless=new --no-sandbox \
-              --disable-dev-shm-usage --disable-gpu \
-              --virtual-time-budget=18000 --dump-dom "$url" \
-              >/tmp/lifelens-core-dom.html 2>/tmp/lifelens-core-browser.log || true
-            if grep -q '시뮬레이션 코어 연결됨' /tmp/lifelens-core-dom.html \
-                && grep -Eq '인구 [0-9]+' /tmp/lifelens-core-dom.html; then
+            if timeout 65s node Tools/probe_lifelens_browser.mjs "$url" "$browser"; then
               echo "LIVE_LIFELENS_CORE_BROWSER_PASS attempt=$attempt"
               exit 0
             fi
             echo "Core browser boot failed, attempt=$attempt"
-            grep -oE '시뮬레이션 코어 연결 실패[^<]*|id="errorText"[^<]*' \
-              /tmp/lifelens-core-dom.html | head -4 || true
-            tail -15 /tmp/lifelens-core-browser.log || true
             sleep $((attempt * 2))
           done
           echo 'LIVE_LIFELENS_CORE_BROWSER_FAIL: page and WASM files can be served but Core did not boot'

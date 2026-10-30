@@ -39,6 +39,7 @@
 #include "SocialUtility.h"
 #include "SocietyEconomy.h"
 namespace lifelens {
+struct AutonomousGoalCandidate;
 // Read-only audit computed by the SAME production Core settlement-population
 // scorer. It is not a new resident decision, authority or issued action.
 struct ResidentCoreGatherLearningWindow {
@@ -444,7 +445,13 @@ private:
     bool tryCivilizationDecision(
         Character& c,
         Runtime& r,
-        const UnifiedUtilityDecision* precomputed=nullptr);
+        const UnifiedUtilityDecision* precomputed=nullptr,
+        const AutonomousGoalCandidate* personalGoal=nullptr,
+        const ResidentGatherGoalLink* continuation=nullptr);
+    bool recoverGatherGoal(Character& actor,Runtime& runtime,
+        const PendingContextAction& previous,bool actualFailure);
+    void reportGatherGoalResult(Character& actor,const PendingContextAction& pending,
+        int inventoryBefore,int resourceBefore,const char* outcome);
     bool trySocialDecision(
         Character& c,
         Runtime& r,

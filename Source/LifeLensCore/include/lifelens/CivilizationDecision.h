@@ -152,6 +152,10 @@ struct CivilizationUtilityDecision {
     TechniqueId technique=TechniqueId::None;
     ItemKind item=ItemKind::RawMaterial;
     int quantity=0;
+    // Transient planning predicate, formed while scoring the actual shortage.
+    // The winning predicate is persisted in PendingContextAction::gatherGoal;
+    // older pending commands legitimately have no such attribution.
+    int gatherGoalTarget=0;
     bool hasInnovationPressure=false;
     InnovationPressureObservation innovationPressure{};
 
@@ -1161,6 +1165,7 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
         bool provision=false;
         int settlementReserveTarget=0;
         int reserveGap=0;
+        int personalTarget=0;
         double gap=0.0;
         double demand=0.0;
         double constructionDemand=0.0;
@@ -1217,6 +1222,7 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
             ? std::min(
                 evaluation.stored,evaluation.settlementReserveTarget)
             : std::min(evaluation.stored,target);
+        evaluation.personalTarget=std::max(0,target-storedCredit);
         evaluation.gap=clampCivilization01(
             static_cast<double>(
                 std::max(0,target-evaluation.held-storedCredit))
@@ -1355,6 +1361,8 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
             2+static_cast<int>(
                 2.0*clampCivilization01(
                     self.civilization.gatheringSkill));
+        if(evaluation->personalTarget>evaluation->held)
+            candidate.gatherGoalTarget=evaluation->personalTarget;
         considerCivilizationDecision(best,candidate);
     }
     return best;

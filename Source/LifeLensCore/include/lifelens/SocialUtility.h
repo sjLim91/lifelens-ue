@@ -805,6 +805,9 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
                 }
                 if(nearestNode!=nullptr){
                     result.intent=CivilizationIntent::Gather;
+                    // This resident has no carried provision. One real unit
+                    // is the prerequisite for their selected Eat/Drink goal.
+                    result.gatherGoalTarget=1;
                     result.utility=socialClamp01(0.80+0.20*need);
                     result.resourceNode=nearestNode->id;
                     result.material=material;

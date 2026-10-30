@@ -35,7 +35,7 @@ struct IssuedRecovery {
     bool succeeded=false;
 };
 
-static void inspectNaturalGame(WorldSeed seed)
+static void inspectNaturalGame(WorldSeed seed,int days)
 {
     Simulation simulation(seed);
     simulation.setupNewGame();
@@ -44,16 +44,35 @@ static void inspectNaturalGame(WorldSeed seed)
     std::size_t logCursor=0;
     int actualIssued=0;
     int physicallyCompleted=0;
+    int actualFailures=0;
+    std::map<std::uint64_t,ResourceNodeId> failures;
+    std::map<std::uint64_t,PendingContextActionObservation> issuedActions;
+    simulation.onEvent([&](const std::string& line){
+        if(line.find("AL1_CORE_GOAL_ISSUED actor=")==std::string::npos) return;
+        const auto action=simulation.observePendingContextAction(
+            unsignedField(line," actor="));
+        if(action.active) issuedActions.emplace(action.token,action);
+    });
 
-    // Run the real simulation for 3 days: bounded observational sampling,
+    // Run the real simulation for the requested bounded observational period,
     // not a claim that route failure must occur. Core owns ALL choices,
     // navigation, extraction, memory creation and pending token assignment.
-    for(int minute=0;minute<3*1440;++minute){
+    for(int minute=0;minute<days*1440;++minute){
         simulation.step();
+        for(const auto& actor:simulation.world().characters){
+            const auto action=simulation.observePendingContextAction(actor.id);
+            if(action.active) issuedActions.emplace(action.token,action);
+        }
         const auto& logs=simulation.logs();
         while(logCursor<logs.size()){
             const std::string& line=logs[logCursor++];
-            if(line.find("AL1_CORE_RESOURCE_REPLAN actor=")
+            if(line.find("AL1_CORE_GATHER_FAILURE actor=")!=std::string::npos){
+                failures.emplace(unsignedField(line," pending_token="),
+                    unsignedField(line," source="));
+                ++actualFailures;
+                std::cout<<"AL1_NATURAL_FAILURE seed="<<seed
+                    <<" result_minute="<<simulation.world().minute-1<<" "<<line<<"\n";
+            }else if(line.find("AL1_CORE_RESOURCE_REPLAN actor=")
                 !=std::string::npos){
                 const CharacterId actorId=static_cast<CharacterId>(
                     unsignedField(line," actor="));
@@ -90,8 +109,8 @@ static void inspectNaturalGame(WorldSeed seed)
                 const auto personal=buildResidentResourceOutcomeIndex(
                     *resident,decisionMinute).find(oldSource,actionKey);
                 assert(personal.hasEvidence &&!personal.succeeded
-                    &&personal.reason
-                       ==ResidentResourceOutcomeReason::AccessUnavailable);
+                    &&(personal.reason==ResidentResourceOutcomeReason::AccessUnavailable
+                       ||personal.reason==ResidentResourceOutcomeReason::SourceUnavailable));
                 if(firstNavFailure){
                     assert(originalToken!=0);
                     bool tokenWasWitnessed=false;
@@ -108,12 +127,23 @@ static void inspectNaturalGame(WorldSeed seed)
                             tokenWasWitnessed=true;
                     assert(tokenWasWitnessed);
                 }else{
-                    assert(originalToken==0);
+                    if(originalToken!=0){
+                        assert(failures.at(originalToken)==oldSource);
+                        const auto& previous=issuedActions.at(originalToken);
+                        assert(previous.actor==actorId &&previous.resourceNode==oldSource);
+                        if(previous.gatherGoal.active()){
+                            assert(issued.gatherGoal.active()
+                                &&issued.gatherGoal.goalId==previous.gatherGoal.goalId
+                                &&issued.gatherGoal.previousToken==originalToken
+                                &&issued.gatherGoal.targetQuantity==previous.gatherGoal.targetQuantity);
+                        }
+                    }
                 }
                 assert(pending.emplace(
                     recoveryToken,IssuedRecovery{actorId,newSource,false}
                 ).second);
                 ++actualIssued;
+                std::cout<<"AL1_NATURAL_RECOVERY_ISSUED seed="<<seed<<" "<<line<<"\n";
             }else if(line.find("AL1_CORE_GATHER_RESULT actor=")
                 !=std::string::npos){
                 const auto token=unsignedField(line," pending_token=");
@@ -147,22 +177,27 @@ static void inspectNaturalGame(WorldSeed seed)
                     break;
                 }
                 assert(confirmedDirectMemory);
+                std::cout<<"AL1_NATURAL_RECOVERY_COMPLETED seed="<<seed<<" "<<line<<"\n";
             }
         }
     }
     assert(physicallyCompleted<=actualIssued);
     std::cout<<"AL1_UNMODIFIED_NATURAL_REPLAN seed="<<seed
+             <<" observed_days="<<days
              <<" issued="<<actualIssued
              <<" physically_completed="<<physicallyCompleted
+             <<" actual_gather_failures="<<actualFailures
              <<" proven_complete="<<(physicallyCompleted>0)
              <<(physicallyCompleted==0
                 ? " acceptance=NOT_PROVEN" : " acceptance=CHAIN_OBSERVED")
              <<"\n";
 }
 
-int main()
+int main(int argc,char** argv)
 {
-    inspectNaturalGame(874213954ULL);
-    inspectNaturalGame(4242001ULL);
+    const int days=argc>1 ? std::stoi(argv[1]) : 14;
+    assert(days>=1 &&days<=365);
+    inspectNaturalGame(874213954ULL,days);
+    inspectNaturalGame(4242001ULL,days);
     return 0;
 }

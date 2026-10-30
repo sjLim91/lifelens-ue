@@ -63,6 +63,9 @@ jobs:
       - name: AL-1 real New Game success-memory causal ablation
         run: ctest --test-dir build --verbose -R 'test_al1_natural_success_memory_ablation'
 
+      - name: AL-1 natural goal to learned physical reexecution
+        run: ctest --test-dir build --verbose -R 'test_al1_natural_goal_causality'
+
       - name: AL-1 natural memory reuse opportunity census
         run: ctest --test-dir build --verbose -R 'test_al1_natural_learning_opportunity_audit'
       - name: Deterministic harness
@@ -73,6 +76,9 @@ jobs:
       - name: Long-run verifier regression
         if: steps.scope.outputs.long_run == 'true'
         run: python3 Tools/test_verify_sleep_longrun.py
+      - name: AL-1 365-day untouched failure and recovery observation
+        if: steps.scope.outputs.long_run == 'true'
+        run: ./build/test_al1_unmodified_replan_observability 365
       - name: Relevant Core changes or nightly 365-day verification
         if: steps.scope.outputs.long_run == 'true'
         run: |

@@ -1,6 +1,7 @@
 #include "lifelens/NaturalEcologyValidation.h"
 #include "lifelens/DependentEscortSnapshotCodec.h"
 #include "lifelens/AutonomousGoalActionLinkSnapshotCodec.h"
+#include "lifelens/ResidentGatherGoalSnapshotCodec.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/WorldGenerationSnapshotCodec.h"
@@ -124,6 +125,8 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
         if(!validAttachedAutonomousGoalLink(
                item.first,pending,snapshot.world.minute))
             return fail("runtime autonomous goal action link mismatches pending Core action");
+        if(!validAttachedResidentGatherGoal(item.first,pending,snapshot.world.minute))
+            return fail("runtime gather goal mismatches pending Core action");
         const bool tokenPresent=pending.token!=0;
         const bool kindPresent=pending.kind!=ContextActionKind::None;
         if(tokenPresent!=kindPresent)

@@ -9,7 +9,9 @@
 namespace lifelens {
 
 // Continuation of the SAME authorized Gather after Core has genuinely failed
-// to navigate its original resource route. No new cognitive agent or proposed
+// to navigate its original resource route or extract from an exhausted/removed
+// source after arrival. The compatibility function name is retained.
+// No new cognitive agent or proposed
 // thought; the existing material and the resident's own firsthand failure
 // determine a bounded local alternative. Core must STILL issue, navigate and
 // physically execute this decision; this pure helper owns none of those acts.
@@ -53,7 +55,8 @@ chooseResidentGatherRecoveryAfterCoreRouteFailure(
        ||firsthand.currentMinute!=world.minute) return std::nullopt;
     const auto failure=firsthand.find(failedGather.resourceNode,key);
     if(!failure.hasEvidence ||failure.succeeded
-       ||failure.reason!=ResidentResourceOutcomeReason::AccessUnavailable
+       ||(failure.reason!=ResidentResourceOutcomeReason::AccessUnavailable
+          &&failure.reason!=ResidentResourceOutcomeReason::SourceUnavailable)
        ||failure.minute!=world.minute)
         return std::nullopt;
 

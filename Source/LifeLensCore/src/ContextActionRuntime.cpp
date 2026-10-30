@@ -177,6 +177,13 @@ bool Simulation::completeContextAction(
     PendingContextAction& pending=runtime.pendingContext;
     if(!actor.alive || !pending.active() || pending.token!=token) return false;
     if(contextActionExpired(pending,world_.minute)){
+        if(pending.gatherGoal.active()){
+            const auto* node=findCivilizationResourceNodeSpatial(
+                world_,pending.civilization.resourceNode);
+            reportGatherGoalResult(actor,pending,
+                actor.civilization.inventory.count(ItemKind::RawMaterial,pending.civilization.material),
+                node ? node->quantity : 0,"expired");
+        }
         pending.clear();
         return false;
     }
@@ -317,7 +324,20 @@ bool Simulation::completeContextAction(
         }
 
         case ContextActionKind::Civilization: {
+            const PendingContextAction issued=pending;
             CivilizationUtilityDecision decision=pending.civilization;
+            const int inventoryBefore=actor.civilization.inventory.count(
+                ItemKind::RawMaterial,decision.material);
+            const auto* sourceBefore=decision.intent==CivilizationIntent::Gather
+                ?findCivilizationResourceNodeSpatial(world_,decision.resourceNode):nullptr;
+            const int resourceBefore=sourceBefore ? sourceBefore->quantity : 0;
+            if(pending.gatherGoal.active()
+               &&inventoryBefore>=pending.gatherGoal.targetQuantity){
+                reportGatherGoalResult(actor,pending,inventoryBefore,
+                    resourceBefore,"already-satisfied");
+                pending.clear();
+                return false;
+            }
             GatherToolUseProfile gatherTool;
             if(decision.intent==CivilizationIntent::Gather){
                 gatherTool=inspectGatherTool(actor.civilization.inventory,decision.material);
@@ -374,11 +394,30 @@ bool Simulation::completeContextAction(
                         world_,actor,decision,resolvedPosition);
                 rememberCivilizationAttemptOutcome(
                     actor,decision,world_.minute,false,cause);
+                reportGatherGoalResult(actor,issued,inventoryBefore,
+                    resourceBefore,"failed");
+                if(decision.intent==CivilizationIntent::Gather)
+                    emit(actor.name+" AL1_CORE_GATHER_FAILURE actor="
+                        +std::to_string(actor.id)+" pending_token="+std::to_string(token)
+                        +" source="+std::to_string(decision.resourceNode)
+                        +" cause="+residentGatherFailureCauseName(cause));
                 pending.clear();
+                clearNavigation(runtime);
+                recoverGatherGoal(actor,runtime,issued,true);
                 return false;
             }
             rememberCivilizationAttemptOutcome(
                 actor,decision,world_.minute,result.success);
+            if(issued.gatherGoal.active()){
+                const int held=actor.civilization.inventory.count(
+                    ItemKind::RawMaterial,decision.material);
+                reportGatherGoalResult(actor,issued,inventoryBefore,resourceBefore,
+                    held>=issued.gatherGoal.targetQuantity ? "achieved"
+                    : held>inventoryBefore ? "progress-unmet" : "failed");
+                // Partial progress is not a completed goal. It re-enters
+                // the one normal needs/goal competition after this step.
+                recoverGatherGoal(actor,runtime,issued,false);
+            }
 
             if(decision.intent==CivilizationIntent::Gather
                && result.event.type==CivilizationEventType::Gathered
