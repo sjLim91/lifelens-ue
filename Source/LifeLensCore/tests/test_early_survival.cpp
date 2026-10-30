@@ -711,6 +711,34 @@ int main()
     assert(minimumSleep<0.99);
     assert(minimumHygiene<0.90);
 
+    // Controlled needs-only reproduction of the natural day-202 failure:
+    // critical, directly available Drink must not be displaced by comparing
+    // Toilet with the weaker missing-food provision. No water or result is
+    // granted; the selected Drink must reach and consume a real source.
+    Simulation criticalDrink(874213955);
+    criticalDrink.setupNewGame();
+    const CharacterId thirstyId=criticalDrink.world().characters.front().id;
+    const std::string thirstyName=criticalDrink.world().characters.front().name;
+    auto& thirsty=criticalDrink.world().characters.front();
+    assert(thirsty.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)==0);
+    assert(portableWaterCount(thirsty.civilization.inventory)==0);
+    thirsty.needs={0.93,1.0,0.70,0.99,0.30};
+    const int waterBefore=resourceUnits(criticalDrink.world(),MaterialKind::Water);
+    criticalDrink.step();
+    assert(criticalDrink.captureSnapshot().runtime.at(thirstyId).goal==Goal::Drink);
+    assert(!criticalDrink.observePendingContextAction(thirstyId).active);
+    const std::string drank=thirstyName+" completed Drink via emergency fallback";
+    for(int minute=0;minute<120 &&!containsLog(criticalDrink.logs(),drank);++minute)
+        criticalDrink.step();
+    assert(containsLog(criticalDrink.logs(),drank));
+    const Character* relieved=findResident(criticalDrink.world(),thirstyId);
+    assert(relieved &&relieved->alive &&relieved->needs.thirst<0.80);
+    GridPos drankAt{};
+    assert(criticalDrink.runtimePosition(thirstyId,drankAt));
+    assert(isLiveResourceAccess(criticalDrink.world(),MaterialKind::Water,drankAt));
+    assert(resourceUnits(criticalDrink.world(),MaterialKind::Water)<waterBefore);
+
     // Production-like natural New Game: over the first four simulation days,
     // every founder must prove actual food/water acquisition and consumption.
     // Toilet remains an outdoor fallback until a real sanitation affordance is

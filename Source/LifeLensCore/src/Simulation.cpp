@@ -2606,14 +2606,21 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     }
     const bool urgentSelfCareDominatesProvision=
         urgentSelfCareGoal!=Goal::Idle
-        && urgentSelfCareNeed>urgentProvisionNeed+1e-12;
+        && urgentSelfCareNeed>urgentProvisionNeed+1e-12
+        // A critical, available Eat/Drink was already selected above.
+        // Comparing self-care only with the OTHER missing provision can
+        // repeatedly reselect the toilet that survival just preempted.
+        && !(criticalSurvivalPressure &&urgentPhysicalGoal!=Goal::Idle
+             &&urgentPhysicalNeed>=urgentSelfCareNeed-1e-12);
     if(urgentSelfCareDominatesProvision){
         urgentPhysicalGoal=urgentSelfCareGoal;
         urgentPhysicalNeed=urgentSelfCareNeed;
     }
 
     if(planningAllowed && urgentProvisionRequired
-       && !urgentSelfCareDominatesProvision){
+       && !urgentSelfCareDominatesProvision
+       && !(criticalSurvivalPressure &&urgentPhysicalGoal!=Goal::Idle
+            &&urgentPhysicalNeed>=urgentProvisionNeed-1e-12)){
         UnifiedUtilityDecision urgentProvisionDecision;
         urgentProvisionDecision.kind=UnifiedDecisionKind::Civilization;
         urgentProvisionDecision.civilization=urgentProvision;
