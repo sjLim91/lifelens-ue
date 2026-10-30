@@ -9,6 +9,7 @@
 #include "Parenting.h"
 #include "SocialUtility.h"
 #include "AutonomousGoalActionLink.h"
+#include "ResidentGatherGoal.h"
 
 namespace lifelens {
 
@@ -32,6 +33,7 @@ struct PendingContextAction {
     // Optional Core-only link from a verified autonomous relationship goal
     // to this same pending social token; clear() drops both atomically.
     AutonomousGoalActionLink autonomousGoal{};
+    ResidentGatherGoalLink gatherGoal{};
     CivilizationUtilityDecision civilization{};
     CharacterId parentingTarget=0;
     ParentingAction parentingAction=ParentingAction::Comfort;
@@ -182,6 +184,7 @@ struct PendingContextActionObservation {
     ContextActionKind kind=ContextActionKind::None;
     int issuedMinute=-1;
     int durationTicks=0;
+    ResidentGatherGoalLink gatherGoal{};
 
     SocialIntent socialIntent=SocialIntent::None;
     CharacterId targetResident=0;
@@ -294,6 +297,10 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
 inline bool contextActionExpired(const PendingContextAction& action,int currentMinute)
 {
     if(!action.active()) return false;
+    // A replacement token does not restart the resident's original goal
+    // deadline. Apply this at observation, navigation and execution alike.
+    if(action.gatherGoal.active()
+       &&currentMinute>=action.gatherGoal.expiresMinute) return true;
     const int timeout=
         action.kind==ContextActionKind::Civilization
             && action.civilization.intent==CivilizationIntent::Explore
@@ -635,6 +642,7 @@ inline PendingContextActionObservation observePendingContextAction(
     result.kind=pending.kind;
     result.issuedMinute=pending.issuedMinute;
     result.durationTicks=contextActionDurationTicks(pending);
+    result.gatherGoal=pending.gatherGoal;
     result.hasSpatialTarget=pending.hasSpatialTarget;
     result.targetPos=pending.targetPos;
     result.sanitationSiteId=pending.sanitationSiteId;

@@ -2,6 +2,7 @@
 #include "lifelens/DependentEscortSnapshotCodec.h"
 #include "lifelens/NaturalEcologySnapshotCodec.h"
 #include "lifelens/AutonomousGoalActionLinkSnapshotCodec.h"
+#include "lifelens/ResidentGatherGoalSnapshotCodec.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/EnvironmentalResidueSnapshotCodec.h"
@@ -247,6 +248,11 @@ bool encodeSimulationSnapshot(
             setError(error,"invalid autonomous goal action attribution");
             return false;
         }
+        if(!validAttachedResidentGatherGoal(
+               runtime.first,runtime.second.pendingContext,snapshot.world.minute)){
+            setError(error,"invalid resident gather goal attribution");
+            return false;
+        }
     }
     if(!validEarthScenarioState(snapshot.world.earthScenario,snapshot.world.genesisIdentity())){
         setError(error,"invalid Earth scenario binding");
@@ -286,6 +292,14 @@ bool encodeSimulationSnapshot(
     if(hasEscort){
         Writer escortExtension;writeDependentEscorts(escortExtension,snapshot);
         body.insert(body.end(),escortExtension.bytes.begin(),escortExtension.bytes.end());
+    }
+    bool hasGatherGoal=false;
+    for(const auto& entry:snapshot.runtime)
+        hasGatherGoal|=entry.second.pendingContext.gatherGoal.active();
+    if(hasGatherGoal){
+        Writer gatherExtension;
+        writeResidentGatherGoalExtension(gatherExtension,snapshot);
+        body.insert(body.end(),gatherExtension.bytes.begin(),gatherExtension.bytes.end());
     }
     outBytes=std::move(body);
     if(error) error->clear();
@@ -380,11 +394,21 @@ bool decodeSimulationSnapshot(
         && (!hasHealthExtension || tradeJourneyMarker>healthMarker);
 
     const auto ecologyMarker=std::find_end(bytes.begin()+12,bytes.end(),NaturalEcologyMagic,NaturalEcologyMagic+sizeof(NaturalEcologyMagic));
+    // This optional binary tail can only follow ecology. Earlier payloads
+    // contain ordinary resident-memory and log strings; the same eight
+    // characters there must never be interpreted as an extension header.
+    const auto gatherGoalSearchBegin=ecologyMarker!=bytes.end()
+        ? ecologyMarker+sizeof(NaturalEcologyMagic) : bytes.end();
+    const auto gatherGoalMarker=std::find_end(
+        gatherGoalSearchBegin,bytes.end(),ResidentGatherGoalExtensionMagic,
+        ResidentGatherGoalExtensionMagic+sizeof(ResidentGatherGoalExtensionMagic));
+    const bool hasGatherGoalExtension=gatherGoalMarker!=bytes.end();
+    const auto legacyTailEnd=hasGatherGoalExtension ? gatherGoalMarker : bytes.end();
     const auto escortMarker=std::find_end(
-        bytes.begin()+12,bytes.end(),DependentEscortMagic,
+        bytes.begin()+12,legacyTailEnd,DependentEscortMagic,
         DependentEscortMagic+sizeof(DependentEscortMagic));
-    const bool hasEscortExtension=escortMarker!=bytes.end();
-    const auto tailEnd=hasEscortExtension?escortMarker:bytes.end();
+    const bool hasEscortExtension=escortMarker!=legacyTailEnd;
+    const auto tailEnd=hasEscortExtension?escortMarker:legacyTailEnd;
     if(hasEscortExtension &&(ecologyMarker==bytes.end() ||escortMarker<=ecologyMarker)){
         setError(error,"misplaced dependent escort extension");return false;
     }
@@ -547,10 +571,17 @@ bool decodeSimulationSnapshot(
         }
     }
     if(hasEscortExtension){
-        const std::vector<std::uint8_t> escortBytes(escortMarker,bytes.end());
+        const std::vector<std::uint8_t> escortBytes(escortMarker,legacyTailEnd);
         Reader escortReader(escortBytes);
         if(!readDependentEscorts(escortReader,decoded) ||!escortReader.done()){
             setError(error,"invalid dependent escort extension");return false;
+        }
+    }
+    if(hasGatherGoalExtension){
+        const std::vector<std::uint8_t> gatherBytes(gatherGoalMarker,bytes.end());
+        Reader gatherReader(gatherBytes);
+        if(!readResidentGatherGoalExtension(gatherReader,decoded) ||!gatherReader.done()){
+            setError(error,"invalid resident gather goal extension");return false;
         }
     }
     outSnapshot=std::move(decoded);
