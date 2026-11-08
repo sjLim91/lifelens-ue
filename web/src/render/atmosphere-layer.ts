@@ -15,25 +15,49 @@ export class AtmosphereLayer {
 
   private readonly hemisphere = new THREE.HemisphereLight(
     0xdcecff,
-    0x233126,
-    1.2,
+    0x1c2a22,
+    0.95,
   );
-  private readonly sun = new THREE.DirectionalLight(0xfff3d6, 1.8);
-  private readonly moon = new THREE.DirectionalLight(0xa9c5ff, 0.14);
+  private readonly sun = new THREE.DirectionalLight(0xfff1d6, 1.85);
+  private readonly moon = new THREE.DirectionalLight(0xa9c5ff, 0.12);
+  private readonly fill = new THREE.DirectionalLight(0xb8d4e8, 0.18);
   private minuteValue = 8 * 60;
   private environment: DynamicEnvironment | null = null;
 
   constructor(private readonly scene: THREE.Scene) {
     this.sun.position.set(-80, 160, 110);
     this.moon.position.set(80, 100, -120);
+    this.fill.position.set(40, 80, -60);
+
+    // Soft but readable contact shadows for the living world.
+    this.sun.castShadow = true;
+    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.bias = -0.00018;
+    this.sun.shadow.normalBias = 0.035;
+    this.sun.shadow.radius = 2.2;
+
+    const shadowCam = this.sun.shadow.camera as THREE.OrthographicCamera;
+    shadowCam.near = 10;
+    shadowCam.far = 520;
+    shadowCam.left = -180;
+    shadowCam.right = 180;
+    shadowCam.top = 180;
+    shadowCam.bottom = -180;
+    shadowCam.updateProjectionMatrix();
 
     this.group.add(this.hemisphere);
     this.group.add(this.sun);
     this.group.add(this.moon);
+    this.group.add(this.fill);
     this.scene.add(this.group);
-    this.scene.fog = new THREE.FogExp2(0x0b1510, 0.0032);
+    this.scene.fog = new THREE.FogExp2(0x0b1510, 0.003);
 
     this.apply();
+  }
+
+  /** Expose the main key light so other layers can align shadow focus if needed. */
+  get keyLight(): THREE.DirectionalLight {
+    return this.sun;
   }
 
   setSimulationMinute(minuteValue: number): AtmosphereState {
@@ -48,6 +72,7 @@ export class AtmosphereLayer {
 
   dispose(): void {
     this.scene.remove(this.group);
+    this.sun.shadow.map?.dispose();
   }
 
   private apply(): AtmosphereState {
@@ -85,32 +110,51 @@ export class AtmosphereLayer {
       rain || storm || snow ? 0.76 : 0,
     );
 
-    const sunDistance = 220;
+    const sunDistance = 240;
     this.sun.position.set(
       Math.cos(dayAngle) * sunDistance,
-      Math.max(-30, solar * 190),
+      Math.max(-20, solar * 205),
       Math.sin(dayAngle) * sunDistance * 0.55,
     );
-    this.moon.position.copy(this.sun.position).multiplyScalar(-0.8);
+    this.moon.position.copy(this.sun.position).multiplyScalar(-0.85);
+    this.fill.position.set(
+      -this.sun.position.x * 0.35,
+      90,
+      -this.sun.position.z * 0.4,
+    );
 
-    const cloudLightLoss = 1 - (cloud * 0.48 + precipitation * 0.24);
-    this.sun.intensity = (0.08 + daylight01 * 2.15)
-      * Math.max(0.3, cloudLightLoss);
-    this.moon.intensity = 0.04
-      + (1 - daylight01) * 0.34 * Math.max(0.55, 1 - cloud * 0.25);
+    // Keep the shadow camera centered near the current observation focus.
+    this.sun.target.position.set(0, 0, 0);
+    this.sun.target.updateMatrixWorld();
+
+    const cloudLightLoss = 1 - (cloud * 0.5 + precipitation * 0.28);
+    const sunBase = 0.06 + daylight01 * 2.35;
+    this.sun.intensity = sunBase * Math.max(0.28, cloudLightLoss);
+    this.moon.intensity = 0.035
+      + (1 - daylight01) * 0.38 * Math.max(0.5, 1 - cloud * 0.28);
     this.hemisphere.intensity = (
-      0.22 + daylight01 * 1.35
-    ) * Math.max(0.48, 1 - cloud * 0.35);
+      0.18 + daylight01 * 1.15
+    ) * Math.max(0.42, 1 - cloud * 0.38);
+    this.fill.intensity = (
+      0.08 + daylight01 * 0.22
+    ) * Math.max(0.4, 1 - cloud * 0.3);
+
+    // Slightly warmer sun at low elevation for richer twilight.
+    const sunColor = new THREE.Color(0xfff1d6);
+    if (daylight01 > 0.02 && daylight01 < 0.55) {
+      sunColor.lerp(new THREE.Color(0xffc48a), twilight * 0.55);
+    }
+    this.sun.color.copy(sunColor);
 
     const night = new THREE.Color(0x03080d);
-    const dawn = new THREE.Color(0x59483d);
-    const day = new THREE.Color(0x9dc5d9);
+    const dawn = new THREE.Color(0x6a4e3a);
+    const day = new THREE.Color(0x9fc8dc);
     const overcast = new THREE.Color(
       storm ? 0x313c43 : rain ? 0x526369 : snow ? 0x6e7a7d : 0x697b7d,
     );
     const sky = night.clone().lerp(day, daylight01);
     if (daylight01 > 0.02 && daylight01 < 0.72) {
-      sky.lerp(dawn, twilight * 0.22);
+      sky.lerp(dawn, twilight * 0.28);
     }
     sky.lerp(overcast, clamp01(cloud * 0.62 + precipitation * 0.24));
     this.scene.background = sky;
@@ -129,12 +173,15 @@ export class AtmosphereLayer {
           clamp01((1 - visibility) * 0.72 + humidity * 0.12),
         );
 
-      const dayFog = 0.0046 - daylight01 * 0.0019;
-      const weatherFog = (1 - visibility) * 0.015
+      const dayFog = 0.0044 - daylight01 * 0.0018;
+      const weatherFog = (1 - visibility) * 0.014
         + precipitation * 0.004
-        + Math.max(0, humidity - 0.8) * 0.006;
-      this.scene.fog.density = Math.min(0.024, dayFog + weatherFog);
+        + Math.max(0, humidity - 0.8) * 0.0055;
+      this.scene.fog.density = Math.min(0.022, dayFog + weatherFog);
     }
+
+    // Soften shadow contrast under heavy cloud / night.
+    this.sun.castShadow = daylight01 > 0.08 && cloud < 0.88;
 
     return {
       daylight01,
