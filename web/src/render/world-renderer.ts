@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import type {
   CivilizationWorldPayload,
   DynamicEnvironment,
@@ -12,8 +16,10 @@ import { WorldScene, type WorldSceneCameraState } from './world-scene';
 export class WorldRenderer {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly world = new WorldScene();
+  private composer: EffectComposer | null = null;
   private animationFrame: number | null = null;
   private failed = false;
+  private readonly compactGpu: boolean;
   private readonly onWebGLContextLost = (event: Event): void => {
     event.preventDefault();
     this.fail('3D 그래픽 장치 연결이 끊어졌습니다.');
@@ -26,16 +32,47 @@ export class WorldRenderer {
     // A tall Android WebView at DPR 2 consumes multiple large color/depth
     // buffers, plus reflected water and resident rigs. Bound the mobile
     // framebuffer before the GPU silently blanks the canvas.
-    const compactGpu = window.matchMedia?.('(max-width: 800px) and (pointer: coarse)').matches ?? false;
+    this.compactGpu = window.matchMedia?.('(max-width: 800px) and (pointer: coarse)').matches ?? false;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: !compactGpu,
+      antialias: !this.compactGpu,
       alpha: false,
-      powerPreference: compactGpu ? 'low-power' : 'high-performance',
+      powerPreference: this.compactGpu ? 'low-power' : 'high-performance',
     });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, compactGpu ? 1.35 : 2));
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.compactGpu ? 1.35 : 2));
     canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
+
+    this.setupComposer();
+  }
+
+  private setupComposer(): void {
+    try {
+      const size = new THREE.Vector2();
+      this.renderer.getSize(size);
+      const composer = new EffectComposer(this.renderer);
+      composer.addPass(new RenderPass(this.world.scene, this.world.camera));
+
+      // Mild bloom — enough to lift emissive lights / sun glints without washing the world.
+      const bloomStrength = this.compactGpu ? 0.12 : 0.22;
+      const bloomRadius = this.compactGpu ? 0.25 : 0.4;
+      const bloom = new UnrealBloomPass(
+        new THREE.Vector2(Math.max(1, size.x), Math.max(1, size.y)),
+        bloomStrength,
+        bloomRadius,
+        0.85,
+      );
+      composer.addPass(bloom);
+      composer.addPass(new OutputPass());
+      this.composer = composer;
+    } catch (error) {
+      console.warn('LifeLens post-processing unavailable; falling back to direct render', error);
+      this.composer = null;
+    }
   }
 
   private fail(reason: string, error?: unknown): void {
@@ -64,7 +101,11 @@ export class WorldRenderer {
         }
         this.world.update(deltaSeconds);
         this.world.updateReflections(this.renderer);
-        this.renderer.render(this.world.scene, this.world.camera);
+        if (this.composer) {
+          this.composer.render();
+        } else {
+          this.renderer.render(this.world.scene, this.world.camera);
+        }
         this.animationFrame = requestAnimationFrame(render);
       } catch (error) {
         this.fail('3D 렌더링 도중 오류가 발생했습니다.', error);
@@ -85,6 +126,7 @@ export class WorldRenderer {
     const safeHeight = Math.max(1, height);
     this.renderer.setSize(safeWidth, safeHeight, false);
     this.world.resize(safeWidth, safeHeight);
+    this.composer?.setSize(safeWidth, safeHeight);
   }
 
   setCamera(state: WorldSceneCameraState): void {
@@ -186,6 +228,8 @@ export class WorldRenderer {
     this.renderer.domElement.removeEventListener(
       'webglcontextlost', this.onWebGLContextLost,
     );
+    this.composer?.dispose();
+    this.composer = null;
     this.world.dispose();
     this.renderer.dispose();
   }
