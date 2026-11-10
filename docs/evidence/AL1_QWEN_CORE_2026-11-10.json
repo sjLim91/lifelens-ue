@@ -1,0 +1,242 @@
+{
+  "scope": "Actual local CPU Qwen inference, then unmodified proposal replay through final real WASM Core. Not a production browser WebGPU or latency acceptance.",
+  "sourceCommit": "4de5ebf5b96d97e29c9ef36941bd2251f65357f7",
+  "remoteIdenticalTreeCommit": "cfafa88691824067ecca6e1b612c7e10120cf149",
+  "runtimeSha256": {
+    "js": "27338923f1c8fd343624dfa292f55bda8166fab13a9f6b23baee098e5974554a",
+    "wasm": "e2b6e2c194518bdb5dab0adcc41a603ff636bde6ec00a79b6fd61a0aac05c1de"
+  },
+  "beforeSnapshotSha256": "8d3fbf7f973d8110c1eb64a37e5a50dd54d438d851a167c1a6923cf9d48f8bd1",
+  "model": {
+    "checked_at_utc": "2026-11-10T00:36:49.407229+00:00",
+    "model": {
+      "repository": "Qwen/Qwen3-1.7B-GGUF",
+      "revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+      "file": {
+        "type": "file",
+        "oid": "53cddf830ca488f735739d5e0b43591544e9ad82",
+        "size": 1834426016,
+        "lfs": {
+          "oid": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+          "size": 1834426016,
+          "pointerSize": 135
+        },
+        "xetHash": "0765e15700b0f9aebe441b64af38978f083447471b9854e10a18c644740e1a6d",
+        "path": "Qwen3-1.7B-Q8_0.gguf"
+      }
+    },
+    "model_sha256_verified": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+    "runtime_tag": "b12211",
+    "runtime_archive_sha256_verified": "962924b5431bc1237a9e5d26ba072d37b6fe05f79b495206e7ff6134887624c5",
+    "endpoint": "http://127.0.0.1:8080",
+    "alias": "Qwen3-1.7B-Q8_0",
+    "command": [
+      "./llama-b12211/llama-server",
+      "--model",
+      "./Qwen3-1.7B-Q8_0.gguf",
+      "--alias",
+      "Qwen3-1.7B-Q8_0",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "8080",
+      "--cors-origins",
+      "localhost",
+      "--ctx-size",
+      "4096",
+      "--parallel",
+      "1",
+      "--threads",
+      "4",
+      "--threads-batch",
+      "4",
+      "--reasoning",
+      "off",
+      "--no-webui"
+    ],
+    "scope": "Verification-only actual local CPU inference. Product browser-only provider configuration unchanged; no browser acceptance implied."
+  },
+  "request": {
+    "worldSeed": "874213954",
+    "populationSeed": "5901341880753099292",
+    "generationVersion": 4,
+    "contextFingerprint": "2547783375029143166",
+    "actor": "2",
+    "minute": 480,
+    "trigger": "Reflection",
+    "needs": {
+      "hunger": 0.202049,
+      "thirst": 0.296374,
+      "sleep": 0.129326,
+      "bladder": 0.316275,
+      "hygiene": 0.238925
+    },
+    "personality": {
+      "introversion": 0.38971,
+      "conscientiousness": 0.517635,
+      "openness": 0.368713,
+      "agreeableness": 0.550314,
+      "emotionalStability": 0.370266,
+      "empathy": 0.614938,
+      "impulsiveness": 0.413633,
+      "riskTolerance": 0.64115,
+      "ambition": 0.477274,
+      "patience": 0.373698,
+      "sociability": 0.400061,
+      "curiosity": 0.443403,
+      "orderliness": 0.813895,
+      "adaptability": 0.526103
+    },
+    "emotion": {
+      "joy": 0,
+      "sadness": 0,
+      "anger": 0,
+      "fear": 0,
+      "embarrassment": 0,
+      "pride": 0,
+      "jealousy": 0,
+      "affection": 0,
+      "anxiety": 0,
+      "relief": 0,
+      "grief": 0,
+      "valence": 0,
+      "arousal": 0
+    },
+    "memories": [],
+    "beliefs": [],
+    "relationships": [
+      {
+        "target": "1",
+        "socialBond": 0.0037,
+        "affection": 0,
+        "trust": 0,
+        "respect": 0,
+        "conflict": 0,
+        "fear": 0,
+        "grudge": 0
+      },
+      {
+        "target": "3",
+        "socialBond": 0.001419,
+        "affection": 0,
+        "trust": 0,
+        "respect": 0,
+        "conflict": 0,
+        "fear": 0,
+        "grudge": 0
+      },
+      {
+        "target": "4",
+        "socialBond": 0.000156,
+        "affection": 0,
+        "trust": 0,
+        "respect": 0,
+        "conflict": 0,
+        "fear": 0,
+        "grudge": 0
+      }
+    ],
+    "localPerception": {
+      "source": "CoreRuntimeProximity",
+      "proximityOnly": true,
+      "observerX": 982,
+      "observerY": -1142,
+      "radiusCells": 6,
+      "resources": [
+        {
+          "nodeId": "4802456536866769248",
+          "material": "Flint",
+          "distanceCells": 4,
+          "abundance": "Present"
+        }
+      ]
+    },
+    "allowedIntents": [
+      "ImproveFoodSecurity",
+      "ImproveWaterSecurity",
+      "AcquireMaterials",
+      "CraftUsefulTools",
+      "ExpandCultivation",
+      "ExploreOpportunity",
+      "CooperateWithResident",
+      "ResolveConflict",
+      "TeachKnowledge",
+      "TradeWithResident",
+      "CareForDependent",
+      "MigrateHousehold"
+    ]
+  },
+  "modelOutput": {
+    "model": "Qwen3-1.7B-Q8_0",
+    "usage": {
+      "completion_tokens": 73,
+      "prompt_tokens": 1224,
+      "total_tokens": 1297,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    },
+    "content": "{\n  \"actor\": \"2\",\n  \"intent\": \"AcquireMaterials\",\n  \"priority\": 1,\n  \"targetResident\": null,\n  \"rationale\": \"The resident needs Flint for crafting tools or building structures. The localPerception shows Flint is present and within range. Acquiring Flint is a direct and immediate need.\"\n}",
+    "finish_reason": "stop"
+  },
+  "elapsedInferenceMs": 66153.494201,
+  "accepted": true,
+  "physicalWitness": {
+    "seed": "874213954",
+    "actor": "2",
+    "issuedMinute": 540,
+    "token": "11",
+    "intent": "Gather",
+    "material": "Fiber",
+    "source": "5774862701740937008",
+    "completionMinute": 554,
+    "positionBefore": [
+      980,
+      -1142
+    ],
+    "positionAfter": [
+      973,
+      -1142
+    ],
+    "inventoryBefore": 0,
+    "inventoryAfter": 3,
+    "sourceBefore": 98,
+    "sourceAfter": 95,
+    "memory": {
+      "who": "2",
+      "sourceCharacter": "2",
+      "what": "실제 문명 행동 Civilization:Gather:Fiber 수행에 성공했다",
+      "where": "resource-node:5774862701740937008",
+      "minute": 554,
+      "emotionValence": 0.2,
+      "emotionIntensity": 0.18,
+      "importance": 0.28,
+      "confidence": 1,
+      "effectiveConfidence": 0.999988,
+      "recallScore": 0.45079,
+      "decayPerDay": 0.02,
+      "witnessed": true,
+      "source": "DirectWitness",
+      "tags": [
+        "action_experience",
+        "Civilization:Gather:Fiber",
+        "success"
+      ]
+    },
+    "control": {
+      "issuedIntent": "Experiment",
+      "positionAt555": [
+        980,
+        -1142
+      ],
+      "inventoryAt555": 0,
+      "sourceAt555": 98
+    }
+  },
+  "limits": [
+    "The earlier resident1 ExploreOpportunity output was accepted but had no different physical action in its first240minutes.",
+    "CPU inference took66.15seconds under concurrent builds, exceeding both the6second native scheduler budget and24second browser budget. This verification uses a paused Core and direct provider invocation.",
+    "Production automatically uses Qwen WebGPU; no CPU autodiscovery or provider fallback was added.",
+    "The rationale names Flint; only the typed AcquireMaterials intent controls Core selection. The model rationale does not prove material necessity or resource outcomes."
+  ]
+}
