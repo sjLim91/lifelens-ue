@@ -9,8 +9,13 @@ const {
 const { parseAutonomousGoalPreview } = await source('cognition/autonomous-goal-preview.ts');
 const {
   BrowserCognitionProvider, createBrowserResidentCognition,
-  BUILTIN_RESIDENT_MODEL,
+  BUILTIN_RESIDENT_MODEL, BUILTIN_RESIDENT_MODEL_FP32, builtinResidentModelForFeatures,
 }=await source('cognition/browser-cognition-provider.ts');
+
+assert.equal(builtinResidentModelForFeatures(new Set(['shader-f16'])), BUILTIN_RESIDENT_MODEL);
+assert.equal(builtinResidentModelForFeatures(new Set()), BUILTIN_RESIDENT_MODEL_FP32);
+assert.equal(new BrowserCognitionProvider({ modelId: BUILTIN_RESIDENT_MODEL_FP32, chat: {} }).modelId,
+  BUILTIN_RESIDENT_MODEL_FP32);
 
 const {
   LocalCognitionProvider,
@@ -197,9 +202,10 @@ await test('embedded WebGPU model can reason locally with no server or cloud key
 });
 
 await test('disposed browser engine cannot return a delayed resident thought',async()=>{
-  let resolve;
+  let resolve,interrupts=0;
   const provider=new BrowserCognitionProvider({
     chat:{completions:{create:()=>new Promise(done=>{resolve=done;})}},
+    interruptGenerate:async()=>{interrupts++;},
     unload:async()=>{},
   });
   const ac=new AbortController();
@@ -207,10 +213,66 @@ await test('disposed browser engine cannot return a delayed resident thought',as
     ac.signal);
   await new Promise(done=>setTimeout(done,0));
   await provider.dispose();
+  assert.equal(interrupts,1,'disposing an active engine interrupts its generation');
   resolve({choices:[{message:{content:JSON.stringify(
     proposal(request('1',100,['ImproveFoodSecurity'])))}}]});
   assert.equal(await pending,null,
     'obsolete GPU result cannot revive a disposed resident provider');
+});
+
+await test('timed-out WebGPU work keeps its engine slot until actual completion',async()=>{
+  const req=request('7',120,['ImproveFoodSecurity']);
+  const pending=[];
+  let interrupts=0;
+  const provider=new BrowserCognitionProvider({
+    chat:{completions:{create:()=>new Promise((resolve,reject)=>{
+      pending.push({resolve,reject});
+    })}},
+    interruptGenerate:async()=>{interrupts++;},
+  });
+  const scheduler=new CognitionScheduler(provider,()=>120,{
+    maxConcurrent:1,maxQueued:0,timeoutMs:20,
+    staleAfterSimulationMinutes:96,
+  });
+  assert.equal((await scheduler.submitObserved(req)).status,'timeout');
+  assert.equal(interrupts,1,'scheduler cancellation reaches the actual engine');
+  assert.equal((await scheduler.submitObserved(req)).status,'unavailable');
+  assert.equal(pending.length,1,
+    'a released scheduler slot must not queue another call behind GPU prefill');
+  pending[0].resolve({choices:[{message:{content:JSON.stringify(proposal(req))}}]});
+  await new Promise(done=>setTimeout(done,0));
+
+  const ac=new AbortController();
+  const recovered=provider.reason(req,ac.signal);
+  assert.equal(pending.length,2,'the settled old call releases the engine slot');
+  pending[1].resolve({choices:[{message:{content:JSON.stringify(proposal(req))}}]});
+  assert.equal((await recovered).actor,'7');
+
+  const nextAc=new AbortController();
+  const next=provider.reason(req,nextAc.signal);
+  ac.abort();
+  assert.equal(interrupts,1,
+    'an old completed request has no abort listener that could stop the next resident');
+  nextAc.abort();
+  assert.equal(interrupts,2);
+  pending[2].reject(Error('GPU generation interrupted'));
+  assert.equal(await next,null,'an aborted engine rejection is not a new valid thought');
+  scheduler.dispose();
+});
+
+await test('aborted browser results stay invalid even if driver interruption fails',async()=>{
+  const req=request('7',120,['ImproveFoodSecurity']);
+  let resolve;
+  const provider=new BrowserCognitionProvider({
+    chat:{completions:{create:()=>new Promise(done=>{resolve=done;})}},
+    interruptGenerate:async()=>{throw Error('device lost');},
+  });
+  const ac=new AbortController();
+  const pending=provider.reason(req,ac.signal);
+  ac.abort();
+  resolve({choices:[{message:{content:JSON.stringify(proposal(req))}}]});
+  assert.equal(await pending,null);
+  await provider.dispose();
 });
 
 await test('replacing WebGPU scheduler unloads GPU model once, not on World reset',async()=>{
@@ -435,6 +497,22 @@ await test('dynamic JSON schema contains only Core-supplied allowed intents',()=
   );
   assert.equal(schema.properties.actor.const,'1');
   assert.equal(schema.additionalProperties,false);
+});
+
+await test('generation schema couples a resource intent to null and a social intent to a known other resident',()=>{
+  const req=request('1',100,['AcquireMaterials','TeachKnowledge']);
+  const schema=cognitiveProposalJsonSchema(req);
+  assert.equal(schema.anyOf.length,2);
+  const personal=schema.anyOf.find(branch=>branch.properties.intent.enum.includes('AcquireMaterials'));
+  const social=schema.anyOf.find(branch=>branch.properties.intent.enum.includes('TeachKnowledge'));
+  assert.deepEqual(personal.properties.targetResident,{type:'null'});
+  assert.deepEqual(social.properties.targetResident,{type:'string',enum:['2']});
+  // Real Qwen once generated this schema-valid but executor-invalid pair.
+  // Generation must now exclude it, while the independent parser stays strict.
+  assert.throws(()=>parseCognitiveProposal(proposal(req,'AcquireMaterials','2'),req),/unexpected/);
+  assert.throws(()=>parseCognitiveProposal(proposal(req,'TeachKnowledge',null),req),/requires/);
+  req.relationships=[];
+  assert.deepEqual(cognitiveProposalJsonSchema(req).properties.intent.enum,['AcquireMaterials']);
 });
 
 await test('proposal parser rejects invented intent, invalid targets and invalid priority',()=>{

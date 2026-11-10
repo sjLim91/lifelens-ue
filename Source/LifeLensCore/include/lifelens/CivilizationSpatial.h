@@ -85,16 +85,15 @@ inline bool resolveCivilizationResourceGridPosition(
     return true;
 }
 
-inline bool resolveCivilizationResourceAccessGridPosition(
+// Resolve physical access to an already known coordinate without discovering
+// an identity or consulting the live stock of a remembered remote source.
+inline bool resolveCivilizationResourceAccessAtKnownPosition(
     const World& world,
     ResourceNodeId id,
+    MaterialKind material,
+    GridPos exact,
     GridPos& outPosition)
 {
-    const ResourceNode* node=findCivilizationResourceNodeSpatial(world,id);
-    if(node==nullptr) return false;
-
-    GridPos exact{};
-    if(!resolveCivilizationResourceGridPosition(world,id,exact)) return false;
 
     // Generation v1 predates authoritative hydrology/access separation.
     if(world.generationVersion < 2){
@@ -141,14 +140,14 @@ inline bool resolveCivilizationResourceAccessGridPosition(
     // a deterministic nearby dry interaction point. This preserves seed/save
     // identity while preventing residents from gathering from unreachable
     // ground.
-    if(node->material != MaterialKind::Water){
+    if(material != MaterialKind::Water){
         if(validAccess(exact)){
             outPosition=exact;
             return true;
         }
 
         const std::size_t startDirection=static_cast<std::size_t>(
-            node->id % directions.size());
+            id % directions.size());
         for(int distance=1;distance<=10;++distance){
             for(std::size_t ordinal=0;ordinal<directions.size();++ordinal){
                 const GridPos direction=
@@ -213,6 +212,15 @@ inline bool resolveCivilizationResourceAccessGridPosition(
     }
 
     return false;
+}
+
+inline bool resolveCivilizationResourceAccessGridPosition(
+    const World& world,ResourceNodeId id,GridPos& outPosition)
+{
+    const ResourceNode* node=findCivilizationResourceNodeSpatial(world,id);
+    GridPos exact{};
+    if(!node ||!resolveCivilizationResourceGridPosition(world,id,exact)) return false;
+    return resolveCivilizationResourceAccessAtKnownPosition(world,id,node->material,exact,outPosition);
 }
 
 inline bool resolveCivilizationStorageGridPosition(

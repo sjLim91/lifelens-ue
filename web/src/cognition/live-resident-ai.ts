@@ -398,7 +398,7 @@ export class ResidentAIController {
         && !this.scheduler) {
         this.setProvider(provider);
         this.update({ configuration: {
-          baseUrl: 'browser-webgpu', model: BUILTIN_RESIDENT_MODEL,
+          baseUrl: 'browser-webgpu', model: provider.modelId ?? BUILTIN_RESIDENT_MODEL,
         } });
       } else if (provider) {
         // A Core reattach can happen while hundreds of MB are downloading.

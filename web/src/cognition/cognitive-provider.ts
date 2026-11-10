@@ -5,6 +5,7 @@ import type {
 
 export interface CognitiveProvider {
   readonly name: string;
+  readonly modelId?: string;
   // Optional owner teardown: in-browser GPU engines must release model memory
   // when replaced; Core/world resets alone never unload the shared mind.
   dispose?(): void | Promise<void>;

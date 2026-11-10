@@ -385,7 +385,14 @@ export function parseCognitiveProposal(
 export function cognitiveProposalJsonSchema(
   request: CognitiveRequestDto,
 ): Record<string, unknown> {
-  return {
+  // A JSON object can be syntactically valid while violating the executor's
+  // intent/target contract. Constrain those fields together during decoding;
+  // never repair a neural proposal by silently changing its chosen target.
+  const personal = request.allowedIntents.filter(intent => !cognitiveIntentTargetsResident(intent));
+  const social = request.allowedIntents.filter(cognitiveIntentTargetsResident);
+  const knownTargets = [...new Set(request.relationships.map(item => item.target))]
+    .filter(target => target.length > 0 && target !== request.actor);
+  const branch = (intents: CognitiveIntent[], targets: string[] | null) => ({
     type: 'object',
     additionalProperties: false,
     required: [
@@ -399,20 +406,28 @@ export function cognitiveProposalJsonSchema(
       actor: { type: 'string', const: request.actor },
       intent: {
         type: 'string',
-        enum: [...request.allowedIntents],
+        enum: intents,
       },
       priority: {
         type: 'number',
         minimum: 0,
         maximum: 1,
       },
-      targetResident: {
-        type: ['string', 'null'],
-      },
+      targetResident: targets === null
+        ? { type: 'null' }
+        : { type: 'string', enum: targets },
       rationale: {
         type: 'string',
         maxLength: 240,
       },
     },
-  };
+  });
+  const branches = [];
+  if (personal.length > 0) branches.push(branch(personal, null));
+  if (social.length > 0 && knownTargets.length > 0)
+    branches.push(branch(social, knownTargets));
+  // An empty choice set is deliberately unsatisfiable. No invented resident
+  // or otherwise disallowed intent can make an impossible request executable.
+  if (branches.length === 0) return branch([], null);
+  return branches.length === 1 ? branches[0]! : { anyOf: branches };
 }
