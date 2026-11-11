@@ -188,6 +188,7 @@ void partialGatherContinuesOriginalGoal()
     first.gatherGoal.inventoryAtIssue=0;
     first.gatherGoal.targetQuantity=4;
     first.gatherGoal.attempt=1;
+    first.gatherGoal.composed=true; // Explicit resident-authored resource predicate.
     fixture.runtime.at(actor).pendingContext=first;
     fixture.nextContextActionToken=102;
     std::string error;
@@ -208,6 +209,12 @@ void partialGatherContinuesOriginalGoal()
     assert(al1_test::resident(sim,actor).civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::Stone)==2);
     assert(al1_test::resource(sim,source).quantity==6);
+    // The physical result remains visible even after the next token is
+    // issued. It may NOT be overwritten by Core planning observability.
+    const auto activity=sim.observeResidentCivilizationActivity(actor);
+    assert(activity.active &&activity.success
+        &&activity.kind==CivilizationActivityKind::Gather
+        &&activity.resourceNode==source &&activity.quantity==2);
     const auto second=sim.observePendingContextAction(actor);
     assert(second.active &&second.token!=101 &&second.resourceNode==source);
     assert(second.gatherGoal.goalId==101 &&second.gatherGoal.previousToken==101
