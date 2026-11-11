@@ -453,6 +453,7 @@ private:
     bool recoverGatherGoal(Character& actor,Runtime& runtime,
         const PendingContextAction& previous,bool actualFailure,bool predictive=false,
         int minimumAlternativeQuantity=1);
+    bool resumeSuspendedGatherGoal(Character& actor,Runtime& runtime);
     bool reassessGatherGoal(Character& actor,Runtime& runtime);
     void reportGatherGoalResult(Character& actor,const PendingContextAction& pending,
         int inventoryBefore,int resourceBefore,const char* outcome);
