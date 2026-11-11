@@ -130,7 +130,9 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
         if(!validResidentSuspendedGatherGoal(
                item.first,item.second.suspendedGather,snapshot.world.minute)
            ||(item.second.suspendedGather.active()
-              &&pending.gatherGoal.active()))
+              &&pending.gatherGoal.active()
+              &&item.second.suspendedGather.goal.goalId
+                  ==pending.gatherGoal.goalId))
             return fail("runtime suspended gather goal is invalid");
         const bool tokenPresent=pending.token!=0;
         const bool kindPresent=pending.kind!=ContextActionKind::None;
