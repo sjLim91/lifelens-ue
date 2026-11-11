@@ -2493,8 +2493,14 @@ bool Simulation::resumeSuspendedGatherGoal(Character& actor,Runtime& runtime)
     // source of truth. Do not resurrect the old token or teleport to a
     // remembered source; issue a brand-new continuation through the normal
     // resolver and navigation/extraction pipeline.
+    // Alternative recovery excludes its failed source by design. Survival
+    // interruption is not source failure: include the original site in the
+    // same local-perception/memory feasibility assessment, without reading
+    // remote stock or assuming it still exists.
+    CivilizationUtilityDecision assessment=prior;
+    assessment.resourceNode=0;
     const auto candidates=assessResidentGatherAlternatives(
-        world_,actor,runtime.pos,prior,goal.expiresMinute,
+        world_,actor,runtime.pos,assessment,goal.expiresMinute,
         goal.targetQuantity-held,ruleset_);
     const ResidentGatherAlternative* best=nullptr;
     for(const auto& candidate:candidates){
