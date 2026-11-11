@@ -221,6 +221,38 @@ await test('disposed browser engine cannot return a delayed resident thought',as
     'obsolete GPU result cannot revive a disposed resident provider');
 });
 
+await test('cancelled Qwen loader never installs an obsolete late engine',async()=>{
+  let unloaded=0, requested=false, observedSignal;
+  const abort=new AbortController();
+  const pending=createBrowserResidentCognition(
+    ()=>true,
+    async (_model,signal)=>{
+      requested=true;
+      observedSignal=signal;
+      return {
+        chat:{completions:{create:async()=>({choices:[]})}},
+        unload:async()=>{unloaded++;},
+      };
+    },
+    abort.signal,
+  );
+  abort.abort();
+  const provider=await pending;
+  assert.equal(requested,true);
+  assert.equal(observedSignal,abort.signal);
+  assert.equal(provider,null,
+    'an obsolete completed download cannot revive the former world');
+  assert.equal(unloaded,1,'late model engine must release GPU resources');
+  let attempted=false;
+  const skipped=await createBrowserResidentCognition(
+    ()=>true,async()=>{attempted=true;return {chat:{completions:{create:async()=>({choices:[]})}}};},
+    abort.signal,
+  );
+  assert.equal(skipped,null);
+  assert.equal(attempted,false,
+    'already-cancelled Core source must never begin a GPU model download');
+});
+
 await test('Qwen WebGPU runs in one dedicated worker, not React main-thread MLCEngine',async()=>{
   const { readFileSync } = await import('node:fs');
   const { resolve } = await import('node:path');

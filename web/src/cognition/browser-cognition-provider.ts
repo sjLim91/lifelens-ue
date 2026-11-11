@@ -188,7 +188,10 @@ export function workerBackedBrowserEngine(
   };
 }
 
-async function loadBuiltinWebGPUEngine(modelId: string): Promise<BrowserChatEngine> {
+async function loadBuiltinWebGPUEngine(
+  modelId: string, signal?: AbortSignal,
+): Promise<BrowserChatEngine> {
+  if (signal?.aborted) throw new Error('Qwen initialization cancelled');
   // Only the WebLLM RPC client runs on the React/Three.js main thread.
   // GPU compilation, model prefill, decoding and heavyweight loading happen
   // in the single dedicated Worker. This preserves on-device/free Qwen.
@@ -196,9 +199,11 @@ async function loadBuiltinWebGPUEngine(modelId: string): Promise<BrowserChatEngi
     gpu?: { requestAdapter(options: { powerPreference: 'high-performance' }): Promise<{ features: ReadonlySet<string> } | null> };
   }).gpu;
   const adapter = await gpu?.requestAdapter({ powerPreference: 'high-performance' });
+  if (signal?.aborted) throw new Error('Qwen initialization cancelled');
   if (!adapter) throw new Error('No WebGPU adapter available for Qwen3-1.7B');
   modelId = builtinResidentModelForFeatures(adapter.features);
   const webllm = await import('@mlc-ai/web-llm');
+  if (signal?.aborted) throw new Error('Qwen initialization cancelled');
 
   // Vite statically emits the worker bundle from this relative URL. It must
   // stay on the same origin as LifeLens, not a cloud inference endpoint.
@@ -207,6 +212,16 @@ async function loadBuiltinWebGPUEngine(modelId: string): Promise<BrowserChatEngi
     { type: 'module', name: 'lifelens-resident-qwen' },
   );
   let timeout: ReturnType<typeof setTimeout> | undefined;
+  // A replaced Core world must terminate its OLD download/compile immediately,
+  // not keep a second 2GB-class GPU model alive until the eight-minute timeout.
+  // The worker is still the only WebGPU execution owner.
+  let cancelInitialization: () => void = () => {};
+  const cancelled = new Promise<never>((_resolve, reject) => {
+    cancelInitialization = () => reject(new Error('Qwen initialization cancelled'));
+  });
+  const onAbort = () => cancelInitialization();
+  signal?.addEventListener('abort', onAbort, { once: true });
+  if (signal?.aborted) onAbort();
   const onError = () => fail(new Error('Qwen WebGPU worker crashed'));
   const onMessageError = () => fail(new Error('Qwen WebGPU worker message failed'));
   let fail: (error: Error) => void = () => {};
@@ -219,6 +234,7 @@ async function loadBuiltinWebGPUEngine(modelId: string): Promise<BrowserChatEngi
         appConfig: { ...webllm.prebuiltAppConfig, cacheBackend: 'indexeddb' },
       }),
       crashed,
+      cancelled,
       new Promise<never>((_resolve, reject) => {
         timeout = setTimeout(
           () => reject(new Error('Qwen WebGPU worker initialization timed out')),
@@ -238,16 +254,24 @@ async function loadBuiltinWebGPUEngine(modelId: string): Promise<BrowserChatEngi
     if (timeout !== undefined) clearTimeout(timeout);
     worker.removeEventListener('error', onError);
     worker.removeEventListener('messageerror', onMessageError);
+    signal?.removeEventListener('abort', onAbort);
   }
 }
 export async function createBrowserResidentCognition(
   available: () => boolean = browserWebGPUSupported,
-  loadEngine: (modelId: string) => Promise<BrowserChatEngine> =
+  loadEngine: (modelId: string, signal?: AbortSignal) => Promise<BrowserChatEngine> =
     loadBuiltinWebGPUEngine,
+  signal?: AbortSignal,
 ): Promise<BrowserCognitionProvider | null> {
-  if (!available()) return null;
+  if (signal?.aborted || !available()) return null;
   try {
-    const engine = await loadEngine(BUILTIN_RESIDENT_MODEL);
+    const engine = await loadEngine(BUILTIN_RESIDENT_MODEL, signal);
+    if (signal?.aborted) {
+      // Handles an injected loader which settled concurrently with a world
+      // replacement, as well as any future platform that ignores abort.
+      try { await engine.unload?.(); } catch { /* stale GPU is not Core authority */ }
+      return null;
+    }
     return new BrowserCognitionProvider(engine);
   } catch {
     // Unsupported WebGPU, insufficient mobile VRAM, model download failure,

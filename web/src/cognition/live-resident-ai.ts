@@ -321,11 +321,15 @@ export class ResidentAIController {
   private consecutiveInferenceFailures = 0;
   private lastAutoDiscovery = -Infinity;
   private autoDiscoveryGeneration = 0;
+  // Cancel the one currently INITIALIZING model when Core is replaced.
+  // This is distinct from the active scheduler's ordinary inference abort.
+  private modelLoadAbort: AbortController | null = null;
 
   constructor(
     private readonly now: () => number = () => Date.now(),
     private readonly browserReasoningFactory:
-      () => Promise<CognitiveProvider | null> = createBrowserResidentCognition,
+      (signal?: AbortSignal) => Promise<CognitiveProvider | null> =
+        (signal) => createBrowserResidentCognition(undefined, undefined, signal),
   ) {}
   getSnapshot = (): ResidentAIState => this.state;
   getAuditReport = () => this.sessionAudit.snapshot();
@@ -357,6 +361,8 @@ export class ResidentAIController {
     for (const listener of this.listeners) listener();
   }
   attach(source: ResidentAISource): void {
+    this.modelLoadAbort?.abort();
+    this.modelLoadAbort = null;
     this.disposed = false;
     this.autoDiscoveryGeneration += 1;
     this.lastBrowserModelAttempt = -Infinity;
@@ -397,14 +403,20 @@ export class ResidentAIController {
     const source = this.source;
     const generation = this.autoDiscoveryGeneration;
     const loadingStartedAt = this.now();
+    const loadAbort = new AbortController();
+    this.modelLoadAbort = loadAbort;
     this.update({ discovering: true, modelLoadMs: null });
     try {
-      const provider = await this.browserReasoningFactory();
+      const provider = await this.browserReasoningFactory(loadAbort.signal);
       // A previous asynchronous download cannot install a model into a
       // replaced Core/runtime attachment, even if it finishes much later.
-      if (provider && !this.disposed && this.automaticallyRunning
+      if (provider && !loadAbort.signal.aborted
+        && !this.disposed && this.automaticallyRunning
         && this.source === source && this.autoDiscoveryGeneration === generation
         && !this.scheduler) {
+        // setProvider resets transient Core observation state. The successful
+        // worker is no longer an initialization promise and must survive it.
+        if (this.modelLoadAbort === loadAbort) this.modelLoadAbort = null;
         this.setProvider(provider);
         const loadElapsed = this.now() - loadingStartedAt;
         this.update({
@@ -425,6 +437,7 @@ export class ResidentAIController {
     } catch {
       // Hardware/weight failures cannot stop physical resident agency.
     } finally {
+      if (this.modelLoadAbort === loadAbort) this.modelLoadAbort = null;
       if (this.source === source && this.autoDiscoveryGeneration === generation){
         this.browserModelLoading = false;
         this.update({ discovering: false });
@@ -492,6 +505,9 @@ export class ResidentAIController {
     });
   }
   dispose(): void {
+    this.modelLoadAbort?.abort();
+    this.modelLoadAbort = null;
+    this.browserModelLoading = false;
     this.disposed = true;
     this.automaticallyRunning = false;
     this.lastBrowserModelAttempt = -Infinity;
