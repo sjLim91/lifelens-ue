@@ -127,6 +127,11 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
             return fail("runtime autonomous goal action link mismatches pending Core action");
         if(!validAttachedResidentGatherGoal(item.first,pending,snapshot.world.minute))
             return fail("runtime gather goal mismatches pending Core action");
+        if(!validResidentSuspendedGatherGoal(
+               item.first,item.second.suspendedGather,snapshot.world.minute)
+           ||(item.second.suspendedGather.active()
+              &&pending.gatherGoal.active()))
+            return fail("runtime suspended gather goal is invalid");
         const bool tokenPresent=pending.token!=0;
         const bool kindPresent=pending.kind!=ContextActionKind::None;
         if(tokenPresent!=kindPresent)
@@ -288,6 +293,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
+        target.suspendedGather=source.suspendedGather;
         target.tradeJourney=source.tradeJourney;
         target.dependentEscort=source.dependentEscort;
         target.navigationRoute=source.navigationRoute;
@@ -333,6 +339,7 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
+        target.suspendedGather=source.suspendedGather;
         target.tradeJourney=source.tradeJourney;
         target.dependentEscort=source.dependentEscort;
         const auto& legacy=source.pendingContext;
