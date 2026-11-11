@@ -77,8 +77,18 @@ export class BrowserCognitionProvider implements CognitiveProvider {
     request: CognitiveRequestDto,
     signal: AbortSignal,
   ): Promise<CognitiveProposalDto | null> {
-    if (this.disposed || signal.aborted || this.inFlight
+    if (this.disposed || signal.aborted
       || request.allowedIntents.length === 0) return null;
+    // An earlier timeout releases the scheduler slot but NOT the WebGPU
+    // kernel. Reporting the still-occupied engine as a harmless "no
+    // proposal" resets the recovery fault counter forever, stranding all
+    // residents behind one hung inference. Keep the GPU call exclusive,
+    // but surface a genuine provider fault so automatic recovery can unload
+    // the stuck engine after bounded failures.
+    if (this.inFlight) {
+      throw new CognitiveProviderError(
+        'http_error', 'on-device WebGPU inference remains in flight');
+    }
     // The scheduler releases its slot on timeout, even if GPU prefill is
     // still running. Retain this engine slot until the actual call settles
     // so later residents cannot accumulate an invisible WebLLM lock queue.

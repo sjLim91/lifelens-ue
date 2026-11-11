@@ -266,6 +266,12 @@ export interface ResidentAIState {
   configuration: { baseUrl: string; model: string } | null;
   accepted: number;
   rejected: number;
+  // Wall-clock local inference evidence; not proof of a Core action.
+  inferenceAttempts: number;
+  lastInferenceMs: number | null;
+  maxInferenceMs: number | null;
+  inferenceTimeouts: number;
+  modelLoadMs: number | null;
   lastDecision: ResidentAIDecision | null;
   byResident: Readonly<Record<string, ResidentAIDecision>>;
 }
@@ -295,6 +301,8 @@ export class ResidentAIController {
     enabled: false, automatic: false, discovering: false,
     suspended: false, pendingActor: null,
     configuration: null, accepted: 0, rejected: 0,
+    inferenceAttempts: 0, lastInferenceMs: null, maxInferenceMs: null,
+    inferenceTimeouts: 0, modelLoadMs: null,
     lastDecision: null, byResident: {},
   };
   private source: ResidentAISource | null = null;
@@ -388,7 +396,8 @@ export class ResidentAIController {
     this.browserModelLoading = true;
     const source = this.source;
     const generation = this.autoDiscoveryGeneration;
-    this.update({ discovering: true });
+    const loadingStartedAt = this.now();
+    this.update({ discovering: true, modelLoadMs: null });
     try {
       const provider = await this.browserReasoningFactory();
       // A previous asynchronous download cannot install a model into a
@@ -397,9 +406,14 @@ export class ResidentAIController {
         && this.source === source && this.autoDiscoveryGeneration === generation
         && !this.scheduler) {
         this.setProvider(provider);
-        this.update({ configuration: {
-          baseUrl: 'browser-webgpu', model: provider.modelId ?? BUILTIN_RESIDENT_MODEL,
-        } });
+        const loadElapsed = this.now() - loadingStartedAt;
+        this.update({
+          configuration: {
+            baseUrl: 'browser-webgpu', model: provider.modelId ?? BUILTIN_RESIDENT_MODEL,
+          },
+          modelLoadMs: Number.isFinite(loadElapsed) && loadElapsed >= 0
+            ? Math.round(loadElapsed) : null,
+        });
       } else if (provider) {
         // A Core reattach can happen while hundreds of MB are downloading.
         // A completed OLD engine must be unloaded, not merely ignored:
@@ -440,7 +454,7 @@ export class ResidentAIController {
     this.scheduler = null;
     this.activeProviderName = null;
     this.consecutiveInferenceFailures = 0;
-    this.update({ configuration: null });
+    this.update({ configuration: null, modelLoadMs: null });
   }
   setEnabled(enabled: boolean): boolean {
     if (enabled && (!this.scheduler || !this.source || this.disposed)) return false;
@@ -473,6 +487,8 @@ export class ResidentAIController {
     this.update({
       pendingActor: null, accepted: 0, rejected: 0,
       lastDecision: null, byResident: {},
+      inferenceAttempts: 0, lastInferenceMs: null, maxInferenceMs: null,
+      inferenceTimeouts: 0,
     });
   }
   dispose(): void {
@@ -583,8 +599,12 @@ export class ResidentAIController {
     const epoch = this.epoch;
     this.sessionAudit.inference(request);
     this.update({ pendingActor: actor });
+    const inferenceStartedAt = this.now();
     const result = await this.scheduler.submitObserved(request);
     if (this.disposed || epoch !== this.epoch || this.source !== source) return;
+    const elapsed = this.now() - inferenceStartedAt;
+    const validElapsed = Number.isFinite(elapsed) && elapsed >= 0
+      ? Math.round(elapsed) : null;
 
     let status: ResidentAIDecisionStatus = result.status === 'validated'
       ? 'rejected'
@@ -638,6 +658,12 @@ export class ResidentAIController {
     this.sessionAudit.result(status);
     this.update({
       pendingActor: null,
+      inferenceAttempts: this.state.inferenceAttempts + 1,
+      lastInferenceMs: validElapsed,
+      maxInferenceMs: validElapsed === null ? this.state.maxInferenceMs
+        : Math.max(this.state.maxInferenceMs ?? 0, validElapsed),
+      inferenceTimeouts: this.state.inferenceTimeouts
+        + (result.status === 'timeout' ? 1 : 0),
       accepted: this.state.accepted + (status === 'recorded' ? 1 : 0),
       rejected: this.state.rejected + (status === 'recorded' ? 0 : 1),
       lastDecision,
@@ -656,7 +682,7 @@ export class ResidentAIController {
       // otherwise the same damaged GPU/model is reloaded on every refresh.
       if (failedProvider === 'resident-browser-webgpu')
         this.lastBrowserModelAttempt = this.now();
-      this.update({ configuration: null });
+      this.update({ configuration: null, modelLoadMs: null });
     }
   }
 }

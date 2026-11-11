@@ -236,7 +236,13 @@ await test('timed-out WebGPU work keeps its engine slot until actual completion'
   });
   assert.equal((await scheduler.submitObserved(req)).status,'timeout');
   assert.equal(interrupts,1,'scheduler cancellation reaches the actual engine');
-  assert.equal((await scheduler.submitObserved(req)).status,'unavailable');
+  const blocked=await scheduler.submitObserved(req);
+  assert.equal(blocked.status,'error');
+  assert.equal(blocked.reason,'http_error',
+    'a timed-out but occupied GPU must be a recoverable fault, not empty reasoning');
+  const stillBlocked=await scheduler.submitObserved(req);
+  assert.equal(stillBlocked.status,'error',
+    'repeated locked GPU calls must not hide a persistent provider failure');
   assert.equal(pending.length,1,
     'a released scheduler slot must not queue another call behind GPU prefill');
   pending[0].resolve({choices:[{message:{content:JSON.stringify(proposal(req))}}]});

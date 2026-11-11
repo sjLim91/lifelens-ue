@@ -132,6 +132,7 @@ function fixture(provider, browserReasoningFactory) {
   return {
     controller, contexts, submitted, residents, world, runtime,
     advance: () => { wall += LIVE_AI_BUDGET.wallCadenceMs; world.minute += 15; },
+    advanceWall: (ms) => { wall += ms; },
   };
 }
 
@@ -185,6 +186,61 @@ const provider = {
   f.controller.observe(f.world, f.residents);
   await tick();
   assert.equal(f.submitted.length, 2, 'no model mutation during fast forward');
+  f.controller.dispose();
+}
+
+{
+  // The browser panel must measure actual elapsed inference wall time,
+  // including a slow successful response. This is timing evidence, not a
+  // manufactured claim that the resulting Core action succeeded.
+  let finish;
+  const f = fixture({name:'timed-local-model',
+    reason:() => new Promise(resolve => { finish=resolve; }),
+  });
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world,f.residents);
+  await tick();
+  assert.equal(f.controller.getSnapshot().inferenceAttempts,0);
+  f.advanceWall(137);
+  finish({actor:'1',intent:'CooperateWithResident',
+    targetResident:'2',priority:.8,rationale:'직접 대화 선택'});
+  await tick(); await tick();
+  assert.equal(f.controller.getSnapshot().inferenceAttempts,1);
+  assert.equal(f.controller.getSnapshot().lastInferenceMs,137);
+  assert.equal(f.controller.getSnapshot().maxInferenceMs,137);
+  assert.equal(f.controller.getSnapshot().inferenceTimeouts,0);
+  assert.equal(f.controller.getSnapshot().accepted,1);
+
+  f.advance();
+  f.controller.observe(f.world,f.residents);
+  await tick();
+  f.advanceWall(23);
+  finish({actor:'2',intent:'CooperateWithResident',
+    targetResident:'1',priority:.8,rationale:'직접 대화 선택'});
+  await tick(); await tick();
+  assert.equal(f.controller.getSnapshot().inferenceAttempts,2);
+  assert.equal(f.controller.getSnapshot().lastInferenceMs,23);
+  assert.equal(f.controller.getSnapshot().maxInferenceMs,137);
+  assert.equal(f.controller.getSnapshot().accepted,2);
+  f.controller.resetWorld();
+  assert.equal(f.controller.getSnapshot().inferenceAttempts,0);
+  assert.equal(f.controller.getSnapshot().lastInferenceMs,null);
+  assert.equal(f.controller.getSnapshot().maxInferenceMs,null);
+  f.controller.dispose();
+}
+
+{
+  let completeLoad;
+  const f=fixture(undefined,()=>new Promise(resolve => { completeLoad=resolve; }));
+  f.controller.startAutomatically();
+  await tick();
+  f.advanceWall(4200);
+  completeLoad(provider);
+  await tick(); await tick();
+  assert.equal(f.controller.getSnapshot().modelLoadMs,4200,
+    'measure completed model preparation without implying actual GPU success');
+  assert.equal(f.controller.getSnapshot().inferenceAttempts,0,
+    'model initialization is not an inference decision');
   f.controller.dispose();
 }
 
