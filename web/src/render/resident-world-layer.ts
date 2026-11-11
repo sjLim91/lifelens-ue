@@ -1375,6 +1375,10 @@ export class ResidentWorldLayer {
 
   private restMotion(actor: ResidentActor): MotionName {
     const presentation = actor.presentation;
+    // The semantic resolver correctly maps a live Core travel directive to
+    // walking, but only the actual interpolated displacement can authorize
+    // locomotion here. A delayed Moving DTO must not keep feet cycling.
+    if (presentation?.phase === 'Moving') return 'idle';
     const targetResidentId = presentation?.targetResidentId ?? '';
     const targetActor = targetResidentId && targetResidentId !== '0'
       ? this.actors.get(targetResidentId)
