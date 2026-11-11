@@ -430,7 +430,8 @@ bool Simulation::completeContextAction(
                     std::max({actor.needs.hunger,actor.needs.thirst,
                         actor.needs.sleep,actor.needs.bladder,
                         actor.needs.hygiene})>=ruleset_.utilityAI.urgentThreshold;
-                if(result.success &&result.event.type==CivilizationEventType::Gathered
+                if(issued.gatherGoal.composed
+                   &&result.success &&result.event.type==CivilizationEventType::Gathered
                    &&held>inventoryBefore &&held<issued.gatherGoal.targetQuantity
                    &&remainingSource &&remainingSource->quantity>0
                    &&resourceBefore>remainingSource->quantity
@@ -1032,6 +1033,18 @@ bool Simulation::completeContextAction(
     // observed source under the ORIGINAL goal deadline and attempt limit.
     // A failed reissue falls back to normal Core needs/goal competition.
     if(hasPartialGatherToContinue &&!runtime.pendingContext.active()){
+        // Issuing the successor must never erase the just-completed physical
+        // action's observer provenance. The activity read model intentionally
+        // is NOT part of persisted snapshots, so retain the old per-tick
+        // presentation record even while the new Core token becomes pending.
+        const bool executedActivity=runtime.civilizationActive;
+        const auto executedEvent=runtime.civilizationEvent;
+        const auto executedMinute=runtime.civilizationActivityMinute;
+        const auto executedResource=runtime.civilizationResourceNode;
+        const auto executedStorage=runtime.civilizationStorage;
+        const auto executedHasTarget=runtime.civilizationHasSpatialTarget;
+        const auto executedTarget=runtime.civilizationTargetPos;
+        const auto executedSanitation=runtime.civilizationSanitationSiteId;
         const auto& previous=partialGatherToContinue;
         const int held=actor.civilization.inventory.count(
             ItemKind::RawMaterial,previous.civilization.material);
@@ -1045,7 +1058,15 @@ bool Simulation::completeContextAction(
             followup.utility=previous.civilization.utility;
             if(tryCivilizationDecision(actor,runtime,&followup,nullptr,
                     &previous.gatherGoal)){
-                emit(actor.name+" AL1_CORE_PARTIAL_GATHER_CONTINUED actor="
+                runtime.civilizationActive=executedActivity;
+                runtime.civilizationEvent=executedEvent;
+                runtime.civilizationActivityMinute=executedMinute;
+                runtime.civilizationResourceNode=executedResource;
+                runtime.civilizationStorage=executedStorage;
+                runtime.civilizationHasSpatialTarget=executedHasTarget;
+                runtime.civilizationTargetPos=executedTarget;
+                runtime.civilizationSanitationSiteId=executedSanitation;
+                emit(actor.name+" AL1_CORE_PARTIAL_GATHER_CONTINUED actor=
                     +std::to_string(actor.id)
                     +" goal_id="+std::to_string(previous.gatherGoal.goalId)
                     +" previous_token="+std::to_string(previous.token)
