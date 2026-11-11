@@ -227,6 +227,11 @@ bool Simulation::completeContextAction(
         }
     }
     bool completed=false;
+    // Preserve the original physical action until its event, inventory,
+    // tool-use and experience have been committed. Only then may a genuinely
+    // partial Gather issue a distinct Core token for its remaining predicate.
+    PendingContextAction partialGatherToContinue;
+    bool hasPartialGatherToContinue=false;
 
     switch(pending.kind){
         case ContextActionKind::Social: {
@@ -414,9 +419,28 @@ bool Simulation::completeContextAction(
                 reportGatherGoalResult(actor,issued,inventoryBefore,resourceBefore,
                     held>=issued.gatherGoal.targetQuantity ? "achieved"
                     : held>inventoryBefore ? "progress-unmet" : "failed");
-                // Partial progress is not a completed goal. It re-enters
-                // the one normal needs/goal competition after this step.
-                recoverGatherGoal(actor,runtime,issued,false);
+                // A real positive extraction can be short of the original
+                // inventory predicate. Carry the existing goal through ONE
+                // further bounded Core step when the same physical source still
+                // has stock. Never claim goal completion from a partial batch,
+                // invent a replacement source, or override urgent body needs.
+                const auto* remainingSource=findCivilizationResourceNodeSpatial(
+                    world_,decision.resourceNode);
+                const bool survivalNeedsAttention=
+                    std::max({actor.needs.hunger,actor.needs.thirst,
+                        actor.needs.sleep,actor.needs.bladder,
+                        actor.needs.hygiene})>=ruleset_.utilityAI.urgentThreshold;
+                if(issued.gatherGoal.composed
+                   &&result.success &&result.event.type==CivilizationEventType::Gathered
+                   &&held>inventoryBefore &&held<issued.gatherGoal.targetQuantity
+                   &&remainingSource &&remainingSource->quantity>0
+                   &&resourceBefore>remainingSource->quantity
+                   &&world_.minute<issued.gatherGoal.expiresMinute
+                   &&issued.gatherGoal.attempt<ResidentGatherGoalMaxAttempts
+                   &&!survivalNeedsAttention){
+                    partialGatherToContinue=issued;
+                    hasPartialGatherToContinue=true;
+                }
             }
 
             if(decision.intent==CivilizationIntent::Gather
@@ -1003,6 +1027,55 @@ bool Simulation::completeContextAction(
     runtime.socialIntent=SocialIntent::None;
     runtime.socialTarget=0;
     syncDependentEscort(actor.id,runtime);
+
+    // The preceding Gather has fully committed and its token has been
+    // cleared. Continue only the same resident, same material and physically
+    // observed source under the ORIGINAL goal deadline and attempt limit.
+    // A failed reissue falls back to normal Core needs/goal competition.
+    if(hasPartialGatherToContinue &&!runtime.pendingContext.active()){
+        // Issuing the successor must never erase the just-completed physical
+        // action's observer provenance. The activity read model intentionally
+        // is NOT part of persisted snapshots, so retain the old per-tick
+        // presentation record even while the new Core token becomes pending.
+        const bool executedActivity=runtime.civilizationActive;
+        const auto executedEvent=runtime.civilizationEvent;
+        const auto executedMinute=runtime.civilizationActivityMinute;
+        const auto executedResource=runtime.civilizationResourceNode;
+        const auto executedStorage=runtime.civilizationStorage;
+        const auto executedHasTarget=runtime.civilizationHasSpatialTarget;
+        const auto executedTarget=runtime.civilizationTargetPos;
+        const auto executedSanitation=runtime.civilizationSanitationSiteId;
+        const auto& previous=partialGatherToContinue;
+        const int held=actor.civilization.inventory.count(
+            ItemKind::RawMaterial,previous.civilization.material);
+        if(held<previous.gatherGoal.targetQuantity){
+            UnifiedUtilityDecision followup;
+            followup.kind=UnifiedDecisionKind::Civilization;
+            followup.civilization=previous.civilization;
+            followup.civilization.quantity=std::min(
+                std::max(1,previous.civilization.quantity),
+                previous.gatherGoal.targetQuantity-held);
+            followup.utility=previous.civilization.utility;
+            if(tryCivilizationDecision(actor,runtime,&followup,nullptr,
+                    &previous.gatherGoal)){
+                runtime.civilizationActive=executedActivity;
+                runtime.civilizationEvent=executedEvent;
+                runtime.civilizationActivityMinute=executedMinute;
+                runtime.civilizationResourceNode=executedResource;
+                runtime.civilizationStorage=executedStorage;
+                runtime.civilizationHasSpatialTarget=executedHasTarget;
+                runtime.civilizationTargetPos=executedTarget;
+                runtime.civilizationSanitationSiteId=executedSanitation;
+                emit(actor.name+" AL1_CORE_PARTIAL_GATHER_CONTINUED actor="
+                    +std::to_string(actor.id)
+                    +" goal_id="+std::to_string(previous.gatherGoal.goalId)
+                    +" previous_token="+std::to_string(previous.token)
+                    +" pending_token="+std::to_string(runtime.pendingContext.token)
+                    +" remaining_quantity="+std::to_string(
+                        previous.gatherGoal.targetQuantity-held));
+            }
+        }
+    }
     return true;
 }
 
