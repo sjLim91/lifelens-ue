@@ -14,7 +14,9 @@ namespace lifelens {
 // objective; loading it must not invent one or change its physical command.
 inline constexpr char ResidentGatherGoalExtensionMagic[]=
     {'L','L','G','G','O','A','L','1'};
-inline constexpr std::uint32_t ResidentGatherGoalExtensionVersion=1;
+// v2 adds suspended goals after the unchanged v1 active rows. The reader
+// continues accepting v1 saves; the outer binary format remains v8.
+inline constexpr std::uint32_t ResidentGatherGoalExtensionVersion=2;
 
 inline void hashGatherGoalInteger(std::uint64_t& hash,std::uint64_t value)
 {
@@ -58,34 +60,67 @@ inline bool validAttachedResidentGatherGoal(
 }
 
 template<typename W>
+void writeResidentGatherGoalRecord(W& w,const ResidentGatherGoalLink& goal)
+{
+    w.u64(goal.actor);
+    w.u64(goal.goalId);
+    w.u64(goal.token);
+    w.enumeration(goal.material);
+    w.i32(goal.createdMinute);
+    w.i32(goal.issuedMinute);
+    w.i32(goal.expiresMinute);
+    w.i32(goal.inventoryAtIssue);
+    w.i32(goal.targetQuantity);
+    w.u64(goal.previousToken);
+    w.i32(goal.attempt);
+    w.boolean(goal.composed);
+}
+
+template<typename R>
+bool readResidentGatherGoalRecord(R& r,ResidentGatherGoalLink& goal)
+{
+    return r.u64(goal.actor) &&goal.actor!=0
+        &&r.u64(goal.goalId) &&r.u64(goal.token)
+        &&r.enumeration(goal.material)
+        &&r.i32(goal.createdMinute) &&r.i32(goal.issuedMinute)
+        &&r.i32(goal.expiresMinute) &&r.i32(goal.inventoryAtIssue)
+        &&r.i32(goal.targetQuantity) &&r.u64(goal.previousToken)
+        &&r.i32(goal.attempt) &&r.boolean(goal.composed);
+}
+
+template<typename W>
 void writeResidentGatherGoalExtension(
     W& w,const SimulationStateSnapshot& snapshot)
 {
     w.raw(ResidentGatherGoalExtensionMagic,sizeof(ResidentGatherGoalExtensionMagic));
     w.u32(ResidentGatherGoalExtensionVersion);
-    std::vector<CharacterId> actors;
-    for(const auto& entry:snapshot.runtime)
+    std::vector<CharacterId> actors,suspendedActors;
+    for(const auto& entry:snapshot.runtime){
         if(entry.second.pendingContext.gatherGoal.active())
             actors.push_back(entry.first);
+        if(entry.second.suspendedGather.active())
+            suspendedActors.push_back(entry.first);
+    }
     std::sort(actors.begin(),actors.end());
+    std::sort(suspendedActors.begin(),suspendedActors.end());
     w.u32(static_cast<std::uint32_t>(actors.size()));
     std::uint64_t checksum=14695981039346656037ULL;
     hashGatherGoalInteger(checksum,actors.size());
     for(CharacterId actor:actors){
         const auto& goal=snapshot.runtime.at(actor).pendingContext.gatherGoal;
-        w.u64(actor);
-        w.u64(goal.goalId);
-        w.u64(goal.token);
-        w.enumeration(goal.material);
-        w.i32(goal.createdMinute);
-        w.i32(goal.issuedMinute);
-        w.i32(goal.expiresMinute);
-        w.i32(goal.inventoryAtIssue);
-        w.i32(goal.targetQuantity);
-        w.u64(goal.previousToken);
-        w.i32(goal.attempt);
-        w.boolean(goal.composed);
+        writeResidentGatherGoalRecord(w,goal);
         hashGatherGoal(checksum,goal);
+    }
+    w.u32(static_cast<std::uint32_t>(suspendedActors.size()));
+    hashGatherGoalInteger(checksum,suspendedActors.size());
+    for(CharacterId actor:suspendedActors){
+        const auto& suspended=snapshot.runtime.at(actor).suspendedGather;
+        writeResidentGatherGoalRecord(w,suspended.goal);
+        w.u64(suspended.source);
+        w.i32(suspended.requestedQuantity);
+        hashGatherGoal(checksum,suspended.goal);
+        hashGatherGoalInteger(checksum,suspended.source);
+        hashGatherGoalInteger(checksum,static_cast<std::uint64_t>(suspended.requestedQuantity));
     }
     w.u64(checksum);
 }
@@ -97,24 +132,19 @@ bool readResidentGatherGoalExtension(R& r,SimulationStateSnapshot& snapshot)
     std::uint32_t version=0,count=0;
     if(!r.raw(magic,sizeof(magic))
        ||!std::equal(magic,magic+sizeof(magic),ResidentGatherGoalExtensionMagic)
-       ||!r.u32(version) ||version!=ResidentGatherGoalExtensionVersion
+       ||!r.u32(version) ||(version!=1 &&version!=ResidentGatherGoalExtensionVersion)
        ||!r.count(count) ||count>snapshot.runtime.size()) return false;
 
     std::unordered_set<CharacterId> seen;
     std::vector<std::pair<CharacterId,ResidentGatherGoalLink>> staged;
+    std::vector<std::pair<CharacterId,ResidentSuspendedGatherGoal>> suspendedStaged;
     staged.reserve(count);
     std::uint64_t checksum=14695981039346656037ULL;
     hashGatherGoalInteger(checksum,count);
     for(std::uint32_t i=0;i<count;++i){
         ResidentGatherGoalLink goal;
-        if(!r.u64(goal.actor) ||goal.actor==0
-           ||!seen.insert(goal.actor).second
-           ||!r.u64(goal.goalId) ||!r.u64(goal.token)
-           ||!r.enumeration(goal.material)
-           ||!r.i32(goal.createdMinute) ||!r.i32(goal.issuedMinute)
-           ||!r.i32(goal.expiresMinute) ||!r.i32(goal.inventoryAtIssue)
-           ||!r.i32(goal.targetQuantity) ||!r.u64(goal.previousToken)
-           ||!r.i32(goal.attempt) ||!r.boolean(goal.composed)) return false;
+        if(!readResidentGatherGoalRecord(r,goal)
+           ||!seen.insert(goal.actor).second) return false;
         const auto found=snapshot.runtime.find(goal.actor);
         if(found==snapshot.runtime.end()
            ||found->second.pendingContext.gatherGoal.active()) return false;
@@ -126,11 +156,47 @@ bool readResidentGatherGoalExtension(R& r,SimulationStateSnapshot& snapshot)
         staged.emplace_back(goal.actor,goal);
         hashGatherGoal(checksum,goal);
     }
+    if(version>=2){
+        std::uint32_t suspendedCount=0;
+        if(!r.count(suspendedCount)
+           ||suspendedCount>snapshot.runtime.size()) return false;
+        hashGatherGoalInteger(checksum,suspendedCount);
+        std::unordered_set<CharacterId> suspendedSeen;
+        for(std::uint32_t i=0;i<suspendedCount;++i){
+            ResidentSuspendedGatherGoal suspended;
+            if(!readResidentGatherGoalRecord(r,suspended.goal)
+               ||!r.u64(suspended.source)
+               ||!r.i32(suspended.requestedQuantity)
+               ||!suspendedSeen.insert(suspended.goal.actor).second) return false;
+            const auto found=snapshot.runtime.find(suspended.goal.actor);
+            const auto active=std::find_if(
+                staged.begin(),staged.end(),[&](const auto& entry){
+                    return entry.first==suspended.goal.actor;
+                });
+            // An urgent provision Gather can coexist with a different,
+            // suspended Stone/Wood goal; never store the SAME goal twice.
+            if(found==snapshot.runtime.end()
+               ||found->second.suspendedGather.active()
+               ||(active!=staged.end()
+                  &&active->second.goalId==suspended.goal.goalId)
+               ||!validResidentSuspendedGatherGoal(
+                   suspended.goal.actor,suspended,snapshot.world.minute))
+                return false;
+            suspendedStaged.emplace_back(suspended.goal.actor,suspended);
+            hashGatherGoal(checksum,suspended.goal);
+            hashGatherGoalInteger(checksum,suspended.source);
+            hashGatherGoalInteger(checksum,
+                static_cast<std::uint64_t>(suspended.requestedQuantity));
+        }
+    }
     std::uint64_t expected=0;
     if(!r.u64(expected) ||expected!=checksum) return false;
-    // A malformed later actor must never leave earlier links attached.
+    // A malformed later entry must never attach any earlier active/suspended
+    // promises to the partially decoded world.
     for(const auto& [actor,goal]:staged)
         snapshot.runtime.at(actor).pendingContext.gatherGoal=goal;
+    for(const auto& [actor,suspended]:suspendedStaged)
+        snapshot.runtime.at(actor).suspendedGather=suspended;
     return true;
 }
 

@@ -78,9 +78,97 @@ int main()
         }
     }
 
+    // v2's suspended record is still the original promise, not an active
+    // physical action. Round-trip and same-world restore preserve it exactly.
+    auto suspended=snapshot;
+    auto& runtime=suspended.runtime.at(actor);
+    runtime.suspendedGather.goal=before.gatherGoal;
+    runtime.suspendedGather.source=before.civilization.resourceNode;
+    runtime.suspendedGather.requestedQuantity=before.civilization.quantity;
+    runtime.pendingContext.clear();
+    const auto suspendedBytes=al1_test::bytes(suspended);
+    assert(decodeSimulationSnapshot(suspendedBytes,decoded,&error));
+    assert(decoded.runtime.at(actor).suspendedGather.active());
+    assert(!decoded.runtime.at(actor).pendingContext.active());
+    assert(decoded.runtime.at(actor).suspendedGather.goal.goalId
+        ==before.gatherGoal.goalId);
+    assert(decoded.runtime.at(actor).suspendedGather.source
+        ==before.civilization.resourceNode);
+    assert(al1_test::bytes(decoded)==suspendedBytes);
+    assert(replay.restoreSnapshot(decoded,&error));
+    assert(al1_test::bytes(replay.captureSnapshot())==suspendedBytes);
+
+    // Urgent food provision can itself be an active Gather while the older
+    // material objective remains suspended. Encode both distinct identities
+    // for the SAME actor without overwriting either physical action.
+    auto concurrent=snapshot;
+    auto& concurrentRuntime=concurrent.runtime.at(actor);
+    concurrentRuntime.suspendedGather.goal=before.gatherGoal;
+    concurrentRuntime.suspendedGather.goal.goalId=
+        concurrentRuntime.suspendedGather.goal.token=
+            concurrent.nextContextActionToken++;
+    concurrentRuntime.suspendedGather.goal.previousToken=0;
+    concurrentRuntime.suspendedGather.goal.attempt=1;
+    concurrentRuntime.suspendedGather.goal.issuedMinute=
+        concurrentRuntime.suspendedGather.goal.createdMinute;
+    concurrentRuntime.suspendedGather.source=before.civilization.resourceNode;
+    concurrentRuntime.suspendedGather.requestedQuantity=before.civilization.quantity;
+    const auto concurrentBytes=al1_test::bytes(concurrent);
+    assert(decodeSimulationSnapshot(concurrentBytes,decoded,&error));
+    const auto& both=decoded.runtime.at(actor);
+    assert(both.pendingContext.gatherGoal.active()
+        &&both.suspendedGather.active());
+    assert(both.pendingContext.gatherGoal.goalId
+        !=both.suspendedGather.goal.goalId);
+    assert(al1_test::bytes(decoded)==concurrentBytes);
+
+    auto malformedSuspension=suspended;
+    malformedSuspension.runtime.at(actor).suspendedGather.source=0;
+    std::vector<std::uint8_t> rejected;
+    assert(!encodeSimulationSnapshot(malformedSuspension,rejected,&error));
+    assert(!replay.restoreSnapshot(malformedSuspension,&error));
+
+    auto corruptedSuspended=suspendedBytes;
+    corruptedSuspended.back()^=0x55;
+    const auto unchangedSuspended=al1_test::bytes(decoded);
+    assert(!decodeSimulationSnapshot(corruptedSuspended,decoded,&error));
+    assert(al1_test::bytes(decoded)==unchangedSuspended);
+
+    // Pre-upgrade extension v1 has the same active goal rows/checksum, but no
+    // suspended count. Reconstruct this exact old tail from v2 with zero
+    // suspended entries and verify backward decoding.
+    auto v1=encoded;
+    const auto magicStart=std::find_end(v1.begin(),v1.end(),
+        ResidentGatherGoalExtensionMagic,
+        ResidentGatherGoalExtensionMagic+sizeof(ResidentGatherGoalExtensionMagic));
+    assert(magicStart!=v1.end());
+    const auto offset=static_cast<std::size_t>(magicStart-v1.begin());
+    assert(v1[offset+8]==2 &&v1[offset+9]==0);
+    v1[offset+8]=1;
+    const auto emptyCount=v1.size()-8-4;
+    for(int i=0;i<4;++i) assert(v1[emptyCount+i]==0);
+    v1.erase(v1.begin()+static_cast<std::ptrdiff_t>(emptyCount),
+        v1.begin()+static_cast<std::ptrdiff_t>(emptyCount+4));
+    // A v1 checksum covers only active rows; v2 also protects its empty
+    // suspended-count field. Recreate the historical checksum exactly.
+    std::vector<CharacterId> v1Actors;
+    for(const auto& entry:snapshot.runtime)
+        if(entry.second.pendingContext.gatherGoal.active())
+            v1Actors.push_back(entry.first);
+    std::sort(v1Actors.begin(),v1Actors.end());
+    std::uint64_t v1Checksum=14695981039346656037ULL;
+    hashGatherGoalInteger(v1Checksum,v1Actors.size());
+    for(CharacterId id:v1Actors)
+        hashGatherGoal(v1Checksum,snapshot.runtime.at(id).pendingContext.gatherGoal);
+    for(int i=0;i<8;++i)
+        v1[v1.size()-8+i]=static_cast<std::uint8_t>((v1Checksum>>(8*i))&0xffu);
+    assert(decodeSimulationSnapshot(v1,decoded,&error));
+    assert(decoded.runtime.at(actor).pendingContext.gatherGoal.active());
+    assert(!decoded.runtime.at(actor).suspendedGather.active());
+
     auto bad=snapshot;
     ++bad.runtime.at(actor).pendingContext.gatherGoal.token;
-    std::vector<std::uint8_t> rejected;
+    rejected.clear();
     assert(!encodeSimulationSnapshot(bad,rejected,&error));
     assert(!replay.restoreSnapshot(bad,&error));
     auto truncated=encoded;
