@@ -10,6 +10,7 @@ const { parseAutonomousGoalPreview } = await source('cognition/autonomous-goal-p
 const {
   BrowserCognitionProvider, createBrowserResidentCognition,
   BUILTIN_RESIDENT_MODEL, BUILTIN_RESIDENT_MODEL_FP32, builtinResidentModelForFeatures,
+  workerBackedBrowserEngine, QWEN_WORKER_INIT_TIMEOUT_MS,
 }=await source('cognition/browser-cognition-provider.ts');
 
 assert.equal(builtinResidentModelForFeatures(new Set(['shader-f16'])), BUILTIN_RESIDENT_MODEL);
@@ -218,6 +219,50 @@ await test('disposed browser engine cannot return a delayed resident thought',as
     proposal(request('1',100,['ImproveFoodSecurity'])))}}]});
   assert.equal(await pending,null,
     'obsolete GPU result cannot revive a disposed resident provider');
+});
+
+await test('Qwen WebGPU runs in one dedicated worker, not React main-thread MLCEngine',async()=>{
+  const { readFileSync } = await import('node:fs');
+  const { resolve } = await import('node:path');
+  const providerText=readFileSync(resolve(import.meta.dirname,'../../src/cognition/browser-cognition-provider.ts'),'utf8');
+  const workerText=readFileSync(resolve(import.meta.dirname,'../../src/cognition/qwen-webgpu.worker.ts'),'utf8');
+  assert(providerText.includes('new Worker('));
+  assert(providerText.includes("new URL('./qwen-webgpu.worker.ts', import.meta.url)"),
+    'Vite must statically bundle an actual same-origin dedicated worker');
+  assert(providerText.includes('CreateWebWorkerMLCEngine('));
+  assert(!providerText.includes('webllm.CreateMLCEngine('),
+    'direct GPU model execution on renderer main thread is forbidden');
+  assert(workerText.includes('new WebWorkerMLCEngineHandler()'));
+  assert(workerText.includes('handler.onmessage(event)'));
+  assert(QWEN_WORKER_INIT_TIMEOUT_MS>=120000,
+    'first on-device model download must not be mistaken for a short inference stall');
+});
+
+await test('one Qwen worker unloads and terminates even after GPU device loss',async()=>{
+  let unloaded=0,terminated=0;
+  const worker={terminate(){terminated++;}};
+  const unresponsive=workerBackedBrowserEngine(worker,{
+    chat:{completions:{create:async()=>({choices:[]})}},
+    interruptGenerate:async()=>{},
+    unload:()=>{unloaded++;return new Promise(()=>{});},
+  },BUILTIN_RESIDENT_MODEL,10);
+  const provider=new BrowserCognitionProvider(unresponsive);
+  await provider.dispose();
+  assert.equal(unloaded,1);
+  assert.equal(terminated,1,
+    'unresponsive GPU worker must be terminated, never left to freeze the scene');
+  await provider.dispose();
+  assert.equal(unloaded,1);
+  assert.equal(terminated,1);
+
+  let cleanUnloaded=0,cleanTerminated=0;
+  const clean=workerBackedBrowserEngine({terminate(){cleanTerminated++;}},{
+    chat:{completions:{create:async()=>({choices:[]})}},
+    unload:async()=>{cleanUnloaded++;},
+  },BUILTIN_RESIDENT_MODEL,10);
+  await new BrowserCognitionProvider(clean).dispose();
+  assert.equal(cleanUnloaded,1);
+  assert.equal(cleanTerminated,1);
 });
 
 await test('timed-out WebGPU work keeps its engine slot until actual completion',async()=>{
