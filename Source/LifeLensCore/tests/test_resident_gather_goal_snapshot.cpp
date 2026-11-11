@@ -125,6 +125,19 @@ int main()
     for(int i=0;i<4;++i) assert(v1[emptyCount+i]==0);
     v1.erase(v1.begin()+static_cast<std::ptrdiff_t>(emptyCount),
         v1.begin()+static_cast<std::ptrdiff_t>(emptyCount+4));
+    // A v1 checksum covers only active rows; v2 also protects its empty
+    // suspended-count field. Recreate the historical checksum exactly.
+    std::vector<CharacterId> v1Actors;
+    for(const auto& entry:snapshot.runtime)
+        if(entry.second.pendingContext.gatherGoal.active())
+            v1Actors.push_back(entry.first);
+    std::sort(v1Actors.begin(),v1Actors.end());
+    std::uint64_t v1Checksum=14695981039346656037ULL;
+    hashGatherGoalInteger(v1Checksum,v1Actors.size());
+    for(CharacterId id:v1Actors)
+        hashGatherGoal(v1Checksum,snapshot.runtime.at(id).pendingContext.gatherGoal);
+    for(int i=0;i<8;++i)
+        v1[v1.size()-8+i]=static_cast<std::uint8_t>((v1Checksum>>(8*i))&0xffu);
     assert(decodeSimulationSnapshot(v1,decoded,&error));
     assert(decoded.runtime.at(actor).pendingContext.gatherGoal.active());
     assert(!decoded.runtime.at(actor).suspendedGather.active());
