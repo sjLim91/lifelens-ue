@@ -342,12 +342,31 @@ void survivalInterruptResumesSameGoal()
             resumedToken=token.token;
             sawNewGather=true;
         }
+        // A zero-distance Core Gather may issue token 102 and physically
+        // harvest all four units within a SINGLE simulation minute. In that
+        // legitimate case observePendingContextAction is already cleared;
+        // the same-tick authoritative issue/result receipts are the proof.
         for(const auto& event:sim.logs()){
+            if(event.find("AL1_CORE_GOAL_RESUMED actor=")!=std::string::npos
+               &&al1_test::number(event,"actor")==actor
+               &&al1_test::number(event,"goal_id")==101){
+                assert(sawPhysicalRelief);
+                assert(al1_test::number(event,"previous_token")==101);
+                assert(al1_test::number(event,"attempt")==2);
+                assert(al1_test::number(event,"target_quantity")==4);
+                resumedToken=static_cast<std::uint64_t>(
+                    al1_test::number(event,"pending_token"));
+                assert(resumedToken>101);
+                sawNewGather=true;
+            }
             if(event.find("AL1_CORE_GOAL_RESULT actor=")!=std::string::npos
                &&al1_test::number(event,"goal_id")==101
                &&al1_test::field(event,"outcome")=="achieved"
-               &&al1_test::number(event,"pending_token")!=101)
+               &&al1_test::number(event,"pending_token")!=101){
+                assert(sawNewGather);
+                assert(al1_test::number(event,"pending_token")==resumedToken);
                 sawHarvest=true;
+            }
         }
     }
     if(!(sawPhysicalRelief &&sawNewGather &&sawHarvest)){
