@@ -17,6 +17,7 @@ const source=async path=>import(pathToFileURL(compile(path)));
 const {resolveResidentSemanticMotion:motion}=await source('render/resident-semantic-motion.ts');
 const {createResidentMotionLibrary}=await source('render/resident-motion-library.ts');
 const {ResidentWorldLayer}=await source('render/resident-world-layer.ts');
+const {RESIDENT_PRESENTATION_CONTRACT, residentPresentationMotionTimeScale}=await source('runtime/lifelens-contract.ts');
 const loader=new GLTFLoader(),assets=new Map();
 for(const name of ['character','ual1','ual2']){const b=readFileSync(resolve(root,'public/vendor/characters/'+name+'.glb'));assets.set(name,await loader.parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),''));}
 let loads=0,failUAL2=false,failBoth=false;
@@ -122,6 +123,73 @@ test('1x/4x affect real travel and mixer equally, carry shares gait rate',()=>{
  assert.equal(a.actions.get('walk').getEffectiveTimeScale(),a.actions.get('carry').getEffectiveTimeScale());
  l.setSimulationSpeed(0);const frozen=a.current.clone(),mt=a.mixer.time;l.update(.05);assert(a.current.equals(frozen));assert.equal(a.mixer.time,mt);
  l.setSimulationSpeed(1);
+});
+test('walk and carry cycle with the actual on-screen travel, not the already accelerated mixer clock',()=>{
+ const r=resident('gait-sync',p({phase:'Moving'}));
+ l.setResidents([r],terrain,0,0);
+ const a=l.actors.get('gait-sync');
+ a.target.x+=100;
+ a.root.rotation.y=Math.PI/2;
+ a.targetYaw=Math.PI/2;
+ const ref=RESIDENT_PRESENTATION_CONTRACT.walkReferenceSpeedWorldUnitsPerSecond;
+ const check=(speed)=>{
+  const expected=Math.min(
+   RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale*speed,
+   Math.max(
+    RESIDENT_PRESENTATION_CONTRACT.walkMinTimeScale*speed,
+    a.displayedTravelSpeedWorldUnitsPerSecond/ref*a.gaitRateBias,
+   ),
+  );
+  const actual=a.actions.get('walk').getEffectiveTimeScale()
+   *residentPresentationMotionTimeScale(speed);
+  assert(Math.abs(actual-expected)<1e-6,
+   'each played gait cycle must be calibrated against physical display distance');
+ };
+ l.setSimulationSpeed(1);
+ a.smoothedTravelSpeedWorldUnitsPerSecond=ref;
+ a.targetTravelSpeedWorldUnitsPerSecond=ref;
+ l.update(.05);
+ assert.equal(a.active,'walk');
+ check(1);
+ assert(a.actions.get('walk').getEffectiveTimeScale()<
+  RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale/2,
+  'baseline 4x mixer must not cause 4x gait for 1x visible travel');
+ l.setSimulationSpeed(4);
+ a.smoothedTravelSpeedWorldUnitsPerSecond=ref;
+ l.update(.05);
+ check(4);
+ l.setSimulationSpeed(1);
+});
+test('stale Moving phase never makes stationary feet cycle forever',()=>{
+ const r=resident('gait-stationary',p({phase:'Moving'}));
+ l.setResidents([r],terrain,0,0);
+ const a=l.actors.get(r.id);
+ for(let i=0;i<35;i++)l.update(1/60);
+ assert.equal(a.active,'idle');
+ l.setResidents([{...r,gridX:80}],terrain,0,0);
+ for(let i=0;i<5;i++)l.update(1/60);
+ assert.equal(a.active,'walk');
+ a.current.copy(a.target);
+ for(let i=0;i<35;i++)l.update(1/60);
+ assert.equal(a.active,'idle','a stale Core Moving flag cannot pin the walk clip');
+ assert.equal(a.actions.get('walk').getEffectiveTimeScale(),0);
+ assert(a.current.equals(a.target));
+});
+test('heading reversal rotates without stepping backward or playing walk on the spot',()=>{
+ const r=resident('gait-turn',p({phase:'Moving'}));
+ l.setResidents([r],terrain,0,0);
+ const a=l.actors.get(r.id);
+ a.root.rotation.y=0;
+ a.target.z-=5;
+ a.targetTravelSpeedWorldUnitsPerSecond=1;
+ a.walkGraceRemainingSeconds=0;
+ const before=a.current.z;
+ l.update(1/60);
+ assert.equal(a.current.z,before);
+ assert.equal(a.active,'idle');
+ for(let i=0;i<20;i++)l.update(1/60);
+ assert(a.current.z<before);
+ assert.equal(a.active,'walk');
 });
 test('resident count scales once; repeated directives and updates allocate no new actions/meshes',()=>{
  const rs=Array.from({length:32},(_,i)=>resident('many'+i,p({kind:'Physical',physicalGoal:'Eat'})));l.setResidents(rs,terrain,0,0);

@@ -377,8 +377,8 @@ export class ResidentWorldLayer {
               travelDistance / Math.max(0.001, presentationSeconds) * effectiveSpeed,
             );
             actor.targetTravelSpeedWorldUnitsPerSecond /= effectiveSpeed;
-            actor.walkGraceRemainingSeconds =
-              RESIDENT_PRESENTATION_CONTRACT.walkStopGraceSeconds;
+            // A new Core coordinate is a target, not proof that the feet
+            // have already advanced. Walking grace begins on actual motion.
           }
         }
       }
@@ -560,9 +560,6 @@ export class ResidentWorldLayer {
       ) * speedBlend;
 
       if (moving) {
-        actor.walkGraceRemainingSeconds =
-          RESIDENT_PRESENTATION_CONTRACT.walkStopGraceSeconds;
-
         const yawDelta = Math.atan2(
           Math.sin(actor.targetYaw - actor.root.rotation.y),
           Math.cos(actor.targetYaw - actor.root.rotation.y),
@@ -581,6 +578,17 @@ export class ResidentWorldLayer {
           actor.smoothedTravelSpeedWorldUnitsPerSecond * dt
           * (this.simulationSpeed > 0 ? forwardFraction : 0);
         actor.displayedTravelSpeedWorldUnitsPerSecond = Math.min(distance, maxDistance) / Math.max(.001, dt);
+        // Do not animate in place during a heading reversal. Only actual
+        // presentation displacement credits a short gait-to-idle grace.
+        if (actor.displayedTravelSpeedWorldUnitsPerSecond >
+            RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits) {
+          actor.walkGraceRemainingSeconds =
+            RESIDENT_PRESENTATION_CONTRACT.walkStopGraceSeconds;
+        } else {
+          actor.walkGraceRemainingSeconds = Math.max(
+            0, actor.walkGraceRemainingSeconds - motionDt,
+          );
+        }
         if (distance <= maxDistance) {
           actor.current.copy(actor.target);
         } else if (maxDistance > 0) {
@@ -610,17 +618,6 @@ export class ResidentWorldLayer {
         }
       }
 
-      if (
-        this.simulationSpeed > 0
-        && actor.presentation?.active
-        && actor.presentation.phase === 'Moving'
-      ) {
-        actor.walkGraceRemainingSeconds = Math.max(
-          actor.walkGraceRemainingSeconds,
-          RESIDENT_PRESENTATION_CONTRACT.walkStopGraceSeconds,
-        );
-      }
-
       const groundHeight = this.ground.height(actor.current.x, actor.current.z);
       if (groundHeight !== null) actor.current.y = groundHeight;
       actor.root.position.copy(actor.current);
@@ -631,8 +628,13 @@ export class ResidentWorldLayer {
           actor.current.z,
         );
       }
-      const presentationMoving =
-        moving || actor.walkGraceRemainingSeconds > 0;
+      // Core's phase may lag a position sample. It does not authorize
+      // infinite walking-in-place when the visible resident is stationary.
+      const presentationMoving = this.simulationSpeed > 0 && (
+        actor.displayedTravelSpeedWorldUnitsPerSecond >
+          RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits
+        || actor.walkGraceRemainingSeconds > 0
+      );
       actor.inventoryProps.setInteractionAllowed(actor.presentation?.kind !== 'Civilization'
         || this.productionTargets.interacting(actor.presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY));
       actor.inventoryProps.setVisuallyMoving(presentationMoving);
@@ -1341,24 +1343,25 @@ export class ResidentWorldLayer {
       0.001,
       RESIDENT_PRESENTATION_CONTRACT.walkReferenceSpeedWorldUnitsPerSecond,
     );
-    const normalizedSpeed =
-      actor.displayedTravelSpeedWorldUnitsPerSecond / referenceSpeed
-      / Math.max(1, this.simulationSpeed);
-    const maximumLocalTimeScale = motionTimeScale > 0
-      ? Math.min(
-        RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale,
-        RESIDENT_PRESENTATION_CONTRACT.maxMotionTimeScale
-          / motionTimeScale,
-      )
-      : RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale;
-    const timeScale = THREE.MathUtils.clamp(
-      normalizedSpeed * actor.gaitRateBias,
-      Math.min(
-        RESIDENT_PRESENTATION_CONTRACT.walkMinTimeScale,
-        maximumLocalTimeScale,
-      ),
-      maximumLocalTimeScale,
+    // The mixer already advances by dt * motionTimeScale (4x at the
+    // canonical 1x observer speed). Divide the measured world-space gait
+    // rate by that same scale; otherwise feet cycle several times per
+    // physical stride. Keep walk/carry phase identical across Core speeds.
+    const worldGaitRate =
+      actor.displayedTravelSpeedWorldUnitsPerSecond
+      / referenceSpeed * actor.gaitRateBias;
+    const minWorldRate =
+      RESIDENT_PRESENTATION_CONTRACT.walkMinTimeScale * this.simulationSpeed;
+    const maxWorldRate = Math.min(
+      RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale * this.simulationSpeed,
+      RESIDENT_PRESENTATION_CONTRACT.maxMotionTimeScale,
     );
+    const timeScale = motionTimeScale > 0
+      && actor.displayedTravelSpeedWorldUnitsPerSecond >
+        RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits
+      ? THREE.MathUtils.clamp(worldGaitRate, minWorldRate, maxWorldRate)
+        / motionTimeScale
+      : 0;
     walk?.setEffectiveTimeScale(timeScale);
     carry?.setEffectiveTimeScale(timeScale);
   }
@@ -1372,6 +1375,10 @@ export class ResidentWorldLayer {
 
   private restMotion(actor: ResidentActor): MotionName {
     const presentation = actor.presentation;
+    // The semantic resolver correctly maps a live Core travel directive to
+    // walking, but only the actual interpolated displacement can authorize
+    // locomotion here. A delayed Moving DTO must not keep feet cycling.
+    if (presentation?.phase === 'Moving') return 'idle';
     const targetResidentId = presentation?.targetResidentId ?? '';
     const targetActor = targetResidentId && targetResidentId !== '0'
       ? this.actors.get(targetResidentId)
@@ -1405,7 +1412,7 @@ export class ResidentWorldLayer {
   }
 
   private setAction(actor: ResidentActor, moving: boolean): void {
-    let desired: MotionName = (moving || actor.presentation?.phase === 'Moving') && actor.actions.has('walk')
+    let desired: MotionName = moving && actor.actions.has('walk')
       ? resolveResidentSemanticMotion(
         actor.presentation,
         {

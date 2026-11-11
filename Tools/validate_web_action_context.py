@@ -92,10 +92,13 @@ for forbidden in (
         f"action cue must not invent intent from browser state: {forbidden}"
     )
 
-# Motion stays conservative: authoritative movement owns locomotion, and
-# stationary semantic motion is resolved from the DTO in one pure mapping file.
+# Core still owns movement intent and target coordinates. A delayed Moving
+# phase alone is not visual evidence that the model advanced; stationary
+# residents must exit walk and can only resume after real interpolated travel.
 assert "actor.presentation = resident.presentation ?? null" in resident_layer
-assert "actor.presentation.phase === 'Moving'" in resident_layer
+assert "const presentationMoving = this.simulationSpeed > 0" in resident_layer
+assert "actor.displayedTravelSpeedWorldUnitsPerSecond >" in resident_layer
+assert "if (presentation?.phase === 'Moving') return 'idle';" in resident_layer
 assert "resolveResidentSemanticMotion" in resident_layer
 assert "presentation.phase !== 'Interacting'" in semantic_motion
 assert "case 'KnowledgeTeaching':" in semantic_motion
