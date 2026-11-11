@@ -4596,6 +4596,18 @@ void Simulation::step(){
             c.needs.bladder,
             c.needs.hygiene
         });
+        // A promise must expire on its ORIGINAL deadline even if the
+        // resident remains hungry, ill or otherwise unable to resume. Do
+        // not retain an expired state forever in a long-lived save.
+        if(r.suspendedGather.active()){
+            const auto& goal=r.suspendedGather.goal;
+            const int held=c.civilization.inventory.count(
+                ItemKind::RawMaterial,goal.material);
+            if(world_.minute>=goal.expiresMinute
+               ||goal.attempt>=ResidentGatherGoalMaxAttempts
+               ||held>=goal.targetQuantity)
+                resumeSuspendedGatherGoal(c,r);
+        }
         if(!criticalPreempted &&r.dependentEscort.active()
            &&!r.pendingContext.active() &&r.plan.empty()
            &&journeyUrgentNeed<ruleset_.utilityAI.urgentThreshold){
