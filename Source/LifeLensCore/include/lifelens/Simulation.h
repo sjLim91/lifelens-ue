@@ -447,9 +447,12 @@ private:
         Runtime& r,
         const UnifiedUtilityDecision* precomputed=nullptr,
         const AutonomousGoalCandidate* personalGoal=nullptr,
-        const ResidentGatherGoalLink* continuation=nullptr);
+        const ResidentGatherGoalLink* continuation=nullptr,
+        const GridPos* knownTarget=nullptr);
     bool recoverGatherGoal(Character& actor,Runtime& runtime,
-        const PendingContextAction& previous,bool actualFailure);
+        const PendingContextAction& previous,bool actualFailure,bool predictive=false,
+        int minimumAlternativeQuantity=1);
+    bool reassessGatherGoal(Character& actor,Runtime& runtime);
     void reportGatherGoalResult(Character& actor,const PendingContextAction& pending,
         int inventoryBefore,int resourceBefore,const char* outcome);
     bool trySocialDecision(

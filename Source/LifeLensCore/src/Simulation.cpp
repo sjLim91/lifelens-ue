@@ -8,6 +8,7 @@
 #include "lifelens/ResidentLiveRecoveryEvidence.h"
 #include "lifelens/ResidentLiveSuccessLearningEvidence.h"
 #include "lifelens/ResidentGatherRouteRecovery.h"
+#include "lifelens/ResidentGatherAssessment.h"
 #include "lifelens/ResidentAICompletedPlanGuard.h"
 #include "lifelens/ResidentUnifiedAgency.h"
 #include "lifelens/ResidentCognitiveCarePreference.h"
@@ -2087,7 +2088,8 @@ bool Simulation::tryCivilizationDecision(
     Runtime& r,
     const UnifiedUtilityDecision* precomputed,
     const AutonomousGoalCandidate* personalGoal,
-    const ResidentGatherGoalLink* continuation)
+    const ResidentGatherGoalLink* continuation,
+    const GridPos* knownTarget)
 {
     if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
 
@@ -2126,8 +2128,10 @@ bool Simulation::tryCivilizationDecision(
         havePopulation=true;
     }
 
-    const auto firsthandGather=applyFirsthandSuccessToAuthorizedGather(
-        world_,c,r.pos,decision.civilization);
+    // A continuation has already paid the route/deadline assessment. Do not
+    // silently substitute another source after that feasibility decision.
+    const auto firsthandGather=continuation ? ResidentNativeGatherSourceLearning{}
+        : applyFirsthandSuccessToAuthorizedGather(world_,c,r.pos,decision.civilization);
 
     PendingContextAction pending;
     pending.token=issueContextActionToken();
@@ -2191,8 +2195,14 @@ bool Simulation::tryCivilizationDecision(
     }
     GridPos target{};
     SanitationSiteId sanitationSiteId=0;
-    const bool resolved=resolveCivilizationContextTarget(
+    // A personally remembered destination remains a hypothesis. Let Core
+    // travel there and discover loss at arrival instead of querying remote
+    // stock to silently discard the resident's stale knowledge.
+    const bool rememberedDestination=continuation &&knownTarget
+        &&decision.civilization.intent==CivilizationIntent::Gather;
+    const bool resolved=rememberedDestination ||resolveCivilizationContextTarget(
         world_,c,decision.civilization,r.pos,target,sanitationSiteId,&population);
+    if(rememberedDestination) target=*knownTarget;
     if(civilizationContextRequiresSpatialTarget(decision.civilization) && !resolved) return false;
     if(resolved){
         pending.hasSpatialTarget=true;
@@ -2262,6 +2272,43 @@ void Simulation::reportGatherGoalResult(
         ItemKind::RawMaterial,pending.civilization.material);
     const auto* node=findCivilizationResourceNodeSpatial(
         world_,pending.civilization.resourceNode);
+    const std::string verdict=outcome;
+    if(node &&held>inventoryBefore &&resourceBefore>node->quantity){
+        // Only nearby residents can observe another worker actually remove
+        // stock. Private plans and distant competitors reveal no information.
+        for(auto& observer:world_.characters){
+            const auto other=runtime_.find(observer.id);
+            if(observer.id==actor.id ||!observer.alive ||other==runtime_.end()
+               ||perceptionGridDistance(other->second.pos,node->pos)>6) continue;
+            const auto& watching=other->second.pendingContext;
+            if(watching.gatherGoal.active()
+               &&watching.civilization.resourceNode==node->id)
+                rememberResidentGatherAssessment(observer,watching,world_.minute,
+                    GatherAssessmentCause::LocalCompetition,false,
+                    world_.minute<watching.gatherGoal.expiresMinute,node->quantity);
+        }
+    }
+    if(verdict=="failed" ||verdict=="route-failed" ||verdict=="expired"
+       ||verdict=="interrupted-survival"){
+        auto cause=verdict=="route-failed" ? GatherAssessmentCause::RouteBlocked
+            : verdict=="expired" ? GatherAssessmentCause::DeadlineInsufficient
+            : verdict=="interrupted-survival" ? GatherAssessmentCause::SurvivalPriority
+            : !node ? GatherAssessmentCause::SourceRemoved
+            : node->quantity<=0 ? GatherAssessmentCause::SourceExhausted
+            : GatherAssessmentCause::AccessUnavailable;
+        if(verdict=="failed" &&node &&node->quantity>0){
+            const auto failure=buildResidentResourceOutcomeIndex(actor,world_.minute).find(
+                node->id,"Civilization:Gather:"+std::string(materialName(goal.material)));
+            cause=failure.reason==ResidentResourceOutcomeReason::ContainerMissing
+                ? GatherAssessmentCause::ContainerMissing
+                : failure.reason==ResidentResourceOutcomeReason::AccessUnavailable
+                    ? GatherAssessmentCause::AccessUnavailable : GatherAssessmentCause::UnknownFailure;
+        }
+        rememberResidentGatherAssessment(actor,pending,world_.minute,cause,
+            verdict=="failed" ||verdict=="route-failed",
+            world_.minute<goal.expiresMinute &&goal.attempt<ResidentGatherGoalMaxAttempts,
+            verdict=="failed" &&node ? node->quantity : 0);
+    }
     std::ostringstream evidence;
     evidence<<"AL1_CORE_GOAL_RESULT actor="<<actor.id
         <<" goal_id="<<goal.goalId<<" pending_token="<<pending.token
@@ -2279,7 +2326,8 @@ void Simulation::reportGatherGoalResult(
 
 bool Simulation::recoverGatherGoal(
     Character& actor,Runtime& runtime,
-    const PendingContextAction& previous,bool actualFailure)
+    const PendingContextAction& previous,bool actualFailure,bool predictive,
+    int minimumAlternativeQuantity)
 {
     if(previous.kind!=ContextActionKind::Civilization
        ||previous.civilization.intent!=CivilizationIntent::Gather) return false;
@@ -2291,9 +2339,47 @@ bool Simulation::recoverGatherGoal(
     const bool withinBudget=!goal.active()
         ||(world_.minute<goal.expiresMinute
            &&goal.attempt<ResidentGatherGoalMaxAttempts);
-    if(actualFailure &&withinBudget){
+    if((actualFailure ||predictive) &&withinBudget){
+        const auto evidence=buildResidentResourceOutcomeIndex(actor,world_.minute).find(
+            previous.civilization.resourceNode,"Civilization:Gather:"
+                +std::string(materialName(previous.civilization.material)));
+        if(actualFailure &&(!evidence.hasEvidence ||evidence.succeeded
+           ||evidence.minute!=world_.minute
+           ||(evidence.reason!=ResidentResourceOutcomeReason::AccessUnavailable
+              &&evidence.reason!=ResidentResourceOutcomeReason::SourceUnavailable))) return false;
         const auto population=settlementPopulation();
-        const auto alternative=chooseResidentGatherRecoveryAfterCoreRouteFailure(
+        std::optional<CivilizationUtilityDecision> alternative;
+        std::optional<ResidentGatherAlternative> selected;
+        if(goal.active()){
+            const auto candidates=assessResidentGatherAlternatives(world_,actor,runtime.pos,
+                previous.civilization,goal.expiresMinute,goal.targetQuantity-held,ruleset_);
+            for(const auto& candidate:candidates){
+                const bool quantityEligible=candidate.quantity>=minimumAlternativeQuantity;
+                std::ostringstream detail;
+                detail<<"AL1_CORE_REPLAN_CANDIDATE actor="<<actor.id
+                    <<" goal_id="<<goal.goalId<<" failed_pending_token="<<previous.token
+                    <<" source="<<candidate.source<<" observed_minute="<<candidate.observedMinute
+                    <<" remembered="<<candidate.remembered<<" confidence="<<candidate.confidence
+                    <<" observed_quantity="<<candidate.quantity<<" route_steps="<<candidate.route.size()
+                    <<" travel_minutes="<<candidate.travelMinutes
+                    <<" remaining_minutes="<<goal.expiresMinute-world_.minute
+                    <<" reachable="<<candidate.reachable<<" feasible="<<candidate.feasible
+                    <<" quantity_eligible="<<quantityEligible
+                    <<" minimum_quantity="<<minimumAlternativeQuantity
+                    <<" reason="<<(candidate.feasible &&!quantityEligible
+                        ? "insufficient-stock-for-replan" : candidate.reason);
+                emit(detail.str());
+                if(candidate.feasible &&quantityEligible
+                   &&(!selected ||candidate.score>selected->score+1e-12))
+                    selected=candidate;
+            }
+            if(selected){
+                alternative=previous.civilization;
+                alternative->resourceNode=selected->source;
+                alternative->quantity=std::min({std::max(1,previous.civilization.quantity),
+                    selected->quantity,goal.targetQuantity-held});
+            }
+        }else alternative=chooseResidentGatherRecoveryAfterCoreRouteFailure(
             world_,actor,runtime.pos,previous.civilization,&population);
         if(alternative){
             UnifiedUtilityDecision decision;
@@ -2301,8 +2387,17 @@ bool Simulation::recoverGatherGoal(
             decision.civilization=*alternative;
             decision.utility=alternative->utility;
             if(tryCivilizationDecision(actor,runtime,&decision,nullptr,
-                    goal.active() ? &goal : nullptr)){
-                emit(actor.name+" AL1_CORE_RESOURCE_REPLAN actor="
+                    goal.active() ? &goal : nullptr,
+                    selected ? &selected->position : nullptr)){
+                if(selected &&sameGridPos(runtime.pendingContext.targetPos,selected->position)){
+                    runtime.navigationTarget=selected->position;
+                    runtime.navigationHasTarget=true;
+                    runtime.navigationArrivalRadius=1;
+                    runtime.navigationRoute=selected->route;
+                    runtime.navigationRouteIndex=0;
+                }
+                emit(actor.name+(predictive ? " AL1_CORE_RESOURCE_FORECAST_REPLAN actor="
+                    : " AL1_CORE_RESOURCE_REPLAN actor=")
                     +std::to_string(actor.id)
                     +" failed_source="+std::to_string(previous.civilization.resourceNode)
                     +" selected_source="+std::to_string(runtime.pendingContext.civilization.resourceNode)
@@ -2310,7 +2405,8 @@ bool Simulation::recoverGatherGoal(
                     +" decision_minute="+std::to_string(world_.minute)
                     +" failed_pending_token="+std::to_string(previous.token)
                     +" pending_token="+std::to_string(runtime.pendingContext.token)
-                    +" firsthand_navigation_failure=0");
+                    +" firsthand_navigation_failure="
+                    +std::to_string(evidence.reason==ResidentResourceOutcomeReason::AccessUnavailable));
                 return true;
             }
         }
@@ -2321,6 +2417,63 @@ bool Simulation::recoverGatherGoal(
         +" pending_token="+std::to_string(previous.token)
         +" disposition="+disposition);
     return false;
+}
+
+bool Simulation::reassessGatherGoal(Character& actor,Runtime& runtime)
+{
+    const auto previous=runtime.pendingContext;
+    if(!previous.gatherGoal.active() ||world_.minute%5!=0
+       ||world_.minute-previous.issuedMinute<5
+       ||contextActionExpired(previous,world_.minute)) return false;
+    // Reconsider time already spent, using the same physical destination and
+    // weather/health movement rules. This is a forecast, never a failed harvest.
+    std::vector<GridPos> route;
+    if(!buildCoreGroundRoute(world_,runtime.pos,previous.targetPos,1,route))
+        return false; // the actual navigator owns and records route failure
+    const int remaining=previous.gatherGoal.expiresMinute-world_.minute;
+    const int held=actor.civilization.inventory.count(ItemKind::RawMaterial,
+        previous.civilization.material);
+    const bool timeImpossible=residentGatherTravelMinutes(world_,actor,runtime.pos,route,0)>=remaining;
+    bool observedCompetition=false;
+    for(const auto& memory:actor.memory.entries){
+        ResidentGatherAssessment assessment;
+        if(readResidentGatherAssessment(memory,actor.id,world_.minute,assessment)
+           &&assessment.token==previous.token
+           &&assessment.cause==GatherAssessmentCause::LocalCompetition
+           &&assessment.quantity<previous.gatherGoal.targetQuantity-held)
+            observedCompetition=true;
+    }
+    if(!timeImpossible &&!observedCompetition) return false;
+    if(previous.gatherGoal.attempt>=ResidentGatherGoalMaxAttempts) return false;
+    // Competition alone must not abandon useful stock for a smaller partial
+    // harvest merely because some other full-goal source passed the precheck.
+    // An impossible deadline or an actual failed harvest may still recover
+    // partial progress, which remains explicitly short of goal completion.
+    const int minimumAlternativeQuantity=timeImpossible ? 1
+        : previous.gatherGoal.targetQuantity-held;
+    // A witnessed competitor is evidence to seek a better option, not a
+    // command to abandon still-useful stock when no alternative is feasible.
+    {
+        const auto alternatives=assessResidentGatherAlternatives(world_,actor,runtime.pos,
+            previous.civilization,previous.gatherGoal.expiresMinute,
+            previous.gatherGoal.targetQuantity-held,ruleset_);
+        if(std::none_of(alternatives.begin(),alternatives.end(),[&](const auto& candidate){
+            return candidate.feasible &&candidate.quantity>=minimumAlternativeQuantity;
+        })) return false;
+    }
+    if(timeImpossible)
+        rememberResidentGatherAssessment(actor,previous,world_.minute,
+            GatherAssessmentCause::DeadlineInsufficient,false,false,0);
+    runtime.pendingContext.clear();
+    clearNavigation(runtime);
+    const bool replaced=recoverGatherGoal(actor,runtime,previous,false,true,
+        minimumAlternativeQuantity);
+    if(!replaced){
+        // Weather-based travel is an estimate. Without a valid replacement,
+        // preserve the paid-for commitment until its authoritative deadline.
+        runtime.pendingContext=previous;
+    }
+    return replaced;
 }
 
 bool Simulation::trySocialDecision(
@@ -4256,6 +4409,11 @@ void Simulation::step(){
                 world_,c.id,r.pos,6,4);
             rememberResidentSensedLocalResources(c,nearby);
         }
+        // Retain observations while actually travelling and at ordinary
+        // decision cadence. Range and fact limits remain the existing 6/4
+        // sensor; frequent observation grants no distant resource knowledge.
+        if(!requiresDirectCare(c.lifeStage) &&world_.minute%15==0)
+            rememberResidentKnownLocalResources(world_,c,r.pos);
         syncDependentEscort(c.id,r);
         c.needs.decay(ruleset_.needs,c.metabolism,c.sleepTendency);
         c.needs.apply(healthNeedsPressurePerMinute(c.health));
@@ -4331,6 +4489,7 @@ void Simulation::step(){
 
         if(r.pendingContext.active()){
             if(!world_.externalPhysicalExecution){
+                if(reassessGatherGoal(c,r)) continue;
                 advancePendingContext(c,r);
                 if(r.pendingContext.active() && r.navigationRouteFailed){
                     if(r.pendingContext.kind==ContextActionKind::Trade
@@ -4348,7 +4507,6 @@ void Simulation::step(){
                         // Only a TRUE failed Core navigation attempt may
                         // produce this resident's firsthand route memory.
                         // Keep it separate from Gather extraction receipts.
-                        std::optional<CivilizationUtilityDecision> recovered;
                         const PendingContextAction failedAction=r.pendingContext;
                         ResourceNodeId failedSource=0;
                         std::uint64_t failedToken=0;
@@ -4358,22 +4516,14 @@ void Simulation::step(){
                             const auto gather=r.pendingContext.civilization;
                             failedSource=gather.resourceNode;
                             failedToken=r.pendingContext.token;
-                            if(rememberResidentGatherRouteFailure(
-                                   c,civilizationActionExperienceKey(gather),
-                                   failedSource,failedToken,world_.minute)){
-                                const auto population=settlementPopulation();
-                                recovered=chooseResidentGatherRecoveryAfterCoreRouteFailure(
-                                    world_,c,r.pos,gather,&population);
-                            }
+                            rememberResidentGatherRouteFailure(
+                                c,civilizationActionExperienceKey(gather),
+                                failedSource,failedToken,world_.minute);
                             const auto* node=findCivilizationResourceNodeSpatial(
                                 world_,failedSource);
                             reportGatherGoalResult(c,failedAction,
                                 c.civilization.inventory.count(ItemKind::RawMaterial,gather.material),
                                 node ? node->quantity : 0,"route-failed");
-                            if(failedAction.gatherGoal.active()
-                               &&(failedAction.gatherGoal.attempt>=ResidentGatherGoalMaxAttempts
-                                  ||world_.minute>=failedAction.gatherGoal.expiresMinute))
-                                recovered.reset();
                         }
                         emit(c.name+" context action route failed");
                         r.pendingContext.clear();
@@ -4387,39 +4537,7 @@ void Simulation::step(){
                         // extraction boundary as an ordinary chosen Gather.
                         // If no valid alternative exists, retain the existing
                         // failed-action backoff and normal future planning.
-                        if(recovered){
-                            UnifiedUtilityDecision continuation;
-                            continuation.kind=UnifiedDecisionKind::Civilization;
-                            continuation.civilization=*recovered;
-                            continuation.utility=recovered->utility;
-                            if(tryCivilizationDecision(
-                                   c,r,&continuation,nullptr,
-                                   failedAction.gatherGoal.active()
-                                       ? &failedAction.gatherGoal : nullptr)
-                               &&r.pendingContext.active()
-                               &&r.pendingContext.kind
-                                   ==ContextActionKind::Civilization
-                               &&r.pendingContext.civilization.intent==CivilizationIntent::Gather
-                               &&r.pendingContext.civilization.material==failedAction.civilization.material
-                               &&r.pendingContext.civilization.resourceNode!=failedSource){
-                                emit(c.name+" AL1_CORE_RESOURCE_REPLAN actor="
-                                    +std::to_string(c.id)
-                                    +" failed_source="
-                                    +std::to_string(failedSource)
-                                    +" selected_source="
-                                    +std::to_string(r.pendingContext.civilization.resourceNode)
-                                    +" failure_minute="
-                                    +std::to_string(world_.minute)
-                                    +" decision_minute="
-                                    +std::to_string(world_.minute)
-                                    +" failed_pending_token="
-                                    +std::to_string(failedToken)
-                                    +" pending_token="
-                                    +std::to_string(r.pendingContext.token)
-                                    +" firsthand_navigation_failure=1");
-                                continue;
-                            }
-                        }
+                        if(recoverGatherGoal(c,r,failedAction,true)) continue;
                         r.penaltyUntilMinute=std::max(
                             r.penaltyUntilMinute,
                             world_.minute+5);

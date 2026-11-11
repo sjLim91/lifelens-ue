@@ -14,6 +14,13 @@ import { cognitiveSystemPrompt } from './local-cognition-provider';
 // enough VRAM. This is not a paid API, cloud language service or second NPC.
 export const BUILTIN_RESIDENT_MODEL =
   'Qwen3-1.7B-q4f16_1-MLC';
+export const BUILTIN_RESIDENT_MODEL_FP32 = 'Qwen3-1.7B-q4f32_1-MLC';
+
+// Same Qwen3-1.7B weights/architecture; only GPU arithmetic precision differs.
+// WebGPU presence alone does not imply optional shader-f16 support.
+export function builtinResidentModelForFeatures(features: ReadonlySet<string>): string {
+  return features.has('shader-f16') ? BUILTIN_RESIDENT_MODEL : BUILTIN_RESIDENT_MODEL_FP32;
+}
 
 interface BrowserChatRequest {
   messages: Array<{ role: 'system' | 'user'; content: string }>;
@@ -24,6 +31,10 @@ interface BrowserChatRequest {
 }
 
 export interface BrowserChatEngine {
+  readonly modelId?: string;
+  // Stops WebLLM decoding after the current GPU operation completes. It
+  // cannot synchronously cancel a submitted prefill/kernel dispatch.
+  interruptGenerate?(): Promise<void>;
   // Native WebLLM MLCEngine.unload frees the model's GPU pipelines/buffers.
   // Optional for small deterministic fake engines used by the tests.
   unload?(): Promise<void>;
@@ -38,20 +49,42 @@ export interface BrowserChatEngine {
 
 export class BrowserCognitionProvider implements CognitiveProvider {
   readonly name = 'resident-browser-webgpu';
+  readonly modelId: string;
   private disposed = false;
-  constructor(private readonly engine: BrowserChatEngine) {}
+  private inFlight = false;
+  constructor(private readonly engine: BrowserChatEngine) {
+    this.modelId = engine.modelId ?? BUILTIN_RESIDENT_MODEL;
+  }
 
   async dispose(): Promise<void> {
     if (this.disposed) return;
     this.disposed = true;
+    if (this.inFlight) this.interruptPending();
     await this.engine.unload?.();
+  }
+
+  private interruptPending(): void {
+    try {
+      const interruption = this.engine.interruptGenerate?.();
+      if (interruption) void interruption.catch(() => {});
+    } catch {
+      // A lost device must not throw from an AbortSignal listener or allow
+      // the obsolete result to authorize a resident decision.
+    }
   }
 
   async reason(
     request: CognitiveRequestDto,
     signal: AbortSignal,
   ): Promise<CognitiveProposalDto | null> {
-    if (this.disposed || signal.aborted || request.allowedIntents.length === 0) return null;
+    if (this.disposed || signal.aborted || this.inFlight
+      || request.allowedIntents.length === 0) return null;
+    // The scheduler releases its slot on timeout, even if GPU prefill is
+    // still running. Retain this engine slot until the actual call settles
+    // so later residents cannot accumulate an invisible WebLLM lock queue.
+    this.inFlight = true;
+    const onAbort = () => this.interruptPending();
+    signal.addEventListener('abort', onAbort, { once: true });
     let reply: { choices?: Array<{ message?: { content?: unknown } }> };
     try {
       reply = await this.engine.chat.completions.create({
@@ -71,8 +104,12 @@ export class BrowserCognitionProvider implements CognitiveProvider {
         extra_body: { enable_thinking: false },
       });
     } catch {
+      if (this.disposed || signal.aborted) return null;
       throw new CognitiveProviderError(
         'http_error', 'on-device WebGPU inference failed');
+    } finally {
+      signal.removeEventListener('abort', onAbort);
+      this.inFlight = false;
     }
     // A late GPU inference must not re-authorize a disposed old runtime.
     if (this.disposed || signal.aborted) return null;
@@ -105,8 +142,21 @@ async function loadBuiltinWebGPUEngine(modelId: string): Promise<BrowserChatEngi
   // Keep heavyweight WebLLM out of initial app JS. The first load downloads
   // model weights and caches them in the browser; no native server is needed.
   const webllm = await import('@mlc-ai/web-llm');
-  const engine = await webllm.CreateMLCEngine(modelId);
-  return engine as unknown as BrowserChatEngine;
+  const gpu = (navigator as Navigator & {
+    gpu?: { requestAdapter(options: { powerPreference: 'high-performance' }): Promise<{ features: ReadonlySet<string> } | null> };
+  }).gpu;
+  const adapter = await gpu?.requestAdapter({ powerPreference: 'high-performance' });
+  if (!adapter) throw new Error('No WebGPU adapter available for Qwen3-1.7B');
+  modelId = builtinResidentModelForFeatures(adapter.features);
+  const engine = await webllm.CreateMLCEngine(modelId, {
+    appConfig: { ...webllm.prebuiltAppConfig, cacheBackend: 'indexeddb' },
+  });
+  return {
+    modelId,
+    interruptGenerate: () => engine.interruptGenerate(),
+    unload: () => engine.unload(),
+    chat: engine.chat,
+  } as unknown as BrowserChatEngine;
 }
 
 export async function createBrowserResidentCognition(

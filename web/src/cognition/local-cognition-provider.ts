@@ -131,6 +131,7 @@ export function cognitiveSystemPrompt(): string {
     'An executed action is not automatically a completed life goal: a successful Explore action proves an area was explored, NOT that the requested food, water, or technology was found.',
     'If personal outcome evidence is missing or inconclusive, remain uncertain; do not invent an observed success, failure, private thought, or resource.',
     'Choose only one allowed intent.',
+    'Set targetResident to null for personal/resource intents. Only CooperateWithResident, ResolveConflict, TeachKnowledge, TradeWithResident, and CareForDependent require another resident target, chosen from the supplied relationships.',
     'Never invent residents, resources, facilities, technologies, or outcomes.',
     'Return only JSON matching the schema.',
     'Do not provide hidden chain-of-thought.',

@@ -7,6 +7,7 @@ on:
       - 'Source/LifeLensCore/**'
       - 'Clients/Web/**'
       - 'Tools/build_web_client.py'
+      - 'Tools/verify_wasm_supplied_bytes.mjs'
       - 'Tools/validate_web_client_foundation.py'
       - '.github/workflows/web-wasm.yml'
   push:
@@ -15,6 +16,7 @@ on:
       - 'Source/LifeLensCore/**'
       - 'Clients/Web/**'
       - 'Tools/build_web_client.py'
+      - 'Tools/verify_wasm_supplied_bytes.mjs'
       - 'Tools/validate_web_client_foundation.py'
       - '.github/workflows/web-wasm.yml'
   workflow_dispatch:
@@ -40,6 +42,9 @@ jobs:
           test -s Clients/Web/generated/lifelens_core.js
           test -s Clients/Web/generated/lifelens_core.wasm
           echo "LifeLens Web WASM artifacts: PASS"
+
+      - name: Boot generated Core from supplied WASM bytes without network
+        run: node Tools/verify_wasm_supplied_bytes.mjs
 
       - name: Upload browser runtime artifact
         uses: actions/upload-artifact@v4

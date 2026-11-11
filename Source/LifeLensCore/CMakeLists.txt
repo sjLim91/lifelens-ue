@@ -80,6 +80,9 @@ lifelens_add_test(test_social_cognition)
 lifelens_add_test(test_cognitive_agent_contract)
 lifelens_add_test(test_resident_local_perception)
 lifelens_add_test(test_resident_local_resource_memory)
+lifelens_add_test(test_resident_known_resource_memory)
+lifelens_add_test(test_resident_gather_assessment)
+lifelens_add_test(test_al1_natural_failure_memory_ablation)
 lifelens_add_test(test_cognitive_context_allocation)
 lifelens_add_test(test_cognitive_decision_journal)
 lifelens_add_test(test_cognitive_request_receipts)
@@ -318,6 +321,9 @@ if(EMSCRIPTEN)
         "-sALLOW_MEMORY_GROWTH=1"
         "-sENVIRONMENT=web"
         "-sFILESYSTEM=0"
+        # The observer supplies verified bytes. Recent Emscripten versions
+        # no longer include wasmBinary in the default incoming Module API.
+        "-sINCOMING_MODULE_JS_API=['wasmBinary','locateFile','instantiateWasm','onRuntimeInitialized','print','printErr','onAbort']"
     )
 endif()
 

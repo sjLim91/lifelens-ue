@@ -58,7 +58,8 @@ assert "WaterLayer" in scene
 # stay on their immutable generated node when safe, but must fall back to a dry,
 # same-chunk access position when blocked by water/physical world state.
 for token in (
-    "node->material != MaterialKind::Water",
+    "material != MaterialKind::Water",
+    "resolveCivilizationResourceAccessAtKnownPosition(world,id,node->material,exact,outPosition)",
     "if(validAccess(exact))",
     "for(int distance=1;distance<=10;++distance)",
     "!surfaceWaterGroundContainsGrid(facts,candidate)",

@@ -3,6 +3,7 @@
 #include "lifelens/WebClientBridge.h"
 #include "lifelens/AutonomousGoalComposer.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
+#include "lifelens/ResidentContextOutcomeLearning.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
 #include <algorithm>
@@ -128,6 +129,85 @@ std::uint64_t parseUnsigned64(
         return fallback;
     }
     return value;
+}
+
+// The browser chooses an attention label, never its supporting evidence.
+// Reconstruct the same two distinct recent failures from this resident's
+// Core-written outcomes. A later success (including same-minute success)
+// ends the streak, and another resident's experience cannot authorize it.
+bool hasRecentRepeatedCoreFailure(const Character& actor,int minute)
+{
+    using ActionTarget=std::pair<std::string,CharacterId>;
+    std::map<ActionTarget,std::map<std::string,std::pair<int,bool>>> attempts;
+    for(const auto& memory:actor.memory.entries){
+        if(memory.source!=MemorySource::DirectWitness ||!memory.witnessed
+           ||memory.sourceCharacter!=actor.id ||memory.minute<0
+           ||memory.minute>minute ||minute-memory.minute>1440
+           ||memory.tags.size()!=3 ||memory.tags[0]!="action_experience"
+           ||(memory.tags[2]!="success" &&memory.tags[2]!="failure")) continue;
+        const auto& key=memory.tags[1];
+        const bool success=memory.tags[2]=="success";
+        std::string attempt;
+        if(key.rfind("Civilization:",0)==0 &&memory.who==actor.id){
+            if(!residentAIVerifiedGatherOutcome(actor,memory,key,minute).has_value())
+                continue;
+            // The Core civilization writer records at most one attempt of
+            // one action per minute, including legacy source-less outcomes.
+            attempt=std::to_string(memory.minute);
+        }else{
+            if(memory.who==0 ||memory.who==actor.id) continue;
+            const bool localFact=key=="CoreContext:Trade" &&success
+                &&memory.where.rfind("core-local-exchange-fact:",0)==0;
+            const std::string prefix=localFact
+                ?"core-local-exchange-fact:":"core-context-token:";
+            if(memory.where.rfind(prefix,0)!=0) continue;
+            const auto id=memory.where.substr(prefix.size());
+            if(id.empty() ||id.front()=='0' ||parseUnsigned64(id,0)==0) continue;
+            bool verified=localFact &&memory.what=="실제 지역 교역 대상 "
+                +std::to_string(memory.who)+" 물품 교환 완료 (Core exchange fact)";
+            if(!localFact){
+                CoreContextOutcomeEvent event;
+                event.kind=key=="CoreContext:Teaching"?ContextActionKind::KnowledgeTeaching
+                    :key=="CoreContext:Trade"?ContextActionKind::Trade
+                    :key=="CoreContext:Parenting"?ContextActionKind::Parenting
+                    :ContextActionKind::None;
+                for(const auto code:{CoreContextOutcomeCode::TeachingAdvanced,
+                    CoreContextOutcomeCode::TeachingComprehensionFailed,
+                    CoreContextOutcomeCode::TeachingClarityFailed,
+                    CoreContextOutcomeCode::TeachingRejected,
+                    CoreContextOutcomeCode::ParentingPerformed,
+                    CoreContextOutcomeCode::ParentingRejected,
+                    CoreContextOutcomeCode::TradeExchanged,
+                    CoreContextOutcomeCode::TradeExchangeRejected}){
+                    event.code=code;
+                    if(consistentCoreContextExperience(event)
+                       &&coreContextOutcomeActualSuccess(code)==success
+                       &&memory.what=="실제 행동 "+key+" 대상 "
+                           +std::to_string(memory.who)+" 결과: "
+                           +coreContextOutcomeCodeName(code)) verified=true;
+                }
+            }
+            if(!verified) continue;
+            attempt=memory.where; // replayed tokens are one attempt
+        }
+        auto& byIdentity=attempts[{key,memory.who}];
+        const auto found=byIdentity.find(attempt);
+        if(found==byIdentity.end() ||memory.minute>found->second.first
+           ||(memory.minute==found->second.first &&success))
+            byIdentity[attempt]={memory.minute,success};
+    }
+    for(const auto& group:attempts){
+        std::map<int,bool> byMinute;
+        for(const auto& entry:group.second){
+            const auto [at,success]=entry.second;
+            byMinute[at]=byMinute[at] ||success;
+        }
+        unsigned failures=0;
+        for(const auto& outcome:byMinute)
+            failures=outcome.second?0:failures+1;
+        if(failures>=2) return true;
+    }
+    return false;
 }
 
 void appendDouble(std::ostringstream& out, double value)
@@ -2108,6 +2188,12 @@ bool WebClientBridge::submitLocalCognitiveProposal(
                    *resident,MaterialKind::Water,simulation_->world().minute)))
             return false;
         trigger=CognitiveTriggerKind::ResourceScarcity;
+    }else if(observedTriggerText=="RepeatedFailure"){
+        const Character* resident=cognitiveCharacter(simulation_->world(),actor);
+        if(resident==nullptr
+           ||!hasRecentRepeatedCoreFailure(*resident,simulation_->world().minute))
+            return false;
+        trigger=CognitiveTriggerKind::RepeatedFailure;
     }else if(observedTriggerText!="Reflection"){
         return false;
     }
