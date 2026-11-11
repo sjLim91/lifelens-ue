@@ -9,31 +9,44 @@ const DISPLAY_ITEMS = [
   'SimpleContainer', 'SharpFlake', 'Cordage', 'FuelBundle', 'RecordTablet',
 ] as const;
 
-/** Possession, not equipped-tool authority. Unknown inventories show nothing. */
-export function residentVisibleItems(inventory: ResidentCivilizationItem[] | undefined): string[] {
-  const held = new Set((inventory ?? [])
-    .filter(stack => Number.isFinite(stack.quantity) && (stack.quantity ?? 0) > 0)
-    .map(stack => stack.item));
-  // Bound draw calls and avoid a fan of every historic possession. Order is stable.
-  return DISPLAY_ITEMS.filter(item => held.has(item)).slice(0, WORLD_PRESENTATION.production.maxEquipmentSlots);
+/** Inventory ownership does not imply a tool is worn or equipped. The current
+ * Core presentation DTO has no equipped-item token, so its callers pass no
+ * equippedItem and produce NO floating waist/back attachments. Future Core
+ * equip evidence can opt in, but must still match real owned inventory. */
+export function residentVisibleItems(
+  inventory: ResidentCivilizationItem[] | undefined,
+  equippedItem?: string | null,
+): string[] {
+  if (!equippedItem || !DISPLAY_ITEMS.some(item => item === equippedItem)) return [];
+  const owned = (inventory ?? []).some(stack => stack.item === equippedItem
+    && Number.isFinite(stack.quantity) && (stack.quantity ?? 0) > 0);
+  return owned ? [equippedItem] : [];
 }
 
-/** Actual possession sample, never a promise of the directive's output/cargo. */
-export function residentCarriedMaterial(inventory: ResidentCivilizationItem[] | undefined, p: ResidentPresentationDirective | null | undefined): string | null {
-  if (!p?.active || !['Moving','Interacting'].includes(p.phase ?? '')
-    || !['Civilization','Trade','Physical','Social','Parenting','KnowledgeTeaching'].includes(p.kind ?? '')) return null;
-  if (p.kind === 'Civilization' && (!registeredProductionDirective(p) || (p.civilizationMaterial && p.civilizationMaterial !== 'Unknown' && !knownProductionMaterial(p.civilizationMaterial)))) return null;
-  if (p.phase === 'Interacting' && (p.kind !== 'Civilization'
-    || !(p.civilizationIntent === 'Store' || ['DeliverMaterial','Fuel','LoadSmeltCharge','Plant','Water'].includes(p.facilityAction ?? '')))) return null;
-  const usable = (material: string): boolean => ownedMaterialUnits(inventory, material) > 0
-    && (material !== 'Water' || (inventory ?? []).some(s => s.item === 'SimpleContainer' && Number.isFinite(s.quantity) && s.quantity! > 0));
-  if (p.kind === 'Civilization' && knownProductionMaterial(p.civilizationMaterial)
-    && usable(p.civilizationMaterial)) return p.civilizationMaterial;
-  if (p.phase === 'Interacting') {
-    const material = p.facilityAction === 'Water' ? 'Water' : p.facilityAction === 'Plant' ? 'PlantFood' : null;
-    return material && usable(material) ? material : null;
-  }
-  return Object.keys(PRODUCTION_MATERIALS).find(usable) ?? null;
+/** Display cargo only when Core explicitly ordered its transfer, and the
+ * matching material physically exists in this resident's inventory.
+ * Never infer a carried log from unrelated moving, conversation or sleep. */
+export function residentCarriedMaterial(
+  inventory: ResidentCivilizationItem[] | undefined,
+  p: ResidentPresentationDirective | null | undefined,
+): string | null {
+  if (!p?.active || p.kind !== 'Civilization'
+    || !['Moving','Interacting'].includes(p.phase ?? '')
+    || !registeredProductionDirective(p)) return null;
+  const task = p.facilityAction ?? 'None';
+  if (p.civilizationIntent !== 'Store'
+    && !['DeliverMaterial','Fuel','LoadSmeltCharge','Plant','Water'].includes(task)) return null;
+  const material = task === 'Water' ? 'Water'
+    : task === 'Plant' ? 'PlantFood'
+    : p.civilizationMaterial;
+  if (!knownProductionMaterial(material)
+    || (p.civilizationMaterial && p.civilizationMaterial !== 'Unknown'
+      && p.civilizationMaterial !== material)
+    || ownedMaterialUnits(inventory, material) <= 0) return null;
+  if (material === 'Water' && !(inventory ?? []).some(s =>
+    s.item === 'SimpleContainer' && Number.isFinite(s.quantity)
+    && (s.quantity ?? 0) > 0)) return null;
+  return material;
 }
 
 export function residentPouringWater(inventory: ResidentCivilizationItem[] | undefined, p: ResidentPresentationDirective | null | undefined): boolean {
@@ -204,6 +217,8 @@ export class ResidentInventoryProps {
     this.hasWaterContainer=Boolean(this.rightHand) && this.interacting && !this.visuallyMoving && residentPouringWater(inventory,p);
     this.hasCarriedLoad=Boolean(material && this.rightHand && this.leftHand);
     const jug=this.hasWaterContainer || material === 'Water';
+    // The current Core DTO reports ownership and wornGarment, not equipment.
+    // With no equipped-item observation, never show inventory-derived tools.
     const items=residentVisibleItems(inventory).filter(i=>!(i === 'SimpleContainer' && jug));
     this.slots.forEach((slot,i)=>{slot.visible=!!items[i];slot.geometry=this.resources.get(items[i] ?? '');});
     this.root.visible=Boolean(this.pelvis) && items.length>0;
