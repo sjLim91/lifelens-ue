@@ -109,9 +109,9 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
   movementSampleSeconds:
     SIMULATION_TIME_CONTRACT.refreshIntervalMs / 1000,
   targetArrivalPaddingSeconds: 0.58,
-  walkStopGraceSeconds: 0.8,
+  walkStopGraceSeconds: 0.2, // Fade foot motion promptly after the last visible step.
   speedResponsivenessPerSecond: 7,
-  animationCrossFadeSeconds: 0.18,
+  animationCrossFadeSeconds: 0.22, // Match the smooth V22 clip-transition baseline.
   turnResponsivenessPerSecond: 9,
   walkReferenceSpeedWorldUnitsPerSecond:
     RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X,
