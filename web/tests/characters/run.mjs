@@ -396,7 +396,9 @@ try {
     const visual=new THREE.Group(), model=new THREE.Group(),pelvis=new THREE.Bone();pelvis.name='pelvis';model.add(pelvis);visual.add(model);
     const props=new ResidentInventoryProps(visual,model);props.setInventory([{item:'DiggingStick',quantity:1}]);
     let disposed=0;props.root.traverse(o=>{if(o.isMesh)o.geometry.addEventListener('dispose',()=>disposed++);});
-    pelvis.position.y=.5;props.update();assert.equal(props.root.position.y,.5);
+    pelvis.position.y=.5;props.update();
+    assert.equal(props.root.visible,false,'owned tools do not attach to pelvis');
+    assert.equal(props.root.position.y,0,'no equipment transforms update without Core equip evidence');
     const slots=[...props.root.children];props.setInventory([]);assert(!props.root.visible);assert.deepEqual(props.root.children,slots);assert.equal(disposed,0);props.dispose();assert.ok(disposed>0);props.dispose();
   });
   test('carry and pouring visuals require existing resources, never the future gather result',()=>{
