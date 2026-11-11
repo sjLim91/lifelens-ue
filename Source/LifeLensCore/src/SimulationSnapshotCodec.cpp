@@ -253,6 +253,15 @@ bool encodeSimulationSnapshot(
             setError(error,"invalid resident gather goal attribution");
             return false;
         }
+        if(!validResidentSuspendedGatherGoal(
+               runtime.first,runtime.second.suspendedGather,snapshot.world.minute)
+           ||(runtime.second.suspendedGather.active()
+              &&runtime.second.pendingContext.gatherGoal.active()
+              &&runtime.second.suspendedGather.goal.goalId
+                  ==runtime.second.pendingContext.gatherGoal.goalId)){
+            setError(error,"invalid suspended resident gather goal");
+            return false;
+        }
     }
     if(!validEarthScenarioState(snapshot.world.earthScenario,snapshot.world.genesisIdentity())){
         setError(error,"invalid Earth scenario binding");
