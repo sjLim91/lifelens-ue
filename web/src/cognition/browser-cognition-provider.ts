@@ -148,27 +148,98 @@ export function browserWebGPUSupported(): boolean {
     && typeof (navigator as Navigator & { gpu?: unknown }).gpu !== 'undefined';
 }
 
+// A WebGPU driver can stop responding during model initialization or unload.
+// The worker is the containment boundary: Core and the observer must never
+// wait indefinitely for a GPU device teardown. This is *not* a model fallback.
+export const QWEN_WORKER_INIT_TIMEOUT_MS = 8 * 60 * 1000;
+export const QWEN_WORKER_UNLOAD_TIMEOUT_MS = 2000;
+
+/** Own exactly one worker alongside the shared single Qwen engine. */
+export function workerBackedBrowserEngine(
+  worker: Pick<Worker, 'terminate'>,
+  engine: BrowserChatEngine,
+  modelId: string,
+  unloadTimeoutMs = QWEN_WORKER_UNLOAD_TIMEOUT_MS,
+): BrowserChatEngine {
+  let disposed = false;
+  return {
+    modelId,
+    chat: engine.chat,
+    interruptGenerate: async () => {
+      if (!disposed) await engine.interruptGenerate?.();
+    },
+    unload: async () => {
+      if (disposed) return;
+      disposed = true;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          Promise.resolve().then(() => engine.unload?.()),
+          new Promise<void>((resolve) => {
+            timer = setTimeout(resolve, unloadTimeoutMs);
+          }),
+        ]);
+      } finally {
+        if (timer !== undefined) clearTimeout(timer);
+        // Termination also works when unload never resolves after device loss.
+        worker.terminate();
+      }
+    },
+  };
+}
+
 async function loadBuiltinWebGPUEngine(modelId: string): Promise<BrowserChatEngine> {
-  // Keep heavyweight WebLLM out of initial app JS. The first load downloads
-  // model weights and caches them in the browser; no native server is needed.
-  const webllm = await import('@mlc-ai/web-llm');
+  // Only the WebLLM RPC client runs on the React/Three.js main thread.
+  // GPU compilation, model prefill, decoding and heavyweight loading happen
+  // in the single dedicated Worker. This preserves on-device/free Qwen.
   const gpu = (navigator as Navigator & {
     gpu?: { requestAdapter(options: { powerPreference: 'high-performance' }): Promise<{ features: ReadonlySet<string> } | null> };
   }).gpu;
   const adapter = await gpu?.requestAdapter({ powerPreference: 'high-performance' });
   if (!adapter) throw new Error('No WebGPU adapter available for Qwen3-1.7B');
   modelId = builtinResidentModelForFeatures(adapter.features);
-  const engine = await webllm.CreateMLCEngine(modelId, {
-    appConfig: { ...webllm.prebuiltAppConfig, cacheBackend: 'indexeddb' },
-  });
-  return {
-    modelId,
-    interruptGenerate: () => engine.interruptGenerate(),
-    unload: () => engine.unload(),
-    chat: engine.chat,
-  } as unknown as BrowserChatEngine;
-}
+  const webllm = await import('@mlc-ai/web-llm');
 
+  // Vite statically emits the worker bundle from this relative URL. It must
+  // stay on the same origin as LifeLens, not a cloud inference endpoint.
+  const worker = new Worker(
+    new URL('./qwen-webgpu.worker.ts', import.meta.url),
+    { type: 'module', name: 'lifelens-resident-qwen' },
+  );
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const onError = () => fail(new Error('Qwen WebGPU worker crashed'));
+  const onMessageError = () => fail(new Error('Qwen WebGPU worker message failed'));
+  let fail: (error: Error) => void = () => {};
+  const crashed = new Promise<never>((_resolve, reject) => { fail = reject; });
+  worker.addEventListener('error', onError);
+  worker.addEventListener('messageerror', onMessageError);
+  try {
+    const engine = await Promise.race([
+      webllm.CreateWebWorkerMLCEngine(worker, modelId, {
+        appConfig: { ...webllm.prebuiltAppConfig, cacheBackend: 'indexeddb' },
+      }),
+      crashed,
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('Qwen WebGPU worker initialization timed out')),
+          QWEN_WORKER_INIT_TIMEOUT_MS,
+        );
+      }),
+    ]);
+    return workerBackedBrowserEngine(worker, {
+      chat: engine.chat,
+      interruptGenerate: async () => { engine.interruptGenerate(); },
+      unload: () => engine.unload(),
+    }, modelId);
+  } catch (error) {
+    worker.terminate();
+    throw error;
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
+    worker.removeEventListener('error', onError);
+    worker.removeEventListener('messageerror', onMessageError);
+  }
+}
 export async function createBrowserResidentCognition(
   available: () => boolean = browserWebGPUSupported,
   loadEngine: (modelId: string) => Promise<BrowserChatEngine> =
