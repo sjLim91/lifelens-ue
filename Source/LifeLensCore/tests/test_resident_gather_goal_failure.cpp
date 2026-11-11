@@ -146,10 +146,99 @@ void competitionReplan(bool fullAlternative,bool exhaustOriginal)
         <<" inventory_gain="<<expectedQuantity<<" natural_acceptance=NOT_PROVEN\n";
 }
 
+// A real first Gather can produce fewer materials than its declared goal.
+// The next bounded Core token must reuse that SAME goal; logging a partial
+// success and starting an unrelated fresh objective is not completion.
+void partialGatherContinuesOriginalGoal()
+{
+    Simulation sim(874213954ULL);
+    sim.setupNewGame();
+    auto fixture=sim.captureSnapshot();
+    fixture.world.minute=500;
+    const CharacterId actor=fixture.world.characters.front().id;
+    const GridPos sourcePosition=fixture.runtime.at(actor).pos;
+    constexpr ResourceNodeId source=10000003;
+    for(auto& node:fixture.world.resourceNodes) node.quantity=0;
+    fixture.world.resourceNodes.push_back(
+        {source,MaterialKind::Stone,8,8,false,0,sourcePosition});
+    for(auto& resident:fixture.world.characters){
+        resident.needs={0.05,0.05,0.05,0.05,0.05};
+        resident.civilization.inventory={};
+        auto& state=fixture.runtime.at(resident.id);
+        state={};
+        state.pos=resident.id==actor ? sourcePosition
+            : GridPos{sourcePosition.x+30,sourcePosition.y+30};
+    }
+    PendingContextAction first;
+    first.token=101;
+    first.kind=ContextActionKind::Civilization;
+    first.issuedMinute=499;
+    first.hasSpatialTarget=true;
+    first.targetPos=sourcePosition;
+    first.civilization.intent=CivilizationIntent::Gather;
+    first.civilization.resourceNode=source;
+    first.civilization.material=MaterialKind::Stone;
+    first.civilization.quantity=2;
+    first.civilization.utility=0.6;
+    first.gatherGoal.goalId=first.gatherGoal.token=101;
+    first.gatherGoal.actor=actor;
+    first.gatherGoal.material=MaterialKind::Stone;
+    first.gatherGoal.createdMinute=first.gatherGoal.issuedMinute=499;
+    first.gatherGoal.expiresMinute=619;
+    first.gatherGoal.inventoryAtIssue=0;
+    first.gatherGoal.targetQuantity=4;
+    first.gatherGoal.attempt=1;
+    fixture.runtime.at(actor).pendingContext=first;
+    fixture.nextContextActionToken=102;
+    std::string error;
+    const bool restored=sim.restoreSnapshot(fixture,&error);
+    if(!restored) std::cerr<<"partial continuation fixture restore: "<<error<<'\n';
+    assert(restored);
+
+    bool firstCompleted=false;
+    for(int tick=0;tick<25 &&!firstCompleted;++tick){
+        sim.step();
+        for(const auto& log:sim.logs())
+            if(log.find("AL1_CORE_GOAL_RESULT actor=")!=std::string::npos
+               &&al1_test::number(log,"pending_token")==101
+               &&al1_test::field(log,"outcome")=="progress-unmet")
+                firstCompleted=true;
+    }
+    assert(firstCompleted);
+    assert(al1_test::resident(sim,actor).civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Stone)==2);
+    assert(al1_test::resource(sim,source).quantity==6);
+    const auto second=sim.observePendingContextAction(actor);
+    assert(second.active &&second.token!=101 &&second.resourceNode==source);
+    assert(second.gatherGoal.goalId==101 &&second.gatherGoal.previousToken==101
+        &&second.gatherGoal.targetQuantity==4 &&second.gatherGoal.attempt==2
+        &&second.gatherGoal.createdMinute==499
+        &&second.gatherGoal.expiresMinute==619);
+
+    bool achieved=false;
+    for(int tick=0;tick<25 &&!achieved;++tick){
+        sim.step();
+        for(const auto& log:sim.logs())
+            if(log.find("AL1_CORE_GOAL_RESULT actor=")!=std::string::npos
+               &&al1_test::number(log,"pending_token")==second.token
+               &&al1_test::field(log,"outcome")=="achieved")
+                achieved=true;
+    }
+    assert(achieved);
+    assert(al1_test::resident(sim,actor).civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Stone)>=4);
+    assert(al1_test::resource(sim,source).quantity<=4);
+    assert(!sim.observePendingContextAction(actor).gatherGoal.active());
+    std::cout<<"AL1_CONTROLLED_PARTIAL_CONTINUATION actor="<<actor
+        <<" goal_id=101 original_token=101 next_token="<<second.token
+        <<" physical_goal_achieved=1 natural_acceptance=NOT_PROVEN\n";
+}
+
 } // namespace
 
 int main()
 {
+    partialGatherContinuesOriginalGoal();
     competitionReplan(true,false);
     competitionReplan(false,false);
     competitionReplan(false,true);
