@@ -2,17 +2,9 @@ import * as THREE from 'three';
 import type { ResidentCivilizationItem } from '../runtime/core-types';
 import type { ResidentAppearanceProfile } from './resident-appearance';
 
-// No paid model or fabricated inventory outcome: this only renders Core's
-// explicitly observed wornGarment, never raw material or a learned recipe.
+// Only Core's explicitly observed wornGarment creates clothing. The shape
+// comes from the resident's own skinned body, never an unbound cylinder.
 export const AUTHORED_GARMENT_GROUP = 'LifeLensResidentAuthoredGarment';
-
-type TorsoFit = {
-  bone: THREE.Bone;
-  center: THREE.Vector3;
-  radiusX: number;
-  radiusZ: number;
-  height: number;
-};
 
 export function validWornPrimitiveWrap(
   garment: ResidentCivilizationItem | null | undefined,
@@ -27,50 +19,86 @@ export function validWornPrimitiveWrap(
     && garment.durability > 0 && garment.durability <= 1;
 }
 
-function fitTorso(model: THREE.Group): TorsoFit | null {
-  model.updateMatrixWorld(true);
-  let fit: TorsoFit | null = null;
-  model.traverse(object => {
-    if (fit || !(object instanceof THREE.SkinnedMesh)) return;
-    const positions = object.geometry.getAttribute('position');
-    const indices = object.geometry.getAttribute('skinIndex');
-    const weights = object.geometry.getAttribute('skinWeight');
-    if (!positions || !indices || !weights) return;
-    for (const name of ['spine_03', 'spine_02', 'spine_01']) {
-      const index = object.skeleton.bones.findIndex(b => b.name.toLowerCase() === name);
-      if (index < 0) continue;
-      const bone = object.skeleton.bones[index];
-      const relative = bone.matrixWorld.clone().invert().multiply(object.matrixWorld);
-      const bounds = new THREE.Box3();
-      const point = new THREE.Vector3();
-      let count = 0;
-      for (let i = 0; i < positions.count; i++) {
-        let influence = 0;
-        for (let component = 0; component < 4; component++) {
-          if (indices.getComponent(i, component) === index)
-            influence += weights.getComponent(i, component);
-        }
-        if (influence < .45) continue;
-        point.fromBufferAttribute(positions, i).applyMatrix4(relative);
-        if (!Number.isFinite(point.x + point.y + point.z)) continue;
-        bounds.expandByPoint(point);
-        count++;
-      }
-      if (count < 12 || bounds.isEmpty()) continue;
-      const size = bounds.getSize(new THREE.Vector3());
-      if ([size.x, size.y, size.z].some(v => v < .025 || v > 1.4))
-        continue;
-      fit = {
-        bone,
-        center: bounds.getCenter(new THREE.Vector3()),
-        radiusX: size.x * .5,
-        radiusZ: size.z * .5,
-        height: size.y,
-      };
-      return;
-    }
+/** Extract only the chest, waist and pelvis surface of the actual resident.
+ * Copy the source skin indices/weights, so this primitive fiber tunic follows
+ * spine and hips through walking, sitting and interaction poses. No rigid
+ * torso tube, separate belt ring, invented equipment or shader-only hiding. */
+function createBodyFittedWrap(
+  body: THREE.SkinnedMesh,
+  quality: number,
+  durability: number,
+  seed: number,
+): THREE.BufferGeometry | null {
+  const source = body.geometry;
+  const positions = source.getAttribute('position');
+  const normals = source.getAttribute('normal');
+  const joints = source.getAttribute('skinIndex');
+  const weights = source.getAttribute('skinWeight');
+  if (!positions || !normals || !joints || !weights
+    || joints.count !== positions.count || weights.count !== positions.count)
+    return null;
+
+  const torsoBones = new Set<number>();
+  body.skeleton.bones.forEach((bone, index) => {
+    if (/^(pelvis|spine_0[123])$/i.test(bone.name)) torsoBones.add(index);
   });
-  return fit;
+  if (torsoBones.size < 2) return null;
+
+  const influence = new Float32Array(positions.count);
+  for (let i = 0; i < positions.count; i++) {
+    let weight = 0;
+    for (let j = 0; j < 4; j++)
+      if (torsoBones.has(joints.getComponent(i, j)))
+        weight += weights.getComponent(i, j);
+    influence[i] = weight;
+  }
+
+  const srcIndex = source.getIndex();
+  const faceVertices = srcIndex ? srcIndex.count : positions.count;
+  const remap = new Map<number, number>();
+  const outPositions: number[] = [], outNormals: number[] = [];
+  const outJoints: number[] = [], outWeights: number[] = [];
+  const outTriangles: number[] = [];
+  const sway = (seed % 101) * 0.061;
+  const offsetBase = 0.004 + quality * 0.0015;
+
+  const addVertex = (old: number): number => {
+    const present = remap.get(old);
+    if (present !== undefined) return present;
+    const next = outPositions.length / 3;
+    remap.set(old, next);
+    const x = positions.getX(old), y = positions.getY(old), z = positions.getZ(old);
+    const nx = normals.getX(old), ny = normals.getY(old), nz = normals.getZ(old);
+    // Subtle deterministic cloth thickness; no free-floating cloth strips.
+    const fold = 0.0015 * (1 - quality) * Math.sin(x * 31 + y * 17 + sway);
+    const lift = offsetBase + fold + (1 - durability) * 0.001;
+    outPositions.push(x + nx * lift, y + ny * lift, z + nz * lift);
+    outNormals.push(nx, ny, nz);
+    for (let j = 0; j < 4; j++) {
+      outJoints.push(joints.getComponent(old, j));
+      outWeights.push(weights.getComponent(old, j));
+    }
+    return next;
+  };
+
+  for (let i = 0; i + 2 < faceVertices; i += 3) {
+    const a = srcIndex ? srcIndex.getX(i) : i;
+    const b = srcIndex ? srcIndex.getX(i + 1) : i + 1;
+    const c = srcIndex ? srcIndex.getX(i + 2) : i + 2;
+    if (influence[a] < .6 || influence[b] < .6 || influence[c] < .6)
+      continue;
+    outTriangles.push(addVertex(a), addVertex(b), addVertex(c));
+  }
+  if (outTriangles.length < 36) return null;
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(outPositions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(outNormals, 3));
+  geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(outJoints, 4));
+  geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(outWeights, 4));
+  geometry.setIndex(outTriangles);
+  geometry.computeBoundingSphere();
+  return geometry;
 }
 
 function disposeGarment(group: THREE.Group): void {
@@ -88,8 +116,6 @@ export function removeResidentAuthoredGarment(model: THREE.Group): void {
   if (group instanceof THREE.Group) disposeGarment(group);
 }
 
-/** Generates a fitted fiber wrap on the actual resident skeleton. Does not
- * mutate Core or synthesize an unsupported clothing event. */
 export function syncResidentAuthoredGarment(
   model: THREE.Group,
   garment: ResidentCivilizationItem | null | undefined,
@@ -100,64 +126,52 @@ export function syncResidentAuthoredGarment(
     if (old instanceof THREE.Group) disposeGarment(old);
     return false;
   }
+
+  const body = model.getObjectByName('LifeLensAuthoredAnatomicalBody');
+  if (!(body instanceof THREE.SkinnedMesh) || !body.parent) {
+    if (old instanceof THREE.Group) disposeGarment(old);
+    return false;
+  }
+  // A native-body swap replaces the anatomy geometry even if Core's worn item
+  // is unchanged. Include that source identity to avoid stale cloth fitting.
   const signature = [
     garment.item, garment.material, garment.quality, garment.durability,
-    appearance.seed, appearance.shoulderScale, appearance.hipScale,
-    appearance.widthScale, appearance.depthScale,
+    appearance.seed, body.geometry.uuid,
   ].join(':');
   if (old instanceof THREE.Group && old.userData.garmentSignature === signature)
     return true;
   if (old instanceof THREE.Group) disposeGarment(old);
-  const fit = fitTorso(model);
-  if (!fit) return false; // Fail closed on incompatible skeletons.
+
+  const geometry = createBodyFittedWrap(
+    body, garment.quality!, garment.durability!, appearance.seed,
+  );
+  if (!geometry) return false; // Incompatible skeleton: no fake garment.
+
+  const color = new THREE.Color(0xb6a27c);
+  color.offsetHSL(0, 0, ((appearance.seed % 101) / 100 - .5) * .07);
+  const material = new THREE.MeshStandardMaterial({
+    color, roughness: 1, metalness: 0, side: THREE.DoubleSide,
+  });
+  const mesh = new THREE.SkinnedMesh(geometry, material);
+  mesh.name = 'LifeLensPrimitiveFiberWrap';
+  mesh.userData.residentProceduralAppearance = true;
+  mesh.userData.residentOwnsGeometry = true;
+  mesh.position.copy(body.position);
+  mesh.quaternion.copy(body.quaternion);
+  mesh.scale.copy(body.scale);
+  mesh.bindMode = body.bindMode;
+  mesh.bind(body.skeleton, body.bindMatrix.clone());
+  mesh.bindMatrixInverse.copy(body.bindMatrixInverse);
+  mesh.frustumCulled = false;
+  mesh.receiveShadow = true;
+
   const group = new THREE.Group();
   group.name = AUTHORED_GARMENT_GROUP;
   group.userData.garmentSignature = signature;
-
-  const color = new THREE.Color(0xb6a27c);
-  // Small identity-stable natural-fiber variance, never synthetic dye or fashion.
-  color.offsetHSL(0, 0, ((appearance.seed % 101) / 100 - .5) * .07);
-  const cloth = new THREE.MeshStandardMaterial({
-    color, roughness: 1, metalness: 0, side: THREE.DoubleSide,
-  });
-  const geometry = new THREE.CylinderGeometry(1.06, 1.18, 1, 16, 4, true);
-  const positions = geometry.getAttribute('position');
-  const wear = 1 - garment.durability!;
-  const individuality = (appearance.seed % 127) / 127;
-  for (let i = 0; i < positions.count; i++) {
-    const angle = Math.atan2(positions.getZ(i), positions.getX(i));
-    const y = positions.getY(i);
-    const fold = 1 + .025 * Math.sin(angle * 7 + individuality * Math.PI * 2);
-    const frayedHem = y < -.35 ? wear * .065 * Math.sin(angle * 11 + individuality * 4) : 0;
-    positions.setXYZ(i, positions.getX(i) * fold, y + frayedHem, positions.getZ(i) * fold);
-  }
-  positions.needsUpdate = true;
-  geometry.computeVertexNormals();
-  const wrap = new THREE.Mesh(geometry, cloth);
-  wrap.name = 'LifeLensPrimitiveFiberWrap';
-  wrap.position.copy(fit.center);
-  wrap.position.y -= fit.height * .18;
-  wrap.scale.set(Math.max(.04, fit.radiusX * 1.16),
-    Math.max(.09, fit.height * 1.48),
-    Math.max(.035, fit.radiusZ * 1.16));
-  wrap.userData.residentProceduralAppearance = true;
-  wrap.userData.residentOwnsGeometry = true;
-  wrap.castShadow = true;
-  group.add(wrap);
-
-  // The binding cord was physically consumed by the garment recipe.
-  const belt = new THREE.Mesh(
-    new THREE.TorusGeometry(1, .028 + garment.quality! * .012, 4, 18),
-    new THREE.MeshStandardMaterial({ color: 0x897450, roughness: 1 }),
-  );
-  belt.name = 'LifeLensPrimitiveWrapCord';
-  belt.rotation.x = Math.PI / 2;
-  belt.position.copy(fit.center);
-  belt.position.y -= fit.height * .29;
-  belt.scale.set(fit.radiusX * 1.18, fit.radiusZ * 1.18, 1);
-  belt.userData.residentProceduralAppearance = true;
-  belt.userData.residentOwnsGeometry = true;
-  group.add(belt);
-  fit.bone.add(group);
+  group.add(mesh);
+  // The native near LOD is transient. Mount next to the persistent donor
+  // skeleton so clothing does not disappear when camera LOD changes.
+  const donorParent = model.getObjectByName('SuperHero_Male')?.parent;
+  (donorParent ?? body.parent).add(group);
   return true;
 }
