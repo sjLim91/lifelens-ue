@@ -27,6 +27,13 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
     <p className="hint">
       인지 제안 Core 승인 {state.accepted}회 · 거부/오류 {state.rejected}회
     </p>
+    <p className="hint">
+      로컬 추론 측정 {state.inferenceAttempts}회 ·
+      최근 {state.lastInferenceMs === null ? '측정 전' : `${(state.lastInferenceMs / 1000).toFixed(2)}초`} ·
+      최장 {state.maxInferenceMs === null ? '측정 전' : `${(state.maxInferenceMs / 1000).toFixed(2)}초`} ·
+      시간 초과 {state.inferenceTimeouts}회
+      {state.modelLoadMs !== null && ` · Qwen 모델 준비 ${(state.modelLoadMs / 1000).toFixed(2)}초`}
+    </p>
     {decision && <p className="hint">
       현재 주민의 최근 판단: {decision.intent
         ? formatCognitiveIntent(decision.intent as CognitiveIntent) : '없음'}
