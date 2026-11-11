@@ -912,6 +912,56 @@ const provider = {
 }
 
 {
+  // A Core reattach must cancel the worker that is STILL downloading Qwen,
+  // before another 2GB-class GPU initialization starts on the same phone.
+  // No stale model may sneak into the fresh Core attachment.
+  const loads=[];
+  const f=fixture(undefined,(signal)=>new Promise(resolve=>{
+    loads.push({signal,resolve});
+    signal?.addEventListener('abort',()=>resolve(null),{once:true});
+  }));
+  f.controller.startAutomatically();
+  await tick(); await tick();
+  assert.equal(loads.length,1);
+  assert.equal(loads[0].signal.aborted,false);
+  f.controller.attach(f.runtime);
+  assert.equal(loads[0].signal.aborted,true,
+    'obsolete model initialization is cancelled synchronously on reattach');
+  await tick(); await tick();
+  assert.equal(loads.length,2,'new Core can start one fresh model, never two live old downloads');
+  assert.equal(loads[1].signal.aborted,false);
+  loads[1].resolve(provider);
+  await tick(); await tick();
+  assert.equal(f.controller.getSnapshot().configuration?.baseUrl,'browser-webgpu');
+  assert.equal(f.controller.getSnapshot().automatic,true);
+  f.controller.dispose();
+  assert.equal(loads[1].signal.aborted,false,
+    'successfully installed model is managed by the scheduler, not a stale load signal');
+}
+
+{
+  // A page teardown during a stalled first download must cancel its GPU
+  // worker without installing a provider or retaining the pending UI state.
+  let loadSignal, resolvePending;
+  const f=fixture(undefined,(signal)=>{
+    loadSignal=signal;
+    return new Promise(resolve=>{
+      resolvePending=resolve;
+      signal?.addEventListener('abort',()=>resolve(null),{once:true});
+    });
+  });
+  f.controller.startAutomatically();
+  await tick(); await tick();
+  assert.equal(loadSignal.aborted,false);
+  f.controller.dispose();
+  assert.equal(loadSignal.aborted,true);
+  resolvePending(provider);
+  await tick();
+  assert.equal(f.controller.getSnapshot().configuration,null);
+  assert.equal(f.controller.getSnapshot().enabled,false);
+}
+
+{
   // A stale, long-running WebGPU load cannot attach its old provider
   // after a new Core source replaces the previous attachment.
   const previousFetch=globalThis.fetch;
