@@ -1537,6 +1537,33 @@ void Simulation::cancelRuntimeActivityForCriticalReplan(
     Runtime& r)
 {
     if(r.pendingContext.gatherGoal.active()){
+        const auto& old=r.pendingContext;
+        const auto& goal=old.gatherGoal;
+        const int held=character.civilization.inventory.count(
+            ItemKind::RawMaterial,goal.material);
+        // Survival releases the old physical action token, not the
+        // resident's still-feasible personal resource predicate. Hold only
+        // one bounded goal; a later critical interruption must not replace
+        // the earlier promise with an unrelated objective.
+        if(!r.suspendedGather.active()
+           &&validResidentGatherGoal(goal)
+           &&goal.actor==character.id
+           &&world_.minute<goal.expiresMinute
+           &&goal.attempt<ResidentGatherGoalMaxAttempts
+           &&held<goal.targetQuantity
+           &&old.civilization.resourceNode!=0
+           &&old.civilization.quantity>0){
+            r.suspendedGather.goal=goal;
+            r.suspendedGather.source=old.civilization.resourceNode;
+            r.suspendedGather.requestedQuantity=old.civilization.quantity;
+            emit(character.name+" AL1_CORE_GOAL_SUSPENDED actor="
+                +std::to_string(character.id)
+                +" goal_id="+std::to_string(goal.goalId)
+                +" pending_token="+std::to_string(old.token)
+                +" source="+std::to_string(old.civilization.resourceNode)
+                +" target_quantity="+std::to_string(goal.targetQuantity)
+                +" expires_minute="+std::to_string(goal.expiresMinute));
+        }
         const auto* node=findCivilizationResourceNodeSpatial(
             world_,r.pendingContext.civilization.resourceNode);
         reportGatherGoalResult(character,r.pendingContext,
@@ -1875,6 +1902,7 @@ void Simulation::clearRuntimeActivity(Runtime& r){
     r.repeatCount=0;
     r.consecutiveFailures=0;
     r.pendingContext.clear();
+    r.suspendedGather={};
     r.tradeJourney.clear();
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
@@ -2417,6 +2445,96 @@ bool Simulation::recoverGatherGoal(
         +" pending_token="+std::to_string(previous.token)
         +" disposition="+disposition);
     return false;
+}
+
+bool Simulation::resumeSuspendedGatherGoal(Character& actor,Runtime& runtime)
+{
+    if(!runtime.suspendedGather.active()) return false;
+    const ResidentSuspendedGatherGoal saved=runtime.suspendedGather;
+    const auto& goal=saved.goal;
+    const int held=actor.civilization.inventory.count(
+        ItemKind::RawMaterial,goal.material);
+    const char* abandoned=nullptr;
+    if(!validResidentSuspendedGatherGoal(actor.id,saved,world_.minute))
+        abandoned="invalid";
+    else if(held>=goal.targetQuantity) abandoned="already-achieved";
+    else if(world_.minute>=goal.expiresMinute) abandoned="expired";
+    else if(goal.attempt>=ResidentGatherGoalMaxAttempts) abandoned="attempt-budget";
+    if(abandoned){
+        emit(actor.name+" AL1_CORE_GOAL_UNMET actor="
+            +std::to_string(actor.id)
+            +" goal_id="+std::to_string(goal.goalId)
+            +" pending_token="+std::to_string(goal.token)
+            +" disposition="+abandoned);
+        runtime.suspendedGather={};
+        return false;
+    }
+
+    // The survival task must actually finish before this former goal
+    // competes for attention again. Never preempt critical provisions, care,
+    // a currently running physical plan or another active Core token.
+    if(runtime.pendingContext.active() ||!runtime.plan.empty()
+       ||actor.needs.hunger>=ruleset_.utilityAI.urgentThreshold
+       ||actor.needs.thirst>=ruleset_.utilityAI.urgentThreshold
+       ||actor.needs.sleep>=ruleset_.utilityAI.urgentThreshold
+       ||actor.needs.bladder>=ruleset_.utilityAI.urgentThreshold
+       ||actor.needs.hygiene>=ruleset_.utilityAI.urgentThreshold)
+        return false;
+
+    CivilizationUtilityDecision prior;
+    prior.intent=CivilizationIntent::Gather;
+    prior.material=goal.material;
+    prior.resourceNode=saved.source;
+    prior.quantity=std::min(saved.requestedQuantity,goal.targetQuantity-held);
+    prior.gatherGoalTarget=goal.targetQuantity;
+    prior.utility=0.5;
+
+    // Core's bounded, physically reachable candidate assessment is the
+    // source of truth. Do not resurrect the old token or teleport to a
+    // remembered source; issue a brand-new continuation through the normal
+    // resolver and navigation/extraction pipeline.
+    const auto candidates=assessResidentGatherAlternatives(
+        world_,actor,runtime.pos,prior,goal.expiresMinute,
+        goal.targetQuantity-held,ruleset_);
+    const ResidentGatherAlternative* best=nullptr;
+    for(const auto& candidate:candidates){
+        if(!candidate.feasible ||candidate.quantity<=0) continue;
+        if(best==nullptr
+           ||(candidate.source==saved.source &&best->source!=saved.source)
+           ||(candidate.source!=saved.source)==(best->source!=saved.source)
+             &&candidate.score>best->score+1e-12)
+            best=&candidate;
+    }
+    if(best==nullptr) return false;
+    CivilizationUtilityDecision next=prior;
+    next.resourceNode=best->source;
+    next.quantity=std::min({prior.quantity,best->quantity,
+        goal.targetQuantity-held});
+    if(next.quantity<=0) return false;
+    UnifiedUtilityDecision decision;
+    decision.kind=UnifiedDecisionKind::Civilization;
+    decision.civilization=next;
+    decision.utility=next.utility;
+    if(!tryCivilizationDecision(actor,runtime,&decision,nullptr,&goal,
+            &best->position)) return false;
+    if(sameGridPos(runtime.pendingContext.targetPos,best->position)){
+        runtime.navigationTarget=best->position;
+        runtime.navigationHasTarget=true;
+        runtime.navigationArrivalRadius=1;
+        runtime.navigationRoute=best->route;
+        runtime.navigationRouteIndex=0;
+    }
+    runtime.suspendedGather={};
+    emit(actor.name+" AL1_CORE_GOAL_RESUMED actor="
+        +std::to_string(actor.id)
+        +" goal_id="+std::to_string(goal.goalId)
+        +" previous_token="+std::to_string(goal.token)
+        +" pending_token="+std::to_string(runtime.pendingContext.token)
+        +" source="+std::to_string(next.resourceNode)
+        +" target_quantity="+std::to_string(goal.targetQuantity)
+        +" attempt="+std::to_string(runtime.pendingContext.gatherGoal.attempt)
+        +" resumed_minute="+std::to_string(world_.minute));
+    return true;
 }
 
 bool Simulation::reassessGatherGoal(Character& actor,Runtime& runtime)
@@ -4485,6 +4603,16 @@ void Simulation::step(){
             && journeyUrgentNeed<ruleset_.utilityAI.urgentThreshold;
         if(tradeJourneyReadyToResume){
             resumeTradeJourney(c,r);
+        }
+
+        // Continue a genuine pre-survival Gather only after the resident has
+        // completed all urgent Needs. This is before normal idle planning, but
+        // never overrides an active escort, trade leg or survival plan.
+        if(!criticalPreempted &&!r.pendingContext.active() &&r.plan.empty()
+           &&!r.dependentEscort.active() &&!r.tradeJourney.active
+           &&r.suspendedGather.active() &&world_.minute%5==0
+           &&journeyUrgentNeed<ruleset_.utilityAI.urgentThreshold){
+            resumeSuspendedGatherGoal(c,r);
         }
 
         if(r.pendingContext.active()){
