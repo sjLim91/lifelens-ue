@@ -1066,7 +1066,7 @@ bool Simulation::completeContextAction(
                 runtime.civilizationHasSpatialTarget=executedHasTarget;
                 runtime.civilizationTargetPos=executedTarget;
                 runtime.civilizationSanitationSiteId=executedSanitation;
-                emit(actor.name+" AL1_CORE_PARTIAL_GATHER_CONTINUED actor=
+                emit(actor.name+" AL1_CORE_PARTIAL_GATHER_CONTINUED actor="
                     +std::to_string(actor.id)
                     +" goal_id="+std::to_string(previous.gatherGoal.goalId)
                     +" previous_token="+std::to_string(previous.token)
