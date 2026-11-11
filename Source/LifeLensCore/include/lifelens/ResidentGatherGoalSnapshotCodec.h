@@ -159,18 +159,26 @@ bool readResidentGatherGoalExtension(R& r,SimulationStateSnapshot& snapshot)
     if(version>=2){
         std::uint32_t suspendedCount=0;
         if(!r.count(suspendedCount)
-           ||suspendedCount>snapshot.runtime.size()-count) return false;
+           ||suspendedCount>snapshot.runtime.size()) return false;
         hashGatherGoalInteger(checksum,suspendedCount);
+        std::unordered_set<CharacterId> suspendedSeen;
         for(std::uint32_t i=0;i<suspendedCount;++i){
             ResidentSuspendedGatherGoal suspended;
             if(!readResidentGatherGoalRecord(r,suspended.goal)
                ||!r.u64(suspended.source)
                ||!r.i32(suspended.requestedQuantity)
-               ||!seen.insert(suspended.goal.actor).second) return false;
+               ||!suspendedSeen.insert(suspended.goal.actor).second) return false;
             const auto found=snapshot.runtime.find(suspended.goal.actor);
+            const auto active=std::find_if(
+                staged.begin(),staged.end(),[&](const auto& entry){
+                    return entry.first==suspended.goal.actor;
+                });
+            // An urgent provision Gather can coexist with a different,
+            // suspended Stone/Wood goal; never store the SAME goal twice.
             if(found==snapshot.runtime.end()
                ||found->second.suspendedGather.active()
-               ||found->second.pendingContext.gatherGoal.active()
+               ||(active!=staged.end()
+                  &&active->second.goalId==suspended.goal.goalId)
                ||!validResidentSuspendedGatherGoal(
                    suspended.goal.actor,suspended,snapshot.world.minute))
                 return false;
