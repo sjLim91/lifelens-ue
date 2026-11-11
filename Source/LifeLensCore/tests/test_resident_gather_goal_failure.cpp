@@ -361,6 +361,11 @@ void survivalInterruptResumesSameGoal()
     auto expired=paused;
     expired.runtime.at(actor).suspendedGather.goal.expiresMinute=
         expired.world.minute;
+    // Deadline cleanup must work even before the urgent Eat plan settles.
+    Simulation urgentOverdue(1);
+    assert(urgentOverdue.restoreSnapshot(expired,&error));
+    urgentOverdue.step();
+    assert(!urgentOverdue.captureSnapshot().runtime.at(actor).suspendedGather.active());
     auto& state=expired.runtime.at(actor);
     state.pendingContext.clear();
     state.plan.clear();
