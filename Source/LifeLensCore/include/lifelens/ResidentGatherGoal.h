@@ -45,4 +45,29 @@ inline bool validResidentGatherGoal(const ResidentGatherGoalLink& goal)
                 &&goal.goalId!=goal.token);
 }
 
+// A suspended personal resource predicate is not an active ContextAction.
+// Survival/evacuation released the original token; only a new Core-issued
+// token may authorize later travel/extraction. Keep the original material,
+// stock-source hypothesis, deadline and bounded retry budget.
+struct ResidentSuspendedGatherGoal {
+    ResidentGatherGoalLink goal{};
+    ResourceNodeId source=0;
+    int requestedQuantity=0;
+    bool active() const { return goal.active(); }
+};
+
+inline bool validResidentSuspendedGatherGoal(
+    CharacterId actor,const ResidentSuspendedGatherGoal& suspended,
+    int currentMinute)
+{
+    if(!suspended.active()) return suspended.source==0
+        &&suspended.requestedQuantity==0 &&suspended.goal.token==0;
+    return validResidentGatherGoal(suspended.goal)
+        &&suspended.goal.actor==actor
+        &&suspended.goal.issuedMinute<=currentMinute
+        &&suspended.source!=0 &&suspended.requestedQuantity>0
+        &&suspended.requestedQuantity<=100000;
+}
+
+
 } // namespace lifelens
