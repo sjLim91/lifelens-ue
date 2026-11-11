@@ -350,6 +350,44 @@ void survivalInterruptResumesSameGoal()
                 sawHarvest=true;
         }
     }
+    if(!(sawPhysicalRelief &&sawNewGather &&sawHarvest)){
+        const auto& resident=al1_test::resident(sim,actor);
+        const auto current=sim.captureSnapshot();
+        const auto& runtime=current.runtime.at(actor);
+        std::cerr<<"AL1_SURVIVAL_RESUME_DIAGNOSTIC relief="<<sawPhysicalRelief
+            <<" resumed="<<sawNewGather<<" harvest="<<sawHarvest
+            <<" minute="<<current.world.minute
+            <<" hunger="<<resident.needs.hunger
+            <<" thirst="<<resident.needs.thirst
+            <<" sleep="<<resident.needs.sleep
+            <<" bladder="<<resident.needs.bladder
+            <<" hygiene="<<resident.needs.hygiene
+            <<" plan_actions="<<runtime.plan.size()
+            <<" goal="<<static_cast<int>(runtime.goal)
+            <<" pending="<<runtime.pendingContext.token
+            <<" pending_kind="<<static_cast<int>(runtime.pendingContext.kind)
+            <<" pending_resource="<<runtime.pendingContext.civilization.resourceNode
+            <<" suspended="<<runtime.suspendedGather.active()
+            <<" stock="<<al1_test::resource(sim,source).quantity<<'\n';
+        CivilizationUtilityDecision assess;
+        assess.intent=CivilizationIntent::Gather;
+        assess.material=MaterialKind::Stone;
+        assess.quantity=4;
+        for(const auto& candidate:assessResidentGatherAlternatives(
+                sim.world(),resident,runtime.pos,assess,619,4)){
+            std::cerr<<" candidate="<<candidate.source
+                <<" quantity="<<candidate.quantity
+                <<" feasible="<<candidate.feasible
+                <<" reachable="<<candidate.reachable
+                <<" reason="<<candidate.reason<<'\n';
+        }
+        int reported=0;
+        for(const auto& event:sim.logs())
+            if(event.find("AL1_CORE_")!=std::string::npos
+               ||event.find("preempted")!=std::string::npos){
+                if(++reported<=80) std::cerr<<" diag_log "<<event<<'\n';
+            }
+    }
     assert(sawPhysicalRelief &&sawNewGather &&sawHarvest);
     assert(resumedToken>101);
     assert(al1_test::resident(sim,actor).civilization.inventory.count(
