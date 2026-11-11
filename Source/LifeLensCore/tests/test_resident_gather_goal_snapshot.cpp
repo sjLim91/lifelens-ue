@@ -98,6 +98,30 @@ int main()
     assert(replay.restoreSnapshot(decoded,&error));
     assert(al1_test::bytes(replay.captureSnapshot())==suspendedBytes);
 
+    // Urgent food provision can itself be an active Gather while the older
+    // material objective remains suspended. Encode both distinct identities
+    // for the SAME actor without overwriting either physical action.
+    auto concurrent=snapshot;
+    auto& concurrentRuntime=concurrent.runtime.at(actor);
+    concurrentRuntime.suspendedGather.goal=before.gatherGoal;
+    concurrentRuntime.suspendedGather.goal.goalId=
+        concurrentRuntime.suspendedGather.goal.token=
+            concurrent.nextContextActionToken++;
+    concurrentRuntime.suspendedGather.goal.previousToken=0;
+    concurrentRuntime.suspendedGather.goal.attempt=1;
+    concurrentRuntime.suspendedGather.goal.issuedMinute=
+        concurrentRuntime.suspendedGather.goal.createdMinute;
+    concurrentRuntime.suspendedGather.source=before.civilization.resourceNode;
+    concurrentRuntime.suspendedGather.requestedQuantity=before.civilization.quantity;
+    const auto concurrentBytes=al1_test::bytes(concurrent);
+    assert(decodeSimulationSnapshot(concurrentBytes,decoded,&error));
+    const auto& both=decoded.runtime.at(actor);
+    assert(both.pendingContext.gatherGoal.active()
+        &&both.suspendedGather.active());
+    assert(both.pendingContext.gatherGoal.goalId
+        !=both.suspendedGather.goal.goalId);
+    assert(al1_test::bytes(decoded)==concurrentBytes);
+
     auto malformedSuspension=suspended;
     malformedSuspension.runtime.at(actor).suspendedGather.source=0;
     std::vector<std::uint8_t> rejected;
