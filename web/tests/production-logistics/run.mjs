@@ -15,17 +15,20 @@ test('all actual Core MaterialKind families registered, unknown/zero/missing inv
  const header=readFileSync(new URL('../../../Source/LifeLensCore/include/lifelens/Civilization.h',import.meta.url),'utf8');
  const enums=header.match(/enum class MaterialKind\s*\{([\s\S]*?)\};/)[1].replace(/\/\/[^\n]*/g,'').split(',').map(v=>v.trim()).filter(v=>v&&v!=='Unknown');
  assert.deepEqual(Object.keys(PRODUCTION_MATERIALS).sort(),enums.sort());
- for(const material of enums) {const stacks=inv(material);if(material==='Water')stacks.push({item:'SimpleContainer',quantity:1});assert.equal(load(stacks,p({civilizationMaterial:material})),material);}
- for(const inventory of [undefined,[],inv('Wood',0),inv('Wood',NaN),inv('FutureMaterial',1)])assert.equal(load(inventory,p()),null);
+ for(const material of enums) {const stacks=inv(material);if(material==='Water')stacks.push({item:'SimpleContainer',quantity:1});assert.equal(load(stacks,p({civilizationIntent:'Store',civilizationMaterial:material})),material);}
+ for(const inventory of [undefined,[],inv('Wood',0),inv('Wood',NaN),inv('FutureMaterial',1)])assert.equal(load(inventory,p({civilizationIntent:'Store'})),null);
  assert.equal(load(inv(),null),null);assert.equal(load(inv(),p({civilizationIntent:'FutureIntent'})),null);
- assert.equal(load(inv(),p({facilityAction:'FutureAction'})),null);assert.equal(load(inv(),p({kind:'FutureKind'})),null);
- assert.equal(load(inv('Water'),p({civilizationMaterial:'Water'})),null);
+ assert.equal(load(inv(),p({civilizationIntent:'Store',facilityAction:'FutureAction'})),null);
+ assert.equal(load(inv(),p({civilizationIntent:'Store',kind:'FutureKind'})),null);
+ assert.equal(load(inv('Water'),p({civilizationIntent:'Store',civilizationMaterial:'Water'})),null);
 });
-test('possession travels across actions; directive never creates future gather/retrieve/craft output',()=>{
- assert.equal(load(inv(),p()),'Wood');assert.equal(load([],p()),null);
- assert.equal(load(inv(),p({civilizationIntent:'Retrieve'})),'Wood');
+test('cargo follows explicit Core transfer, never generic possession or future output',()=>{
+ assert.equal(load(inv(),p()),null,'Gather does not imply carrying everything already owned');
+ assert.equal(load([],p()),null);
+ assert.equal(load(inv(),p({civilizationIntent:'Retrieve'})),null);
  assert.equal(load([],p({civilizationIntent:'Craft',civilizationItem:'BronzeAxe'})),null);
  assert.equal(load(inv(),p({phase:'Interacting'})),null);
+ assert.equal(load(inv(),p({phase:'Moving',civilizationIntent:'Store'})),'Wood');
  assert.equal(load(inv(),p({phase:'Interacting',civilizationIntent:'Store'})),'Wood');
  assert.equal(load(inv(),p({phase:'Interacting',civilizationIntent:'Retrieve'})),null);
  assert.equal(ownedMaterialUnits([...inv('Wood',1),...inv('Wood',2)],'Wood'),3);

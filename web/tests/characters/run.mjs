@@ -378,14 +378,15 @@ try {
     assert.notEqual(mesh.geometry,geometry);
   });
   const {residentVisibleItems,createResidentProp,ResidentInventoryProps,residentCarriedMaterial,residentPouringWater}=await source('render/resident-props.ts');
-  test('tools require actual positive inventory and have bounded stable selection',()=>{
+  test('actual ownership alone never authorizes floating displayed equipment',()=>{
     assert.deepEqual(residentVisibleItems(undefined),[]);
     assert.deepEqual(residentVisibleItems([{item:'DiggingStick',quantity:0},{item:'BronzeAxe',quantity:NaN}]),[]);
     const items=[{item:'SharpFlake',quantity:1},{item:'SimpleContainer',quantity:1},{item:'DiggingStick',quantity:1},{item:'StoneHammer',quantity:2}];
     assert.deepEqual(residentVisibleItems(items),residentVisibleItems([...items].reverse()));
-    assert.equal(residentVisibleItems(items).length,3);
-    // Worn-out possessions still exist; this is not an equipped/usable tool flag.
-    assert.deepEqual(residentVisibleItems([{item:'SharpFlake',quantity:1,durability:0}]),['SharpFlake']);
+    assert.deepEqual(residentVisibleItems(items),[],'the DTO has no equipped slot');
+    assert.deepEqual(residentVisibleItems(items,'DiggingStick'),['DiggingStick']);
+    assert.deepEqual(residentVisibleItems(items,'BronzeAxe'),[],'unowned equipment is never rendered');
+    assert.deepEqual(residentVisibleItems([{item:'SharpFlake',quantity:1,durability:0}],'SharpFlake'),['SharpFlake']);
     for(const item of ['SharpFlake','SimpleContainer','DiggingStick','StoneHammer','StoneCuttingTool','BronzeAxe','BronzePick','Cordage','FuelBundle','RecordTablet']) {
       const model=createResidentProp(item);const size=new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
       assert.ok(size.x>0 && size.y>0 && size.z>0 && size.length()<.8,item);
@@ -395,7 +396,9 @@ try {
     const visual=new THREE.Group(), model=new THREE.Group(),pelvis=new THREE.Bone();pelvis.name='pelvis';model.add(pelvis);visual.add(model);
     const props=new ResidentInventoryProps(visual,model);props.setInventory([{item:'DiggingStick',quantity:1}]);
     let disposed=0;props.root.traverse(o=>{if(o.isMesh)o.geometry.addEventListener('dispose',()=>disposed++);});
-    pelvis.position.y=.5;props.update();assert.equal(props.root.position.y,.5);
+    pelvis.position.y=.5;props.update();
+    assert.equal(props.root.visible,false,'owned tools do not attach to pelvis');
+    assert.equal(props.root.position.y,0,'no equipment transforms update without Core equip evidence');
     const slots=[...props.root.children];props.setInventory([]);assert(!props.root.visible);assert.deepEqual(props.root.children,slots);assert.equal(disposed,0);props.dispose();assert.ok(disposed>0);props.dispose();
   });
   test('carry and pouring visuals require existing resources, never the future gather result',()=>{
@@ -403,9 +406,9 @@ try {
     const moving={active:true,kind:'Civilization',phase:'Moving',facilityAction:'DeliverMaterial',civilizationMaterial:'Wood'};
     assert.equal(residentCarriedMaterial(inventory,moving),'Wood');
     assert.equal(residentCarriedMaterial([],moving),null);
-    assert.equal(residentCarriedMaterial(inventory,{...moving,facilityAction:'None',civilizationIntent:'Gather'}),'Wood');
+    assert.equal(residentCarriedMaterial(inventory,{...moving,facilityAction:'None',civilizationIntent:'Gather'}),null,'gathering is not a cargo transfer');
     assert.equal(residentCarriedMaterial(inventory,{...moving,phase:'Interacting'}),'Wood');
-    assert.equal(residentCarriedMaterial([{item:'RawMaterial',material:'Wood',quantity:3}],{active:true,kind:'Trade',phase:'Moving'}),'Wood');
+    assert.equal(residentCarriedMaterial([{item:'RawMaterial',material:'Wood',quantity:3}],{active:true,kind:'Trade',phase:'Moving'}),null,'trade intent alone cannot equip unspecified cargo');
     assert.equal(residentCarriedMaterial([],{active:true,kind:'Trade',phase:'Moving'}),null);
     const watering={active:true,kind:'Civilization',phase:'Interacting',facilityKind:'CultivatedPlot',facilityAction:'Water'};
     assert.equal(residentPouringWater(inventory,watering),true);
@@ -417,12 +420,20 @@ try {
   function torsoFixture() {
     const model=new THREE.Group(), geometry=new THREE.BoxGeometry(.3,.36,.21,3,3,3);
     const n=geometry.getAttribute('position').count;
-    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(new Uint16Array(n*4),4));
-    const weights=new Float32Array(n*4);for(let i=0;i<n;i++)weights[i*4]=1;
+    const indices=new Uint16Array(n*4),weights=new Float32Array(n*4);
+    for(let i=0;i<n;i++){
+      indices[i*4]=geometry.getAttribute('position').getY(i)<0?0:1;
+      weights[i*4]=1;
+    }
+    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
     geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
     const mesh=new THREE.SkinnedMesh(geometry,new THREE.MeshStandardMaterial());
-    const bone=new THREE.Bone();bone.name='spine_03';mesh.add(bone);mesh.bind(new THREE.Skeleton([bone]));model.add(mesh);
-    return {model,bone,mesh};
+    mesh.name='LifeLensAuthoredAnatomicalBody';
+    const pelvis=new THREE.Bone();pelvis.name='pelvis';
+    const spine=new THREE.Bone();spine.name='spine_03';
+    pelvis.add(spine);mesh.add(pelvis);
+    mesh.bind(new THREE.Skeleton([pelvis,spine]));model.add(mesh);
+    return {model,bone:spine,mesh};
   }
   const wrap={item:'PrimitiveWrap',material:'Fiber',quantity:1,quality:.8,durability:.8};
   test('A3 worn garment needs Core item evidence, never loose resources or mere knowledge',()=>{
@@ -431,13 +442,19 @@ try {
       assert.equal(validWornPrimitiveWrap(input),false);
     assert.equal(validWornPrimitiveWrap(wrap),true);
   });
-  test('A3 fit uses actual torso bone, stable replay and bounded replacement',()=>{
-    const {model,bone}=torsoFixture(), p=profile({id:'a3-self-authored',sex:'Female'});
+  test('A3 wrap reuses body skin weights and follows its animated skeleton',()=>{
+    const {model,bone,mesh}=torsoFixture(), p=profile({id:'a3-self-authored',sex:'Female'});
     assert.equal(syncResidentAuthoredGarment(model,wrap,p),true);
     const group=model.getObjectByName(AUTHORED_GARMENT_GROUP);
-    assert.equal(group.parent,bone);
+    assert.equal(group.parent,model);
     const child=group.getObjectByName('LifeLensPrimitiveFiberWrap');
-    assert.ok(child.geometry.getAttribute('position').count>50);
+    assert(child instanceof THREE.SkinnedMesh);
+    assert.equal(child.skeleton,mesh.skeleton);
+    assert.ok(child.geometry.getAttribute('position').count>20);
+    assert.ok(child.geometry.getAttribute('skinWeight'));
+    assert.ok(child.geometry.getAttribute('skinIndex'));
+    assert.equal(child.geometry.type,'BufferGeometry');
+    assert.equal(model.getObjectByName('LifeLensPrimitiveWrapCord'),undefined);
     assert.ok(child.userData.residentOwnsGeometry);
     assert.equal(syncResidentAuthoredGarment(model,{...wrap},p),true);
     assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP),group);
@@ -452,7 +469,8 @@ try {
     assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP),undefined);
     assert.equal(syncResidentAuthoredGarment(model,wrap,p),true);
     bone.rotation.z=.2;model.updateMatrixWorld(true);
-    assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP).parent,bone);
+    assert.equal(model.getObjectByName(AUTHORED_GARMENT_GROUP).parent,model);
+    assert.equal(model.getObjectByName('LifeLensPrimitiveFiberWrap').skeleton,mesh.skeleton);
   });
   test('A3 no unsupported rig ever gets a floating garment',()=>{
     const model=new THREE.Group(),p=profile({id:'unrigged'});

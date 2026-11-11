@@ -17,6 +17,7 @@ const source=async path=>import(pathToFileURL(compile(path)));
 const {resolveResidentSemanticMotion:motion}=await source('render/resident-semantic-motion.ts');
 const {createResidentMotionLibrary}=await source('render/resident-motion-library.ts');
 const {ResidentWorldLayer}=await source('render/resident-world-layer.ts');
+const {residentCarriedMaterial,residentVisibleItems}=await source('render/resident-props.ts');
 const {RESIDENT_PRESENTATION_CONTRACT, residentPresentationMotionTimeScale}=await source('runtime/lifelens-contract.ts');
 const loader=new GLTFLoader(),assets=new Map();
 for(const name of ['character','ual1','ual2']){const b=readFileSync(resolve(root,'public/vendor/characters/'+name+'.glb'));assets.set(name,await loader.parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),''));}
@@ -90,8 +91,8 @@ test('resource facing uses Core node center without moving from access cell',()=
 });
 test('visible arrival guards interactions and preserves walk grace',()=>{
  const r=resident('arrival',p({kind:'Physical',physicalGoal:'Eat',targetGridX:80}),{civilization:{inventory:[{item:'RawMaterial',material:'PlantFood',quantity:1}]}});l.setResidents([r],terrain,0,0);l.setResidents([{...r,gridX:80}],terrain,0,0);const a=l.actors.get('arrival');
- for(let i=0;i<5;i++){l.update(1/60);assert.equal(a.active,'carry');assert(a.current.distanceTo(a.target)>.008);}
- a.current.copy(a.target);l.update(1/60);assert.equal(a.active,'carry');
+ for(let i=0;i<5;i++){l.update(1/60);assert.equal(a.active,'walk');assert(a.current.distanceTo(a.target)>.008);}
+ a.current.copy(a.target);l.update(1/60);assert.equal(a.active,'walk');
  for(let i=0;i<30;i++)l.update(1/60);assert.equal(a.active,'consume');
 });
 test('social facing/connector cache follows the real partner and visible arrival',()=>{
@@ -190,6 +191,53 @@ test('heading reversal rotates without stepping backward or playing walk on the 
  for(let i=0;i<20;i++)l.update(1/60);
  assert(a.current.z<before);
  assert.equal(a.active,'walk');
+});
+test('inventory ownership never creates floating equipment or unrelated cargo',()=>{
+ const inventory=[
+  {item:'DiggingStick',quantity:1},
+  {item:'StoneHammer',quantity:1},
+  {item:'RawMaterial',material:'Wood',quantity:3},
+  {item:'RawMaterial',material:'PlantFood',quantity:2},
+ ];
+ assert.deepEqual(residentVisibleItems(inventory),[]);
+ assert.deepEqual(residentVisibleItems(inventory,'DiggingStick'),['DiggingStick']);
+ assert.deepEqual(residentVisibleItems(inventory,'BronzeAxe'),[]);
+ assert.equal(residentCarriedMaterial(inventory,p({kind:'Social',phase:'Moving'})),null);
+ assert.equal(residentCarriedMaterial(inventory,p({kind:'Physical',phase:'Moving',physicalGoal:'Eat'})),null);
+ assert.equal(residentCarriedMaterial(inventory,p({phase:'Moving',civilizationIntent:'Gather',civilizationMaterial:'Wood'})),null);
+ assert.equal(residentCarriedMaterial(inventory,p({phase:'Moving',civilizationIntent:'Store',civilizationMaterial:'Wood'})),'Wood');
+ assert.equal(residentCarriedMaterial(inventory,p({phase:'Moving',civilizationIntent:'Store',civilizationMaterial:'CopperOre'})),null);
+ const idle=resident('prop-owner',p({kind:'Social',phase:'Moving'}),{civilization:{inventory}});
+ l.setResidents([idle],terrain,0,0);l.update(1/60);
+ const a=l.actors.get('prop-owner');
+ assert.equal(a.inventoryProps.root.visible,false,'owned tools have no equipped Core token');
+ assert.equal(a.inventoryProps.loadRoot.visible,false,'social movement does not create a cargo bundle');
+ l.setResidents([{...idle,presentation:p({kind:'Civilization',phase:'Moving',civilizationIntent:'Store',civilizationMaterial:'Wood'})}],terrain,0,0);
+ assert.equal(a.inventoryProps.loadRoot.visible,true,'Core-authorized physical storage transfer retains cargo');
+});
+test('worn fiber wrap is a body-fitted, live-skinned mesh rather than a rigid cylinder',()=>{
+ const wornGarment={item:'PrimitiveWrap',material:'Fiber',quantity:1,quality:.8,durability:.9};
+ const r=resident('wrapped',p({kind:'Physical',physicalGoal:'Eat',phase:'Idle'}),{civilization:{wornGarment,inventory:[{item:'DiggingStick',quantity:1}]}});
+ l.setResidents([r],terrain,0,0);
+ const actor=l.actors.get('wrapped');
+ const wrap=actor.model.getObjectByName('LifeLensPrimitiveFiberWrap');
+ const body=actor.model.getObjectByName('LifeLensAuthoredAnatomicalBody');
+ assert(wrap instanceof THREE.SkinnedMesh,'worn garment must bind the anatomical skeleton');
+ assert(body instanceof THREE.SkinnedMesh);
+ assert.equal(wrap.skeleton,body.skeleton);
+ assert(wrap.geometry.getIndex().count>0);
+ assert(wrap.geometry.getAttribute('skinWeight'));
+ assert(wrap.geometry.getAttribute('skinIndex'));
+ assert(wrap.geometry.getAttribute('position').count<body.geometry.getAttribute('position').count,
+   'only torso triangles should receive cloth geometry');
+ assert.equal(wrap.geometry.type,'BufferGeometry');
+ assert.equal(actor.model.getObjectByName('LifeLensPrimitiveWrapCord'),undefined,'no floating belt torus');
+ l.update(1/60);
+ const wrappedAgain=resident('wrapped',r.presentation,{civilization:{wornGarment,inventory:[{item:'DiggingStick',quantity:1}]}});
+ l.setResidents([wrappedAgain],terrain,0,0);
+ assert.equal(actor.model.getObjectByName('LifeLensPrimitiveFiberWrap'),wrap,'unchanged garment is cached');
+ l.setResidents([resident('wrapped',r.presentation,{civilization:{wornGarment:null,inventory:[]}})],terrain,0,0);
+ assert.equal(actor.model.getObjectByName('LifeLensPrimitiveFiberWrap'),undefined,'removed garment cannot persist');
 });
 test('resident count scales once; repeated directives and updates allocate no new actions/meshes',()=>{
  const rs=Array.from({length:32},(_,i)=>resident('many'+i,p({kind:'Physical',physicalGoal:'Eat'})));l.setResidents(rs,terrain,0,0);
