@@ -241,10 +241,153 @@ void partialGatherContinuesOriginalGoal()
         <<" physical_goal_achieved=1 natural_acceptance=NOT_PROVEN\n";
 }
 
+// Controlled entry point, but *real* survival preemption, physical eating,
+// resumed ContextAction issuance and actual Core gathering. Snapshot replay
+// must remain byte-identical; the fixture does not claim natural goal selection.
+void survivalInterruptResumesSameGoal()
+{
+    Simulation sim(874213954ULL);
+    sim.setupNewGame();
+    auto fixture=sim.captureSnapshot();
+    fixture.world.minute=500;
+    const CharacterId actor=fixture.world.characters.front().id;
+    const GridPos location=fixture.runtime.at(actor).pos;
+    constexpr ResourceNodeId source=10000004;
+    for(auto& node:fixture.world.resourceNodes) node.quantity=0;
+    fixture.world.resourceNodes.push_back(
+        {source,MaterialKind::Stone,12,12,false,0,location});
+    for(auto& resident:fixture.world.characters){
+        resident.needs={0.02,0.02,0.02,0.02,0.02};
+        resident.civilization.inventory={};
+        auto& runtime=fixture.runtime.at(resident.id);
+        runtime={};
+        runtime.pos=resident.id==actor ? location
+            : GridPos{location.x+28,location.y+28};
+    }
+    auto& worker=fixture.world.characters.front();
+    worker.needs={0.96,0.02,0.02,0.02,0.02};
+    worker.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,3,0.5,1.0});
+    assert(actionAvailableFor(fixture.world,worker,Goal::Eat));
+
+    PendingContextAction old;
+    old.token=101;
+    old.kind=ContextActionKind::Civilization;
+    old.issuedMinute=499;
+    old.hasSpatialTarget=true;
+    old.targetPos=location;
+    old.civilization.intent=CivilizationIntent::Gather;
+    old.civilization.resourceNode=source;
+    old.civilization.material=MaterialKind::Stone;
+    old.civilization.quantity=4;
+    old.civilization.utility=0.65;
+    old.gatherGoal.goalId=old.gatherGoal.token=101;
+    old.gatherGoal.actor=actor;
+    old.gatherGoal.material=MaterialKind::Stone;
+    old.gatherGoal.createdMinute=old.gatherGoal.issuedMinute=499;
+    old.gatherGoal.expiresMinute=619;
+    old.gatherGoal.inventoryAtIssue=0;
+    old.gatherGoal.targetQuantity=4;
+    old.gatherGoal.attempt=1;
+    old.gatherGoal.composed=true;
+    fixture.runtime.at(actor).pendingContext=old;
+    fixture.nextContextActionToken=102;
+    std::string error;
+    assert(sim.restoreSnapshot(fixture,&error));
+
+    sim.step(); // Actual high hunger preempts the in-flight Stone Gather.
+    auto paused=sim.captureSnapshot();
+    const auto& suspended=paused.runtime.at(actor).suspendedGather;
+    assert(suspended.active());
+    assert(suspended.goal.goalId==101 &&suspended.goal.token==101
+        &&suspended.goal.expiresMinute==619 &&suspended.goal.attempt==1
+        &&suspended.source==source &&suspended.requestedQuantity==4);
+    assert(!sim.observePendingContextAction(actor).gatherGoal.active());
+    bool loggedInterruption=false;
+    for(const auto& log:sim.logs()){
+        if(log.find("AL1_CORE_GOAL_SUSPENDED actor=")!=std::string::npos
+           &&al1_test::number(log,"actor")==actor
+           &&al1_test::number(log,"goal_id")==101)
+            loggedInterruption=true;
+    }
+    assert(loggedInterruption);
+
+    // No original token is revived by reloading the in-flight survival plan.
+    const auto bytes=al1_test::bytes(paused);
+    SimulationStateSnapshot decoded;
+    assert(decodeSimulationSnapshot(bytes,decoded,&error));
+    assert(decoded.runtime.at(actor).suspendedGather.active());
+    assert(al1_test::bytes(decoded)==bytes);
+    Simulation replay(1);
+    assert(replay.restoreSnapshot(decoded,&error));
+    assert(al1_test::bytes(replay.captureSnapshot())==bytes);
+
+    bool sawPhysicalRelief=false,sawNewGather=false,sawHarvest=false;
+    std::uint64_t resumedToken=0;
+    const int stockBefore=al1_test::resource(sim,source).quantity;
+    for(int tick=0;tick<116 &&!sawHarvest;++tick){
+        sim.step();
+        replay.step();
+        const auto current=al1_test::bytes(sim.captureSnapshot());
+        assert(current==al1_test::bytes(replay.captureSnapshot()));
+        const Character& resident=al1_test::resident(sim,actor);
+        if(resident.needs.hunger<0.8) sawPhysicalRelief=true;
+        const auto token=sim.observePendingContextAction(actor);
+        if(token.gatherGoal.active() &&token.gatherGoal.goalId==101
+           &&token.gatherGoal.previousToken==101){
+            assert(sawPhysicalRelief);
+            assert(token.token!=101 &&token.gatherGoal.attempt==2);
+            assert(token.gatherGoal.targetQuantity==4
+                &&token.gatherGoal.expiresMinute==619);
+            resumedToken=token.token;
+            sawNewGather=true;
+        }
+        for(const auto& event:sim.logs()){
+            if(event.find("AL1_CORE_GOAL_RESULT actor=")!=std::string::npos
+               &&al1_test::number(event,"goal_id")==101
+               &&al1_test::field(event,"outcome")=="achieved"
+               &&al1_test::number(event,"pending_token")!=101)
+                sawHarvest=true;
+        }
+    }
+    assert(sawPhysicalRelief &&sawNewGather &&sawHarvest);
+    assert(resumedToken>101);
+    assert(al1_test::resident(sim,actor).civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Stone)>=4);
+    assert(al1_test::resource(sim,source).quantity<stockBefore);
+    assert(!sim.captureSnapshot().runtime.at(actor).suspendedGather.active());
+
+    // An expired suspended goal is NOT revived even when the actor is safe.
+    auto expired=paused;
+    expired.runtime.at(actor).suspendedGather.goal.expiresMinute=
+        expired.world.minute;
+    auto& state=expired.runtime.at(actor);
+    state.pendingContext.clear();
+    state.plan.clear();
+    state.goal=Goal::Idle;
+    for(auto& resident:expired.world.characters)
+        if(resident.id==actor)
+            resident.needs={0.01,0.01,0.01,0.01,0.01};
+    Simulation overdue(1);
+    assert(overdue.restoreSnapshot(expired,&error));
+    for(int tick=0;tick<12;++tick) overdue.step();
+    assert(!overdue.captureSnapshot().runtime.at(actor).suspendedGather.active());
+    for(const auto& log:overdue.logs())
+        if(log.find("AL1_CORE_GOAL_RESUMED actor=")!=std::string::npos
+           &&al1_test::number(log,"goal_id")==101)
+            assert(false &&"expired Gather cannot issue a fresh token");
+
+    std::cout<<"AL1_CONTROLLED_SURVIVAL_RESUME actor="<<actor
+        <<" goal_id=101 original_token=101 resumed_token="<<resumedToken
+        <<" actual_survival_relief=1 Core_harvest=1 snapshot_replay=equal"
+        <<" natural_acceptance=NOT_PROVEN\n";
+}
+
 } // namespace
 
 int main()
 {
+    survivalInterruptResumesSameGoal();
     partialGatherContinuesOriginalGoal();
     competitionReplan(true,false);
     competitionReplan(false,false);
