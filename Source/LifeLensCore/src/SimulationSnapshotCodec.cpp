@@ -295,7 +295,8 @@ bool encodeSimulationSnapshot(
     }
     bool hasGatherGoal=false;
     for(const auto& entry:snapshot.runtime)
-        hasGatherGoal|=entry.second.pendingContext.gatherGoal.active();
+        hasGatherGoal|=entry.second.pendingContext.gatherGoal.active()
+            ||entry.second.suspendedGather.active();
     if(hasGatherGoal){
         Writer gatherExtension;
         writeResidentGatherGoalExtension(gatherExtension,snapshot);
