@@ -912,6 +912,66 @@ const provider = {
 }
 
 {
+  // Previously a fully INSTALLED Qwen worker was disposed in fire-and-forget
+  // mode while a replacement immediately started allocating GPU buffers.
+  // Reattachment must leave the Core usable but delay the new model load
+  // until the old worker has genuinely released its device allocations.
+  let loads=0, finishRetirement;
+  let retireCalls=0;
+  const oldProvider={
+    ...provider,
+    name:'resident-browser-webgpu',
+    dispose:()=>{
+      retireCalls++;
+      return new Promise(resolve=>{finishRetirement=resolve;});
+    },
+  };
+  const f=fixture(undefined,async()=>{
+    loads++;
+    return loads===1 ? oldProvider : provider;
+  });
+  f.controller.startAutomatically();
+  await tick(); await tick();
+  assert.equal(loads,1);
+  assert.equal(f.controller.getSnapshot().configuration?.baseUrl,'browser-webgpu');
+  f.controller.attach(f.runtime);
+  assert.equal(retireCalls,1,'former worker teardown starts immediately');
+  assert.equal(f.controller.getSnapshot().configuration,null);
+  await tick(); await tick();
+  assert.equal(loads,1,'replacement may not overlap old WebGPU allocations');
+  assert.equal(f.controller.getSnapshot().discovering,true,
+    'observer accurately reports waiting for the next model');
+  finishRetirement();
+  await tick(); await tick(); await tick();
+  assert.equal(loads,2,'replacement starts only once old GPU is released');
+  assert.equal(f.controller.getSnapshot().configuration?.baseUrl,'browser-webgpu');
+  f.controller.dispose();
+}
+
+{
+  // Even if another Core world arrives while the old GPU worker unloads,
+  // no obsolete middle-world worker is ever initialized.
+  let loads=0, finishRetirement;
+  const oldProvider={...provider,name:'resident-browser-webgpu',
+    dispose:()=>new Promise(resolve=>{finishRetirement=resolve;})};
+  const f=fixture(undefined,async()=>{
+    loads++;
+    return loads===1 ? oldProvider : provider;
+  });
+  f.controller.startAutomatically();
+  await tick(); await tick();
+  assert.equal(loads,1);
+  f.controller.attach(f.runtime);
+  f.controller.attach(f.runtime);
+  await tick(); await tick();
+  assert.equal(loads,1,'two rapid Core switches do not initialize extra models');
+  finishRetirement();
+  await tick(); await tick(); await tick();
+  assert.equal(loads,2,'only the newest Core source gets a model');
+  f.controller.dispose();
+}
+
+{
   // A Core reattach must cancel the worker that is STILL downloading Qwen,
   // before another 2GB-class GPU initialization starts on the same phone.
   // No stale model may sneak into the fresh Core attachment.
