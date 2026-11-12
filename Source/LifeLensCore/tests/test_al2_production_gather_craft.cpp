@@ -213,7 +213,9 @@ int main()
             std::cerr<<logs[i]<<std::endl;
     }
 
-    REQUIRE(gatherToken!=0 &&craftToken!=0 &&gatherToken!=craftToken);
+    // Core issues monotonically increasing tokens. The later Craft must be
+    // an entirely new physical command, not an ACK/relabel of the Gather.
+    REQUIRE(gatherToken!=0 &&craftToken!=0 &&gatherToken<craftToken);
     REQUIRE(firstGatherMinute>=480 &&craftMinute>firstGatherMinute);
     REQUIRE(gatherUnits>0 &&travelCells>0);
     REQUIRE(savedAfterPhysicalGather);
