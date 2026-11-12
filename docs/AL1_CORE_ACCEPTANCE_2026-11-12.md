@@ -1,0 +1,48 @@
+# AL-1 — 무개입 실제 주민 인과 폐루프 인수 (2026-11-12)
+
+> **범위:** 실기기 검증은 사용자의 2026-11-12 지시에 따라 이번 AL-1 판정에서 제외한다. 이번 판정은 실제 생산 LifeLensCore의 New Game, Core tick, 물리 결과, 경험, 후속 선택과 binary 저장·재생이다. **G1 전체/AL-2~4/86개 단위 완료 판정이 아니다.**
+
+## 증거 대상·불변조건
+
+- 저장소: `sjLim91/lifelens-ue`; 기준 Core 성공 CI [43025722164](https://github.com/sjLim91/lifelens-ue/actions/runs/43025722164), 소스 `82d7b5543f6bb1425faf1d7319ad9fdac4e76a9d` (2026-11-11).
+- `82d7b554... -> dd4d07ccea248d2b798ffae7d64bbe7bbdd53c2c` GitHub compare는 6개 추가 커밋의 변경 파일이 모두 `web/**`에 있음을 확인했다. 따라서 #1007까지 원본 Core 소스·인수용 CTest 본문은 동일하다.
+- 실기기 성능·실제 모바일 WebGPU 추론은 **SKIPPED_BY_USER**, 성공을 암시하지 않는다. 기존 공식 Qwen CPU 출력이 Core 행동 차이를 유발한 독립 증거는 [2026-11-10 회복 기록](AL1_RECOVERY_ACCEPTANCE_2026-11-02.md)에 있다. 이것이 웹 자동 추론 성공이라는 뜻은 아니다.
+- `setupNewGame()` 이후 요구된 인과 관찰에서는 개입하여 Goal/Need/자원/위치/기억/모델 응답을 주입하지 않는다. 목표·행동은 기존 Core 단일 authority에서 발행된다.
+
+## 통과한 Core 생산 인과 (기존 검증)
+
+| 게이트 | 실제 소스 | 결과 / 유효 범위 |
+|---|---|---|
+| 새 게임→Core 발행→실제 채집→직접 기억→후속 결정 | `test_al1_production_closed_loop` | PASS, 출처·토큰·실제 채집 수량·주민 직접 기억 연결 |
+| 경쟁 목표→개인 GoalID/ContextToken→자원 재고 감소→목표 달성 판정 | `test_al1_natural_goal_causality` | PASS, 무개입 seed 874213954 / 4242001 |
+| 직접 성공 기억이 실제 후속 원천 선택을 바꿨는가 | `test_al1_natural_success_memory_ablation` | PASS, 두 시드 모두 직접 기억 **1개만 제거**한 대조군과 실제 발행된 원천이 다르고, 양쪽에서 물리 채집 완료 |
+| 실제 실패·대안 경로의 토큰/물리·직접 기억 | `test_al1_natural_failure_memory_ablation`, `test_al1_unmodified_replan_observability` | PASS, 실패 후 대안이 실제 가능한 특정 기회에 한정됨. **모든 실패의 복구 보장은 아님** |
+| Core 전체 회귀·결정적 실행 | `LifeLens Core Tests` CI #43025722164 | PASS. 새로운 테스트와 동일한 source head의 결과는 별도로 필요 |
+
+## 검증된 실제 원시 로그 예시
+
+아래 값은 [성공한 Core CI #43025722164](https://github.com/sjLim91/lifelens-ue/actions/runs/43025722164)의 콘솔 출력을 그대로 해석한 것이다. actor 2가 기억으로 후속 동일 재료 원천을 택한 결과를 표시한다.
+
+| seed | 최초 경험 (token / 분 / 채집 수량) | 학습 뒤 실제 선택 (token / 분 / 채집 수량) | 기억 1개 제거 대조군 |
+|---|---|---|---|
+| 874213954 | 목재 token 40 / 786분 / 3개 | 목재 token 70 / 1636분 / 5개, 원천 `8371056191655438253` | **다른 원천** `4942088878575105140`, 1638분 실제 5개 완료 |
+| 4242001 | 식량 token 627 / 17511분 / 4개 | 식량 token 669 / 18990분 / 4개, 원천 `7682238751532634410` | **다른 원천** `6539486212521894887`, 18944분 실제 4개 완료 |
+
+주요 원시 로그 식별자: `AL1_NATURAL_GOAL_CHAIN`, `AL1_MEMORY_ABLATION_PHYSICAL_RESULTS`. 학습 시점의 개인 기억/선택과 실제 채집의 인과는 검증됐지만, 주어진 결과만으로 모든 전략적 목표를 달성할 수 있다는 뜻은 아니다.
+
+## 최종 저장·재생 관문 — 통과 (#1008)
+
+- [#1008](https://github.com/sjLim91/lifelens-ue/pull/1008)은 학습으로 다른 원천을 실제 채집한 **바로 그 생산 시점**을 초기 상태부터 다시 실행해 이진 Core snapshot을 캡처·인코딩·디코딩한다.
+- 복원한 월드와 중단 없이 실행한 월드가 동일한 Core 상태 바이트를 유지하며, **동일 배우/토큰/원천으로 Core 채집 성공**, 재고 감소 및 직접 성공 기억까지 비교한다.
+- 이 검증은 새로 만든 알고리즘이나 인위적인 성공 fixture가 아니라 실제 기본 새 게임의 본인 경험에서 발생한 결정을 대상으로 한다.
+- **AL-1 Core-native scoped acceptance: PASS.** PR #1008은 main `6afbb592a821b611e8f737c586f531dde3bdc175`로 병합됐다. 정확한 head의 [Core CI #43164964474](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964474) **175/175 PASS**, [WASM #43164964523](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964523) PASS, [Preflight #43164964482](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964482) PASS, [Web Checks #43164964475](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964475) SUCCESS(무관한 Web-only 작업은 scope에 따라 skipped).
+
+실제 추가 출력: `AL1_NATIVE_SAVE_RESUME seed=874213954 actor=2 learned_token=70 source=8371056191655438253 decision_minute=1590 result_minute=1636 quantity=5 binary_roundtrip=1 identical_production_replay=1 actual_learned_harvest=1 firsthand_result_memory=1`. 같은 검증에서 seed 4242001은 token 669, 18900→18990분, 식량 4개로 동일 플래그 모두 1이다. 이는 **진짜 주민 경험이 저장·복원 후에도 같은 물리 행동으로 이어짐**을 검증한다. 실기기 AI 추론 검증과 혼동하지 않는다.
+
+## 인수 범위 밖의 미완료
+
+- **AL-2:** 도구 포함 2~6단계 자동계획·실패 경로 대체·중단 재개 전체(일부 Gather 동작 증거만 존재). 열린 PR #967은 여기에서 별도 검사.
+- **AL-3:** 다수 주민, 시간에 따른 학습 정책·저장 일관성 확대. AL-1의 한 학습 Gather 저장 재생과 혼용하지 않는다.
+- **AL-4/G1:** 100/365/1000일을 통한 통합 승인과 다수 주민/시드 복합 목표. 모바일 Qwen 실기기 검증은 사용자 지시로 제외하지만, 생략을 모델 성공으로 기록하지 않는다.
+- 죽음·생존 차이, 세계/행동 원인 구분 등 기존 기록의 남은 회귀 의문은 숨기지 않는다.
+- 마스터플랜의 **86개 전체 단위 중 완료 수 6/86은 변경하지 않는다.** AL-1은 납품 체크포인트이며 독립 87번째 단위가 아니다.
