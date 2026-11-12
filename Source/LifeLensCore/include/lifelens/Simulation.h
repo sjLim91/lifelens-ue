@@ -449,7 +449,8 @@ private:
         const UnifiedUtilityDecision* precomputed=nullptr,
         const AutonomousGoalCandidate* personalGoal=nullptr,
         const ResidentGatherGoalLink* continuation=nullptr,
-        const GridPos* knownTarget=nullptr);
+        const GridPos* knownTarget=nullptr,
+        const AcceptedCognitiveDecision* cognitiveOrigin=nullptr);
     bool recoverGatherGoal(Character& actor,Runtime& runtime,
         const PendingContextAction& previous,bool actualFailure,bool predictive=false,
         int minimumAlternativeQuantity=1);
