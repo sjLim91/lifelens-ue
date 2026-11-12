@@ -1,9 +1,9 @@
 ## 2026-11-10 AL-1 로컬 구현·검증 체크포인트 — 인수 미완료
 
-## 2026-11-12 AL-1 실제 Core 자율 인과 마무리 — 최종 CI 확인 중
+## 2026-11-12 AL-1 실제 Core 자율 인과 마무리 — Core-native PASS
 
 - 사용자 지시: **실기기 검증은 전부 제외**, 대신 일반 새 게임의 한 주민 Need/경쟁 목표→Core 실행/물리 자원 변화→직접 기억→다른 후속 선택을 완성·검증한다.
-- 두 고정 시드의 native production 직접 성공 기억 제거 대조에서 양쪽 모두 다른 실제 Gather 원천을 채집하며, 기존 [Core CI #43025722164](https://github.com/sjLim91/lifelens-ue/actions/runs/43025722164)가 통과했다. [PR #1008](https://github.com/sjLim91/lifelens-ue/pull/1008)은 최초로 그 자연 학습 행동 직전 **실제 Core binary save/load 동등성 및 물리 실행 재생** 검증을 추가했다. 변경 head 검증 대기.
+- 두 고정 시드의 native production 직접 성공 기억 제거 대조에서 양쪽 모두 다른 실제 Gather 원천을 채집하며, 기존 [Core CI #43025722164](https://github.com/sjLim91/lifelens-ue/actions/runs/43025722164)가 통과했다. [PR #1008](https://github.com/sjLim91/lifelens-ue/pull/1008)은 최초로 그 자연 학습 행동 직전 **실제 Core binary save/load 동등성 및 물리 실행 재생** 검증을 추가했다. 정확한 head의 [Core #43164964474](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964474) 175/175·WASM·Preflight 성공 후 **main `6afbb592` 병합 완료**. 양쪽 시드에서 인과 저장·재생 및 실제 성공 기억까지 결과 일치.
 - 기준 문서: [AL-1 Core 인수](../docs/AL1_CORE_ACCEPTANCE_2026-11-12.md). 이 변경은 기기 성능·Qwen 자동 실행·AL-2~4 또는 86개 단위 전체 완료를 선언하지 않으며 완료 수 6/86 유지한다.
 
 
