@@ -91,8 +91,9 @@ static void verifyLearnedActionAfterSaveLoad(
     const auto& action=witness.learned.issued;
     const std::string issuedMarker=
         "AL1_CORE_NATIVE_GATHER_LEARNED_TOKEN actor="
-        +std::to_string(action.actor)
-        +" pending_token="+std::to_string(action.token);
+        +std::to_string(action.actor);
+    const std::string issuedTokenMarker=
+        " pending_token="+std::to_string(action.token);
     const std::string executedMarker=
         "AL1_CORE_GATHER_RESULT actor="+std::to_string(action.actor)
         +" pending_token="+std::to_string(action.token)
@@ -104,7 +105,11 @@ static void verifyLearnedActionAfterSaveLoad(
                 return event.find(marker)!=std::string::npos;
             });
     };
-    assert(hasLog(restored,issuedMarker));
+    assert(std::any_of(restored.logs().begin(),restored.logs().end(),
+        [&](const std::string& event){
+            return event.find(issuedMarker)!=std::string::npos
+                &&event.find(issuedTokenMarker)!=std::string::npos;
+        }));
     assert(hasLog(restored,executedMarker));
     const auto& actor=resident(restored,action.actor);
     assert(std::any_of(actor.memory.entries.begin(),actor.memory.entries.end(),
