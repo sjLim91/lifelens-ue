@@ -30,12 +30,14 @@
 
 주요 원시 로그 식별자: `AL1_NATURAL_GOAL_CHAIN`, `AL1_MEMORY_ABLATION_PHYSICAL_RESULTS`. 학습 시점의 개인 기억/선택과 실제 채집의 인과는 검증됐지만, 주어진 결과만으로 모든 전략적 목표를 달성할 수 있다는 뜻은 아니다.
 
-## 최종 닫힘을 위한 추가 관문 (#1008)
+## 최종 저장·재생 관문 — 통과 (#1008)
 
 - [#1008](https://github.com/sjLim91/lifelens-ue/pull/1008)은 학습으로 다른 원천을 실제 채집한 **바로 그 생산 시점**을 초기 상태부터 다시 실행해 이진 Core snapshot을 캡처·인코딩·디코딩한다.
 - 복원한 월드와 중단 없이 실행한 월드가 동일한 Core 상태 바이트를 유지하며, **동일 배우/토큰/원천으로 Core 채집 성공**, 재고 감소 및 직접 성공 기억까지 비교한다.
 - 이 검증은 새로 만든 알고리즘이나 인위적인 성공 fixture가 아니라 실제 기본 새 게임의 본인 경험에서 발생한 결정을 대상으로 한다.
-- **#1008 exact-head Core·WASM·Web·Preflight 통과 및 main 병합 확인 후에만 이번 범위의 AL-1 Core-native 상태를 PASS로 바꾼다.** 현재 상태: `PENDING_EXACT_HEAD_CI`.
+- **AL-1 Core-native scoped acceptance: PASS.** PR #1008은 main `6afbb592a821b611e8f737c586f531dde3bdc175`로 병합됐다. 정확한 head의 [Core CI #43164964474](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964474) **175/175 PASS**, [WASM #43164964523](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964523) PASS, [Preflight #43164964482](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964482) PASS, [Web Checks #43164964475](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964475) SUCCESS(무관한 Web-only 작업은 scope에 따라 skipped).
+
+실제 추가 출력: `AL1_NATIVE_SAVE_RESUME seed=874213954 actor=2 learned_token=70 source=8371056191655438253 decision_minute=1590 result_minute=1636 quantity=5 binary_roundtrip=1 identical_production_replay=1 actual_learned_harvest=1 firsthand_result_memory=1`. 같은 검증에서 seed 4242001은 token 669, 18900→18990분, 식량 4개로 동일 플래그 모두 1이다. 이는 **진짜 주민 경험이 저장·복원 후에도 같은 물리 행동으로 이어짐**을 검증한다. 실기기 AI 추론 검증과 혼동하지 않는다.
 
 ## 인수 범위 밖의 미완료
 
