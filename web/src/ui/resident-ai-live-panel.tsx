@@ -48,6 +48,27 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
     </p>}
     <details className="resident-ai-session-audit">
       <summary>주민 AI 실행 증거</summary>
+      <button type="button" onClick={() => {
+        // Read the latest live report at click time. Never include model
+        // prompts, raw resident memories, GPU buffers or identifying device data.
+        const report = residentAI.getDeviceEvidenceReport();
+        const blob = new Blob([JSON.stringify(report, null, 2)], {
+          type: 'application/json;charset=utf-8',
+        });
+        const url = URL.createObjectURL(blob);
+        const download = document.createElement('a');
+        download.href = url;
+        download.download = 'lifelens-qwen-device-evidence.json';
+        document.body.appendChild(download);
+        download.click();
+        download.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }}>현재 기기 검증 기록 저장 (JSON)</button>
+      <p className="hint">
+        다운로드되는 파일에는 모델 연결, 실제 추론 시도·시간 초과,
+        Core 승인 및 실제 Core 경험 증가가 구분되어 기록됩니다.
+        주민 이름·기억 원문·대화·기기 식별정보는 저장하지 않습니다.
+      </p>
       <p className="hint">
         모델이 의견을 제안한 것과 실제 Core에서 행동이 실행된 것은
         다릅니다. 아래 수치는 관찰 기록이며 계획 성공을 보장하지 않습니다.
