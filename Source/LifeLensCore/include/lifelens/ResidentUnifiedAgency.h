@@ -131,7 +131,9 @@ inline ResidentAgencyChoice chooseSingleResidentAgencyDecision(
        ||residentAIPlanAlreadyAttempted(
            actor,thought,*candidate,world.minute,
            thought.intent==CognitiveIntentKind::CraftUsefulTools
-               &&candidate->intent==CivilizationIntent::Gather))
+               &&candidate->intent==CivilizationIntent::Gather,
+           thought.intent==CognitiveIntentKind::CraftUsefulTools
+               &&residentAIUnfinishedFurnaceContinuation(world,*candidate)))
         return answer;
     UnifiedUtilityDecision next=fallback;
     next.kind=UnifiedDecisionKind::Civilization;

@@ -614,6 +614,28 @@ int main()
         assert(nextBuild.intent==CivilizationIntent::Gather
             ||(nextBuild.intent==CivilizationIntent::Craft
                &&nextBuild.facilityKind==FacilityKind::Furnace));
+        // AL-2: verify the actual ONE resident agency integration gate,
+        // not only the prerequisite helper. After one successful Core work
+        // tick, that same real unfinished project must still be selectable
+        // without minting a fresh model decision or granting free progress.
+        if(nextBuild.facilityAction==FacilityBuildAction::Work
+           &&workedSteps>0){
+            UnifiedUtilityDecision fallback;
+            fallback.kind=UnifiedDecisionKind::Physical;
+            fallback.physicalGoal=Goal::Idle;
+            fallback.utility=0.10;
+            RelationshipBook independentRelations;
+            const auto oneMind=chooseSingleResidentAgencyDecision(
+                construction,builder,{0,0},independentRelations,fallback,
+                &thought,nullptr,std::nullopt,false);
+            assert(oneMind.authority==ResidentAgencyAuthority::ResidentCognition);
+            assert(oneMind.decision.kind==UnifiedDecisionKind::Civilization);
+            assert(oneMind.decision.civilization.intent==CivilizationIntent::Craft);
+            assert(oneMind.decision.civilization.facilityAction
+                ==FacilityBuildAction::Work);
+            assert(oneMind.decision.civilization.facility==current->id);
+            assert(oneMind.decision.civilization.facilityWork>0.0);
+        }
         GridPos executionPos{0,0};
         int stockBefore=0;
         int heldBefore=builder.civilization.inventory.count(
