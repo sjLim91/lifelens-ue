@@ -200,16 +200,22 @@ export function startObserverEngine(): () => void {
   function onWorldVisibility(): void {
     if (!worldSession || stopped || fastForwardRunning) return;
     if (document.visibilityState !== 'visible') {
+      // A hidden tab is not offline simulation time. Cancel any pending Qwen
+      // proposal as well as stopping Core ticks, so it cannot mutate a frozen
+      // world after the checkpoint has already been captured.
+      residentAI.suspend(true, 'stopped');
       simulationClock?.stop();
       void saveCheckpoint(Date.now());
       return;
     }
+    residentAI.suspend(false);
     simulationClock?.resetAccumulator();
     simulationClock?.start();
   }
 
   function onWorldPageHide(): void {
     if (!worldSession || stopped) return;
+    residentAI.suspend(true, 'stopped');
     simulationClock?.stop();
     void saveCheckpoint(Date.now());
   }
@@ -654,7 +660,7 @@ export function startObserverEngine(): () => void {
       fastForwardRunning = false;
       if (!stopped) {
         shadowObserver.suspend(false);
-        residentAI.suspend(false);
+        residentAI.suspend(document.visibilityState !== 'visible', 'stopped');
       } else ownedCore?.dispose();
       threeWorldRenderer?.breakFootTrafficContinuity();
       simulationClock?.resetAccumulator();
@@ -725,6 +731,9 @@ export function startObserverEngine(): () => void {
       ownedCore = core;
       shadowObserver.attach(core);
       residentAI.attach(core);
+      // A boot completed in a background tab must not start GPU inference.
+      // Also clear a suspension left by a previous BFCache/page lifecycle.
+      residentAI.suspend(document.visibilityState !== 'visible', 'stopped');
       // Every world has resident agency from boot. Discover a local language
       // inference engine automatically; no user-toggle or network cloud key.
       residentAI.startAutomatically();
