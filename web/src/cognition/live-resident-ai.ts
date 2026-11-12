@@ -324,6 +324,10 @@ export class ResidentAIController {
   // Cancel the one currently INITIALIZING model when Core is replaced.
   // This is distinct from the active scheduler's ordinary inference abort.
   private modelLoadAbort: AbortController | null = null;
+  // A finished Qwen worker may still have GPU allocations pending release.
+  // Serialize disposal across Core reattachments and recovery attempts so
+  // mobile devices never initialize a replacement before the old one exits.
+  private pendingProviderCleanup: Promise<void> | null = null;
 
   constructor(
     private readonly now: () => number = () => Date.now(),
@@ -407,6 +411,13 @@ export class ResidentAIController {
     this.modelLoadAbort = loadAbort;
     this.update({ discovering: true, modelLoadMs: null });
     try {
+      // A synchronous Core restart cannot wait on GPU memory teardown, but
+      // the *new model* must. Abort while waiting if its Core world is
+      // replaced again, without allocating any new GPU buffers.
+      if (this.pendingProviderCleanup) await this.pendingProviderCleanup;
+      if (loadAbort.signal.aborted || this.disposed
+        || !this.automaticallyRunning || this.source !== source
+        || this.autoDiscoveryGeneration !== generation) return;
       const provider = await this.browserReasoningFactory(loadAbort.signal);
       // A previous asynchronous download cannot install a model into a
       // replaced Core/runtime attachment, even if it finishes much later.
@@ -452,7 +463,7 @@ export class ResidentAIController {
   // Provider injection is retained for deterministic contract tests. The
   // production factory above always loads the one pinned Qwen model.
   setProvider(provider: CognitiveProvider): void {
-    this.scheduler?.dispose();
+    this.retireScheduler();
     this.resetWorld();
     this.scheduler = this.source && !this.disposed
       ? new CognitionScheduler(provider,
@@ -462,9 +473,21 @@ export class ResidentAIController {
     this.activeProviderName = this.scheduler ? provider.name : null;
     this.consecutiveInferenceFailures = 0;
   }
-  private rebuildScheduler(): void {
-    this.scheduler?.dispose();
+  private retireScheduler(): void {
+    const scheduler = this.scheduler;
+    if (!scheduler) return;
     this.scheduler = null;
+    const teardown = scheduler.disposeWithProviderCleanup();
+    // Await every predecessor, even if two Core reattachments happen before
+    // the first GPU worker has exited. Teardown itself remains nonblocking
+    // for physical Core simulation and observer rendering.
+    this.pendingProviderCleanup = this.pendingProviderCleanup
+      ? this.pendingProviderCleanup.then(() => teardown, () => teardown)
+      : teardown;
+  }
+
+  private rebuildScheduler(): void {
+    this.retireScheduler();
     this.activeProviderName = null;
     this.consecutiveInferenceFailures = 0;
     this.update({ configuration: null, modelLoadMs: null });
@@ -513,8 +536,7 @@ export class ResidentAIController {
     this.lastBrowserModelAttempt = -Infinity;
     this.autoDiscoveryGeneration += 1;
     this.resetWorld();
-    this.scheduler?.dispose();
-    this.scheduler = null;
+    this.retireScheduler();
     this.activeProviderName = null;
     this.consecutiveInferenceFailures = 0;
     this.source = null;
@@ -689,8 +711,7 @@ export class ResidentAIController {
       const failedProvider = this.activeProviderName;
       // Scheduler disposal cancels late completions. The existing resident
       // keeps behaving through Core while discovery resumes automatically.
-      this.scheduler?.dispose();
-      this.scheduler = null;
+      this.retireScheduler();
       this.activeProviderName = null;
       this.consecutiveInferenceFailures = 0;
       this.lastAutoDiscovery = -Infinity;
