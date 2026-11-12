@@ -47,6 +47,86 @@ static void verifyGoalReceipt(const GatherReceipt& receipt)
     assert(field(receipt.goalResult,"outcome")==expected);
 }
 
+
+/**
+ * Reproduce the learned native decision from a REAL end-of-tick binary save.
+ * A memory-dependent source selection that vanishes after loading cannot
+ * close AL-1, even if an uninterrupted New Game happened to pass.
+ *
+ * Neither branch injects a goal, inventory, memory, resource, model answer,
+ * or Core event. Both advance via production Simulation::step().
+ */
+static void verifyLearnedActionAfterSaveLoad(
+    WorldSeed seed,const NaturalLoop& witness)
+{
+    Simulation uninterrupted(seed);
+    uninterrupted.setupNewGame();
+    const int decisionMinute=witness.learned.issued.issuedMinute;
+    const int resultMinute=witness.learned.resultMinute;
+    assert(decisionMinute>=0 &&resultMinute>=decisionMinute
+        &&resultMinute-decisionMinute<180);
+    while(uninterrupted.world().minute<decisionMinute)
+        uninterrupted.step();
+    assert(uninterrupted.world().minute==decisionMinute);
+
+    const auto encoded=bytes(uninterrupted.captureSnapshot());
+    SimulationStateSnapshot decoded;
+    std::string error;
+    assert(decodeSimulationSnapshot(encoded,decoded,&error) &&error.empty());
+    assert(bytes(decoded)==encoded);
+
+    Simulation restored(1);
+    assert(restored.restoreSnapshot(decoded,&error) &&error.empty());
+    assert(bytes(restored.captureSnapshot())==encoded);
+
+    // The same learned Gather must be actually issued/executed after reload,
+    // not merely retained in the snapshot's memory or a read-only utility.
+    for(int minute=decisionMinute;minute<=resultMinute;++minute){
+        uninterrupted.step();
+        restored.step();
+    }
+    const auto originalBytes=bytes(uninterrupted.captureSnapshot());
+    assert(bytes(restored.captureSnapshot())==originalBytes);
+
+    const auto& action=witness.learned.issued;
+    const std::string issuedMarker=
+        "AL1_CORE_NATIVE_GATHER_LEARNED_TOKEN actor="
+        +std::to_string(action.actor)
+        +" pending_token="+std::to_string(action.token);
+    const std::string executedMarker=
+        "AL1_CORE_GATHER_RESULT actor="+std::to_string(action.actor)
+        +" pending_token="+std::to_string(action.token)
+        +" source="+std::to_string(action.resourceNode)
+        +" actual_quantity="+std::to_string(witness.learned.quantity);
+    const auto hasLog=[&](const Simulation& sim,const std::string& marker){
+        return std::any_of(sim.logs().begin(),sim.logs().end(),
+            [&](const std::string& event){
+                return event.find(marker)!=std::string::npos;
+            });
+    };
+    assert(hasLog(restored,issuedMarker));
+    assert(hasLog(restored,executedMarker));
+    const auto& actor=resident(restored,action.actor);
+    assert(std::any_of(actor.memory.entries.begin(),actor.memory.entries.end(),
+        [&](const MemoryRecord& memory){
+            return isReceipt(memory,action.actor,action.resourceNode,
+                action.material,resultMinute);
+        }));
+    assert(resource(restored,action.resourceNode).quantity
+        ==witness.learned.sourceAfter);
+    std::cout<<"AL1_NATIVE_SAVE_RESUME seed="<<seed
+        <<" actor="<<action.actor
+        <<" learned_token="<<action.token
+        <<" source="<<action.resourceNode
+        <<" decision_minute="<<decisionMinute
+        <<" result_minute="<<resultMinute
+        <<" quantity="<<witness.learned.quantity
+        <<" binary_roundtrip=1"
+        <<" identical_production_replay=1"
+        <<" actual_learned_harvest=1"
+        <<" firsthand_result_memory=1\\n";
+}
+
 int main()
 {
     std::cout.setf(std::ios::unitbuf);
@@ -54,6 +134,7 @@ int main()
         const auto witness=observeNaturalLoop(seed,true);
         verifyGoalReceipt(witness.original);
         verifyGoalReceipt(witness.learned);
+        verifyLearnedActionAfterSaveLoad(seed,witness);
         assert(witness.original.issued.actor==witness.learned.issued.actor);
         assert(witness.original.resultMinute==witness.rememberedMinute);
         assert(witness.original.issued.resourceNode==witness.learned.issued.resourceNode);
