@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { source } from './compile.mjs';
 
-const { ResidentAIController, LIVE_AI_BUDGET, liveActionableCognitiveRequest,
+const { ResidentAIController, LIVE_AI_BUDGET, MOBILE_AI_PACING, liveActionableCognitiveRequest,
   residentAIObservedTrigger, residentAIExecutionBudget, BROWSER_MODEL_RETRY_MS,
   INFERENCE_RECOVERY_FAILURE_THRESHOLD, residentAIStatusText } =
   await source('cognition/live-resident-ai.ts');
@@ -86,7 +86,7 @@ const { ResidentAISessionAudit } = await source('cognition/resident-ai-session-a
   assert.equal(native.timeoutMs,LIVE_AI_BUDGET.timeoutMs);
 }
 
-function fixture(provider, browserReasoningFactory) {
+function fixture(provider, browserReasoningFactory, mobilePerformance = false) {
   let wall = 100;
   const world = {
     worldSeed: '781', populationSeed: '120', generationVersion: 4,
@@ -126,7 +126,7 @@ function fixture(provider, browserReasoningFactory) {
       return seed === world.worldSeed;
     },
   };
-  const controller = new ResidentAIController(() => wall, browserReasoningFactory);
+  const controller = new ResidentAIController(() => wall, browserReasoningFactory, mobilePerformance);
   controller.attach(runtime);
   if (provider) controller.setProvider(provider);
   return {
@@ -1310,5 +1310,114 @@ const provider = {
   } finally { globalThis.fetch=previousFetch; }
 }
 
-console.log('Live Resident AI: independent actor context, Core handoff, cancellation PASS');
+{
+  const f = fixture(provider, undefined, true);
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.submitted.length, 1);
+  f.advanceWall(MOBILE_AI_PACING.wallCadenceMs - 1);
+  f.controller.observe(f.world, f.residents);
+  await f.controller.sample('2');
+  assert.equal(f.submitted.length, 1,
+    'observer refresh and direct sample both honor the mobile inference interval');
+  f.advanceWall(1);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.deepEqual(f.submitted.map(entry => entry.request.actor), ['1', '2'],
+    'throttled observations do not skip a resident or alter round-robin fairness');
+  assert.equal(f.submitted[0].request.memories[0].what, '직접 목격');
+  assert.equal(f.submitted[1].request.memories[0].what, '전해 들음',
+    'mobile pacing preserves each resident\'s complete Core-authored context');
+  f.controller.dispose();
+}
+
+{
+  let finish;
+  const f = fixture({ name: 'resident-browser-webgpu',
+    reason: () => new Promise(resolve => { finish = resolve; }),
+  }, undefined, true);
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  f.advanceWall(20000);
+  finish({ actor: '1', intent: 'CooperateWithResident',
+    targetResident: '2', priority: .8, rationale: '직접 대화 선택' });
+  await tick();
+  assert.equal(f.controller.getSnapshot().lastInferenceMs, 20000);
+  f.advanceWall(19999);
+  f.controller.observe(f.world, f.residents);
+  await f.controller.sample('2');
+  assert.equal(f.contexts.length, 1,
+    'a long inference gets equal idle time instead of immediately occupying the GPU again');
+  f.advanceWall(1);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.contexts[1].actor, '2');
+  finish({ actor: '2', intent: 'CooperateWithResident',
+    targetResident: '1', priority: .8, rationale: '관계 개선 선택' });
+  await tick();
+  assert.equal(f.submitted.length, 2);
+  f.controller.dispose();
+}
+
+{
+  let finish;
+  const f = fixture({ name: 'resident-browser-webgpu',
+    reason: () => new Promise(resolve => { finish = resolve; }),
+  }, undefined, true);
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  f.advanceWall(20000);
+  finish({ actor: '1', intent: 'CooperateWithResident',
+    targetResident: '2', priority: .8, rationale: '직접 대화 선택' });
+  await tick();
+  f.controller.resetWorld();
+  f.controller.suspend(true, 'stopped');
+  f.controller.suspend(false);
+  f.advanceWall(15000);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.contexts.length, 1,
+    'world reset and page resume cannot bypass the GPU rest budget');
+  f.advanceWall(5000);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.contexts.length, 2);
+  f.controller.dispose();
+}
+
+{
+  let finish;
+  const f = fixture({ name: 'resident-browser-webgpu',
+    reason: () => new Promise(resolve => { finish = resolve; }),
+  }, undefined, true);
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  f.advanceWall(20000);
+  f.controller.suspend(true, 'stopped');
+  f.controller.suspend(false);
+  await f.controller.sample('2');
+  assert.equal(f.contexts.length, 1,
+    'same-event resume cannot race the cancelled inference Promise');
+  f.advanceWall(19999);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.contexts.length, 1,
+    'cancelling a costly inference still leaves a cooling interval');
+  finish({ actor: '1', intent: 'CooperateWithResident',
+    targetResident: '2', priority: .8, rationale: '지연된 대화 선택' });
+  await tick();
+  assert.equal(f.submitted.length, 0, 'cancelled old thought never reaches Core');
+  f.advanceWall(1);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.contexts.length, 2);
+  f.controller.dispose();
+}
+
+console.log('Live Resident AI: independent actor context, Core handoff, cancellation, mobile pacing PASS');
+
 

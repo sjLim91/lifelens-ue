@@ -8,12 +8,15 @@ import type {
   WorldObjectsPayload,
 } from '../runtime/core-types';
 import { WorldScene, type WorldSceneCameraState } from './world-scene';
+import { useMobilePerformanceProfile } from '../runtime/device-performance';
+import { RenderFramePacer } from './render-frame-pacer';
 
 export class WorldRenderer {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly world = new WorldScene();
   private animationFrame: number | null = null;
   private failed = false;
+  private readonly mobilePerformance = useMobilePerformanceProfile();
   private readonly onWebGLContextLost = (event: Event): void => {
     event.preventDefault();
     this.fail('3D 그래픽 장치 연결이 끊어졌습니다.');
@@ -26,7 +29,7 @@ export class WorldRenderer {
     // A tall Android WebView at DPR 2 consumes multiple large color/depth
     // buffers, plus reflected water and resident rigs. Bound the mobile
     // framebuffer before the GPU silently blanks the canvas.
-    const compactGpu = window.matchMedia?.('(max-width: 800px) and (pointer: coarse)').matches ?? false;
+    const compactGpu = this.mobilePerformance;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: !compactGpu,
@@ -48,13 +51,13 @@ export class WorldRenderer {
   start(): void {
     if (this.animationFrame !== null) return;
 
-    let lastFrame = performance.now();
+    const frames = new RenderFramePacer(this.mobilePerformance ? 30 : null, performance.now());
     const render = (frameTime: number): void => {
-      const deltaSeconds = Math.min(
-        0.05,
-        Math.max(0, (frameTime - lastFrame) / 1000),
-      );
-      lastFrame = frameTime;
+      const deltaSeconds = frames.advance(frameTime);
+      if (deltaSeconds === null) {
+        this.animationFrame = requestAnimationFrame(render);
+        return;
+      }
       try {
         // Some mobile GPUs silently lose their WebGL context without throwing
         // in the render loop. Do not keep showing an empty canvas.
@@ -190,4 +193,5 @@ export class WorldRenderer {
     this.renderer.dispose();
   }
 }
+
 
