@@ -23,7 +23,7 @@ class Canvas {
 let passed=0;
 function test(name,run) {
   const canvas=new Canvas(), changes=[], taps=[], pans=[];
-  const input=new CameraInput(canvas,{initialAngle:0,initialElevation:0.6,initialZoom:1,onChange:s=>changes.push(s),onTap:(...v)=>taps.push(v),onPan:(...v)=>pans.push(v)});
+  const input=new CameraInput(canvas,{initialAngle:0,initialElevation:0.6,initialZoom:1,onChange:s=>changes.push(s),onTap:(...v)=>taps.push(v),onPan:(x,y)=>pans.push([x,y])});
   try {run({canvas,input,changes,taps,pans});passed++;console.log(`PASS ${name}`);} finally {input.dispose();}
 }
 test('small touch jitter selects without moving the camera',({canvas,changes,taps})=>{
@@ -73,3 +73,63 @@ test('pan follows the fingers in all camera quadrants',()=>{
   }
 });
 console.log(`${passed} input regression checks passed`);
+
+
+// Browser-like RAF: translate both fingers before flushing their shared frame.
+{
+  const frames = new Map(); let next = 1;
+  globalThis.requestAnimationFrame = cb => { const id = next++; frames.set(id, cb); return id; };
+  globalThis.cancelAnimationFrame = id => frames.delete(id);
+  const flush = () => { const pending = [...frames.values()]; frames.clear(); pending.forEach(cb => cb(16)); };
+  const canvas = new Canvas(), changes = [], pans = [], taps = [];
+  const input = new CameraInput(canvas, { initialAngle: 0, initialElevation: .6, initialZoom: 6.4,
+    onChange: (state, anchor) => changes.push({state,anchor}), onPan: (x,y,anchor) => pans.push({x,y,anchor}), onTap: (...args) => taps.push(args) });
+  try {
+    canvas.fire('pointerdown', 1, 100, 100); canvas.fire('pointerdown', 2, 200, 100);
+    canvas.fire('pointermove', 1, 120, 110); canvas.fire('pointermove', 2, 220, 110);
+    assert.equal(frames.size, 1); flush();
+    assert.equal(changes.length, 0, 'translation at maximum zoom must not temporarily clamp and shrink the scene');
+    assert.deepEqual(pans, [{x:20,y:10,anchor:{x:150,y:100}}]);
+    canvas.fire('pointermove', 1, 130, 110); canvas.fire('pointermove', 2, 210, 110); flush();
+    assert.equal(input.snapshot().zoom, 5.12);
+    assert.deepEqual(changes[0].anchor, {x:170,y:110});
+    canvas.fire('pointerup', 2, 210, 110);
+    canvas.fire('pointermove', 1, 180, 150); canvas.fire('pointerup', 1, 180, 150);
+    assert.equal(taps.length, 0); assert.equal(changes.length, 1, 'one remaining finger cannot start an orbit');
+    canvas.fire('pointerdown', 3, 100, 100); canvas.fire('pointermove', 3, 108.1, 100);
+    assert(input.snapshot().angle < .001, 'crossing tap slop does not replay the full 8px as a rotation jump');
+    canvas.fire('pointerdown', 4, 200, 100); canvas.fire('pointermove', 4, 210, 100);
+    assert.equal(frames.size, 1); input.dispose(); assert.equal(frames.size, 0, 'dispose cancels pending touch work');
+  } finally { input.dispose(); delete globalThis.requestAnimationFrame; delete globalThis.cancelAnimationFrame; }
+}
+console.log('PASS coalesced gestures, zoom-limit pan, midpoint anchor, release and disposal');
+await import('./projection.mjs');
+
+test('near-coincident fingers rebase their pinch span and recover without a zoom jump',({canvas,input})=>{
+  canvas.fire('pointerdown',1,100,100); canvas.fire('pointerdown',2,100,100);
+  canvas.fire('pointermove',2,101,100); canvas.fire('pointermove',2,200,100);
+  assert.equal(input.snapshot().zoom,1);
+  canvas.fire('pointermove',2,250,100);
+  assert.equal(input.snapshot().zoom,1.5);
+});
+{
+  const events=new Map();
+  globalThis.window={addEventListener:(name,cb)=>events.set(name,cb),removeEventListener:name=>events.delete(name)};
+  globalThis.document={visibilityState:'visible',addEventListener:(name,cb)=>events.set('document:'+name,cb),removeEventListener:name=>events.delete('document:'+name)};
+  try {
+    test('losing foreground clears captured touch state before a fresh tap',({canvas,taps})=>{
+      canvas.fire('pointerdown',1,100,100); canvas.fire('pointerdown',2,200,100);
+      events.get('blur')();
+      canvas.fire('pointerdown',3,100,100); canvas.fire('pointerup',3,100,100);
+      assert.deepEqual(taps,[[100,100]]);
+    });
+    test('hidden document clears touch state even without a window blur',({canvas,taps})=>{
+      canvas.fire('pointerdown',1,100,100); canvas.fire('pointerdown',2,200,100);
+      document.visibilityState='hidden'; events.get('document:visibilitychange')();
+      document.visibilityState='visible';
+      canvas.fire('pointerdown',3,100,100); canvas.fire('pointerup',3,100,100);
+      assert.deepEqual(taps,[[100,100]]);
+    });
+    assert.equal(events.size,0,'disposing input removes window and document listeners');
+  } finally { delete globalThis.window; delete globalThis.document; }
+}

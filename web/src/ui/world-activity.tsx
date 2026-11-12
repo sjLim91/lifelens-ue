@@ -171,7 +171,7 @@ export function WorldActivityPanel({
   }
 
   return (
-    <div className="observation-feed-panel">
+    <div className="observation-feed-panel world-activity-panel">
       <div className="focused-life-chips">
         <span>자원 노드 <b>{civilization.resourceNodeCount ?? 0}</b></span>
         <span>저장량 <b>{civilization.totalStoredUnits ?? 0}</b></span>
@@ -445,3 +445,4 @@ export function WorldActivityPanel({
     </div>
   );
 }
+

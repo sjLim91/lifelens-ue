@@ -31,16 +31,7 @@ import { visibleHumanTraces } from './state/human-traces';
 import { formatResidentName } from './ui/observer-format';
 import type { EarthPreviewGeoPoint } from './earth/globe-region-picking';
 
-type MobileModalView =
-  | 'menu'
-  | 'residents'
-  | 'resident'
-  | 'seed'
-  | 'events'
-  | 'traces'
-  | 'activity'
-  | 'world'
-  | null;
+import { MOBILE_OBSERVER_QUERY, MobileObservationControls, ObserverIcon, type ObserverModalView as MobileModalView } from './ui/observer-controls';
 
 function Topbar({ onOpenGlobe, globeOpen }: {
   onOpenGlobe: () => void;
@@ -51,13 +42,13 @@ function Topbar({ onOpenGlobe, globeOpen }: {
   return (
     <header className="topbar">
       <div className="brand">
-        <strong>라이프렌즈</strong>
-        <span>실시간 관찰</span>
+        <span className="brand-mark"><ObserverIcon name="leaf" /></span>
+        <div className="brand-name"><strong>라이프렌즈</strong><span>삶이 이어지는 세계</span></div>
       </div>
       <div className="earth-topbar-actions">
-        <a className="earth-globe-open" href="./vendor/wildlife/CREDITS.html"
+        <a className="earth-globe-open asset-credits-link" href="./vendor/wildlife/CREDITS.html"
           target="_blank" rel="noopener noreferrer">3D 자산 출처</a>
-        <button className="earth-globe-open" type="button" onClick={onOpenGlobe}>
+        <button className="earth-globe-open" type="button" aria-pressed={globeOpen} onClick={onOpenGlobe}>
           {globeOpen ? '주민 관찰' : '지구 관찰'}
         </button>
         <RuntimeBadge runtime={snapshot.runtime} />
@@ -67,11 +58,11 @@ function Topbar({ onOpenGlobe, globeOpen }: {
 }
 
 function WorldViewport({
-  onOpenMenu,
-  onOpenSeed,
+  mobileView,
+  onMobileView,
 }: {
-  onOpenMenu: () => void;
-  onOpenSeed: () => void;
+  mobileView: MobileModalView;
+  onMobileView: (view: MobileModalView) => void;
 }) {
   const snapshot = useObserverSnapshot();
   const selectedTrace = visibleHumanTraces(snapshot.terrain)
@@ -81,7 +72,6 @@ function WorldViewport({
         (event) => event.id === snapshot.focusedObservationId,
       ) ?? null
     : null;
-  const worldSeed = snapshot.world.worldSeed;
 
   return (
     <section className="world">
@@ -90,14 +80,6 @@ function WorldViewport({
       <canvas id="characterCanvas" aria-label="라이프렌즈 주민" />
       <WorldOverlay snapshot={snapshot} />
 
-      <button
-        className="mobile-seed-chip"
-        type="button"
-        onClick={onOpenSeed}
-        aria-label="현재 월드 시드 보기"
-      >
-        시드 #{worldSeed ?? '—'}
-      </button>
 
       {focusedObservation ? (
         <ObservationFocusBanner
@@ -125,9 +107,7 @@ function WorldViewport({
         />
       )}
 
-      <div className="mobile-quick-actions" aria-label="모바일 관찰 메뉴">
-        <button type="button" onClick={onOpenMenu}>메뉴</button>
-      </div>
+      <MobileObservationControls view={mobileView} onView={onMobileView} />
 
       <div
         id="errorCard"
@@ -357,6 +337,22 @@ function MobileObserverModal({
   const [seed, setSeed] = useState('');
   const [seedError, setSeedError] = useState(false);
   const [seedCopied, setSeedCopied] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const isOpen = view !== null;
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || !isOpen) return;
+    dialog.showModal();
+    return () => { if (dialog.open) dialog.close(); };
+  }, [isOpen]);
+
+  useEffect(() => {
+    bodyRef.current?.scrollTo(0, 0);
+    titleRef.current?.focus({ preventScroll: true });
+  }, [view]);
   const controlsDisabled = snapshot.runtime.status !== 'ready'
     || snapshot.fastForward.status === 'running';
   const selectedResident = snapshot.selectedResidentId
@@ -442,19 +438,19 @@ function MobileObserverModal({
   };
 
   return (
-    <div
+    <dialog
+      ref={dialogRef}
       className="mobile-modal-backdrop"
-      role="presentation"
+      aria-labelledby="mobile-modal-title"
+      onCancel={(event) => { event.preventDefault(); onClose(); }}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <section
         className={`mobile-modal mobile-modal-${view}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
       >
+        <div className="mobile-sheet-handle" aria-hidden="true" />
         <header className="mobile-modal-header">
           {view !== 'menu' ? (
             <button
@@ -466,7 +462,7 @@ function MobileObserverModal({
               ‹
             </button>
           ) : <span className="mobile-modal-header-spacer" />}
-          <strong>{title}</strong>
+          <h2 id="mobile-modal-title" ref={titleRef} tabIndex={-1}>{title}</h2>
           <button
             type="button"
             className="mobile-modal-close"
@@ -477,43 +473,44 @@ function MobileObserverModal({
           </button>
         </header>
 
-        <div className="mobile-modal-body">
+        <div className="mobile-modal-body" ref={bodyRef}>
           {view === 'menu' && (
             <>
+              <p className="mobile-menu-intro">작은 일상부터 세계의 변화까지, 궁금한 곳을 살펴보세요.</p>
               <div className="mobile-world-summary">
                 <button type="button" onClick={() => onView('seed')}>
                   <span>현재 시드</span>
                   <b>#{currentSeed ?? '—'}</b>
                 </button>
                 <div>
-                  <span>주민</span>
-                  <b>{snapshot.residents.length}명</b>
+                  <span>생존 인구</span>
+                  <b>{snapshot.world.livingResidents ?? '—'}명</b>
                 </div>
               </div>
 
               <div className="mobile-menu-grid">
                 <button type="button" onClick={() => onView('residents')}>
-                  <strong>주민</strong>
+                  <ObserverIcon name="people" /><strong>주민</strong>
                   <span>삶과 욕구 확인</span>
                 </button>
                 <button type="button" onClick={() => onView('events')}>
-                  <strong>최근 관찰</strong>
+                  <ObserverIcon name="journal" /><strong>최근 관찰</strong>
                   <span>주요 사건 보기</span>
                 </button>
                 <button type="button" onClick={() => onView('traces')}>
-                  <strong>생활 흔적</strong>
+                  <ObserverIcon name="trace" /><strong>생활 흔적</strong>
                   <span>시설과 흔적 보기</span>
                 </button>
                 <button type="button" onClick={() => onView('activity')}>
-                  <strong>월드 활동</strong>
+                  <ObserverIcon name="activity" /><strong>월드 활동</strong>
                   <span>자원과 문명 활동</span>
                 </button>
                 <button type="button" onClick={() => onView('world')}>
-                  <strong>월드 설정</strong>
+                  <ObserverIcon name="settings" /><strong>월드 설정</strong>
                   <span>시간 · 카메라 · 재현</span>
                 </button>
               </div>
-
+              <a className="mobile-asset-credits" href="./vendor/wildlife/CREDITS.html" target="_blank" rel="noopener noreferrer">3D 자산 출처 ↗</a>
             </>
           )}
 
@@ -635,6 +632,7 @@ function MobileObserverModal({
 
               <section>
                 <h3>카메라</h3>
+                <p className="hint">한 손가락 드래그로 방향 회전 · 두 손가락으로 화면 이동 · 손가락을 벌려 확대</p>
                 <button
                   type="button"
                   className="mobile-full-button"
@@ -648,6 +646,8 @@ function MobileObserverModal({
                 </button>
               </section>
 
+              <details className="mobile-settings-disclosure">
+                <summary>화면이 보이지 않을 때</summary>
               <section>
                 <h3>화면 복구</h3>
                 <button
@@ -664,7 +664,10 @@ function MobileObserverModal({
                   저장된 세계와 시뮬레이션은 그대로 유지됩니다. 다음 접속에는 3D를 다시 시도합니다.
                 </p>
               </section>
+              </details>
 
+              <details className="mobile-settings-disclosure">
+                <summary>새 세계 · 시드로 다시 시작</summary>
               <section>
                 <h3>월드</h3>
                 <div className="mobile-current-seed">
@@ -708,6 +711,7 @@ function MobileObserverModal({
                   입력한 시드로 생성
                 </button>
               </section>
+              </details>
 
               <section>
                 <h3>관찰 정보</h3>
@@ -717,19 +721,31 @@ function MobileObserverModal({
           )}
         </div>
       </section>
-    </div>
+    </dialog>
   );
 }
 
 export default function App() {
   const [mobileModal, setMobileModal] = useState<MobileModalView>(null);
   const [showEarthGlobe, setShowEarthGlobe] = useState(false);
+  const [mobileViewport, setMobileViewport] = useState(() => window.matchMedia(MOBILE_OBSERVER_QUERY).matches);
   const snapshot = useObserverSnapshot();
+
+  useEffect(() => {
+    const media = window.matchMedia(MOBILE_OBSERVER_QUERY);
+    const onChange = () => {
+      setMobileViewport(media.matches);
+      if (!media.matches) setMobileModal(null);
+    };
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     if (
       snapshot.selectedResidentId
-      && window.matchMedia('(max-width: 800px)').matches
+      && window.matchMedia(MOBILE_OBSERVER_QUERY).matches
     ) {
       setMobileModal('resident');
     }
@@ -738,7 +754,7 @@ export default function App() {
   useEffect(() => {
     if (
       snapshot.selectedHumanTraceId
-      && window.matchMedia('(max-width: 800px)').matches
+      && window.matchMedia(MOBILE_OBSERVER_QUERY).matches
     ) {
       setMobileModal('traces');
     }
@@ -762,10 +778,10 @@ export default function App() {
       />
       <main className="layout">
         <WorldViewport
-          onOpenMenu={() => setMobileModal('menu')}
-          onOpenSeed={() => setMobileModal('seed')}
+          mobileView={mobileModal}
+          onMobileView={setMobileModal}
         />
-        <ObserverPanel onViewPlace={() => undefined} />
+        {mobileViewport ? null : <ObserverPanel onViewPlace={() => undefined} />}
       </main>
 
       <MobileObserverModal
@@ -800,3 +816,4 @@ export default function App() {
     </div>
   );
 }
+

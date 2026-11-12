@@ -22,6 +22,8 @@ export interface LegacyCanvasWorldDrawOptions {
   centerY: number;
   zoom: number;
   angle: number;
+  panX?: number;
+  panZ?: number;
 }
 
 // The emergency observer must work when WebGL is entirely unavailable.
@@ -33,6 +35,7 @@ export interface LegacyResidentOverlay {
 
 export class LegacyCanvasWorldRenderer {
   private readonly ctx: CanvasRenderingContext2D;
+  private inputGroundPoint: ((x: number, y: number) => { x: number; z: number }) | null = null;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -42,6 +45,13 @@ export class LegacyCanvasWorldRenderer {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Canvas 2D context unavailable');
     this.ctx = context;
+  }
+
+  groundPointAtClient(clientX: number, clientY: number): { x: number; z: number } | null {
+    const rect = this.canvas.getBoundingClientRect();
+    if (!this.inputGroundPoint || !rect.width || !rect.height) return null;
+    return this.inputGroundPoint((clientX - rect.left) * this.canvas.width / rect.width,
+      (clientY - rect.top) * this.canvas.height / rect.height);
   }
 
   draw(options: LegacyCanvasWorldDrawOptions): void {
@@ -96,7 +106,19 @@ export class LegacyCanvasWorldRenderer {
         zoom,
         angle,
       });
-      const { tile, project } = projector;
+      const { tile } = projector;
+      const panX = options.panX ?? 0, panZ = options.panZ ?? 0;
+      const project = (x: number, y: number, height: number): [number, number] => projector.project(
+        x - panX / WORLD_GRID_CONTRACT.worldUnitsPerChunk,
+        y - panZ / WORLD_GRID_CONTRACT.worldUnitsPerChunk, height);
+      const ground = visualElevation(Number(terrain.chunks.find(chunk => chunk.x === centerX && chunk.y === centerY)?.elevation01) || .5);
+      const origin = projector.project(0, 0, ground);
+      this.inputGroundPoint = (px, py) => {
+        const rx = (px - origin[0]) / tile;
+        const ry = (py - origin[1]) / (tile * .52);
+        return { x: (rx * Math.cos(angle) + ry * Math.sin(angle)) * WORLD_GRID_CONTRACT.worldUnitsPerChunk + panX,
+          z: (-rx * Math.sin(angle) + ry * Math.cos(angle)) * WORLD_GRID_CONTRACT.worldUnitsPerChunk + panZ };
+      };
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
     
@@ -683,3 +705,4 @@ export class LegacyCanvasWorldRenderer {
       runtimeDiagnostics.recordRender(performance.now() - renderStartedAt);
   }
 }
+

@@ -1,3 +1,4 @@
+import { CameraGroundProjection } from './camera-ground-projection';
 import { FootTrafficLayer } from './foot-traffic-layer';
 import { SettlementFocusLayer } from './settlement-focus-layer';
 import * as THREE from 'three';
@@ -54,6 +55,7 @@ interface TerrainMeshEntry {
 }
 
 export class WorldScene {
+  private readonly inputProjection = new CameraGroundProjection();
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(42, 1, 0.1, 5000);
 
@@ -136,7 +138,7 @@ export class WorldScene {
     this.camera.updateProjectionMatrix();
   }
 
-  setCamera(state: WorldSceneCameraState): void {
+  setCamera(state: WorldSceneCameraState, immediate = false): void {
     const current = this.currentCameraState;
     const originChanged = current.centerChunkX !== state.centerChunkX
       || current.centerChunkY !== state.centerChunkY;
@@ -156,13 +158,19 @@ export class WorldScene {
       panZ: Number(state.panZ) || 0,
     };
 
-    if (!this.cameraInitialized) {
+    if (!this.cameraInitialized || immediate) {
       this.currentCameraState = { ...this.desiredCameraState };
       this.cameraInitialized = true;
       this.applyCamera(this.currentCameraState);
     } else if (originChanged) {
       this.applyCamera(current);
     }
+  }
+
+  groundPoint(normalizedX: number, normalizedY: number): { x: number; z: number } | null {
+    const state = this.currentCameraState;
+    const height = this.sampleGroundHeight(state.panX ?? 0, state.panZ ?? 0);
+    return this.inputProjection.point(this.camera, normalizedX, normalizedY, height);
   }
 
   setSimulationMinute(minute: number): void {
@@ -585,6 +593,7 @@ export class WorldScene {
   }
 
 }
+
 
 
 

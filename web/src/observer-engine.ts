@@ -27,7 +27,7 @@ import {
   MINUTES_PER_DAY,
 } from './state/fast-forward';
 import { humanTraceFocus, visibleHumanTraces } from './state/human-traces';
-import { CameraInput, cameraPanDelta } from './input/camera-input';
+import { CameraInput } from './input/camera-input';
 
 import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer';
 import { readRenderMode } from './render/render-mode';
@@ -235,11 +235,57 @@ export function startObserverEngine(): () => void {
     : OBSERVER_CAMERA_CONTRACT.defaultDesktopZoom;
   let localPanX = 0;
   let localPanZ = 0;
+  function groundPointAtClient(x: number, y: number): { x: number; z: number } | null {
+    return threeWorldRenderer?.groundPointAtClient(x, y) ?? legacyRenderer?.groundPointAtClient(x, y) ?? null;
+  }
+
+  function applyCameraPan(pan: { x: number; z: number }): void {
+    if (!worldSession) return;
+
+    if (followResidents) {
+      worldSession.moveObserver(0, 0);
+      followResidents = false;
+    }
+
+    localPanX += pan.x;
+    localPanZ += pan.z;
+
+    const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+    const stepX = Math.trunc(localPanX / chunkWorldSize);
+    const stepY = Math.trunc(localPanZ / chunkWorldSize);
+
+    if (stepX !== 0 || stepY !== 0) {
+      localPanX -= stepX * chunkWorldSize;
+      localPanZ -= stepY * chunkWorldSize;
+      worldSession.moveObserver(stepX, stepY);
+      refresh();
+    }
+
+    observerStore.updateCamera({
+      centerChunkX: centerX,
+      centerChunkY: centerY,
+      angle,
+      elevation,
+      zoom,
+      followResidents: false,
+    });
+    threeWorldRenderer?.setCamera({
+      centerChunkX: centerX,
+      centerChunkY: centerY,
+      angle,
+      elevation,
+      zoom,
+      panX: localPanX,
+      panZ: localPanZ,
+    }, true);
+    drawWorld();
+  }
   const cameraInput = new CameraInput(canvas, {
     initialAngle: angle,
     initialElevation: elevation,
     initialZoom: zoom,
-    onChange(next) {
+    onChange(next, zoomAnchor) {
+      const before = zoomAnchor ? groundPointAtClient(zoomAnchor.x, zoomAnchor.y) : null;
       angle = next.angle;
       elevation = next.elevation;
       zoom = next.zoom;
@@ -252,54 +298,24 @@ export function startObserverEngine(): () => void {
         zoom,
         panX: localPanX,
         panZ: localPanZ,
-      });
+      }, true);
       drawWorld();
+      if (before && zoomAnchor) {
+        const after = groundPointAtClient(zoomAnchor.x, zoomAnchor.y);
+        if (after) applyCameraPan({ x: before.x - after.x, z: before.z - after.z });
+      }
     },
-    onPan(deltaX, deltaY) {
-      if (!worldSession) return;
-
-      if (followResidents) {
-        worldSession.moveObserver(0, 0);
-        followResidents = false;
+    onPan(deltaX, deltaY, anchor) {
+      const rect = canvas.getBoundingClientRect();
+      const x = anchor?.x ?? rect.left + rect.width / 2;
+      const y = anchor?.y ?? rect.top + rect.height / 2;
+      let before = groundPointAtClient(x, y), after = groundPointAtClient(x + deltaX, y + deltaY);
+      if (!before || !after) {
+        const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+        before = groundPointAtClient(cx, cy);
+        after = groundPointAtClient(cx + deltaX, cy + deltaY);
       }
-
-      const worldUnitsPerPixel =
-        OBSERVER_CAMERA_CONTRACT.panWorldUnitsPerPixelAtZoom1
-        / Math.max(OBSERVER_CAMERA_CONTRACT.minZoom, zoom);
-      const pan = cameraPanDelta(angle, deltaX, deltaY);
-      localPanX += pan.x * worldUnitsPerPixel;
-      localPanZ += pan.z * worldUnitsPerPixel;
-
-      const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
-      const stepX = Math.trunc(localPanX / chunkWorldSize);
-      const stepY = Math.trunc(localPanZ / chunkWorldSize);
-
-      if (stepX !== 0 || stepY !== 0) {
-        localPanX -= stepX * chunkWorldSize;
-        localPanZ -= stepY * chunkWorldSize;
-        worldSession.moveObserver(stepX, stepY);
-        refresh();
-        return;
-      }
-
-      observerStore.updateCamera({
-        centerChunkX: centerX,
-        centerChunkY: centerY,
-        angle,
-        elevation,
-        zoom,
-        followResidents: false,
-      });
-      threeWorldRenderer?.setCamera({
-        centerChunkX: centerX,
-        centerChunkY: centerY,
-        angle,
-        elevation,
-        zoom,
-        panX: localPanX,
-        panZ: localPanZ,
-      });
-      drawWorld();
+      if (before && after) applyCameraPan({ x: before.x - after.x, z: before.z - after.z });
     },
     onTap(clientX, clientY) {
       if (!threeWorldRenderer) return;
@@ -338,6 +354,8 @@ export function startObserverEngine(): () => void {
       centerY,
       zoom,
       angle,
+      panX: localPanX,
+      panZ: localPanZ,
     });
   }
   
@@ -810,4 +828,5 @@ export function startObserverEngine(): () => void {
     worldSession = null;
   };
   }
+
 
