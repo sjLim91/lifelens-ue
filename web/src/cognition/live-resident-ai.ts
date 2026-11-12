@@ -284,7 +284,7 @@ function worldIdentity(world: WorldOverview): string {
 }
 
 export function residentAIStatusText(state: ResidentAIState): string {
-  if (state.suspended) return 'Qwen 추론 일시 중지 · Core 시간 계산 중';
+  if (state.suspended) return 'Qwen 추론 일시 중지 · 화면 비활성 또는 Core 고속 진행 중';
   if (state.discovering) return 'Qwen 모델 준비 중 · 첫 실행에는 다운로드가 필요합니다';
   if (state.enabled && state.configuration) return 'Qwen 연결됨 · 주민별 판단을 순서대로 처리합니다';
   return 'Qwen 추론 미연결 · 다른 모델로 전환하지 않습니다';
@@ -392,7 +392,7 @@ export class ResidentAIController {
   }
   private async discoverAutomatically(): Promise<void> {
     if (!this.automaticallyRunning || this.disposed || !this.source
-      || this.scheduler || this.browserModelLoading) return;
+      || this.state.suspended || this.scheduler || this.browserModelLoading) return;
     this.lastAutoDiscovery = this.now();
     // Production has exactly one language model. Never scan localhost or
     // silently replace Qwen with the first model installed on this device.
@@ -400,7 +400,7 @@ export class ResidentAIController {
   }
   private async prepareBrowserReasoning(): Promise<void> {
     if (!this.automaticallyRunning || this.disposed || !this.source
-      || this.scheduler || this.browserModelLoading
+      || this.state.suspended || this.scheduler || this.browserModelLoading
       || this.now() - this.lastBrowserModelAttempt < BROWSER_MODEL_RETRY_MS)
       return;
     // A transient GPU/weight/network error cannot permanently disable the
@@ -505,12 +505,24 @@ export class ResidentAIController {
     this.update({ enabled });
     return true;
   }
-  suspend(suspended: boolean): void {
+  suspend(
+    suspended: boolean,
+    reason: 'fast-forward' | 'stopped' = 'fast-forward',
+  ): void {
+    if (this.state.suspended === suspended) return;
     if (suspended) {
-      this.sessionAudit.finish('fast-forward');
+      // Pausing the authoritative Core must also invalidate in-flight model
+      // results. Otherwise an answer can arrive after the tab is hidden and
+      // still submit a proposal against the frozen Core minute.
+      this.sessionAudit.finish(reason);
       this.resetWorld();
     }
     this.update({ suspended });
+    // When a page first boots in the background, do not start heavyweight
+    // local model discovery until the observer actually returns.
+    if (!suspended && this.automaticallyRunning && !this.scheduler) {
+      void this.discoverAutomatically();
+    }
   }
   resetWorld(): void {
     this.sessionAudit.finish('world-changed');
