@@ -450,6 +450,59 @@ const provider = {
 
 
 {
+  // A delayed WebGPU answer must never be accepted after the page freezes
+  // Core time. Returning to the same world may start a NEW thought.
+  let complete;
+  const f = fixture({
+    name: 'delayed-hidden-tab',
+    reason: () => new Promise(resolve => { complete = resolve; }),
+  });
+  f.controller.setEnabled(true);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  assert.equal(f.controller.beginAuditSession(), true);
+  f.controller.suspend(true, 'stopped');
+  assert.equal(f.controller.getAuditReport().endedReason, 'stopped',
+    'background suspension is not mislabeled as fast-forward');
+  complete({ actor: '1', intent: 'CooperateWithResident',
+    targetResident: '2', priority: .8, rationale: '숨긴 화면의 판단' });
+  await tick(); await tick();
+  assert.equal(f.submitted.length, 0,
+    'late resident inference cannot mutate a frozen Core minute');
+  assert.equal(f.controller.getSnapshot().pendingActor, null);
+  f.advance();
+  f.controller.suspend(false);
+  f.controller.observe(f.world, f.residents);
+  await tick();
+  complete({ actor: '1', intent: 'CooperateWithResident',
+    targetResident: '2', priority: .8, rationale: '복귀 후 새 판단' });
+  await tick(); await tick();
+  assert.equal(f.submitted.length, 1,
+    'foreground inference resumes without creating a separate resident AI');
+  assert.equal(f.submitted[0].request.minute, f.world.minute);
+  f.controller.dispose();
+}
+
+{
+  // Cold boot in a background tab must not begin the costly on-device model
+  // download until the observer becomes visible again.
+  let loads = 0;
+  const f = fixture(undefined, async () => {
+    loads++;
+    return { ...provider, name: 'resident-browser-webgpu',
+      modelId: 'Qwen3-1.7B-q4f16_1-MLC' };
+  });
+  f.controller.suspend(true, 'stopped');
+  f.controller.startAutomatically();
+  await tick(); await tick();
+  assert.equal(loads, 0, 'background boot must defer the GPU factory');
+  f.controller.suspend(false);
+  await tick(); await tick();
+  assert.equal(loads, 1, 'visibility restoration must start one Qwen loader');
+  f.controller.dispose();
+}
+
+{
   // The deployed observer must START an audit without a test-only explicit
   // beginAuditSession() call, after the real local-model connection exists.
   const f=fixture(undefined,async()=>({
