@@ -258,6 +258,40 @@ int main()
         completed,civilizationActionExperienceKey(craftDecision),true,
         "내가 직접 시도한 행동"));
 
+    // AL-2: this is evidence that one accepted resident thought AUTHORISED
+    // the two distinct physical Core tokens, not merely that ordinary Core
+    // fell back to Gather/Craft while the thought sat in a journal. Both
+    // executions must match the original fingerprint and the real result
+    // log's issued step token. No second proposal may be credited.
+    const std::uint64_t goalFingerprint=cognitiveRequestFingerprint(request);
+    const std::string goalKey="AL2_CORE_COGNITION_STEP_ISSUED actor="
+        +std::to_string(actorId)+" goal_fp="+std::to_string(goalFingerprint);
+    const auto hasCognitiveStep=[&](std::uint64_t token,const char* intent){
+        for(const auto& line:original.logs()){
+            if(line.find(goalKey)!=std::string::npos
+               &&line.find(" thought_minute=480")!=std::string::npos
+               &&line.find(" step_token="+std::to_string(token))
+                   !=std::string::npos
+               &&line.find(" intent="+std::string(intent))
+                   !=std::string::npos)
+                return true;
+        }
+        return false;
+    };
+    REQUIRE(hasCognitiveStep(gatherToken,"Gather"));
+    REQUIRE(hasCognitiveStep(craftToken,"Craft"));
+    const auto hasExecutedStep=[&](std::uint64_t token,const char* intent){
+        for(const auto& line:original.logs())
+            if(line.find("-> Civilization "+std::string(intent))
+                    !=std::string::npos
+               &&line.find(" core_step_token="+std::to_string(token))
+                    !=std::string::npos)
+                return true;
+        return false;
+    };
+    REQUIRE(hasExecutedStep(gatherToken,"Gather"));
+    REQUIRE(hasExecutedStep(craftToken,"Craft"));
+
     // The continuation runs through exactly the same Core tick path after
     // a byte-encoded save/load at the FIRST physical Gather result.
     std::vector<std::uint8_t> actualBytes,replayedBytes;
@@ -279,6 +313,8 @@ int main()
         <<" source_stock="<<wood.quantity<<"->"
         <<sourceStock()
         <<" direct_gather_and_craft_memories=1"
+        <<" same_cognitive_goal_fp="<<goalFingerprint
+        <<" authentic_core_step_links=2"
         <<" serialized_continuation_identical=1"
         <<" scope=controlled_Core_new_game_fixture"
         <<std::endl;
