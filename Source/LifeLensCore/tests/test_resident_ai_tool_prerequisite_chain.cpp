@@ -507,5 +507,170 @@ int main()
     assert(apprentice.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::Bronze)==0);
 
+    // AL-2: a single resident's SAME accepted tool objective must actually
+    // build an entire furnace in Core, not stall after the first successful
+    // material delivery or work tick. The project is created by Core and all
+    // later raw inputs are physically harvested from finite live nodes.
+    World construction(4466);
+    construction.minute=480;
+    construction.resourceNodes.clear();
+    construction.facilities.clear();
+    construction.facilities.push_back(firePit);
+    Character builder=makeResident();
+    builder.civilization.knowledge=apprentice.civilization.knowledge;
+    const auto firstBuild=chooseResidentAIKnowledgePrerequisiteStep(
+        construction,builder,{0,0},TechnologyId::BronzeAxe,
+        nullptr,&thought);
+    assert(firstBuild.intent==CivilizationIntent::Craft
+        &&firstBuild.facilityAction==FacilityBuildAction::Plan);
+    const auto founded=executeCivilizationDecisionAtPosition(
+        construction,builder,firstBuild,firstBuild.facilityTargetPos);
+    assert(founded.executed &&founded.success);
+    rememberCivilizationAttemptOutcome(
+        builder,firstBuild,construction.minute+1,true);
+    ++construction.minute;
+    const auto* planned=primitiveFurnaceProjectNear(construction,{0,0});
+    assert(planned &&planned->state!=FacilityState::Operational);
+    std::uint64_t nextSource=20000;
+    for(const auto& requirement:planned->requirements){
+        if(requirement.required<=0) continue;
+        ResourceNode supply=wood;
+        supply.id=nextSource++;
+        supply.pos={0,0};
+        supply.material=requirement.material;
+        supply.quantity=std::max(32,requirement.required+8);
+        supply.maxQuantity=supply.quantity;
+        construction.resourceNodes.push_back(supply);
+        if(supply.material==MaterialKind::Stone){
+            // A genuine second source exists before any failure. A's stock
+            // is later drained by another Core resident, not edited to zero.
+            ResourceNode alternate=supply;
+            alternate.id=nextSource++;
+            alternate.pos={2,0};
+            construction.resourceNodes.push_back(alternate);
+        }
+    }
+    const auto staleSource=chooseResidentAIKnowledgePrerequisiteStep(
+        construction,builder,{0,0},TechnologyId::BronzeAxe,
+        nullptr,&thought);
+    assert(staleSource.intent==CivilizationIntent::Gather
+        &&staleSource.material==MaterialKind::Stone);
+    const auto depletedNode=std::find_if(
+        construction.resourceNodes.begin(),construction.resourceNodes.end(),
+        [&](const ResourceNode& node){return node.id==staleSource.resourceNode;});
+    assert(depletedNode!=construction.resourceNodes.end());
+    Character competitor=makeResident();
+    competitor.id=77;
+    competitor.civilization.character=competitor.id;
+    CivilizationUtilityDecision competingGather=staleSource;
+    competingGather.quantity=64;
+    const GridPos sourcePos=depletedNode->pos;
+    int spentByCompetitor=0;
+    for(int attempt=0;attempt<80;++attempt){
+        const auto remaining=std::find_if(
+            construction.resourceNodes.begin(),construction.resourceNodes.end(),
+            [&](const ResourceNode& node){return node.id==staleSource.resourceNode;});
+        assert(remaining!=construction.resourceNodes.end());
+        if(remaining->quantity==0) break;
+        const auto spent=executeCivilizationDecisionAtPosition(
+            construction,competitor,competingGather,sourcePos);
+        assert(spent.executed &&spent.success &&spent.event.quantity>0);
+        spentByCompetitor+=spent.event.quantity;
+    }
+    const auto emptyNode=std::find_if(
+        construction.resourceNodes.begin(),construction.resourceNodes.end(),
+        [&](const ResourceNode& node){return node.id==staleSource.resourceNode;});
+    assert(emptyNode!=construction.resourceNodes.end()
+        &&emptyNode->quantity==0 &&spentByCompetitor>0);
+    const auto failedExtraction=executeCivilizationDecisionAtPosition(
+        construction,builder,staleSource,sourcePos);
+    assert(!failedExtraction.executed &&!failedExtraction.success);
+    const auto failedCause=diagnoseResidentGatherFailure(
+        construction,builder,staleSource,sourcePos);
+    assert(failedCause==ResidentGatherFailureCause::SourceExhausted);
+    rememberCivilizationAttemptOutcome(
+        builder,staleSource,construction.minute+1,false,failedCause);
+    ++construction.minute;
+    const auto recoveredSource=chooseResidentAIKnowledgePrerequisiteStep(
+        construction,builder,{0,0},TechnologyId::BronzeAxe,
+        nullptr,&thought);
+    assert(recoveredSource.intent==CivilizationIntent::Gather
+        &&recoveredSource.material==staleSource.material
+        &&recoveredSource.resourceNode!=staleSource.resourceNode);
+    int gatheredSteps=0;
+    int deliveredSteps=0;
+    int workedSteps=0;
+    bool finishedFurnace=false;
+    for(int step=0;step<80;++step){
+        const auto* current=primitiveFurnaceProjectNear(construction,{0,0});
+        assert(current);
+        if(current->state==FacilityState::Operational){
+            finishedFurnace=true;
+            break;
+        }
+        const auto nextBuild=chooseResidentAIKnowledgePrerequisiteStep(
+            construction,builder,{0,0},TechnologyId::BronzeAxe,
+            nullptr,&thought);
+        assert(nextBuild.intent==CivilizationIntent::Gather
+            ||(nextBuild.intent==CivilizationIntent::Craft
+               &&nextBuild.facilityKind==FacilityKind::Furnace));
+        GridPos executionPos{0,0};
+        int stockBefore=0;
+        int heldBefore=builder.civilization.inventory.count(
+            ItemKind::RawMaterial,nextBuild.material);
+        if(nextBuild.intent==CivilizationIntent::Gather){
+            const auto source=std::find_if(
+                construction.resourceNodes.begin(),
+                construction.resourceNodes.end(),[&](const ResourceNode& node){
+                    return node.id==nextBuild.resourceNode;
+                });
+            assert(source!=construction.resourceNodes.end());
+            stockBefore=source->quantity;
+            executionPos=source->pos;
+        }else{
+            assert(nextBuild.hasFacilityTarget
+                &&nextBuild.facility==current->id);
+            executionPos=nextBuild.facilityTargetPos;
+        }
+        const auto actual=executeCivilizationDecisionAtPosition(
+            construction,builder,nextBuild,executionPos);
+        assert(actual.executed &&actual.success);
+        if(nextBuild.intent==CivilizationIntent::Gather){
+            ++gatheredSteps;
+            assert(actual.event.quantity>0);
+            const auto source=std::find_if(
+                construction.resourceNodes.begin(),
+                construction.resourceNodes.end(),[&](const ResourceNode& node){
+                    return node.id==nextBuild.resourceNode;
+                });
+            assert(source!=construction.resourceNodes.end());
+            assert(stockBefore-source->quantity==actual.event.quantity);
+            assert(builder.civilization.inventory.count(
+                ItemKind::RawMaterial,nextBuild.material)
+                ==heldBefore+actual.event.quantity);
+        }else if(nextBuild.facilityAction==FacilityBuildAction::DeliverMaterial){
+            ++deliveredSteps;
+            assert(actual.event.quantity>0
+                &&builder.civilization.inventory.count(
+                    ItemKind::RawMaterial,nextBuild.material)
+                    ==heldBefore-actual.event.quantity);
+        }else if(nextBuild.facilityAction==FacilityBuildAction::Work){
+            ++workedSteps;
+            assert(actual.facilityWorkAfter>actual.facilityWorkBefore);
+        }else{
+            assert(false &&"unexpected furnace plan replay");
+        }
+        rememberCivilizationAttemptOutcome(
+            builder,nextBuild,construction.minute+1,true);
+        ++construction.minute;
+    }
+    assert(finishedFurnace);
+    assert(gatheredSteps>=2 &&deliveredSteps>=2 &&workedSteps>=2);
+    assert(hasOperationalFurnaceNear(construction,{0,0}));
+    assert(!builder.civilization.knowledge.knowsAtLeast(
+        TechniqueId::TinSmelting,KnowledgeLevel::Reproducible));
+    assert(builder.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Bronze)==0);
+
     return 0;
 }
