@@ -606,18 +606,48 @@ chooseResidentAIExistingCivilizationAffordance(
             candidate=bestResourceExplorationDecisionAtPosition(
                 world,actor,actorPosition);
             break;
-        case CognitiveIntentKind::CraftUsefulTools:
-            candidate=bestCraftDecisionAtPosition(
-                world,actor,actorPosition,settlementPopulation);
-            // The generic chooser can also return an infrastructure action;
-            // it is not authorization for a model's personal tool goal.
-            if(candidate.intent!=CivilizationIntent::Craft
-               ||candidate.facilityAction!=FacilityBuildAction::None
-               ||!residentAIToolOutputNeeded(actor,candidate.technique)
-               ||residentAIPlanAlreadyAttempted(
-                   actor,thought,candidate,world.minute))
-                candidate=chooseResidentAIToolPrerequisite(
-                    world,actor,actorPosition,settlementPopulation,&thought);
+        case CognitiveIntentKind::CraftUsefulTools: {
+            // Once THIS resident physically started a furnace to reproduce
+            // an actually observed bronze tool, retain that concrete Core
+            // commitment while the very same tool goal is still eligible.
+            // Otherwise generic tool utility can keep diverting the resident
+            // to unrelated raw-material projects after every completed work
+            // tick, making a valid multi-step plan impossible to finish.
+            const auto* committed=primitiveFurnaceProjectNear(
+                world,actorPosition);
+            if(committed!=nullptr &&committed->initiatedBy==actor.id
+               &&committed->state!=FacilityState::Operational
+               &&committed->state!=FacilityState::Ruined){
+                for(const auto desired:{
+                     TechnologyId::BronzeAxe,TechnologyId::BronzePick}){
+                    const auto technique=techniqueForTechnology(desired);
+                    if(technique==TechniqueId::None
+                       ||!actor.civilization.knowledge.knowsAtLeast(
+                           technique,KnowledgeLevel::Observed)
+                       ||actor.civilization.knowledge.knowsAtLeast(
+                           technique,KnowledgeLevel::Reproducible))
+                        continue;
+                    candidate=chooseResidentAIKnowledgePrerequisiteStep(
+                        world,actor,actorPosition,desired,
+                        settlementPopulation,&thought);
+                    if(candidate.intent!=CivilizationIntent::None)
+                        break;
+                }
+            }
+            if(candidate.intent==CivilizationIntent::None){
+                candidate=bestCraftDecisionAtPosition(
+                    world,actor,actorPosition,settlementPopulation);
+                // A generic infrastructure choice is not authorization for
+                // unrelated model tool goals, unlike the exact committed
+                // project above, which has its own Core validity guard.
+                if(candidate.intent!=CivilizationIntent::Craft
+                   ||candidate.facilityAction!=FacilityBuildAction::None
+                   ||!residentAIToolOutputNeeded(actor,candidate.technique)
+                   ||residentAIPlanAlreadyAttempted(
+                       actor,thought,candidate,world.minute))
+                    candidate=chooseResidentAIToolPrerequisite(
+                        world,actor,actorPosition,settlementPopulation,&thought);
+            }
             // A missing tool may require collecting a REAL ingredient or a
             // Core experiment, not a magical craft on this same tick.
             if(candidate.intent!=CivilizationIntent::Craft
@@ -633,6 +663,7 @@ chooseResidentAIExistingCivilizationAffordance(
                &&candidate.technique==TechniqueId::None)
                 return std::nullopt;
             break;
+        }
         case CognitiveIntentKind::ExpandCultivation:
             candidate=bestCultivationDecision(
                 world,actor,actorPosition,settlementPopulation);
