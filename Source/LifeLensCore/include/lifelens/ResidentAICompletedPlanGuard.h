@@ -20,7 +20,8 @@ inline bool residentAIPlanAlreadyAttempted(
     const AcceptedCognitiveDecision& thought,
     const CivilizationUtilityDecision& candidate,
     int nowMinute,
-    bool verifiedMissingRecipeIngredient=false)
+    bool verifiedMissingRecipeIngredient=false,
+    bool verifiedUnfinishedFurnaceStep=false)
 {
     if(actor.id==0 ||thought.actor!=actor.id
        ||thought.minute<0 ||nowMinute<thought.minute
@@ -84,6 +85,18 @@ inline bool residentAIPlanAlreadyAttempted(
         if(verifiedMissingRecipeIngredient
            &&thought.intent==CognitiveIntentKind::CraftUsefulTools
            &&candidate.intent==CivilizationIntent::Gather
+           &&entry.tags[2]=="success")
+            continue;
+        // A single successful delivery/work tick does not finish a real
+        // furnace project. ONLY the Core caller that verified the SAME
+        // unfinished facility can continue this thought. Failed work never
+        // receives that exemption, preventing an unbounded retry loop.
+        if(verifiedUnfinishedFurnaceStep
+           &&thought.intent==CognitiveIntentKind::CraftUsefulTools
+           &&candidate.intent==CivilizationIntent::Craft
+           &&candidate.facilityKind==FacilityKind::Furnace
+           &&(candidate.facilityAction==FacilityBuildAction::DeliverMaterial
+              ||candidate.facilityAction==FacilityBuildAction::Work)
            &&entry.tags[2]=="success")
             continue;
         return true;
