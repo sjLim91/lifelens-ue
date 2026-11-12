@@ -124,7 +124,7 @@ static void verifyLearnedActionAfterSaveLoad(
         <<" binary_roundtrip=1"
         <<" identical_production_replay=1"
         <<" actual_learned_harvest=1"
-        <<" firsthand_result_memory=1\\n";
+        <<" firsthand_result_memory=1"<<std::endl;
 }
 
 int main()
