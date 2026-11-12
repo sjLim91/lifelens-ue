@@ -18,7 +18,10 @@ assert(engine.includes('worldSession.restoreWorld(saved.snapshotBase64)'),
 const code = engine.slice(start, end);
 const documentStub = { visibilityState: 'visible' };
 let now = 1790000000000;
-const calls = [], checkpointTimes = [];
+const calls = [], checkpointTimes = [], aiCalls = [];
+const aiStub = {
+  suspend(suspended, reason) { aiCalls.push({ suspended, reason }); },
+};
 const world = {
   runMinutes() { throw Error('A hidden/reopened world must never fast-forward!'); },
 };
@@ -28,28 +31,36 @@ const clockStub = {
   resetAccumulator() { calls.push('reset'); },
 };
 const factory = new Function(
-  'document', 'Date', 'worldSession', 'simulationClock', 'saveCheckpoint',
+  'document', 'Date', 'worldSession', 'simulationClock', 'saveCheckpoint', 'residentAI',
   `let stopped = false, fastForwardRunning = false;
   ${code}
   return { onWorldVisibility, onWorldPageHide, onWorldPageShow };`,
 );
 const lifecycle = factory(documentStub, { now: () => now }, world, clockStub,
-  time => { checkpointTimes.push(time); return Promise.resolve(); });
+  time => { checkpointTimes.push(time); return Promise.resolve(); }, aiStub);
 documentStub.visibilityState = 'hidden';
 lifecycle.onWorldVisibility();
 assert.deepEqual(calls, ['stop']);
+assert.deepEqual(aiCalls, [{ suspended: true, reason: 'stopped' }],
+  'hiding a mobile tab must cancel pending resident reasoning');
 assert.deepEqual(checkpointTimes, [1790000000000]);
 now += 45 * 86400000;
 documentStub.visibilityState = 'visible';
 lifecycle.onWorldVisibility();
+assert.deepEqual(aiCalls.at(-1), { suspended: false, reason: undefined },
+  'returning to the observer must resume the same resident AI');
 assert.deepEqual(calls, ['stop', 'reset', 'start'],
   'visibility return must discard the paused accumulator');
 assert.deepEqual(checkpointTimes, [1790000000000],
   'resume cannot fabricate a progressed checkpoint');
 lifecycle.onWorldPageHide();
 assert.equal(calls.at(-1), 'stop');
+assert.deepEqual(aiCalls.at(-1), { suspended: true, reason: 'stopped' },
+  'pagehide must cancel in-flight AI proposals before saving Core');
 assert.equal(checkpointTimes.at(-1), now);
 lifecycle.onWorldPageShow();
+assert.deepEqual(aiCalls.at(-1), { suspended: false, reason: undefined },
+  'BFCache return must allow new resident inference');
 assert.deepEqual(calls.slice(-2), ['reset', 'start'],
   'BFCache pageshow must restart at the stored Core minute without replay');
 assert.equal(checkpointTimes.length, 2);
