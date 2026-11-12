@@ -450,6 +450,75 @@ const provider = {
 
 
 {
+  // The deployed observer must START an audit without a test-only explicit
+  // beginAuditSession() call, after the real local-model connection exists.
+  const f=fixture(undefined,async()=>({
+    ...provider, name:'resident-browser-webgpu',
+    modelId:'Qwen3-1.7B-q4f16_1-MLC',
+  }));
+  f.residents[0].beliefs=[];
+  f.residents[1].beliefs=[];
+  f.controller.startAutomatically();
+  await tick(); await tick();
+  assert.equal(f.controller.getAuditReport(),null,
+    'loading Qwen alone does not invent an observed Core session');
+  f.controller.observe(f.world,f.residents);
+  await tick(); await tick();
+  const observed=f.controller.getAuditReport();
+  assert.equal(observed.mode,'local-ai');
+  assert.equal(observed.modelName,'Qwen3-1.7B-q4f16_1-MLC');
+  assert.equal(observed.startMinute,480);
+  assert.equal(observed.modelRequests,1);
+  assert.equal(observed.decisions.recorded,1);
+  assert.equal(observed.corePhysicalSuccessEvidenceDelta,0);
+
+  const first=f.controller.getDeviceEvidenceReport();
+  assert.equal(first.proof.modelReady,true);
+  assert.equal(first.proof.coreApprovedTypedProposal,true);
+  assert.equal(first.proof.corePhysicalOutcomeObserved,false,
+    'Core approval does not invent physical success');
+  assert.equal(first.proof.actionCausedByModelProven,false);
+  assert.equal(first.collectedFrom,'current-browser-session');
+  assert(!JSON.stringify(first).includes('직접 목격'),
+    'export cannot leak personal resident memory');
+  assert(!JSON.stringify(first).includes('서윤'),
+    'export cannot leak resident names');
+  assert.equal(first.audit.modelRequests,1);
+
+  // Only a NEW observed Core experience, after baseline, changes the third
+  // gate. Even then the report must never claim model causation.
+  f.residents[0].beliefs=[{
+    subject:'0', proposition:'experienced-action-outcome:Eat',
+    supportCount:1, contradictionCount:0,
+  }];
+  f.advance();
+  f.controller.observe(f.world,f.residents);
+  await tick();
+  const changed=f.controller.getDeviceEvidenceReport();
+  assert.equal(changed.audit.corePhysicalSuccessEvidenceDelta,1);
+  assert.equal(changed.proof.corePhysicalOutcomeObserved,true);
+  assert.equal(changed.proof.actionCausedByModelProven,false);
+  f.controller.dispose();
+}
+
+{
+  // A report from a disconnected device must not be falsely described as
+  // a successful local Qwen model or authoritative physical execution.
+  const { buildResidentAIDeviceEvidenceReport } =
+    await source('cognition/resident-ai-device-evidence.ts');
+  const offline=fixture();
+  const report=buildResidentAIDeviceEvidenceReport(
+    offline.controller.getSnapshot(),null,
+  );
+  assert.equal(report.modelConnected,false);
+  assert.equal(report.proof.modelReady,false);
+  assert.equal(report.proof.coreApprovedTypedProposal,false);
+  assert.equal(report.proof.corePhysicalOutcomeObserved,false);
+  assert.equal(report.audit,null);
+  offline.controller.dispose();
+}
+
+{
   // Browser audit is a truthful observation window, not a model's claim of
   // action completion. Baseline already-known beliefs must never be reported
   // as successes that occurred during the audited period.
