@@ -333,7 +333,7 @@ inline bool residentAIUnfinishedFurnaceContinuation(
         if(candidate.quantity<=0 ||candidate.material==MaterialKind::Unknown)
             return false;
         return std::any_of(facility.requirements.begin(),
-            facility.requirements.end(),[&](const FacilityMaterialRequirement& requirement){
+            facility.requirements.end(),[&](const auto& requirement){
                 return requirement.material==candidate.material
                     &&requirement.required>requirement.delivered;
             });
