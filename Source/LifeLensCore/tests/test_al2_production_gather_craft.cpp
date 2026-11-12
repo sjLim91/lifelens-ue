@@ -73,6 +73,9 @@ int main()
     actor.civilization.knowledge.learn(
         TechniqueId::DiggingStick,KnowledgeLevel::Reproducible,1.0);
     actor.personality.curiosity=0.95;
+    // Ecology snapshots require disabled wildlife to have no live populations.
+    // Clear the controlled fixture's animals together with its feature flag.
+    world.wildlifePopulations.clear();
     world.wildlifeEnabled=false;
     world.resourceNodes.clear();
     world.storageSites.clear();
@@ -187,8 +190,12 @@ int main()
                 firstGatherMinute=activity.minute;
             if(!savedAfterPhysicalGather){
                 std::vector<std::uint8_t> encoded;
-                REQUIRE(encodeSimulationSnapshot(
-                    original.captureSnapshot(),encoded,&error));
+                if(!encodeSimulationSnapshot(
+                       original.captureSnapshot(),encoded,&error)){
+                    std::cerr<<"AL2_SNAPSHOT_ENCODE_ERROR "
+                             <<error<<std::endl;
+                    return 1;
+                }
                 SimulationStateSnapshot decoded;
                 REQUIRE(decodeSimulationSnapshot(
                     encoded,decoded,&error));
