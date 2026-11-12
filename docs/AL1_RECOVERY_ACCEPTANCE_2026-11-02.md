@@ -1,5 +1,13 @@
 # AL-1 recovery and local inference checkpoint — updated 2026-11-10
 
+## 2026-11-12 적용 범위 변경 및 최종 인수 우선 기록
+
+- 사용자가 **모든 실기기 검증을 이번 인수에서 제외**하도록 지시했다. 이 조건에서 **AL-1 한 주민의 무개입 Core-native 실제 목표→물리 행동→직접 기억→후속 선택 및 이진 저장 재생은 PASS**다. G1/AL-2~4, 실기기 Qwen 성능·브라우저 자동 모델 실측은 PASS가 아니다.
+- 실제 제품 추가 테스트 [#1008](https://github.com/sjLim91/lifelens-ue/pull/1008) main `6afbb592a821b611e8f737c586f531dde3bdc175`, exact-head [Core CI #43164964474](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964474): Core **175/175**, 자연 학습·바이너리 저장 재생 두 시드 및 결정론 PASS. Web WASM #43164964523, Preflight #43164964482, Web Checks #43164964475 SUCCESS(파일 범위상 Web-only job은 skipped).
+- 두 증거: 시드 874213954 / 주민 2 / 학습 토큰 70 / 1590→1636분 / 목재 5개, 시드 4242001 / 주민 2 / 토큰 669 / 18900→18990분 / 식량 4개. 두 경우 `binary_roundtrip=1 identical_production_replay=1 actual_learned_harvest=1 firsthand_result_memory=1`.
+- [AL-1 최종 범위 인수 기록](AL1_CORE_ACCEPTANCE_2026-11-12.md)을 우선한다. 아래 2026-11-10 `NOT_PROVEN`은 당시 실기기/확대 G1 조건을 포함하던 기록이며, 변경된 AL-1 Core-native 인수 결론을 부정하지 않는다. **86개 계획 단위의 기존 완료 수 6/86은 그대로 유지한다.**
+
+
 Base: `baa8497fd75f959966a5123e2c535c24eb1c700d` (#996).
 AL-1 remains **NOT_PROVEN**; masterplan completion remains **6/86**. No M0 or acceptance thresholds changed.
 
