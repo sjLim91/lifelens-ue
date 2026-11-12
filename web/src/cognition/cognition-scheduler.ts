@@ -44,6 +44,7 @@ export class CognitionScheduler {
   private sequence = 0;
   private active = 0;
   private disposed = false;
+  private providerCleanup: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly provider: CognitiveProvider,
@@ -138,11 +139,19 @@ export class CognitionScheduler {
     // Cleanup is best-effort and asynchronous so a stalled GPU cannot block
     // Core restart or create an unhandled rejected Promise.
     try {
-      const cleanup = this.provider.dispose?.();
-      if (cleanup) void Promise.resolve(cleanup).catch(() => {});
+      this.providerCleanup = Promise.resolve(this.provider.dispose?.())
+        .then(() => {}, () => {});
     } catch {
       // Disposal failures never mutate simulation truth.
+      this.providerCleanup = Promise.resolve();
     }
+  }
+
+  /** Async teardown boundary, only for starting a replacement GPU model.
+   * Core never blocks on it and the regular dispose() call stays synchronous. */
+  disposeWithProviderCleanup(): Promise<void> {
+    this.dispose();
+    return this.providerCleanup;
   }
 
   private pump(): void {
