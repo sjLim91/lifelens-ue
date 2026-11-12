@@ -15,8 +15,8 @@ export interface CameraInputOptions {
   minElevation?: number;
   maxElevation?: number;
   rotateSensitivity?: number;
-  onChange: (state: CameraInputState) => void;
-  onPan?: (deltaX: number, deltaY: number) => void;
+  onChange: (state: CameraInputState, zoomAnchor?: { x: number; y: number }) => void;
+  onPan?: (deltaX: number, deltaY: number, anchor?: { x: number; y: number }) => void;
   onTap?: (clientX: number, clientY: number) => void;
 }
 
@@ -49,6 +49,7 @@ export class CameraInput {
   private dragMode: DragMode = null;
   private pinchDistance: number | null = null;
   private multiTouchGesture = false;
+  private gestureFrame: number | null = null;
   private pinchCentroid: { x: number; y: number } | null = null;
   private tapCandidate: {
     pointerId: number;
@@ -71,6 +72,7 @@ export class CameraInput {
     this.rotateSensitivity = options.rotateSensitivity ?? OBSERVER_CAMERA_CONTRACT.rotateSensitivity;
 
     canvas.style.touchAction = 'none';
+    if (typeof window !== 'undefined') window.addEventListener('blur', this.clearGesture);
     canvas.addEventListener('contextmenu', this.onContextMenu);
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointerMove);
@@ -89,6 +91,8 @@ export class CameraInput {
   }
 
   dispose(): void {
+    this.clearGesture();
+    if (typeof window !== 'undefined') window.removeEventListener('blur', this.clearGesture);
     this.canvas.removeEventListener('contextmenu', this.onContextMenu);
     this.canvas.removeEventListener('pointerdown', this.onPointerDown);
     this.canvas.removeEventListener('pointermove', this.onPointerMove);
@@ -97,6 +101,14 @@ export class CameraInput {
     this.canvas.removeEventListener('lostpointercapture', this.onPointerStop);
     this.canvas.removeEventListener('wheel', this.onWheel);
   }
+
+  private readonly clearGesture = (): void => {
+    if (this.gestureFrame !== null) cancelAnimationFrame(this.gestureFrame);
+    this.gestureFrame = null;
+    this.pointers.clear(); this.drag = null; this.dragMode = null;
+    this.pinchDistance = null; this.pinchCentroid = null;
+    this.tapCandidate = null; this.multiTouchGesture = false;
+  };
 
   private clampElevation(value: number): number {
     return Math.max(this.minElevation, Math.min(this.maxElevation, value));
@@ -120,8 +132,8 @@ export class CameraInput {
     };
   }
 
-  private emit(): void {
-    this.options.onChange(this.snapshot());
+  private emit(zoomAnchor?: { x: number; y: number }): void {
+    this.options.onChange(this.snapshot(), zoomAnchor);
   }
 
   private orbit(deltaX: number, deltaY: number): void {
@@ -209,6 +221,12 @@ export class CameraInput {
         event.clientY - this.tapCandidate.startY,
       ) > OBSERVER_CAMERA_CONTRACT.tapMoveThresholdPx
     ) {
+      if (!this.tapCandidate.moved && this.dragMode === 'orbit') {
+        const dx = event.clientX - this.tapCandidate.startX;
+        const dy = event.clientY - this.tapCandidate.startY;
+        const ratio = OBSERVER_CAMERA_CONTRACT.tapMoveThresholdPx / Math.hypot(dx, dy);
+        this.drag = { x: this.tapCandidate.startX + dx * ratio, y: this.tapCandidate.startY + dy * ratio };
+      }
       this.tapCandidate.moved = true;
     }
 
@@ -218,31 +236,11 @@ export class CameraInput {
     if (touchPointers.length > 2) return;
     if (touchPointers.length === 2) {
       this.tapCandidate = null;
-      const nextDistance = this.pointerDistance();
-      const nextCentroid = this.pointerCentroid();
+      // Coalesce both fingers before evaluating span and centroid. Sequential
+      // pointer events otherwise cause false zoom while translating at a limit.
+      if (typeof requestAnimationFrame !== 'function') this.flushGesture();
+      else if (this.gestureFrame === null) this.gestureFrame = requestAnimationFrame(this.flushGesture);
 
-      if (nextDistance && this.pinchDistance) {
-        this.zoom = Math.max(
-          this.minZoom,
-          Math.min(
-            this.maxZoom,
-            this.zoom * (nextDistance / this.pinchDistance),
-          ),
-        );
-        this.emit();
-      }
-
-      if (nextCentroid && this.pinchCentroid) {
-        const deltaX = nextCentroid.x - this.pinchCentroid.x;
-        const deltaY = nextCentroid.y - this.pinchCentroid.y;
-        if (Math.abs(deltaX) > OBSERVER_CAMERA_CONTRACT.pointerMotionEpsilonPx || Math.abs(deltaY) > OBSERVER_CAMERA_CONTRACT.pointerMotionEpsilonPx) {
-          // Canonical Android contract: two fingers moving together pan.
-          this.options.onPan?.(deltaX, deltaY);
-        }
-      }
-
-      this.pinchDistance = nextDistance;
-      this.pinchCentroid = nextCentroid;
       return;
     }
 
@@ -250,6 +248,7 @@ export class CameraInput {
     // A tap must not rotate the camera underneath the selection ray.
     if (this.tapCandidate && !this.tapCandidate.moved) return;
     if (!this.drag) return;
+    const anchor = { ...this.drag };
     const deltaX = event.clientX - this.drag.x;
     const deltaY = event.clientY - this.drag.y;
     this.drag = { x: event.clientX, y: event.clientY };
@@ -259,13 +258,39 @@ export class CameraInput {
     if (this.dragMode === 'orbit') {
       this.orbit(deltaX, deltaY);
     } else if (this.dragMode === 'pan') {
-      this.options.onPan?.(deltaX, deltaY);
+      this.options.onPan?.(deltaX, deltaY, anchor);
     }
+  };
+
+  private readonly flushGesture = (): void => {
+    this.gestureFrame = null;
+    if ([...this.pointers.values()].filter(point => point.pointerType === 'touch').length !== 2) return;
+    const distance = this.pointerDistance(), centroid = this.pointerCentroid();
+    if (!centroid) return;
+    if (!distance || distance < 4 || !this.pinchDistance || this.pinchDistance < 4 || !this.pinchCentroid) {
+      this.pinchDistance = distance; this.pinchCentroid = centroid;
+      return;
+    }
+    const anchor = this.pinchCentroid;
+    const nextZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * distance / this.pinchDistance));
+    if (Math.abs(nextZoom - this.zoom) > 1e-6) {
+      this.zoom = nextZoom;
+      this.emit(anchor);
+    }
+    const dx = centroid.x - anchor.x, dy = centroid.y - anchor.y;
+    if (Math.abs(dx) > OBSERVER_CAMERA_CONTRACT.pointerMotionEpsilonPx || Math.abs(dy) > OBSERVER_CAMERA_CONTRACT.pointerMotionEpsilonPx)
+      this.options.onPan?.(dx, dy, anchor);
+    this.pinchDistance = distance;
+    this.pinchCentroid = centroid;
   };
 
   private readonly onPointerStop = (event: PointerEvent): void => {
     if (!this.pointers.has(event.pointerId)) return;
     event.preventDefault();
+    if (this.gestureFrame !== null) {
+      cancelAnimationFrame(this.gestureFrame);
+      this.flushGesture();
+    }
     const shouldTap = event.type === 'pointerup'
       && this.tapCandidate?.pointerId === event.pointerId
       && this.tapCandidate.moved === false
@@ -309,6 +334,7 @@ export class CameraInput {
         ),
       ),
     );
-    this.emit();
+    this.emit({ x: event.clientX, y: event.clientY });
   };
 }
+

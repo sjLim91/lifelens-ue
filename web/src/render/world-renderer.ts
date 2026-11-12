@@ -90,8 +90,17 @@ export class WorldRenderer {
     this.world.resize(safeWidth, safeHeight);
   }
 
-  setCamera(state: WorldSceneCameraState): void {
-    this.world.setCamera(state);
+  setCamera(state: WorldSceneCameraState, immediate = false): void {
+    this.world.setCamera(state, immediate);
+  }
+
+  groundPointAtClient(clientX: number, clientY: number): { x: number; z: number } | null {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    return this.world.groundPoint(
+      (clientX - rect.left) / rect.width * 2 - 1,
+      1 - (clientY - rect.top) / rect.height * 2,
+    );
   }
 
   setSimulationMinute(minute: number): void {

@@ -10,9 +10,9 @@ const NEED_LABELS = [
 ] as const;
 
 /** Read-only presentation: no urgency bands or simulation decisions here. */
-export function ResidentNeeds({ needs }: { needs: Resident['needs'] }) {
+export function ResidentNeeds({ needs, compact = false }: { needs: Resident['needs']; compact?: boolean }) {
   return (
-    <div className="resident-needs">
+    <div className={compact ? 'resident-needs resident-needs-compact' : 'resident-needs'}>
       <div className="resident-needs-caption">
         <strong>생활 욕구</strong>
         <span>높을수록 필요가 큼</span>
@@ -25,7 +25,7 @@ export function ResidentNeeds({ needs }: { needs: Resident['needs'] }) {
           const percent = known ? Math.round(value * 100) : null;
           return (
             <div className="resident-need-row" key={key}>
-              <span className="resident-need-label">{label}</span>
+              <span className="resident-need-label" title={label}>{compact ? label.replace(' 필요', '') : label}</span>
               <span
                 className={`resident-need-track${known ? '' : ' is-unknown'}`}
                 role={known ? 'meter' : undefined}
@@ -48,3 +48,4 @@ export function ResidentNeeds({ needs }: { needs: Resident['needs'] }) {
     </div>
   );
 }
+

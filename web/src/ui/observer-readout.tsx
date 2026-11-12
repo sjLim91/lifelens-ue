@@ -1,3 +1,4 @@
+import { ObserverIcon } from './observer-controls';
 import { CognitiveShadowPanel } from './cognitive-shadow-panel';
 import type { Resident } from '../runtime/core-types';
 import type { ObserverSnapshot } from '../state/observer-store';
@@ -39,7 +40,11 @@ export function RuntimeBadge({
       : '시뮬레이션 코어 불러오는 중…';
 
   const className = runtime.status === 'loading' ? 'pending' : runtime.status;
-  return <div id="status" className={`status ${className}`}>{text}</div>;
+  return <div id="status" className={`status ${className}`} title={text}>
+    <span className="status-dot" aria-hidden="true" />
+    <span className="status-copy">{runtime.status === 'ready' ? '연결됨' : runtime.status === 'error' ? '연결 오류' : '연결 중'}</span>
+    <span className="sr-only">{text}</span>
+  </div>;
 }
 
 export function WorldOverlay({
@@ -57,18 +62,22 @@ export function WorldOverlay({
 
   return (
     <div className="world-overlay">
+      <div className="world-overview-card">
+      <span className="world-overview-eyebrow">세계의 시간</span>
       <span id="timeLabel" className="world-overlay-primary">
         {formatDay(snapshot.world.minute)}
-      </span>
-      <span id="biomeLabel">
-        {center
-          ? `${formatBiome(center.biome)} · 숲 ${forest}%`
-          : '환경 분석 중'}
       </span>
       <span id="weatherLabel">
         {snapshot.environment?.available
           ? `${formatWeather(snapshot.environment.summary)} · ${Math.round(Number(snapshot.environment.airTemperatureC) || 0)}°C`
           : '날씨 분석 중'}
+      </span>
+      </div>
+      <div className="world-context-row">
+      <span id="biomeLabel">
+        {center
+          ? `${formatBiome(center.biome)} · 숲 ${forest}%`
+          : '환경 분석 중'}
       </span>
       <CivilizationEraBadge era={snapshot.civilization.available ? snapshot.civilization.era : undefined} />
       <span id="livingOverlay">
@@ -76,6 +85,7 @@ export function WorldOverlay({
           ? `인구 ${snapshot.world.livingResidents}`
           : '인구 —'}
       </span>
+      </div>
     </div>
   );
 }
@@ -125,11 +135,15 @@ function ResidentCard({
       onClick={() => onSelect(resident.id)}
       aria-pressed={selected}
     >
-      <div className="resident-title">
-        <strong>{formatResidentName(resident.name)}</strong>
-        <span>{formatSex(resident.sex)} · {statusText}</span>
+      <div className="resident-summary">
+        <span className="resident-avatar" aria-hidden="true">{formatResidentName(resident.name).slice(0, 1)}</span>
+        <div className="resident-title">
+          <strong>{formatResidentName(resident.name)}</strong>
+          <span>{formatSex(resident.sex)} · {statusText}</span>
+        </div>
+        <span className="resident-card-arrow" aria-hidden="true">↗</span>
       </div>
-      <ResidentNeeds needs={resident.needs} />
+      <ResidentNeeds needs={resident.needs} compact />
       <small className="resident-card-footer">
         <span>{resident.hasPosition
           ? `좌표 ${resident.gridX}, ${resident.gridY}`
@@ -152,7 +166,9 @@ export function SelectedResidentReadout({
   if (!resident) {
     return (
       <div className="focused-life-empty">
-        월드의 사람을 터치하면 그 사람의 현재 삶을 자세히 관찰할 수 있습니다.
+        <ObserverIcon name="people" />
+        <strong>관찰할 주민을 선택해 주세요</strong>
+        <span>월드의 사람을 터치하면 그 사람의 현재 삶을 자세히 관찰할 수 있습니다.</span>
       </div>
     );
   }
@@ -591,6 +607,7 @@ export function ResidentReadout({
     </>
   );
 }
+
 
 
 
