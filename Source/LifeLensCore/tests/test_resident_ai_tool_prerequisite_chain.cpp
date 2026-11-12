@@ -541,7 +541,62 @@ int main()
         supply.quantity=std::max(32,requirement.required+8);
         supply.maxQuantity=supply.quantity;
         construction.resourceNodes.push_back(supply);
+        if(supply.material==MaterialKind::Stone){
+            // A genuine second source exists before any failure. A's stock
+            // is later drained by another Core resident, not edited to zero.
+            ResourceNode alternate=supply;
+            alternate.id=nextSource++;
+            alternate.pos={2,0};
+            construction.resourceNodes.push_back(alternate);
+        }
     }
+    const auto staleSource=chooseResidentAIKnowledgePrerequisiteStep(
+        construction,builder,{0,0},TechnologyId::BronzeAxe,
+        nullptr,&thought);
+    assert(staleSource.intent==CivilizationIntent::Gather
+        &&staleSource.material==MaterialKind::Stone);
+    const auto depletedNode=std::find_if(
+        construction.resourceNodes.begin(),construction.resourceNodes.end(),
+        [&](const ResourceNode& node){return node.id==staleSource.resourceNode;});
+    assert(depletedNode!=construction.resourceNodes.end());
+    Character competitor=makeResident();
+    competitor.id=77;
+    competitor.civilization.character=competitor.id;
+    CivilizationUtilityDecision competingGather=staleSource;
+    competingGather.quantity=64;
+    const GridPos sourcePos=depletedNode->pos;
+    int spentByCompetitor=0;
+    for(int attempt=0;attempt<80;++attempt){
+        const auto remaining=std::find_if(
+            construction.resourceNodes.begin(),construction.resourceNodes.end(),
+            [&](const ResourceNode& node){return node.id==staleSource.resourceNode;});
+        assert(remaining!=construction.resourceNodes.end());
+        if(remaining->quantity==0) break;
+        const auto spent=executeCivilizationDecisionAtPosition(
+            construction,competitor,competingGather,sourcePos);
+        assert(spent.executed &&spent.success &&spent.event.quantity>0);
+        spentByCompetitor+=spent.event.quantity;
+    }
+    const auto emptyNode=std::find_if(
+        construction.resourceNodes.begin(),construction.resourceNodes.end(),
+        [&](const ResourceNode& node){return node.id==staleSource.resourceNode;});
+    assert(emptyNode!=construction.resourceNodes.end()
+        &&emptyNode->quantity==0 &&spentByCompetitor>0);
+    const auto failedExtraction=executeCivilizationDecisionAtPosition(
+        construction,builder,staleSource,sourcePos);
+    assert(!failedExtraction.executed &&!failedExtraction.success);
+    const auto failedCause=diagnoseResidentGatherFailure(
+        construction,builder,staleSource,sourcePos);
+    assert(failedCause==ResidentGatherFailureCause::SourceExhausted);
+    rememberCivilizationAttemptOutcome(
+        builder,staleSource,construction.minute+1,false,failedCause);
+    ++construction.minute;
+    const auto recoveredSource=chooseResidentAIKnowledgePrerequisiteStep(
+        construction,builder,{0,0},TechnologyId::BronzeAxe,
+        nullptr,&thought);
+    assert(recoveredSource.intent==CivilizationIntent::Gather
+        &&recoveredSource.material==staleSource.material
+        &&recoveredSource.resourceNode!=staleSource.resourceNode);
     int gatheredSteps=0;
     int deliveredSteps=0;
     int workedSteps=0;
