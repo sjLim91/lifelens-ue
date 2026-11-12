@@ -327,7 +327,7 @@ export class ResidentAIController {
   // A finished Qwen worker may still have GPU allocations pending release.
   // Serialize disposal across Core reattachments and recovery attempts so
   // mobile devices never initialize a replacement before the old one exits.
-  private pendingProviderCleanup: Promise<void> = Promise.resolve();
+  private pendingProviderCleanup: Promise<void> | null = null;
 
   constructor(
     private readonly now: () => number = () => Date.now(),
@@ -414,7 +414,7 @@ export class ResidentAIController {
       // A synchronous Core restart cannot wait on GPU memory teardown, but
       // the *new model* must. Abort while waiting if its Core world is
       // replaced again, without allocating any new GPU buffers.
-      await this.pendingProviderCleanup;
+      if (this.pendingProviderCleanup) await this.pendingProviderCleanup;
       if (loadAbort.signal.aborted || this.disposed
         || !this.automaticallyRunning || this.source !== source
         || this.autoDiscoveryGeneration !== generation) return;
@@ -481,9 +481,9 @@ export class ResidentAIController {
     // Await every predecessor, even if two Core reattachments happen before
     // the first GPU worker has exited. Teardown itself remains nonblocking
     // for physical Core simulation and observer rendering.
-    this.pendingProviderCleanup = this.pendingProviderCleanup.then(
-      () => teardown, () => teardown,
-    );
+    this.pendingProviderCleanup = this.pendingProviderCleanup
+      ? this.pendingProviderCleanup.then(() => teardown, () => teardown)
+      : teardown;
   }
 
   private rebuildScheduler(): void {
