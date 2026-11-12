@@ -4,6 +4,7 @@ import type {
 import { CognitionScheduler } from './cognition-scheduler';
 import type { CognitiveProvider } from './cognitive-provider';
 import { ResidentAISessionAudit } from './resident-ai-session-audit';
+import { buildResidentAIDeviceEvidenceReport } from './resident-ai-device-evidence';
 import { createBrowserResidentCognition, BUILTIN_RESIDENT_MODEL } from './browser-cognition-provider';
 import type { Resident, WorldOverview } from '../runtime/core-types';
 
@@ -337,6 +338,9 @@ export class ResidentAIController {
   ) {}
   getSnapshot = (): ResidentAIState => this.state;
   getAuditReport = () => this.sessionAudit.snapshot();
+  getDeviceEvidenceReport = () => buildResidentAIDeviceEvidenceReport(
+    this.state, this.sessionAudit.snapshot(),
+  );
   beginAuditSession(): boolean {
     if (this.disposed || this.state.suspended || !this.observedWorld) return false;
     const mode = this.state.enabled && this.scheduler ? 'local-ai' : 'baseline';
@@ -555,8 +559,18 @@ export class ResidentAIController {
     this.lastMinute = minute;
     this.observedWorld = world;
     this.observedResidents = residents;
-    this.sessionAudit.observe(world, residents,
-      this.state.enabled && this.scheduler ? 'local-ai' : 'baseline');
+    // The deployed UI previously exposed a session audit that never started:
+    // beginAuditSession() was only called in tests. Start real observations
+    // automatically once the ONE resident Qwen is actually connected. New
+    // world/fast-forward resets produce a new honest observation window.
+    const mode = this.state.enabled && this.scheduler ? 'local-ai' : 'baseline';
+    const previousAudit = this.sessionAudit.snapshot();
+    if (mode === 'local-ai' && !this.state.suspended
+      && (!previousAudit || previousAudit.endedReason !== 'running')) {
+      this.sessionAudit.begin(world, 'local-ai',
+        this.state.configuration?.model ?? null);
+    }
+    this.sessionAudit.observe(world, residents, mode);
     if (this.automaticallyRunning && !this.scheduler
       && !this.browserModelLoading
       && this.now() - this.lastAutoDiscovery >= 60000)
