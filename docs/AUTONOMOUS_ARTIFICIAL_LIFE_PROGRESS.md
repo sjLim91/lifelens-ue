@@ -1,9 +1,9 @@
 ## 2026-11-10 AL-1 로컬 구현·검증 체크포인트 — 인수 미완료
 
-## 2026-11-12 AL-1 Core-native 인수 체크 (실기기 제외)
+## 2026-11-12 AL-1 Core-native 인수 PASS (실기기 제외)
 
 - 무개입 New Game 두 시드의 실제 Core 개인 목표/물리 채집/성공 기억/후속 선택과 **직접 성공 기억 1개 제거**에 따른 두 물리 행동 결과를 구분해 검증했다. 원래 상태·원천·토큰·지형·RNG를 바꾸는 인공 성공 주입은 하지 않는다.
-- 기존 native Core 전체 검증은 [CI #43025722164](https://github.com/sjLim91/lifelens-ue/actions/runs/43025722164) PASS. [#1008](https://github.com/sjLim91/lifelens-ue/pull/1008)에서 실제 학습 실행 직전 바이너리 저장→복원한 World의 발행 토큰과 물리·기억 결과 일치 검증을 새로 추가했다. 정확한 head CI **FINAL_CI_PENDING**.
+- 기존 native Core 전체 검증은 [CI #43025722164](https://github.com/sjLim91/lifelens-ue/actions/runs/43025722164) PASS. [#1008](https://github.com/sjLim91/lifelens-ue/pull/1008)에서 실제 학습 실행 직전 바이너리 저장→복원한 World의 발행 토큰과 물리·기억 결과 일치 검증을 새로 추가했다. [Core CI #43164964474](https://github.com/sjLim91/lifelens-ue/actions/runs/43164964474) **175/175 PASS** 및 WASM/Preflight PASS → main `6afbb592` 병합 완료. 새 자연 학습 저장·복원 인과 두 시드 모두 PASS.
 - 실기기·웹 자동 모델 성능/추론은 이번 AL-1에서 사용자 지시로 제외하지만 성공으로 둔갑시키지 않는다. AL-2/3/4·G1 전체는 미완. 전체 마스터플랜 **6/86 완료** 유지.
 - [인수 조건과 제한](AL1_CORE_ACCEPTANCE_2026-11-12.md). 아래 2026-11-10 기록은 해당 시점의 역사이며 최신 AL-1 Core 범위 인수 판단은 이 기록을 우선한다.
 
