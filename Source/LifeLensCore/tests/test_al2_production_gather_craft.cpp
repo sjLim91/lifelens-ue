@@ -77,7 +77,16 @@ int main()
     // Clear the controlled fixture's animals together with its feature flag.
     world.wildlifePopulations.clear();
     world.wildlifeEnabled=false;
-    world.resourceNodes.clear();
+    // Preserve ALL immutable generated resource-patch IDs and capacities.
+    // Snapshot validation rejects a New Game whose generated chunks refer
+    // to missing resource nodes. Deplete the controlled fixture's natural
+    // stock instead, including matching per-tree wood accounting; never
+    // delete an authoritative generated resource identity.
+    for(auto& node:world.resourceNodes){
+        node.quantity=0;
+        for(auto& tree:node.trees)
+            tree.remainingWood=0;
+    }
     world.storageSites.clear();
     world.facilities.clear();
 
@@ -111,6 +120,13 @@ int main()
     wood.maxQuantity=80;
     wood.renewable=false;
     world.resourceNodes.push_back(wood);
+    const auto sourceStock=[&](){
+        const auto found=std::find_if(
+            world.resourceNodes.begin(),world.resourceNodes.end(),
+            [&](const ResourceNode& node){return node.id==wood.id;});
+        return found==world.resourceNodes.end() ? -1 : found->quantity;
+    };
+    REQUIRE(sourceStock()==wood.quantity);
     GridPos access{};
     REQUIRE(resolveCivilizationResourceAccessGridPosition(
         world,wood.id,access));
@@ -147,7 +163,7 @@ int main()
     for(int elapsed=0;elapsed<500;++elapsed){
         GridPos beforePos{};
         REQUIRE(original.runtimePosition(actorId,beforePos));
-        const int stockBefore=world.resourceNodes.front().quantity;
+        const int stockBefore=sourceStock();
         original.step();
         if(savedAfterPhysicalGather)
             replay.step();
@@ -183,8 +199,7 @@ int main()
            &&activity.resourceNode==wood.id){
             REQUIRE(gatherToken!=0);
             REQUIRE(activity.quantity>0);
-            REQUIRE(stockBefore-world.resourceNodes.front().quantity
-                    >=activity.quantity);
+            REQUIRE(stockBefore-sourceStock()>=activity.quantity);
             gatherUnits+=activity.quantity;
             if(firstGatherMinute<0)
                 firstGatherMinute=activity.minute;
@@ -230,7 +245,7 @@ int main()
     const auto& completed=original.world().characters.front();
     REQUIRE(completed.civilization.inventory.count(
         ItemKind::DiggingStick,MaterialKind::Wood)>0);
-    REQUIRE(world.resourceNodes.front().quantity<wood.quantity);
+    REQUIRE(sourceStock()>=0 &&sourceStock()<wood.quantity);
     REQUIRE(realFirsthandReceipt(
         completed,civilizationActionExperienceKey(gatherDecision),true,
         "resource-node:"+std::to_string(wood.id)));
@@ -257,7 +272,7 @@ int main()
         <<" harvested="<<gatherUnits
         <<" actual_movement_steps="<<travelCells
         <<" source_stock="<<wood.quantity<<"->"
-        <<world.resourceNodes.front().quantity
+        <<sourceStock()
         <<" direct_gather_and_craft_memories=1"
         <<" serialized_continuation_identical=1"
         <<" scope=controlled_Core_new_game_fixture"
