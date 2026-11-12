@@ -208,3 +208,6 @@ button:disabled { opacity: .45; }
   .mobile-menu-grid button:last-child { grid-column: 1 / -1; }
   .mobile-modal-header button { padding: 0; border: 0; border-radius: 50%; background: transparent; }
 }
+@media (max-width: 800px), (max-width: 1024px) and (pointer: coarse) {
+  .mobile-modal .fast-forward-input-row { grid-template-columns: minmax(0, 1fr) auto minmax(100px, 1fr); }
+}

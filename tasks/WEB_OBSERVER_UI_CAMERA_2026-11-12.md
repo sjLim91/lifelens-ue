@@ -11,6 +11,7 @@ User requested UI improvements from their mobile screenshots, then explicitly re
 - Replace the centered mobile overlay with a native dialog bottom sheet: focus containment, Escape/backdrop dismissal, return focus and release on a desktop breakpoint transition.
 - Put all five factual Need values into compact resident summaries; full meters and individual detail remain available after selection. No new urgency thresholds or inferred resident state.
 - Separate advanced restart/seed and rendering-recovery controls into disclosures while retaining their existing confirmation and corruption-safety behavior. Keep asset credits accessible in the menu.
+- Do not mount the heavy desktop inspector on mobile; retain its desktop behavior after resizing.
 - Support narrow portrait, coarse-pointer landscape and desktop layouts, larger touch targets, reduced motion, and plain surfaces instead of additional backdrop blur. Preserve the previous mobile 30FPS and Qwen work limits.
 - Replace the fixed screen-pan multiplier with actual camera ray/ground-plane intersections, accounting for heading, pitch, FOV and viewport dimensions. Apply direct user camera input immediately while retaining ordinary observation interpolation.
 - Preserve the focus-plane world point under the pinch midpoint, and the mouse-wheel pointer. The 2D rescue view also receives sub-chunk pan and a consistent screen projection.

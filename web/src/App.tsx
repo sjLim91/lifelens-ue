@@ -728,11 +728,16 @@ function MobileObserverModal({
 export default function App() {
   const [mobileModal, setMobileModal] = useState<MobileModalView>(null);
   const [showEarthGlobe, setShowEarthGlobe] = useState(false);
+  const [mobileViewport, setMobileViewport] = useState(() => window.matchMedia(MOBILE_OBSERVER_QUERY).matches);
   const snapshot = useObserverSnapshot();
 
   useEffect(() => {
     const media = window.matchMedia(MOBILE_OBSERVER_QUERY);
-    const onChange = () => { if (!media.matches) setMobileModal(null); };
+    const onChange = () => {
+      setMobileViewport(media.matches);
+      if (!media.matches) setMobileModal(null);
+    };
+    onChange();
     media.addEventListener('change', onChange);
     return () => media.removeEventListener('change', onChange);
   }, []);
@@ -776,7 +781,7 @@ export default function App() {
           mobileView={mobileModal}
           onMobileView={setMobileModal}
         />
-        <ObserverPanel onViewPlace={() => undefined} />
+        {mobileViewport ? null : <ObserverPanel onViewPlace={() => undefined} />}
       </main>
 
       <MobileObserverModal

@@ -25,6 +25,7 @@ const fs=require('node:fs');
       if(spec.hasTouch){
         const nav=page.getByRole('navigation',{name:'주요 관찰 메뉴'});
         assert(await nav.isVisible());
+        assert.equal(await page.locator('.desktop-observer').count(),0,'mobile does not compute the hidden desktop inspector');
         await page.getByRole('button',{name:'일시정지',exact:true}).click();
         assert.equal(await page.getByRole('button',{name:'일시정지',exact:true}).getAttribute('aria-pressed'),'true');
         await page.getByRole('button',{name:'4× 관찰 속도',exact:true}).click();
@@ -53,6 +54,7 @@ const fs=require('node:fs');
         await menu.getByRole('button',{name:'월드 설정'}).click();
         const settings=page.getByRole('dialog',{name:'월드 설정'});
         await settings.waitFor();
+        assert(await settings.locator('.mobile-modal-body').evaluate(el=>el.scrollWidth<=el.clientWidth),'settings controls fit narrow and landscape panels');
         assert.equal(await settings.locator('details[open]').count(),0);
         await settings.getByText('새 세계 · 시드로 다시 시작',{exact:true}).click();
         const seedBefore=await page.locator('.mobile-current-seed b').innerText();

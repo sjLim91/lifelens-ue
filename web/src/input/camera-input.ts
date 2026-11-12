@@ -73,6 +73,7 @@ export class CameraInput {
 
     canvas.style.touchAction = 'none';
     if (typeof window !== 'undefined') window.addEventListener('blur', this.clearGesture);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisibilityChange);
     canvas.addEventListener('contextmenu', this.onContextMenu);
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointerMove);
@@ -93,6 +94,7 @@ export class CameraInput {
   dispose(): void {
     this.clearGesture();
     if (typeof window !== 'undefined') window.removeEventListener('blur', this.clearGesture);
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.canvas.removeEventListener('contextmenu', this.onContextMenu);
     this.canvas.removeEventListener('pointerdown', this.onPointerDown);
     this.canvas.removeEventListener('pointermove', this.onPointerMove);
@@ -101,6 +103,10 @@ export class CameraInput {
     this.canvas.removeEventListener('lostpointercapture', this.onPointerStop);
     this.canvas.removeEventListener('wheel', this.onWheel);
   }
+
+  private readonly onVisibilityChange = (): void => {
+    if (document.visibilityState === 'hidden') this.clearGesture();
+  };
 
   private readonly clearGesture = (): void => {
     if (this.gestureFrame !== null) cancelAnimationFrame(this.gestureFrame);

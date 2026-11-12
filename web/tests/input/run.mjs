@@ -115,6 +115,7 @@ test('near-coincident fingers rebase their pinch span and recover without a zoom
 {
   const events=new Map();
   globalThis.window={addEventListener:(name,cb)=>events.set(name,cb),removeEventListener:name=>events.delete(name)};
+  globalThis.document={visibilityState:'visible',addEventListener:(name,cb)=>events.set('document:'+name,cb),removeEventListener:name=>events.delete('document:'+name)};
   try {
     test('losing foreground clears captured touch state before a fresh tap',({canvas,taps})=>{
       canvas.fire('pointerdown',1,100,100); canvas.fire('pointerdown',2,200,100);
@@ -122,6 +123,13 @@ test('near-coincident fingers rebase their pinch span and recover without a zoom
       canvas.fire('pointerdown',3,100,100); canvas.fire('pointerup',3,100,100);
       assert.deepEqual(taps,[[100,100]]);
     });
-    assert.equal(events.size,0,'disposing input removes its window listener');
-  } finally { delete globalThis.window; }
+    test('hidden document clears touch state even without a window blur',({canvas,taps})=>{
+      canvas.fire('pointerdown',1,100,100); canvas.fire('pointerdown',2,200,100);
+      document.visibilityState='hidden'; events.get('document:visibilitychange')();
+      document.visibilityState='visible';
+      canvas.fire('pointerdown',3,100,100); canvas.fire('pointerup',3,100,100);
+      assert.deepEqual(taps,[[100,100]]);
+    });
+    assert.equal(events.size,0,'disposing input removes window and document listeners');
+  } finally { delete globalThis.window; delete globalThis.document; }
 }
