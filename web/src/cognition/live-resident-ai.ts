@@ -7,6 +7,7 @@ import { ResidentAISessionAudit } from './resident-ai-session-audit';
 import { buildResidentAIDeviceEvidenceReport } from './resident-ai-device-evidence';
 import { createBrowserResidentCognition, BUILTIN_RESIDENT_MODEL } from './browser-cognition-provider';
 import type { Resident, WorldOverview } from '../runtime/core-types';
+import { useMobilePerformanceProfile } from '../runtime/device-performance';
 
 // One shared free-local model. Each resident gets a separate, bounded
 // Core-authored personality/Need/memory/belief/relationship context.
@@ -22,6 +23,12 @@ export const LIVE_AI_BUDGET = Object.freeze({
   staleAfterSimulationMinutes: 96,
   wallCadenceMs: 5000,
   maxResidents: 32,
+});
+
+export const MOBILE_AI_PACING = Object.freeze({
+  wallCadenceMs: 15000,
+  minRestMs: 5000,
+  maxRestMs: 30000,
 });
 
 // On-device GPU inference may need several seconds to compile kernels and
@@ -312,6 +319,7 @@ export class ResidentAIController {
   private cursor = 0;
   private lastSelectedActor: string | null = null;
   private lastCall = -Infinity;
+  private inferenceRestUntil = -Infinity;
   private identity: string | null = null;
   private lastMinute = -1;
   private disposed = false;
@@ -335,6 +343,7 @@ export class ResidentAIController {
     private readonly browserReasoningFactory:
       (signal?: AbortSignal) => Promise<CognitiveProvider | null> =
         (signal) => createBrowserResidentCognition(undefined, undefined, signal),
+    private readonly mobilePerformance = useMobilePerformanceProfile(),
   ) {}
   getSnapshot = (): ResidentAIState => this.state;
   getAuditReport = () => this.sessionAudit.snapshot();
@@ -525,6 +534,9 @@ export class ResidentAIController {
     }
   }
   resetWorld(): void {
+    // Reserve rest synchronously: resetting/resuming in this same event must
+    // not start a replacement thought before the cancelled Promise settles.
+    if (this.state.pendingActor !== null) this.restAfterInference(this.lastCall);
     this.sessionAudit.finish('world-changed');
     this.observedWorld = null;
     this.observedResidents = [];
@@ -589,7 +601,7 @@ export class ResidentAIController {
       void this.discoverAutomatically();
     if (!this.state.enabled || this.state.suspended || !this.scheduler
       || !this.source || this.state.pendingActor
-      || this.now() - this.lastCall < LIVE_AI_BUDGET.wallCadenceMs) return;
+      || !this.inferenceReady()) return;
 
     // Rotate across every living resident who can independently decide.
     // Core refuses suggestions from Babies and Toddlers (requiresDirectCare);
@@ -615,11 +627,25 @@ export class ResidentAIController {
       void this.sample(resident.id);
     }
   }
+  private inferenceReady(): boolean {
+    const now = this.now();
+    const cadenceMs = this.mobilePerformance
+      ? MOBILE_AI_PACING.wallCadenceMs : LIVE_AI_BUDGET.wallCadenceMs;
+    return now - this.lastCall >= cadenceMs && now >= this.inferenceRestUntil;
+  }
+  private restAfterInference(startedAt: number): void {
+    if (!this.mobilePerformance) return;
+    const now = this.now();
+    const restMs = Math.max(MOBILE_AI_PACING.minRestMs, Math.min(
+      MOBILE_AI_PACING.maxRestMs, now - startedAt,
+    ));
+    this.inferenceRestUntil = Math.max(this.inferenceRestUntil, now + restMs);
+  }
   async sample(actor: string): Promise<void> {
     if (!this.state.enabled || this.state.suspended
       || this.disposed || !this.source || !this.scheduler
       || this.state.pendingActor
-      || this.now() - this.lastCall < LIVE_AI_BUDGET.wallCadenceMs) return;
+      || !this.inferenceReady()) return;
     const source = this.source;
     let world: WorldOverview;
     let request: CognitiveRequestDto | null;
@@ -666,6 +692,9 @@ export class ResidentAIController {
     const inferenceStartedAt = this.now();
     const result = await this.scheduler.submitObserved(request);
     if (this.disposed || epoch !== this.epoch || this.source !== source) return;
+    // A slow inference leaves the GPU idle before the next resident, without
+    // changing context, fairness, Core time or authoritative validation.
+    this.restAfterInference(inferenceStartedAt);
     const elapsed = this.now() - inferenceStartedAt;
     const validElapsed = Number.isFinite(elapsed) && elapsed >= 0
       ? Math.round(elapsed) : null;
@@ -751,4 +780,5 @@ export class ResidentAIController {
 }
 
 export const residentAI = new ResidentAIController();
+
 
