@@ -194,7 +194,12 @@ int main()
             }
         }
         const auto activity=original.observeResidentCivilizationActivity(actorId);
-        if(activity.active &&activity.success
+        // Presentation may retain the last Core action for more than one
+        // observation. Credit a physical quantity delta exactly once, only
+        // when the action was actually executed in the just-finished tick.
+        const bool actionExecutedThisTick=activity.active
+            &&activity.minute==original.world().minute-1;
+        if(actionExecutedThisTick &&activity.success
            &&activity.kind==CivilizationActivityKind::Gather
            &&activity.resourceNode==wood.id){
             REQUIRE(gatherToken!=0);
@@ -218,7 +223,7 @@ int main()
                 savedAfterPhysicalGather=true;
             }
         }
-        if(activity.active &&activity.success
+        if(actionExecutedThisTick &&activity.success
            &&activity.kind==CivilizationActivityKind::Craft
            &&activity.technique==TechniqueId::DiggingStick)
             craftMinute=activity.minute;
