@@ -9,6 +9,7 @@ enable_testing()
 
 add_library(lifelens_core STATIC
     src/Simulation.cpp
+    src/CognitiveCausalJournal.cpp
     src/ContextActionRuntime.cpp
     src/CivilizationKnowledgeTransmission.cpp
     src/SocietyEconomy.cpp
@@ -85,6 +86,7 @@ lifelens_add_test(test_resident_gather_assessment)
 lifelens_add_test(test_al1_natural_failure_memory_ablation)
 lifelens_add_test(test_cognitive_context_allocation)
 lifelens_add_test(test_cognitive_decision_journal)
+lifelens_add_test(test_cognitive_causal_journal)
 lifelens_add_test(test_cognitive_request_receipts)
 lifelens_add_test(test_dependent_escort_continuation)
 lifelens_add_test(test_autonomous_goal_contract)

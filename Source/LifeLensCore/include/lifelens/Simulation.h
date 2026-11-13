@@ -1,4 +1,5 @@
 #pragma once
+#include "CognitiveCausalJournal.h"
 #include "DependentEscort.h"
 #include <algorithm>
 #include <cstdint>
@@ -162,6 +163,7 @@ public:
     SocialKnowledgeBook& socialKnowledge(){return socialKnowledge_;}
     const SocialKnowledgeBook& socialKnowledge() const{return socialKnowledge_;}
     const std::vector<std::string>& logs() const{return logs_;}
+    const std::vector<CognitiveCausalTrace>& cognitiveCausalJournal() const { return cognitiveCausalJournal_; }
     const std::vector<AcceptedCognitiveDecision>& acceptedCognitiveDecisions() const {
         return acceptedCognitiveDecisions_;
     }
@@ -370,6 +372,14 @@ private:
     BirthBook births_;
     SocialKnowledgeBook socialKnowledge_;
     std::vector<AcceptedCognitiveDecision> acceptedCognitiveDecisions_;
+    std::vector<CognitiveCausalTrace> cognitiveCausalJournal_;
+    void recordCognitiveProposal(const AcceptedCognitiveDecision&,bool,CognitiveTraceRejection);
+    void recordCognitiveStep(const AcceptedCognitiveDecision&,const PendingContextAction&,CognitiveTraceSource=CognitiveTraceSource::Planner);
+    void inheritCognitiveStep(CharacterId,std::uint64_t,const PendingContextAction&);
+    void recordPreferredCognitiveStep(CharacterId,const PendingContextAction&,CognitiveIntentKind,CharacterId);
+    void finishCognitiveStep(CharacterId,std::uint64_t,CognitiveStepResult,const std::string&,bool=false,const CognitiveLearningEvidence& = {});
+    void reconcileCognitiveSteps();
+    void recordCognitiveExchange(CharacterId,CharacterId,std::uint64_t,const CognitiveLearningEvidence&);
     struct CognitiveRequestReceipt {
         CharacterId actor=0;
         WorldSeed worldSeed=0;
@@ -383,7 +393,8 @@ private:
     bool recordAcceptedCognitiveProposal(
         const CognitiveRequest& current,const CognitiveProposal& proposal,
         const std::string& backendIdentity,const std::string& rationaleDigest,
-        int observedMinute,std::uint64_t observedFingerprint);
+        int observedMinute,std::uint64_t observedFingerprint,
+        CognitiveTraceRejection forcedRejection=CognitiveTraceRejection::None);
     std::unordered_map<CharacterId,Runtime> runtime_;
     // Health fatalities are computed and consumed inside the same daily Core
     // transition. They are runtime transition state, never a second save truth.
@@ -461,7 +472,8 @@ private:
     bool trySocialDecision(
         Character& c,
         Runtime& r,
-        const UnifiedUtilityDecision* precomputed=nullptr);
+        const UnifiedUtilityDecision* precomputed=nullptr,
+        const AcceptedCognitiveDecision* cognitiveOrigin=nullptr);
     void processCivilizationKnowledgeEvent(Character& actor,CivilizationEvent& event);
     void advanceCivilizationKnowledgeTeaching();
     void advanceSocietyExchange();

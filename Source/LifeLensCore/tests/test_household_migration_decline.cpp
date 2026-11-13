@@ -416,6 +416,9 @@ int main()
         CHECK(replay.restoreSnapshot(decoded));
         choice.step();
         replay.step();
+        CHECK(!choice.cognitiveCausalJournal().empty());
+        CHECK(!choice.cognitiveCausalJournal().back().steps.empty());
+        CHECK(choice.cognitiveCausalJournal().back().steps.back().source==CognitiveTraceSource::Preference);
         for(const auto id:{d,e}){
             const auto pending=choice.observePendingContextAction(id);
             const auto restored=replay.observePendingContextAction(id);

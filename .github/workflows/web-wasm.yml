@@ -8,6 +8,7 @@ on:
       - 'Clients/Web/**'
       - 'Tools/build_web_client.py'
       - 'Tools/verify_wasm_supplied_bytes.mjs'
+      - 'Tools/verify_wasm_causal_journal.mjs'
       - 'Tools/validate_web_client_foundation.py'
       - '.github/workflows/web-wasm.yml'
   push:
@@ -17,6 +18,7 @@ on:
       - 'Clients/Web/**'
       - 'Tools/build_web_client.py'
       - 'Tools/verify_wasm_supplied_bytes.mjs'
+      - 'Tools/verify_wasm_causal_journal.mjs'
       - 'Tools/validate_web_client_foundation.py'
       - '.github/workflows/web-wasm.yml'
   workflow_dispatch:
@@ -34,6 +36,12 @@ jobs:
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends emscripten
 
+      - name: Export actual native cognitive Gather/Craft evidence
+        run: |
+          cmake -S Source/LifeLensCore -B /tmp/lifelens-causal-native -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/lifelens-causal-native --target test_al2_production_gather_craft -j2
+          LIFELENS_CAUSAL_FIXTURE_DIR=/tmp/lifelens-causal-fixture /tmp/lifelens-causal-native/test_al2_production_gather_craft
+
       - name: Build LifeLensCore WASM
         run: python Tools/build_web_client.py
 
@@ -45,6 +53,17 @@ jobs:
 
       - name: Boot generated Core from supplied WASM bytes without network
         run: node Tools/verify_wasm_supplied_bytes.mjs
+
+      - name: Verify actual native to WASM causal chain and serialized continuation
+        run: node Tools/verify_wasm_causal_journal.mjs /tmp/lifelens-causal-fixture
+
+      - name: Upload causal verification evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cognitive-causal-evidence
+          path: /tmp/lifelens-causal-fixture/*.json
+          retention-days: 7
 
       - name: Upload browser runtime artifact
         uses: actions/upload-artifact@v4
@@ -66,3 +85,4 @@ jobs:
 
       - name: Validate Web foundation
         run: python Tools/validate_web_client_foundation.py
+

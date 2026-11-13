@@ -265,6 +265,10 @@ int main()
     assert(link.actor==self &&link.target==preferred);
     assert(link.contextFingerprint==cognitiveRequestFingerprint(request));
     assert(link.intent==SocialIntent::Approach);
+    const auto& traces=withAI.cognitiveCausalJournal();
+    assert(!traces.empty() &&traces.back().accepted &&traces.back().origin.actor==self);
+    assert(!traces.back().steps.empty() &&traces.back().steps.back().token==selected.token);
+    assert(traces.back().steps.back().source==CognitiveTraceSource::Planner);
     for(const auto& m:withAI.world().characters[0].memory.entries){
         assert(m.tags.empty() ||m.tags[0]!="goal_action_feedback");
     }

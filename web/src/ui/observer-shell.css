@@ -229,3 +229,6 @@ button:disabled { opacity: .45; }
 .render-performance-readout dt { color: #a8b7ac; }
 .render-performance-readout dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 .resident-causal-timeline > summary { cursor: pointer; font-weight: 600; font-size: 13px; padding-block: 8px; }
+.causal-step { margin-block: 12px; padding-top: 10px; border-top: 1px solid #304239; }
+.causal-step > summary { cursor: pointer; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; color: #d2dfce; }
+.causal-step > ol { margin-top: 12px; }

@@ -3,6 +3,7 @@
 #include "lifelens/WebClientBridge.h"
 #include "lifelens/AutonomousGoalComposer.h"
 #include "lifelens/ResidentAIExistingAffordance.h"
+#include "lifelens/ResidentCognitivePreference.h"
 #include "lifelens/ResidentContextOutcomeLearning.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
@@ -2113,6 +2114,52 @@ std::string WebClientBridge::residentsJson() const
     return out.str();
 }
 
+std::string WebClientBridge::cognitiveCausalJournalJson(const std::string& residentIdText) const
+{
+    const CharacterId actor=static_cast<CharacterId>(parseUnsigned64(residentIdText,0));
+    if(!simulation_ ||actor==0 ||!findObservedCharacter(simulation_->world(),actor))return "null";
+    const auto& world=simulation_->world();
+    std::ostringstream out;
+    out<<"{\"schema\":1,\"actor\":\""<<actor<<"\",\"minute\":"<<world.minute
+       <<",\"worldSeed\":\""<<world.seed<<"\",\"populationSeed\":\""<<world.populationSeed
+       <<"\",\"generationVersion\":"<<world.generationVersion<<",\"records\":[";
+    const AcceptedCognitiveDecision* latest=nullptr;
+    for(auto i=simulation_->acceptedCognitiveDecisions().rbegin();i!=simulation_->acceptedCognitiveDecisions().rend();++i)
+        if(i->actor==actor){latest=&*i;break;}
+    bool first=true;std::size_t count=0,total=0;
+    for(auto it=simulation_->cognitiveCausalJournal().rbegin();it!=simulation_->cognitiveCausalJournal().rend();++it){
+        const auto& t=*it;if(t.origin.actor!=actor)continue;++total;if(count++>=8)continue;
+        if(!first)out<<",";first=false;
+        const auto& o=t.origin;
+        out<<"{\"id\":\""<<t.id<<"\",\"accepted\":"<<(t.accepted?"true":"false")
+           <<",\"selectionState\":"<<(!t.accepted?0:world.minute-t.origin.minute>ResidentAgencyGoalHorizonMinutes?3:latest &&sameCognitiveOrigin(t.origin,*latest)?1:2)
+           <<",\"rejection\":"<<static_cast<unsigned>(t.rejection)
+           <<",\"minute\":"<<o.minute<<",\"observedMinute\":"<<(o.observedMinute>=0?o.observedMinute:o.minute)
+           <<",\"contextFingerprint\":\""<<o.contextFingerprint<<"\",\"observedFingerprint\":\""
+           <<(o.observedMinute>=0?o.observedContextFingerprint:o.contextFingerprint)
+           <<"\",\"intent\":\""<<cognitiveIntentName(o.intent)<<"\",\"target\":\""<<o.target
+           <<"\",\"omittedSteps\":"<<t.omittedSteps<<",\"steps\":[";
+        bool firstStep=true;
+        for(const auto& step:t.steps){
+            if(!firstStep)out<<",";firstStep=false;
+            out<<"{\"token\":\""<<step.token<<"\",\"previousToken\":\""<<step.previousToken
+               <<"\",\"exchangeFact\":\""<<step.exchangeFact<<"\",\"issuedMinute\":"<<step.issuedMinute
+               <<",\"resultMinute\":"<<step.resultMinute<<",\"kind\":"<<static_cast<unsigned>(step.kind)
+               <<",\"source\":"<<static_cast<unsigned>(step.source)<<",\"result\":"<<static_cast<unsigned>(step.result)
+               <<",\"attempted\":"<<(step.attempted?"true":"false")<<",\"target\":\""<<step.target
+               <<"\",\"action\":\""<<escapeJson(step.action)<<"\",\"material\":\""<<escapeJson(step.material)
+               <<"\",\"technique\":\""<<escapeJson(step.technique)<<"\",\"reason\":\""<<escapeJson(step.reason)
+               <<"\",\"learning\":{\"changed\":"<<(step.learning.changed?"true":"false")
+               <<",\"subject\":\""<<step.learning.subject<<"\",\"proposition\":\""<<escapeJson(step.learning.proposition)
+               <<"\",\"beforeCount\":\""<<step.learning.beforeCount<<"\",\"afterCount\":\""<<step.learning.afterCount
+               <<"\",\"beforeStance\":";appendDouble(out,step.learning.beforeStance);
+            out<<",\"afterStance\":";appendDouble(out,step.learning.afterStance);out<<"}}";
+        }
+        out<<"]}";
+    }
+    out<<"],\"olderRecords\":"<<(total>8?total-8:0)<<"}";return out.str();
+}
+
 std::string WebClientBridge::cognitiveRequestJson(
     const std::string& residentIdText,
     const std::string& triggerText) const
@@ -2151,7 +2198,6 @@ bool WebClientBridge::submitLocalCognitiveProposal(
     if(!simulation_ || observedMinute<0
        || observedWorldSeed!=std::to_string(simulation_->world().seed)
        || observedMinute>simulation_->world().minute
-       || simulation_->world().minute-observedMinute>ObservedCognitiveRequestMaxAgeMinutes
        || rationaleDigest.empty()
        || rationaleDigest.size()>MaxCognitionIdentityBytes)
         return false;

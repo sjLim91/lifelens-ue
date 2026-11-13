@@ -1016,6 +1016,7 @@ export interface RuntimeClient {
   worldOverviewJson(): string;
   residentRuntimeJson?: () => string;
   residentsJson(): string;
+  cognitiveCausalJournalJson?: (residentId: string) => string;
   cognitiveRequestJson?: (residentId: string, trigger: string) => string;
   submitLocalCognitiveProposal?: (
     actor: string, observedMinute: number, worldSeed: string,

@@ -1,3 +1,4 @@
+import { parseCognitiveCausalJournal, type CognitiveCausalJournal } from '../cognition/cognitive-causal-journal';
 import {
   parseAutonomousGoalPreview,
   type AutonomousGoalPreview,
@@ -248,6 +249,14 @@ export class LifeLensCoreBridge {
 
   residents(): ResidentsPayload {
     return readResidents(this.client.residentsJson());
+  }
+
+  cognitiveCausalJournal(actor: string): CognitiveCausalJournal | null {
+    if (typeof this.client.cognitiveCausalJournalJson !== 'function') return null;
+    try {
+      const raw = this.client.cognitiveCausalJournalJson(actor);
+      return raw.length <= 262144 ? parseCognitiveCausalJournal(JSON.parse(raw), actor) : null;
+    } catch { return null; }
   }
 
   cognitiveRequest(

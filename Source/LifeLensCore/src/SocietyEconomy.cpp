@@ -100,7 +100,7 @@ void Simulation::advanceSocietyExchange()
         [&](Character& first,
             Character& second,
             SocietyExchangePlan exchange,
-            const char* prefix)->bool
+            const char* prefix,bool cognitionRanked=false)->bool
         {
             if(!exchange.valid()) return false;
             if(hasSocietyTradePartnership(
@@ -116,6 +116,10 @@ void Simulation::advanceSocietyExchange()
                 exchange.score=societyClamp01(exchange.score+0.05);
             }
 
+            const double firstPreference=cognitionRanked ? residentCognitiveIntentPreference(world_,acceptedCognitiveDecisions_,first.id,CognitiveIntentKind::TradeWithResident,second.id):0;
+            const double secondPreference=cognitionRanked ? residentCognitiveIntentPreference(world_,acceptedCognitiveDecisions_,second.id,CognitiveIntentKind::TradeWithResident,first.id):0;
+            auto firstLearning=observeCognitiveLearning(first,0,actionExperienceProposition("CoreContext:Trade"));
+            auto secondLearning=observeCognitiveLearning(second,0,actionExperienceProposition("CoreContext:Trade"));
             constexpr double ExchangeThreshold=0.66;
             if(exchange.score<ExchangeThreshold
                || !executeMutualExchange(first,second,exchange)){
@@ -133,6 +137,11 @@ void Simulation::advanceSocietyExchange()
                     first,second.id,world_.minute,completedExchange->id);
                 rememberVerifiedLocalExchangeExperience(
                     second,first.id,world_.minute,completedExchange->id);
+                completeCognitiveLearning(firstLearning,first,world_.minute);
+                completeCognitiveLearning(secondLearning,second,world_.minute);
+                const double usedPreference=std::max(firstPreference,secondPreference);
+                if(firstPreference>0 &&firstPreference==usedPreference)recordCognitiveExchange(first.id,second.id,completedExchange->id,firstLearning);
+                if(secondPreference>0 &&secondPreference==usedPreference)recordCognitiveExchange(second.id,first.id,completedExchange->id,secondLearning);
             }
             const bool hadPartnership=
                 hasSocietyTradePartnership(
@@ -227,7 +236,7 @@ void Simulation::advanceSocietyExchange()
             if(resident.id==bestLocal.second) second=&resident;
         }
         if(first!=nullptr && second!=nullptr
-           && commitExchange(*first,*second,bestLocal,"")){
+           && commitExchange(*first,*second,bestLocal,"",bestLocalRank>bestLocal.score+1e-12)){
             return;
         }
     }
@@ -349,6 +358,10 @@ void Simulation::advanceSocietyExchange()
         return;
     }
 
+    const double travelerPreference=residentCognitiveIntentPreference(world_,acceptedCognitiveDecisions_,traveler->id,CognitiveIntentKind::TradeWithResident,mission.partner);
+    const double partnerPreference=residentCognitiveIntentPreference(world_,acceptedCognitiveDecisions_,mission.partner,CognitiveIntentKind::TradeWithResident,traveler->id);
+    if(travelerPreference>0 &&travelerPreference>=partnerPreference)
+        recordPreferredCognitiveStep(traveler->id,runtime.pendingContext,CognitiveIntentKind::TradeWithResident,mission.partner);
     std::ostringstream log;
     log<<traveler->name<<" departed settlement "
        <<mission.originSettlement<<" to trade with "
