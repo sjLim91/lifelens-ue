@@ -32,9 +32,9 @@ function LiveRenderPerformance() {
       document.body.appendChild(a); a.click(); a.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     }}>성능 기록 저장</button>
-    <button type="button" onClick={() => {
+    <button type="button" disabled={!snapshot.active} onClick={() => {
       const current = renderPerformance.snapshot();
-      if (current.surface) renderPerformance.begin(current.surface);
+      if (current.active && current.surface) renderPerformance.begin(current.surface);
       setSnapshot(renderPerformance.snapshot());
     }}>다시 측정</button>
   </div>;

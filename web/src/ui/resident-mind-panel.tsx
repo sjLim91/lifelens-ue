@@ -49,7 +49,9 @@ export function ResidentMindPanel({ resident, residents }: { resident: Resident;
               <small>근거 · {[...new Set(goal.evidence.map(e => GOAL_EVIDENCE_LABELS[e.kind]))].join(' · ')}</small>
             </li>)}
           </ol> : <p className="hint">현재 관찰된 추가 목표 후보가 없습니다.</p>}
-        </> : <p className="hint">현재 실행 중인 월드에서 이 주민의 목표 후보를 읽을 수 없습니다.</p>}
+        </> : <p className="hint" role="status">{observation === null
+          ? '목표 후보를 확인하고 있습니다.'
+          : '현재 실행 중인 월드에서 이 주민의 목표 후보를 읽을 수 없습니다.'}</p>}
         <button type="button" disabled={resident.alive !== true} onClick={inspect}>목표 후보 새로 확인</button>
       </section>
     </details>

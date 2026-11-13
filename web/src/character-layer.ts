@@ -33,8 +33,6 @@ interface Palette {
 
 type MotionName = 'idle' | 'walk' | 'talk' | 'sit' | 'interact';
 
-const RESIDENT_VISIBILITY_GRACE_MS = 10000;
-
 interface Actor {
   root: THREE.Group;
   variantSeed: number;
@@ -439,7 +437,7 @@ export class CharacterLayer {
     const activeIds = new Set(placements.map((placement) => placement.id));
     const now = performance.now();
     for (const [id, actor] of this.actors) {
-      if (!activeIds.has(id) && now - actor.lastSeenAt > RESIDENT_VISIBILITY_GRACE_MS) {
+      if (!activeIds.has(id)) {
         actor.root.visible = false;
       }
     }

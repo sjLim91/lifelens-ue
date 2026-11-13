@@ -20,6 +20,8 @@ const check = (condition: boolean, message: string) => { if (!condition) throw E
     layer.setOccluded(true); const hiddenTime = first.mixer.time;
     await wait(100); check(first.mixer.time === hiddenTime && internals.animationFrame === null, 'concealed legacy skin must stop');
     layer.setSimulationSpeed(0); layer.setOccluded(false);
+    layer.setResidents([placement('replacement')]);
+    check(!first.root.visible, 'a missing Core ID must not linger on screen as a ghost');
     const originalNow = performance.now.bind(performance); let clock = originalNow();
     Object.defineProperty(performance, 'now', { configurable: true, value: () => clock });
     try {
