@@ -2441,9 +2441,64 @@ bool Simulation::recoverGatherGoal(
             decision.kind=UnifiedDecisionKind::Civilization;
             decision.civilization=*alternative;
             decision.utility=alternative->utility;
+            // Preserve AL-2 causal credit only when BOTH facts hold:
+            // (1) this failed physical token was previously issued under
+            // this exact Core-accepted tool thought; (2) the same resident's
+            // current, pure single-agency decision independently selects the
+            // very same live alternate Core Gather. A nearby memory or the
+            // latest proposal alone is not proof of ownership. Missing logs
+            // (including after old snapshot restore) conservatively yield
+            // no cognition attribution, never fabricated authority.
+            const AcceptedCognitiveDecision* cognitiveRecovery=nullptr;
+            for(auto it=acceptedCognitiveDecisions_.rbegin();
+                it!=acceptedCognitiveDecisions_.rend();++it){
+                if(it->actor!=actor.id) continue;
+                if(it->intent!=CognitiveIntentKind::CraftUsefulTools
+                   ||it->contextFingerprint==0
+                   ||it->minute>previous.issuedMinute
+                   ||world_.minute-it->minute>ResidentAgencyGoalHorizonMinutes)
+                    break;
+                const std::string prefix=
+                    "AL2_CORE_COGNITION_STEP_ISSUED actor="
+                    +std::to_string(actor.id)+" goal_fp="
+                    +std::to_string(it->contextFingerprint)
+                    +" thought_minute="+std::to_string(it->minute)
+                    +" step_token="+std::to_string(previous.token)+" ";
+                bool originalIssuedByThought=false;
+                std::size_t scanned=0;
+                for(auto log=logs_.rbegin();
+                    log!=logs_.rend() &&scanned<512;++log,++scanned){
+                    if(log->find(prefix)!=std::string::npos){
+                        originalIssuedByThought=true;
+                        break;
+                    }
+                }
+                if(originalIssuedByThought){
+                    // An urgent body need still owns its ordinary
+                    // survival/preemption lane. Even if this physical
+                    // alternative was issued, never label that urgency as
+                    // optional model cognition.
+                    const bool survivalUrgent=std::max({
+                        actor.needs.hunger,actor.needs.thirst,
+                        actor.needs.sleep,actor.needs.bladder,
+                        actor.needs.hygiene
+                    })>=ruleset_.utilityAI.urgentThreshold;
+                    const auto agency=chooseSingleResidentAgencyDecision(
+                        world_,actor,runtime.pos,relationships_,decision,
+                        &*it,&population,std::nullopt,survivalUrgent);
+                    if(agency.authority==ResidentAgencyAuthority::ResidentCognition
+                       &&agency.decision.kind==UnifiedDecisionKind::Civilization
+                       &&agency.decision.civilization.intent==CivilizationIntent::Gather
+                       &&agency.decision.civilization.material==alternative->material
+                       &&agency.decision.civilization.resourceNode==alternative->resourceNode)
+                        cognitiveRecovery=&*it;
+                }
+                break; // A newer accepted thought is never silently replaced.
+            }
             if(tryCivilizationDecision(actor,runtime,&decision,nullptr,
                     goal.active() ? &goal : nullptr,
-                    selected ? &selected->position : nullptr)){
+                    selected ? &selected->position : nullptr,
+                    cognitiveRecovery)){
                 if(selected &&sameGridPos(runtime.pendingContext.targetPos,selected->position)){
                     runtime.navigationTarget=selected->position;
                     runtime.navigationHasTarget=true;
