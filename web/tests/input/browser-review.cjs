@@ -81,7 +81,8 @@ const fs=require('node:fs');
           const zoomed=await pixels();assert.notEqual(zoomed,panned,'pinch outward changes scale');
           await touch('touchMove',[[1,130,335],[2,280,335]]);await pause();
           assert.notEqual(await pixels(),zoomed,'pinch inward changes scale');
-          await touch('touchEnd',[[1,130,335]]);await pause();
+          // CDP touchEnd lists the contact to release; keep finger 1 down.
+          await touch('touchEnd',[[2,280,335]]);await pause();
           const oneFinger=await pixels();
           await touch('touchMove',[[1,170,355]]);await pause();
           assert.equal(await pixels(),oneFinger,'lifting one finger cannot switch to orbit');

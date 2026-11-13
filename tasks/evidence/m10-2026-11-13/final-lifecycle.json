@@ -1,0 +1,30 @@
+{
+  "results": [
+    {
+      "cycle": 0,
+      "cached": 33,
+      "readyCalls": 1,
+      "pause": true,
+      "occlusion": true,
+      "disposed": true
+    },
+    {
+      "cycle": 1,
+      "cached": 33,
+      "readyCalls": 1,
+      "pause": true,
+      "occlusion": true,
+      "disposed": true
+    },
+    {
+      "cycle": 2,
+      "cached": 33,
+      "readyCalls": 1,
+      "pause": true,
+      "occlusion": true,
+      "disposed": true
+    }
+  ],
+  "lateLoadResurrection": false,
+  "realWebGL": true
+}
