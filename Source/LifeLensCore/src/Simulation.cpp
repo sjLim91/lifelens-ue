@@ -2117,7 +2117,8 @@ bool Simulation::tryCivilizationDecision(
     const UnifiedUtilityDecision* precomputed,
     const AutonomousGoalCandidate* personalGoal,
     const ResidentGatherGoalLink* continuation,
-    const GridPos* knownTarget)
+    const GridPos* knownTarget,
+    const AcceptedCognitiveDecision* cognitiveOrigin)
 {
     if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
 
@@ -2239,6 +2240,32 @@ bool Simulation::tryCivilizationDecision(
     }
 
     r.pendingContext=pending;
+    // AL-2 evidence: the agent really selected this civilization command
+    // and Core issued its unique physical token. Do not credit proposed
+    // intentions, fallback decisions, or an unissued step. Stable journal
+    // fingerprint is the observed cognitive goal key; the token identifies
+    // ONE concrete Core step. Outcome is independently logged by executor.
+    if(cognitiveOrigin!=nullptr
+       &&cognitiveOrigin->actor==c.id
+       &&cognitiveOrigin->intent==CognitiveIntentKind::CraftUsefulTools
+       &&cognitiveOrigin->contextFingerprint!=0
+       &&cognitiveOrigin->minute>=0
+       &&cognitiveOrigin->minute<=world_.minute
+       &&world_.minute-cognitiveOrigin->minute
+           <=ResidentAgencyGoalHorizonMinutes){
+        std::ostringstream trace;
+        trace<<"AL2_CORE_COGNITION_STEP_ISSUED actor="<<c.id
+             <<" goal_fp="<<cognitiveOrigin->contextFingerprint
+             <<" thought_minute="<<cognitiveOrigin->minute
+             <<" step_token="<<pending.token
+             <<" step_minute="<<world_.minute
+             <<" intent="<<civilizationIntentName(pending.civilization.intent)
+             <<" technique="<<techniqueName(pending.civilization.technique)
+             <<" material="<<materialName(pending.civilization.material)
+             <<" resource="<<pending.civilization.resourceNode
+             <<" facility="<<pending.civilization.facility;
+        emit(trace.str());
+    }
     if(pending.gatherGoal.active()){
         const auto& goal=pending.gatherGoal;
         const auto physical=bestPhysicalUtility(world_,c);
@@ -2953,6 +2980,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     std::optional<ResidentLiveRecoveryEvidence> liveRecovery;
     std::optional<ResidentLiveSuccessLearningEvidence> liveSuccessLearning;
     std::optional<AutonomousGoalCandidate> selectedResourceGoal;
+    const AcceptedCognitiveDecision* selectedCognitiveOrigin=nullptr;
     if(planningAllowed
        && !urgentProvisionRequired
        && !criticalSurvivalPressure
@@ -2993,6 +3021,14 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         liveSuccessLearning=observeResidentLiveSuccessLearningEvidence(
             world_,c,r.pos,agency,embodiedGoal,&residentPopulation);
         cadenceDecision=embodiedGoal.agency.decision;
+        if(newest!=nullptr
+           &&embodiedGoal.agency.authority
+               ==ResidentAgencyAuthority::ResidentCognition
+           &&embodiedGoal.agency.contextFingerprint
+               ==newest->contextFingerprint
+           &&cadenceDecision.kind==UnifiedDecisionKind::Civilization){
+            selectedCognitiveOrigin=newest;
+        }
         selectedResourceGoal=embodiedGoal.personalGoal;
     }
 
@@ -3003,7 +3039,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
        && !criticalSurvivalPressure
        && urgentPhysicalGoal==Goal::Idle
        && tryCivilizationDecision(c,r,sharedCadenceDecision,
-            selectedResourceGoal ? &*selectedResourceGoal : nullptr)){
+            selectedResourceGoal ? &*selectedResourceGoal : nullptr,
+            nullptr,nullptr,selectedCognitiveOrigin)){
         // A memorized SUCCESS only becomes evidence of learned real-world
         // action when the SAME production Core issues the exact Gather token
         // for the alternate source. Future execution is independently
