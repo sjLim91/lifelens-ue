@@ -21,6 +21,11 @@ try {
   assert.equal(typeof client.cognitiveCausalJournalJson,'function');
   assert.equal(client.restoreSnapshotBase64(initial.toString('base64')),true,'initial native checkpoint restore');
   assert.deepEqual(JSON.parse(client.cognitiveCausalJournalJson(start.actor)),start);
+  const goals=JSON.parse(client.autonomousGoalCandidatesJson(start.actor,'Reflection'));
+  assert.equal(goals.source,'CoreLocalGoalComposer');
+  assert.equal(goals.affectsSimulation,false);
+  assert(goals.candidates.every(g=>g.evidence.every(e=>['ActorNeed','Remembered','Believed','Related','ObservedLocalResource'].includes(e.kind))),'all real Core goal evidence kinds must be readable');
+  assert(goals.candidates.some(g=>g.evidence.some(e=>e.kind==='ObservedLocalResource')),'controlled real local resource evidence reaches WASM observer');
   const gather=expected.records.flatMap(r=>r.steps).find(s=>s.action==='Gather'&&s.result===1);
   assert(gather && gather.learning.changed);
   client.runMinutes(gather.resultMinute-start.minute);

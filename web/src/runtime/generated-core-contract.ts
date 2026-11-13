@@ -6,3 +6,24 @@ export const CORE_WORLD_CHUNK_SPAN_GRID_CELLS =
 
 export const CORE_SIMULATION_MINUTES_PER_DAY =
   1440 as const;
+
+export const CORE_MATERIAL_NAMES: Readonly<Record<number, string>> =
+  {
+  "0": "Unknown",
+  "1": "Stone",
+  "2": "Flint",
+  "3": "Wood",
+  "4": "Fiber",
+  "5": "Clay",
+  "6": "Water",
+  "7": "PlantFood",
+  "8": "Bone",
+  "9": "Hide",
+  "10": "CopperOre",
+  "11": "TinOre",
+  "12": "IronOre",
+  "13": "Charcoal",
+  "14": "CopperMetal",
+  "15": "TinMetal",
+  "16": "Bronze"
+};

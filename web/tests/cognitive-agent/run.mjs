@@ -457,6 +457,16 @@ await test('Core local goal candidates are bounded, truthful read-only previews'
     }],
   };
   assert.deepEqual(parseAutonomousGoalPreview(preview),preview);
+  const localResource={...preview,candidates:[{
+    ...preview.candidates[0],
+    conditions:[{metric:'ActorRawMaterialCount',need:'Hunger',materialCode:3,
+      targetResident:'0',operator:'AtLeast',threshold:1}],
+    evidence:[{kind:'ObservedLocalResource',index:0}],
+  }]};
+  assert.deepEqual(parseAutonomousGoalPreview(localResource),localResource);
+  assert.throws(()=>parseAutonomousGoalPreview({...localResource,candidates:[{
+    ...localResource.candidates[0],evidence:[{kind:'Unknown',index:0}],
+  }]}),/evidence/);
 
   const client={
     newGame:()=>true,runMinutes:()=>{},
@@ -1003,4 +1013,5 @@ await test('a throwing context reader settles null and leaves the scheduler usab
 console.log(`Cognitive agent Web adapter: ${passed} tests passed`);
 
 await import('./shadow.mjs');
+
 

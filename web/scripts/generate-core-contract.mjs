@@ -46,6 +46,21 @@ const simulationHoursPerDay = parseLiteralInt(
 const simulationMinutesPerDay =
   simulationMinutesPerHour * simulationHoursPerDay;
 
+// Goal observations carry persisted MaterialKind ordinals. Derive the names
+// from the same Core enum instead of maintaining a second Web enum.
+const materialBlock = read('Source/LifeLensCore/include/lifelens/Civilization.h')
+  .match(/enum class MaterialKind\s*\{([\s\S]*?)\};/);
+if (!materialBlock) throw new Error('Core MaterialKind enum is missing');
+let nextMaterial = 0;
+const materialNames = {};
+for (const entry of materialBlock[1].replace(/\/\/[^\n]*/g, '').split(',')) {
+  if (!entry.trim()) continue;
+  const match = entry.trim().match(/^(\w+)(?:\s*=\s*(\d+))?$/);
+  if (!match) throw new Error('Unsupported Core MaterialKind declaration');
+  if (match[2] !== undefined) nextMaterial = Number(match[2]);
+  materialNames[nextMaterial++] = match[1];
+}
+
 const outputPath = path.join(
   repoRoot,
   'web/src/runtime/generated-core-contract.ts',
@@ -59,6 +74,10 @@ export const CORE_WORLD_CHUNK_SPAN_GRID_CELLS =
 
 export const CORE_SIMULATION_MINUTES_PER_DAY =
   ${simulationMinutesPerDay} as const;
+
+export const CORE_MATERIAL_NAMES: Readonly<Record<number, string>> =
+  ${JSON.stringify(materialNames, null, 2)};
 `;
 
 fs.writeFileSync(outputPath, output, 'utf8');
+

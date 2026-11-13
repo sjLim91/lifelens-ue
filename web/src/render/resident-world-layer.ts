@@ -28,7 +28,7 @@ import { setResidentSkinMaterialQuality } from './resident-surface-material';
 import { syncResidentAnatomicalBody } from './resident-anatomical-body';
 import { loadNativeResidentTemplates, nativeResidentTemplatesReady, setNativeResidentLOD } from './resident-native-body';
 import { ResidentInventoryProps, ResidentPropResources } from './resident-props';
-import { ResidentProductionTargets } from './resident-production-context';
+import { ResidentProductionTargets, residentLocalCraft } from './resident-production-context';
 import { residentActionCue } from './resident-action-context';
 import {
   residentSleepPostureActive,
@@ -434,6 +434,17 @@ export class ResidentWorldLayer {
     this.syncSocialConnectors(residents);
   }
 
+  rebasePresentation(): void {
+    for (const actor of this.actors.values()) {
+      actor.current.copy(actor.target);
+      actor.root.position.copy(actor.target);
+      actor.targetTravelSpeedWorldUnitsPerSecond = 0;
+      actor.smoothedTravelSpeedWorldUnitsPerSecond = 0;
+      actor.displayedTravelSpeedWorldUnitsPerSecond = 0;
+      actor.walkGraceRemainingSeconds = 0;
+    }
+  }
+
   setWorldObjects(objects: WorldObjectsPayload): void { this.physicalTargets.setObjects(objects); }
 
   setCivilization(civilization: CivilizationWorldPayload): void {
@@ -635,7 +646,7 @@ export class ResidentWorldLayer {
           RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits
         || actor.walkGraceRemainingSeconds > 0
       );
-      actor.inventoryProps.setInteractionAllowed(actor.presentation?.kind !== 'Civilization'
+      actor.inventoryProps.setInteractionAllowed(residentLocalCraft(actor.presentation) || actor.presentation?.kind !== 'Civilization'
         || this.productionTargets.interacting(actor.presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY));
       actor.inventoryProps.setVisuallyMoving(presentationMoving);
       const physicalAllowed = actor.presentation?.kind !== 'Physical' || this.physicalTargets.allows(actor.motionFacts, actor.presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY);
@@ -1389,7 +1400,7 @@ export class ResidentWorldLayer {
       && actor.current.distanceTo(targetActor.current) <= 3,
     );
 
-    if (presentation?.kind === 'Civilization'
+    if (presentation?.kind === 'Civilization' && !residentLocalCraft(presentation)
       && !this.productionTargets.interacting(presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY)) return 'idle';
 
     if (presentation?.kind === 'Physical' && !this.physicalTargets.allows(actor.motionFacts, presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY)) return 'idle';

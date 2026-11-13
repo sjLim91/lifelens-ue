@@ -38,6 +38,11 @@ const stablePhase=(id:string):number=>{
 };
 
 export class WildlifeLayer {
+  rebasePresentation(): void {
+    for (const pose of this.animals.values()) {
+      pose.x = pose.goalX; pose.z = pose.goalZ; pose.speed = 0; pose.motion = 0;
+    }
+  }
   readonly group=new THREE.Group();
   private readonly time={value:0};
   private readonly material=new THREE.MeshStandardMaterial({

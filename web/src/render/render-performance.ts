@@ -3,6 +3,7 @@ export interface RenderCounters {
 }
 export interface RenderSurface {
   width: number; height: number; pixelRatio: number; mobile: boolean;
+  viewportWidth?: number; viewportHeight?: number;
 }
 const CAPACITY = 300;
 const emptyCounters = (): RenderCounters => ({ calls: 0, triangles: 0, geometries: 0, textures: 0, programs: 0 });
@@ -65,6 +66,9 @@ export class RenderPerformanceRecorder {
       cpuFrameMs: { p50: percentile(cpu.slice(), .5), p95: percentile(cpu, .95) },
       deliveredFps: intervals.length ? 1000 * intervals.length / intervals.reduce((a, b) => a + b, 0) : null,
       frameIntervalP95Ms: percentile(intervals, .95),
+      sampledSeconds: intervals.reduce((sum, n) => sum + n, 0) / 1000,
+      presentationProfile: this.surface?.mobile ? 'mobile' : 'desktop',
+      targetFrameBudgetMs: this.surface?.mobile ? 1000 / 30 : null,
       surface: this.surface ? { ...this.surface } : null,
       latest: { ...this.latest }, peak: { ...this.peak },
     };

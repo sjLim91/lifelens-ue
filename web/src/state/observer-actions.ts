@@ -9,6 +9,7 @@ export interface ObserverActionHandlers {
   moveObserver: (dx: number, dy: number) => void;
   recenterObserver: () => void;
   recoverRendering: () => void;
+  setWorldViewOccluded?: (occluded: boolean) => void;
   selectResident: (residentId: string | null) => void;
   selectHumanTrace: (id: string | null, focus?: boolean) => void;
   selectSettlement: (id: string | null, focus?: boolean) => void;
@@ -57,6 +58,10 @@ class ObserverActions {
 
   recoverRendering(): void {
     this.handlers?.recoverRendering();
+  }
+
+  setWorldViewOccluded(occluded: boolean): void {
+    this.handlers?.setWorldViewOccluded?.(occluded);
   }
 
   selectResident(residentId: string | null): void {

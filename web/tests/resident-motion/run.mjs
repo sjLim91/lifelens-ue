@@ -259,6 +259,15 @@ for(const [name,d] of [
  l.setResidents([resident('review-'+name,d),resident('partner',null,{gridX:68})],terrain,0,0);for(let i=0;i<8;i++)l.update(1/60);bake(l.actors.get('review-'+name),name);
 }
 writeFileSync(resolve(out,'poses.json'),JSON.stringify(review));
+test('concealed view resumes at actual observations without replay or Core mutation',()=>{
+ const facts=resident('resume',p({phase:'Moving'}));l.setResidents([facts],terrain,0,0);
+ const next={...facts,gridX:90,gridY:85};const original=JSON.stringify(next);
+ l.setResidents([next],terrain,0,0);const a=l.actors.get('resume');
+ assert(a.current.distanceTo(a.target)>0);
+ l.rebasePresentation();assert(a.current.equals(a.target));assert(a.root.position.equals(a.target));
+ assert.equal(a.walkGraceRemainingSeconds,0);assert.equal(a.displayedTravelSpeedWorldUnitsPerSecond,0);
+ assert.equal(JSON.stringify(next),original);
+});
 test('inactive skeleton cache is bounded and dispose uncaches all actor actions',()=>{l.setResidents([],terrain,0,0);assert(l.actors.size<=32);});
 l.dispose();assert.equal(l.actors.size,0);
 for(const both of [false,true]){
@@ -270,6 +279,7 @@ for(const both of [false,true]){
  });fallback.dispose();
 }
 console.log('Resident motion checks:',passed,'PASS');
+
 
 
 

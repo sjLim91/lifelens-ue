@@ -65,6 +65,21 @@ int main()
     assert(bridge.autonomousGoalCandidatesJson(actor,"None")=="null");
     assert(bridge.autonomousGoalCandidatesJson("not-an-id","Reflection")=="null");
 
+    // Locally reported resources are a real fifth evidence kind. Omitting
+    // its bridge name used to reject the entire valid Web goal preview.
+    bool sawObservedResource=false;
+    for(const char* seed : {"874213954","8421901","4242001"}){
+        WebClientBridge observed;
+        assert(observed.newGame(seed,"",CurrentWorldGenerationVersion));
+        const auto id=firstResidentId(observed.residentsJson());
+        const auto checkpoint=observed.saveSnapshotBase64();
+        const auto candidates=observed.autonomousGoalCandidatesJson(id,"Reflection");
+        assert(candidates.find("\"kind\":\"Unknown\"")==std::string::npos);
+        sawObservedResource|=candidates.find("\"kind\":\"ObservedLocalResource\"")!=std::string::npos;
+        assert(observed.saveSnapshotBase64()==checkpoint);
+    }
+    assert(sawObservedResource);
+
     const std::string scarcity=
         bridge.cognitiveRequestJson(actor,"ResourceScarcity");
     assert(scarcity.find(

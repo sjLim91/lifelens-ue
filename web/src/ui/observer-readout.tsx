@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ObserverIcon } from './observer-controls';
 import { CognitiveShadowPanel } from './cognitive-shadow-panel';
 import type { Resident } from '../runtime/core-types';
@@ -27,6 +28,7 @@ import { summarizeResidentMemories } from './resident-memory';
 import { deriveResidentExperienceHighlights } from './resident-experiences';
 import { ResidentNeeds } from './resident-needs';
 import { ResidentCausalTimeline } from './resident-causal-timeline';
+import { ResidentMindPanel } from './resident-mind-panel';
 import { CivilizationEraBadge } from './civilization-era';
 
 export function RuntimeBadge({
@@ -164,6 +166,10 @@ export function SelectedResidentReadout({
   residents: Resident[];
   onClear: () => void;
 }) {
+  const [showAllMemories, setShowAllMemories] = useState(false);
+  const [showAllBeliefs, setShowAllBeliefs] = useState(false);
+  const [showAllRelationships, setShowAllRelationships] = useState(false);
+  const [showAllFamily, setShowAllFamily] = useState(false);
   if (!resident) {
     return (
       <div className="focused-life-empty">
@@ -175,11 +181,11 @@ export function SelectedResidentReadout({
   }
 
   const relationships = resident.relationships ?? [];
-  const importantRelationships = relationships.slice(0, 4);
-  const beliefs = (resident.beliefs ?? []).slice(0, 3);
+  const importantRelationships = relationships.slice(0, showAllRelationships ? 32 : 4);
+  const beliefs = (resident.beliefs ?? []).slice(0, showAllBeliefs ? 32 : 3);
   const visibleMemories = summarizeResidentMemories(
     resident.memories,
-    3,
+    showAllMemories ? 32 : 3,
   ).map(({ memory, tags, repeatCount }) => ({
     memory,
     subjectName: residentDisplayName(residents, memory.who),
@@ -246,7 +252,7 @@ export function SelectedResidentReadout({
     ...(family?.parents ?? []),
     ...(family?.children ?? []),
     ...(family?.siblings ?? []),
-  ].slice(0, 6);
+  ].slice(0, showAllFamily ? 32 : 6);
   const statusText = residentStatusText(resident, residents);
   const healthStageLabels: Record<string, string> = {
     Well: '양호',
@@ -287,6 +293,7 @@ export function SelectedResidentReadout({
       </p>
 
       <ResidentNeeds needs={resident.needs} />
+      <ResidentMindPanel key={resident.id} resident={resident} residents={residents} />
       <ResidentCausalTimeline resident={resident} residents={residents} />
       <CognitiveShadowPanel resident={resident} residents={residents} />
       {experienceHighlights.length > 0 ? (
@@ -374,7 +381,7 @@ export function SelectedResidentReadout({
         <div className="focused-life-section">
           <h3>건강 상태</h3>
           <div className="focused-life-chips">
-            <span>상태 <b>{healthStageLabels[health.stage ?? 'Well'] ?? health.stage ?? '양호'}</b></span>
+            <span>상태 <b>{healthStageLabels[health.stage ?? 'Well'] ?? '미확인 건강 단계'}</b></span>
             <span>활동 능력 <b>{formatPercent(health.functionalCapacity)}</b></span>
             <span>병원체 부담 <b>{formatPercent(health.pathogenLoad)}</b></span>
             <span>질병 심각도 <b>{formatPercent(health.illnessSeverity)}</b></span>
@@ -455,6 +462,9 @@ export function SelectedResidentReadout({
               </div>
             ))
           : <div className="focused-life-muted">아직 뚜렷한 관계가 없습니다.</div>}
+        {relationships.length > 4 && <button type="button" onClick={() => setShowAllRelationships(v => !v)}>
+          {showAllRelationships ? '관계 요약 보기' : `관계 더 보기 · 관찰 ${relationships.length}명`}
+        </button>}
       </div>
 
       <div className="focused-life-section">
@@ -484,6 +494,8 @@ export function SelectedResidentReadout({
             ))}
           </div>
         ) : null}
+        {((family?.parents?.length ?? 0) + (family?.children?.length ?? 0) + (family?.siblings?.length ?? 0)) > 6
+          && <button type="button" onClick={() => setShowAllFamily(v => !v)}>{showAllFamily ? '가족 요약 보기' : '가족 더 보기'}</button>}
         {household ? (
           <div className="focused-life-chips">
             <span>가구 <b>#{household.id}</b></span>
@@ -547,11 +559,15 @@ export function SelectedResidentReadout({
               </div>
             ))
           : <div className="focused-life-muted">아직 강하게 남은 기억이 없습니다.</div>}
+        {(resident.memories?.length ?? 0) > 3 && <button type="button" onClick={() => setShowAllMemories(v => !v)}>
+          {showAllMemories ? '기억 요약 보기' : `기억 더 보기 · 관찰 ${resident.memories!.length}건`}
+        </button>}
       </div>
 
       {visibleBeliefs.length > 0 ? (
         <div className="focused-life-section">
-          <h3>믿음</h3>
+          <h3>믿음과 가설</h3>
+          <p className="hint">이 주민이 현재 믿는 내용입니다. 확신이 높아도 세계의 확정된 사실을 뜻하지는 않습니다.</p>
           {visibleBeliefs.map(({ belief, subjectName }, index) => (
             <div className="belief-row" key={`${belief.subject ?? '0'}:${index}`}>
               <span><b>{subjectName}</b> · {formatBelief(belief.proposition)}</span>
@@ -566,6 +582,9 @@ export function SelectedResidentReadout({
               </small>
             </div>
           ))}
+          {(resident.beliefs?.length ?? 0) > 3 && <button type="button" onClick={() => setShowAllBeliefs(v => !v)}>
+            {showAllBeliefs ? '믿음 요약 보기' : `믿음 더 보기 · 관찰 ${resident.beliefs!.length}건`}
+          </button>}
         </div>
       ) : null}
 

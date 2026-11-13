@@ -241,6 +241,14 @@ export class WorldScene {
     this.lifeEventLayer.clearActive();
   }
 
+  rebasePresentation(): void {
+    // A concealed view has no visual travel history to replay. Place actors
+    // at their latest observed Core positions without creating any new move.
+    this.residentLayer.rebasePresentation();
+    this.wildlifeLayer.rebasePresentation();
+    this.breakFootTrafficContinuity();
+  }
+
   pickResident(normalizedX: number, normalizedY: number): string | null {
     this.pointer.set(normalizedX, normalizedY);
     this.raycaster.setFromCamera(this.pointer, this.camera);

@@ -2311,6 +2311,7 @@ std::string WebClientBridge::autonomousGoalCandidatesJson(
             case AutonomousGoalEvidenceKind::Remembered: return "Remembered";
             case AutonomousGoalEvidenceKind::Believed: return "Believed";
             case AutonomousGoalEvidenceKind::Related: return "Related";
+            case AutonomousGoalEvidenceKind::ObservedLocalResource: return "ObservedLocalResource";
             default: return "Unknown";
         }
     };

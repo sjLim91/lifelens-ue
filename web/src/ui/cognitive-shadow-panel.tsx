@@ -9,6 +9,7 @@ import {
   formatCognitiveContext, formatCognitiveProvider, formatMemoryText, formatBelief, formatResidentName,
 } from '../localization/korean';
 import { residentStatusText } from './resident-status';
+import { goalConditionText } from './resident-observation';
 
 function numericSummary(values: Record<string, number>): string {
   return Object.entries(values).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 4)
@@ -33,7 +34,7 @@ function formatAutonomousCondition(
     case 'KnownResidentAlive':
       return `${residentName(residents, condition.targetResident)} ${G.alive}`;
     case 'ActorRawMaterialCount':
-      return `${G.livelihood} #${condition.materialCode} ${threshold} ${relation}`;
+      return goalConditionText(condition, residents);
     default:
       return G.unknown;
   }
