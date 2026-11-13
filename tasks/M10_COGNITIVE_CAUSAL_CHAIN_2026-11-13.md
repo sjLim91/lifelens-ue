@@ -25,6 +25,7 @@
 3. 승인/차단/중복/만료, 잘못된 소유권·미래 시각·손상 저장, legacy journal 및 읽기 전용 bridge 검증.
 4. Web DTO lossless ID·중복/가짜 성공·가짜 학습·다른 주민·한도·이전 ABI 회귀, 전체 Web 타입/빌드 및 runtime/cognitive 회귀.
 5. 실제 native fixture의 Core JSON을 320/393/915px UI에 표시하는 선택적 브라우저 검사. fixture는 합성된 성공 사건이 아니다.
-6. CI에서 actual native checkpoint → 생성된 WASM → 동일 Gather/Craft 결과/학습 DTO 및 중간 save/load 재개를 비교한다. 추가 네트워크 fetch 없이 공급한 WASM bytes로 검증하고 JSON 증거를 보관한다.
+6. CI에서 actual native checkpoint → 생성된 WASM → 동일 Gather/Craft 결과/학습 DTO 및 중간 save/load 재개를 비교한다. 추가 네트워크 fetch 없이 공급한 WASM bytes로 검증하고 JSON과 통제된 binary checkpoint 증거를 보관한다.
+7. native FMA 연산 결합으로 생성 baseline이 1 ULP 달라져 WASM 저장 복원이 거부되는 문제를 방지한다. Core 및 inline 코드를 사용하는 소비자의 multiply/add 반올림 규칙을 통일하고, 고정 baseline 회귀와 native→WASM 실제 재생으로 검증한다. 저장 검증의 정확 비교를 완화하지 않는다.
 
 기존 Core 전체 CTest/결정론, Web/WASM/Preflight와 병합 후 Runtime Release/Pages/External Probe를 실제 실행 결과에 따라 확인한다. 이 변경은 Qwen의 실제 추론 성능이나 전체 M10 7개 단위의 완료를 대신하지 않는다.

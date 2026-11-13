@@ -20,6 +20,15 @@ add_library(lifelens_core STATIC
 
 target_include_directories(lifelens_core PUBLIC include)
 
+# Checkpoints validate regenerated natural baselines bit-for-bit. Native CPUs
+# with FMA must use the same separate multiply/add rounding as WebAssembly.
+# PUBLIC also covers the inline generation/learning code used by consumers.
+if(MSVC)
+    target_compile_options(lifelens_core PUBLIC /fp:strict)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(lifelens_core PUBLIC -ffp-contract=off)
+endif()
+
 add_executable(ll_harness harness/main.cpp)
 target_link_libraries(ll_harness PRIVATE lifelens_core)
 
