@@ -260,6 +260,12 @@ bool encodeSimulationSnapshot(
             setError(error,"invalid resident cognition action attribution");
             return false;
         }
+        if(!validAttachedResidentSuspendedCognitiveLink(
+               runtime.first,runtime.second.suspendedGather,
+               snapshot.acceptedCognitiveDecisions,snapshot.world.minute)){
+            setError(error,"invalid suspended resident cognition attribution");
+            return false;
+        }
         if(!validResidentSuspendedGatherGoal(
                runtime.first,runtime.second.suspendedGather,snapshot.world.minute)
            ||(runtime.second.suspendedGather.active()
@@ -323,7 +329,8 @@ bool encodeSimulationSnapshot(
     // has at most one Core-validated resident/accepted-thought link.
     bool hasCognitiveActionLink=false;
     for(const auto& entry:snapshot.runtime)
-        hasCognitiveActionLink|=entry.second.pendingContext.cognitiveGoal.active();
+        hasCognitiveActionLink|=entry.second.pendingContext.cognitiveGoal.active()
+            ||entry.second.suspendedGather.cognitiveGoal.active();
     if(hasCognitiveActionLink){
         Writer linkExtension;
         writeResidentCognitiveActionLinkExtension(linkExtension,snapshot);
