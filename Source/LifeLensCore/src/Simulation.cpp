@@ -1571,6 +1571,11 @@ void Simulation::cancelRuntimeActivityForCriticalReplan(
             r.suspendedGather.goal=goal;
             r.suspendedGather.source=old.civilization.resourceNode;
             r.suspendedGather.requestedQuantity=old.civilization.quantity;
+            if(old.cognitiveGoal.active()
+               &&validAttachedResidentCognitiveActionLink(
+                   character.id,old,acceptedCognitiveDecisions_,
+                   world_.minute))
+                r.suspendedGather.cognitiveGoal=old.cognitiveGoal;
             emit(character.name+" AL1_CORE_GOAL_SUSPENDED actor="
                 +std::to_string(character.id)
                 +" goal_id="+std::to_string(goal.goalId)
@@ -2630,8 +2635,42 @@ bool Simulation::resumeSuspendedGatherGoal(Character& actor,Runtime& runtime)
     decision.kind=UnifiedDecisionKind::Civilization;
     decision.civilization=next;
     decision.utility=next.utility;
+    // Only a Core-verified PREEMPTED token may carry an optional thought
+    // across completed survival care. Re-run the resident's ONE live agent
+    // decision against the actual chosen accessible material and source.
+    // A superseding thought, missing journal, urgent need, or different
+    // source leaves the physical native Gather continuation unchanged but
+    // never attributes it to a stale strategy.
+    const AcceptedCognitiveDecision* cognitiveResume=nullptr;
+    if(saved.cognitiveGoal.active()
+       &&validAttachedResidentSuspendedCognitiveLink(
+           actor.id,saved,acceptedCognitiveDecisions_,world_.minute)){
+        for(auto it=acceptedCognitiveDecisions_.rbegin();
+            it!=acceptedCognitiveDecisions_.rend();++it){
+            if(it->actor!=actor.id) continue;
+            if(it->intent!=CognitiveIntentKind::CraftUsefulTools
+               ||it->minute!=saved.cognitiveGoal.thoughtMinute
+               ||it->contextFingerprint
+                   !=saved.cognitiveGoal.contextFingerprint
+               ||world_.minute-it->minute>ResidentAgencyGoalHorizonMinutes)
+                break;
+            const auto population=settlementPopulation();
+            const auto agency=chooseSingleResidentAgencyDecision(
+                world_,actor,runtime.pos,relationships_,decision,
+                &*it,&population,std::nullopt,false);
+            if(agency.authority==ResidentAgencyAuthority::ResidentCognition
+               &&agency.contextFingerprint
+                   ==saved.cognitiveGoal.contextFingerprint
+               &&agency.decision.kind==UnifiedDecisionKind::Civilization
+               &&agency.decision.civilization.intent==CivilizationIntent::Gather
+               &&agency.decision.civilization.material==next.material
+               &&agency.decision.civilization.resourceNode==next.resourceNode)
+                cognitiveResume=&*it;
+            break;
+        }
+    }
     if(!tryCivilizationDecision(actor,runtime,&decision,nullptr,&goal,
-            &best->position)) return false;
+            &best->position,cognitiveResume)) return false;
     if(sameGridPos(runtime.pendingContext.targetPos,best->position)){
         runtime.navigationTarget=best->position;
         runtime.navigationHasTarget=true;
