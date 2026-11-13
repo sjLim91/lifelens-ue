@@ -165,7 +165,9 @@ bool Simulation::completeExternalContextAction(
     if(runtimeIt==runtime_.end()) return false;
     Character* actor=findContextCharacter(world_,id);
     if(actor==nullptr || !actor->alive) return false;
-    return completeContextAction(*actor,runtimeIt->second,token,resolvedPosition);
+    const bool completed=completeContextAction(*actor,runtimeIt->second,token,resolvedPosition);
+    reconcileCognitiveSteps();
+    return completed;
 }
 
 bool Simulation::completeContextAction(
@@ -184,6 +186,7 @@ bool Simulation::completeContextAction(
                 actor.civilization.inventory.count(ItemKind::RawMaterial,pending.civilization.material),
                 node ? node->quantity : 0,"expired");
         }
+        finishCognitiveStep(actor.id,token,CognitiveStepResult::Expired,"action-expired");
         pending.clear();
         return false;
     }
@@ -254,6 +257,7 @@ bool Simulation::completeContextAction(
                 return false;
             }
 
+            auto cognitiveLearning=observeCognitiveLearning(actor,pending.social.target,socialMoodExperienceProposition(pending.social.intent));
             const double selfMoodBefore=actor.emotion.valence;
             // A relationship goal is the actor's OWN directional trust, not
             // the recipient's private feelings. Sample immediately before
@@ -268,6 +272,7 @@ bool Simulation::completeContextAction(
             const DecisionExecutionResult result=executeSocialDecision(
                 world_,relationships_,actor.id,pending.social,"simulation");
             if(!result.socialExecuted){
+                finishCognitiveStep(actor.id,token,CognitiveStepResult::Failed,"social-core-rejected",true);
                 pending.clear();
                 return false;
             }
@@ -277,6 +282,8 @@ bool Simulation::completeContextAction(
             rememberExperiencedSocialMoodOutcome(
                 actor,target->id,pending.social.intent,world_.minute,
                 selfMoodBefore,actor.emotion.valence);
+            completeCognitiveLearning(cognitiveLearning,actor,world_.minute);
+            finishCognitiveStep(actor.id,token,CognitiveStepResult::Succeeded,"social-executed",true,cognitiveLearning);
             if(goalLink.active()
                &&goalLink.token==token
                &&goalLink.actor==actor.id
@@ -376,6 +383,7 @@ bool Simulation::completeContextAction(
                 }
             }
 
+            auto cognitiveLearning=observeCognitiveLearning(actor,0,actionExperienceProposition(civilizationActionExperienceKey(decision).c_str()));
             CivilizationExecutionResult result;
             if(decision.intent==CivilizationIntent::Craft
                && decision.technique==TechniqueId::DesignatedSanitationArea){
@@ -399,6 +407,8 @@ bool Simulation::completeContextAction(
                         world_,actor,decision,resolvedPosition);
                 rememberCivilizationAttemptOutcome(
                     actor,decision,world_.minute,false,cause);
+                completeCognitiveLearning(cognitiveLearning,actor,world_.minute);
+                finishCognitiveStep(actor.id,token,CognitiveStepResult::Failed,"civilization-core-rejected",true,cognitiveLearning);
                 // Real attempted command failed at Core execution, not at
                 // model planning. Match it to an issued cognition step by the
                 // immutable original pending token in the audit log.
@@ -420,6 +430,9 @@ bool Simulation::completeContextAction(
             }
             rememberCivilizationAttemptOutcome(
                 actor,decision,world_.minute,result.success);
+            completeCognitiveLearning(cognitiveLearning,actor,world_.minute);
+            finishCognitiveStep(actor.id,token,result.success?CognitiveStepResult::Succeeded:CognitiveStepResult::Failed,
+                result.success?"civilization-executed":"civilization-attempt-failed",true,cognitiveLearning);
             if(issued.gatherGoal.active()){
                 const int held=actor.civilization.inventory.count(
                     ItemKind::RawMaterial,decision.material);

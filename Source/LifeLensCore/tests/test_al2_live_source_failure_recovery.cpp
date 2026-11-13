@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "lifelens/CoreNavigation.h"
+#include "fixtures/cognitive_causal_export.h"
 #include "lifelens/ResidentCivilizationOutcomeLearning.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
@@ -444,6 +445,18 @@ int main()
     REQUIRE(actualBytes==preFailureBytes);
     REQUIRE(replay.world().characters.front().civilization.inventory.count(
         ItemKind::DiggingStick,MaterialKind::Wood)>0);
+    const CognitiveCausalTrace* causal=nullptr;
+    for(const auto& trace:original.cognitiveCausalJournal())if(trace.accepted &&trace.origin.actor==actorId)causal=&trace;
+    REQUIRE(causal!=nullptr);
+    bool actualFailure=false,actualRecovery=false,actualCraft=false;
+    for(const auto& step:causal->steps){
+        if(step.token==failedToken)actualFailure=step.result==CognitiveStepResult::Failed &&step.attempted &&step.learning.changed;
+        if(step.token==gatherToken)actualRecovery=step.result==CognitiveStepResult::Succeeded &&step.learning.changed
+            &&step.source==CognitiveTraceSource::Continuation &&step.previousToken==failedToken;
+        if(step.token==craftToken)actualCraft=step.result==CognitiveStepResult::Succeeded &&step.learning.changed;
+    }
+    REQUIRE(actualFailure &&actualRecovery &&actualCraft);
+    REQUIRE(exportCausalFixture(original,actorId,"failure"));
     std::cout<<"AL2_PRODUCT_FAILURE_RECOVERY_CHAIN seed="<<seed
         <<" actor="<<actorId
         <<" failed_token="<<failedToken

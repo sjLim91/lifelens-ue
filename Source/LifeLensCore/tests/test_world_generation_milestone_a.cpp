@@ -28,6 +28,15 @@ bool sameResourceNodes(const World& a, const World& b)
 int main()
 {
     const WorldSeed seed=874213954ULL;
+    // Portable checkpoint baseline: FMA contraction changes these values by
+    // one ULP and makes a valid native checkpoint unreadable by WASM.
+    const auto portable=deriveGeneratedNaturalChunk(
+        makeWorldGenesisIdentity(seed,1,2),{-12,-12},480);
+    assert(portable.elevation==0x1.cb0aec011ac16p-2);
+    assert(portable.hazardPotential==0x1.947a37a46f61bp-3);
+    assert(portable.resourcePatches.size()>3);
+    assert(portable.resourcePatches[3].nodeId==5756729336840270075ULL);
+    assert(portable.resourcePatches[3].visualDensity==0x1.60eaa8e4efb64p-1);
     const PopulationSeed peopleA=111ULL;
     const PopulationSeed peopleB=222ULL;
 

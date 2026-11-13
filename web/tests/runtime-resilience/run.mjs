@@ -133,6 +133,7 @@ try {
     'cognitive-contract',
     readFileSync(join(root,'src/cognition/cognitive-contract.ts'),'utf8'),
   );
+  compile('cognitive-causal-journal', readFileSync(join(root,'src/cognition/cognitive-causal-journal.ts'),'utf8'));
   compile(
     'autonomous-goal-preview',
     readFileSync(join(root,'src/cognition/autonomous-goal-preview.ts'),'utf8'),
@@ -150,6 +151,7 @@ try {
   const bridgeSource=readFileSync(join(root,'src/runtime/core-bridge.ts'),'utf8')
     .replaceAll('import.meta.env.BASE_URL',"'./'")
     .replaceAll('../cognition/cognitive-contract','./cognitive-contract')
+    .replaceAll('../cognition/cognitive-causal-journal','./cognitive-causal-journal')
     .replaceAll('../cognition/autonomous-goal-preview','./autonomous-goal-preview')
     .replaceAll('../earth/core-earth-scenario','./core-earth-scenario')
     .replaceAll('../earth/core-earth-solar','./core-earth-solar');
@@ -205,3 +207,4 @@ try {
   });
   console.log(`${passed} runtime resilience checks passed`);
 } finally { rmSync(temporary,{recursive:true,force:true}); }
+

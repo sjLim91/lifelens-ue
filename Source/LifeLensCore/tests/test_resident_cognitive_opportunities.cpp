@@ -147,6 +147,12 @@ static void localTradeChoice()
     assert(units(preferred,requested,MaterialKind::Stone)==9);
     assert(units(preferred,b,MaterialKind::Wood)==0);
     assert(societyExchangeFactCount(preferred.socialKnowledge())==1);
+    const auto& causal=preferred.cognitiveCausalJournal();
+    assert(!causal.empty() &&causal.back().accepted &&causal.back().origin.actor==a);
+    assert(causal.back().steps.size()==1);
+    const auto& exchangeStep=causal.back().steps.front();
+    assert(exchangeStep.token==0 &&exchangeStep.exchangeFact!=0 &&exchangeStep.source==CognitiveTraceSource::Preference);
+    assert(exchangeStep.result==CognitiveStepResult::Succeeded &&exchangeStep.learning.changed);
     // Real immediate trade now informs BOTH residents; the actor should
     // learn that this partner cooperated, and the recipient witnessed the
     // very same physical exchange. No pending-context token was issued.

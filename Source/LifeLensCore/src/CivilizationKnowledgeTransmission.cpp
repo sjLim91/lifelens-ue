@@ -272,6 +272,7 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
 
     Runtime& runtime=teacherRuntime->second;
     runtime.pendingContext=pending;
+    recordPreferredCognitiveStep(teacher->id,pending,CognitiveIntentKind::TeachKnowledge,learner->id);
     runtime.goal=Goal::Idle;
     runtime.plan.clear();
     runtime.actionIndex=0;

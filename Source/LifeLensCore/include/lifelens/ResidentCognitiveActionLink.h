@@ -29,3 +29,4 @@ inline bool validResidentCognitiveActionLink(
 }
 
 } // namespace lifelens
+

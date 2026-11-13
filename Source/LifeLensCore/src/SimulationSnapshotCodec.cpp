@@ -228,9 +228,12 @@ bool encodeSimulationSnapshot(
         tradeJourneyExtension.bytes.begin(),
         tradeJourneyExtension.bytes.end());
 
+    if(!validCognitiveCausalJournal(snapshot.cognitiveCausalJournal,snapshot.world,snapshot.acceptedCognitiveDecisions)){
+        setError(error,"invalid cognitive causal journal");return false;
+    }
     // Empty journal adds zero bytes, preserving byte-exact snapshots from
     // simulations that never received an externally accepted thought.
-    if(!snapshot.acceptedCognitiveDecisions.empty()){
+    if(!snapshot.acceptedCognitiveDecisions.empty() ||!snapshot.cognitiveCausalJournal.empty()){
         if(!validCognitiveDecisionJournal(
                snapshot.acceptedCognitiveDecisions,snapshot.world)){
             setError(error,"invalid accepted cognition journal");

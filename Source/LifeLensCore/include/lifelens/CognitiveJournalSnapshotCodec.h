@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdint>
 #include "SimulationSnapshot.h"
+#include "CognitiveCausalJournalCodec.h"
 
 namespace lifelens {
 inline constexpr char CognitiveJournalSnapshotExtensionMagic[]=
@@ -18,7 +19,8 @@ void writeCognitiveJournalSnapshotExtension(
         snapshot.acceptedCognitiveDecisions.begin(),
         snapshot.acceptedCognitiveDecisions.end(),
         [](const AcceptedCognitiveDecision& e){return e.observedMinute>=0;});
-    w.u32(observed ? 2 : CognitiveJournalSnapshotExtensionVersion);
+    const bool causal=!snapshot.cognitiveCausalJournal.empty();
+    w.u32(causal ? 3 : observed ? 2 : CognitiveJournalSnapshotExtensionVersion);
     w.u32(static_cast<std::uint32_t>(snapshot.acceptedCognitiveDecisions.size()));
     for(const auto& e:snapshot.acceptedCognitiveDecisions){
         w.u64(e.actor);
@@ -30,11 +32,12 @@ void writeCognitiveJournalSnapshotExtension(
         w.real(e.priority);
         w.u64(e.target);
         w.string(e.rationaleDigest);
-        if(observed){
+        if(observed ||causal){
             w.i32(e.observedMinute);
             w.u64(e.observedContextFingerprint);
         }
     }
+    if(causal)writeCognitiveCausalJournal(w,snapshot.cognitiveCausalJournal);
 }
 
 template<typename R>
@@ -47,7 +50,7 @@ bool readCognitiveJournalSnapshotExtension(
        || !std::equal(magic,magic+sizeof(magic),
                       CognitiveJournalSnapshotExtensionMagic)
        || !r.u32(version)
-       || (version!=CognitiveJournalSnapshotExtensionVersion &&version!=2)
+       || (version!=CognitiveJournalSnapshotExtensionVersion &&version!=2 &&version!=3)
        || !r.count(count)
        || count>MaxAcceptedCognitiveDecisions)
         return false;
@@ -65,12 +68,14 @@ bool readCognitiveJournalSnapshotExtension(
            || !r.u64(e.target)
            || !r.string(e.rationaleDigest))
             return false;
-        if(version==2 &&(!r.i32(e.observedMinute)
+        if(version>=2 &&(!r.i32(e.observedMinute)
            ||!r.u64(e.observedContextFingerprint))) return false;
         events.push_back(std::move(e));
     }
     if(!validCognitiveDecisionJournal(events,snapshot.world)) return false;
     snapshot.acceptedCognitiveDecisions=std::move(events);
+    if(version==3 &&(!readCognitiveCausalJournal(r,snapshot.cognitiveCausalJournal)
+       ||!validCognitiveCausalJournal(snapshot.cognitiveCausalJournal,snapshot.world,snapshot.acceptedCognitiveDecisions)))return false;
     return true;
 }
 

@@ -117,6 +117,10 @@ static int cognitiveCareChoiceTests()
     CHECK(pending.active);
     CHECK(pending.kind==ContextActionKind::Parenting);
     CHECK(pending.targetResident==child.id);
+    const auto& traces=selected.cognitiveCausalJournal();
+    CHECK(!traces.empty() &&traces.back().accepted &&traces.back().origin.actor==chosen);
+    CHECK(!traces.back().steps.empty() &&traces.back().steps.back().token==pending.token);
+    CHECK(traces.back().steps.back().source==CognitiveTraceSource::Preference);
     CHECK(pending.token==
         replay.observePendingContextAction(chosen).token);
     const auto* liveChild=findResident(selected,child.id);

@@ -41,6 +41,9 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
     if(!validCognitiveDecisionJournal(snapshot.acceptedCognitiveDecisions,snapshot.world))
         return fail("invalid accepted cognition decision journal");
 
+    if(!validCognitiveCausalJournal(snapshot.cognitiveCausalJournal,snapshot.world,snapshot.acceptedCognitiveDecisions))
+        return fail("invalid cognitive causal journal");
+
     std::unordered_set<CharacterId> characterIds;
     for(const auto& character:snapshot.world.characters){
         if(character.id==0) return fail("snapshot contains zero character id");
@@ -269,6 +272,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
     snapshot.births=births_;
     snapshot.socialKnowledge=socialKnowledge_;
     snapshot.acceptedCognitiveDecisions=acceptedCognitiveDecisions_;
+    snapshot.cognitiveCausalJournal=cognitiveCausalJournal_;
     snapshot.nextContextActionToken=nextContextActionToken_;
 
     // Runtime logs are diagnostic/event-stream history, not simulation
@@ -394,6 +398,7 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
     births_=snapshot.births;
     socialKnowledge_=snapshot.socialKnowledge;
     acceptedCognitiveDecisions_=snapshot.acceptedCognitiveDecisions;
+    cognitiveCausalJournal_=snapshot.cognitiveCausalJournal;
     issuedCognitiveRequests_.clear();
     nextContextActionToken_=snapshot.nextContextActionToken;
     runtime_=std::move(restoredRuntime);

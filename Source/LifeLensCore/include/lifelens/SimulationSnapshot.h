@@ -8,6 +8,7 @@
 
 #include "Birth.h"
 #include "CognitiveDecisionJournal.h"
+#include "CognitiveCausalJournal.h"
 #include "ContextAction.h"
 #include "DecisionExecution.h"
 #include "ObserverReadModelV2.h"
@@ -60,6 +61,7 @@ struct SimulationStateSnapshot {
     BirthBook births;
     SocialKnowledgeBook socialKnowledge;
     std::vector<AcceptedCognitiveDecision> acceptedCognitiveDecisions;
+    std::vector<CognitiveCausalTrace> cognitiveCausalJournal;
     std::uint64_t nextContextActionToken=InitialContextActionToken;
     std::unordered_map<CharacterId,SimulationRuntimeSnapshot> runtime;
     std::vector<std::string> logs;

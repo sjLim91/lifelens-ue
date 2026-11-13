@@ -1,3 +1,4 @@
+import type { CognitiveCausalJournal } from './cognitive-causal-journal';
 import type {
   CognitiveIntent, CognitiveProposalDto, CognitiveRequestDto, CognitiveTrigger,
 } from './cognitive-contract';
@@ -42,6 +43,7 @@ export function residentAIExecutionBudget(provider: CognitiveProvider) {
 }
 
 export interface ResidentAISource {
+  cognitiveCausalJournal?(actor: string): CognitiveCausalJournal | null;
   worldOverview(): WorldOverview;
   cognitiveRequest(actor: string, trigger: 'Reflection' | 'ResourceScarcity' | 'RepeatedFailure'): CognitiveRequestDto | null;
   submitLocalCognitiveProposal(
@@ -377,6 +379,10 @@ export class ResidentAIController {
     this.state = { ...this.state, ...delta };
     for (const listener of this.listeners) listener();
   }
+  inspectCoreCausalJournal(actor: string): CognitiveCausalJournal | null {
+    return this.source?.cognitiveCausalJournal?.(actor) ?? null;
+  }
+
   attach(source: ResidentAISource): void {
     this.modelLoadAbort?.abort();
     this.modelLoadAbort = null;

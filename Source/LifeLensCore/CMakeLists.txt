@@ -9,6 +9,7 @@ enable_testing()
 
 add_library(lifelens_core STATIC
     src/Simulation.cpp
+    src/CognitiveCausalJournal.cpp
     src/ContextActionRuntime.cpp
     src/CivilizationKnowledgeTransmission.cpp
     src/SocietyEconomy.cpp
@@ -18,6 +19,15 @@ add_library(lifelens_core STATIC
 )
 
 target_include_directories(lifelens_core PUBLIC include)
+
+# Checkpoints validate regenerated natural baselines bit-for-bit. Native CPUs
+# with FMA must use the same separate multiply/add rounding as WebAssembly.
+# PUBLIC also covers the inline generation/learning code used by consumers.
+if(MSVC)
+    target_compile_options(lifelens_core PUBLIC /fp:strict)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(lifelens_core PUBLIC -ffp-contract=off)
+endif()
 
 add_executable(ll_harness harness/main.cpp)
 target_link_libraries(ll_harness PRIVATE lifelens_core)
@@ -85,6 +95,7 @@ lifelens_add_test(test_resident_gather_assessment)
 lifelens_add_test(test_al1_natural_failure_memory_ablation)
 lifelens_add_test(test_cognitive_context_allocation)
 lifelens_add_test(test_cognitive_decision_journal)
+lifelens_add_test(test_cognitive_causal_journal)
 lifelens_add_test(test_cognitive_request_receipts)
 lifelens_add_test(test_dependent_escort_continuation)
 lifelens_add_test(test_autonomous_goal_contract)

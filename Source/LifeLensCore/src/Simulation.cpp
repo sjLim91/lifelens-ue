@@ -245,9 +245,9 @@ Simulation::Simulation(
 bool Simulation::recordAcceptedCognitiveProposal(
     const CognitiveRequest& current,const CognitiveProposal& proposal,
     const std::string& backendIdentity,const std::string& rationaleDigest,
-    int observedMinute,std::uint64_t observedFingerprint)
+    int observedMinute,std::uint64_t observedFingerprint,CognitiveTraceRejection forcedRejection)
 {
-    if(!validateCognitiveProposal(world_,current,proposal).accepted)return false;
+    const bool legal=validateCognitiveProposal(world_,current,proposal).accepted;
     AcceptedCognitiveDecision event;
     event.actor=current.actor;
     event.minute=world_.minute;
@@ -264,8 +264,12 @@ bool Simulation::recordAcceptedCognitiveProposal(
         event.observedMinute=observedMinute;
         event.observedContextFingerprint=observedFingerprint;
     }
+    if(!legal ||!validAcceptedCognitiveDecision(event,world_) ||forcedRejection!=CognitiveTraceRejection::None){
+        recordCognitiveProposal(event,false,forcedRejection!=CognitiveTraceRejection::None?forcedRejection:CognitiveTraceRejection::CoreValidation);return false;
+    }
     const bool accepted=appendAcceptedCognitiveDecision(
         acceptedCognitiveDecisions_,event,world_);
+    recordCognitiveProposal(event,accepted,accepted ? CognitiveTraceRejection::None : CognitiveTraceRejection::Duplicate);
     if(accepted){
         issuedCognitiveRequests_.erase(std::remove_if(
             issuedCognitiveRequests_.begin(),issuedCognitiveRequests_.end(),
@@ -324,7 +328,6 @@ bool Simulation::acceptObservedCognitiveProposal(
     const std::string& backendIdentity,const std::string& rationaleDigest)
 {
     if(actor==0 ||observedMinute<0 ||observedMinute>world_.minute
-       ||world_.minute-observedMinute>ObservedCognitiveRequestMaxAgeMinutes
        ||observedFingerprint==0)return false;
     bool issued=false;
     for(const auto& receipt:issuedCognitiveRequests_)
@@ -339,11 +342,14 @@ bool Simulation::acceptObservedCognitiveProposal(
     const auto current=observeCognitiveRequest(actor,trigger);
     if(current.actor!=actor)return false;
     return recordAcceptedCognitiveProposal(current,proposal,backendIdentity,
-        rationaleDigest,observedMinute,observedFingerprint);
+        rationaleDigest,observedMinute,observedFingerprint,
+        world_.minute-observedMinute>ObservedCognitiveRequestMaxAgeMinutes
+            ?CognitiveTraceRejection::Expired:CognitiveTraceRejection::None);
 }
 
 void Simulation::setupDemo(){
     acceptedCognitiveDecisions_.clear();
+    cognitiveCausalJournal_.clear();
     issuedCognitiveRequests_.clear();
     nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
@@ -364,6 +370,7 @@ void Simulation::setupDemo(){
 
 void Simulation::setupSocialDemo(){
     acceptedCognitiveDecisions_.clear();
+    cognitiveCausalJournal_.clear();
     issuedCognitiveRequests_.clear();
     nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
@@ -406,6 +413,7 @@ void Simulation::setupSocialDemo(){
 
 void Simulation::setupNewGame(){
     acceptedCognitiveDecisions_.clear();
+    cognitiveCausalJournal_.clear();
     issuedCognitiveRequests_.clear();
     nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear();
@@ -855,7 +863,13 @@ void Simulation::emitCoreContextOutcome(
     };
     // Lived experience is independent of optional audit/UI subscribers.
     // Only this real Core execution site can author the result.
+    const char* key=coreContextExperienceKey(action.kind);
+    auto learning=observeCognitiveLearning(actor,0,key?actionExperienceProposition(key):std::string{});
     rememberCoreContextExperience(actor,event);
+    completeCognitiveLearning(learning,actor,world_.minute);
+    if(coreContextOutcomeActualSuccess(code)||coreContextOutcomeActualFailure(code))
+        finishCognitiveStep(actor.id,action.token,coreContextOutcomeActualSuccess(code)?CognitiveStepResult::Succeeded:CognitiveStepResult::Failed,
+            coreContextOutcomeCodeName(code),true,learning);
     for(auto& listener:contextOutcomeCallbacks_) listener(event);
 }
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
@@ -1589,6 +1603,7 @@ void Simulation::cancelRuntimeActivityForCriticalReplan(
     r.repeatCount=0;
     r.consecutiveFailures=0;
     r.penaltyUntilMinute=std::min(r.penaltyUntilMinute,world_.minute);
+    finishCognitiveStep(character.id,r.pendingContext.token,CognitiveStepResult::Interrupted,"survival-preemption");
     r.pendingContext.clear();
     if(r.dependentEscort.active())r.dependentEscort.returning=true;
     r.socialActive=false;
@@ -1968,6 +1983,9 @@ void Simulation::advanceHouseholdMigration()
         }
     }
 
+    double usedMigrationPreference=0;
+    for(const auto member:migration.members)usedMigrationPreference=std::max(usedMigrationPreference,
+        residentCognitiveIntentPreference(world_,acceptedCognitiveDecisions_,member,CognitiveIntentKind::MigrateHousehold));
     for(const CharacterId memberId:migration.members){
         Character* member=nullptr;
         for(Character& candidate:world_.characters){
@@ -1995,6 +2013,9 @@ void Simulation::advanceHouseholdMigration()
         pending.hasSpatialTarget=true;
         pending.targetPos=migration.target;
         runtime.pendingContext=pending;
+        const double preference=residentCognitiveIntentPreference(world_,acceptedCognitiveDecisions_,memberId,CognitiveIntentKind::MigrateHousehold);
+        if(memberId==migration.leader ||(preference>0 &&preference==usedMigrationPreference))
+            recordPreferredCognitiveStep(memberId,pending,CognitiveIntentKind::MigrateHousehold,0);
         clearNavigation(runtime);
     }
 
@@ -2265,6 +2286,8 @@ bool Simulation::tryCivilizationDecision(
             cognitiveOrigin->minute,pending.issuedMinute};
     }
     r.pendingContext=pending;
+    if((!continuation ||!inheritCognitiveStep(c.id,continuation->token,pending,cognitiveOrigin))
+       &&cognitiveOrigin)recordCognitiveStep(*cognitiveOrigin,pending);
     // AL-2 evidence: the agent really selected this civilization command
     // and Core issued its unique physical token. Do not credit proposed
     // intentions, fallback decisions, or an unissued step. Stable journal
@@ -2689,7 +2712,8 @@ bool Simulation::reassessGatherGoal(Character& actor,Runtime& runtime)
 bool Simulation::trySocialDecision(
     Character& c,
     Runtime& r,
-    const UnifiedUtilityDecision* precomputed)
+    const UnifiedUtilityDecision* precomputed,
+    const AcceptedCognitiveDecision* cognitiveOrigin)
 {
     if(!c.alive || lifeStageProfile(c.lifeStage).autonomy<0.35 || r.pendingContext.active()) return false;
     if(world_.minute<r.socialCooldownUntilMinute) return false;
@@ -2818,6 +2842,9 @@ bool Simulation::trySocialDecision(
         pending.targetPos=targetRuntime->second.pos;
     }
     r.pendingContext=pending;
+    if(cognitiveOrigin &&modelPreferredSocialTarget
+       &&cognitiveOrigin->contextFingerprint==modelSocialContextFingerprint)
+        recordCognitiveStep(*cognitiveOrigin,pending);
     r.civilizationActive=false;
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
@@ -3085,7 +3112,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
                ==ResidentAgencyAuthority::ResidentCognition
            &&embodiedGoal.agency.contextFingerprint
                ==newest->contextFingerprint
-           &&cadenceDecision.kind==UnifiedDecisionKind::Civilization){
+           &&(cadenceDecision.kind==UnifiedDecisionKind::Civilization
+                  ||cadenceDecision.kind==UnifiedDecisionKind::Social)){
             selectedCognitiveOrigin=newest;
         }
         selectedResourceGoal=embodiedGoal.personalGoal;
@@ -3153,7 +3181,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         return;
     }
     if(planningAllowed && !hasUrgentPhysicalNeed
-       && trySocialDecision(c,r,sharedCadenceDecision)) return;
+       && trySocialDecision(c,r,sharedCadenceDecision,selectedCognitiveOrigin)) return;
 
     r.civilizationActive=false;
     r.socialActive=false;
@@ -4025,6 +4053,7 @@ void Simulation::advanceDependentCare()
             pending.hasSpatialTarget=true;
             pending.targetPos=target;
             runtime.pendingContext=pending;
+            recordPreferredCognitiveStep(provisionCaregiver->id,pending,CognitiveIntentKind::CareForDependent,child.id);
             runtime.civilizationActive=false;
             runtime.socialActive=false;
             runtime.socialIntent=SocialIntent::None;
@@ -4061,6 +4090,7 @@ void Simulation::advanceDependentCare()
             pending.targetPos=childRuntime->second.pos;
         }
         runtime.pendingContext=pending;
+        recordPreferredCognitiveStep(chosenCaregiver->id,pending,CognitiveIntentKind::CareForDependent,child.id);
         runtime.civilizationActive=false;
         runtime.socialActive=false;
         runtime.socialIntent=SocialIntent::None;
@@ -4767,6 +4797,7 @@ void Simulation::step(){
                                 c.civilization.inventory.count(ItemKind::RawMaterial,gather.material),
                                 node ? node->quantity : 0,"route-failed");
                         }
+                        finishCognitiveStep(c.id,r.pendingContext.token,CognitiveStepResult::RouteFailed,"route-failed");
                         emit(c.name+" context action route failed");
                         r.pendingContext.clear();
                         clearNavigation(r);
@@ -4801,6 +4832,7 @@ void Simulation::step(){
                             c,r,"outbound trade leg timed out");
                     }
                 }else{
+                    finishCognitiveStep(c.id,r.pendingContext.token,CognitiveStepResult::Expired,"action-expired");
                     emit(c.name+" context action timed out");
                     if(r.pendingContext.gatherGoal.active())
                         completeContextAction(c,r,r.pendingContext.token,r.pos);
@@ -4864,6 +4896,7 @@ void Simulation::step(){
     advanceSocietyInstitutions();
     advanceSocietyRecordkeeping();
     advanceAutonomousFamilyProgression();
+    reconcileCognitiveSteps();
 }
 void Simulation::runMinutes(int minutes){ for(int i=0;i<minutes;++i) step(); }
 }

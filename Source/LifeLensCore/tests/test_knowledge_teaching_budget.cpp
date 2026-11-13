@@ -230,6 +230,10 @@ static bool runCognitiveTeachingPreferenceScenario()
     CHECK(replay.observePendingContextAction(teacher).targetResident
         ==requested);
     CHECK(selected.targetResident!=ordinary.targetResident);
+    const auto& traces=chosen.cognitiveCausalJournal();
+    CHECK(!traces.empty() &&traces.back().origin.actor==teacher &&traces.back().accepted);
+    CHECK(!traces.back().steps.empty() &&traces.back().steps.back().token==selected.token);
+    CHECK(traces.back().steps.back().source==CognitiveTraceSource::Preference);
     // Decision was not a fabricated knowledge transfer.
     const Character* target=cognitiveCharacter(
         chosen.world(),requested);

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "lifelens/CoreNavigation.h"
+#include "fixtures/cognitive_causal_export.h"
 #include "lifelens/ResidentCivilizationOutcomeLearning.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
@@ -147,6 +148,7 @@ int main()
     REQUIRE(original.acceptCognitiveProposal(
         request,proposal,"controlled-local-cognition","al2-runtime-fixture"));
     REQUIRE(original.acceptedCognitiveDecisions().size()==1);
+    REQUIRE(exportCausalFixture(original,actorId,"start"));
 
     std::uint64_t gatherToken=0;
     std::uint64_t craftToken=0;
@@ -302,6 +304,19 @@ int main()
     REQUIRE(actualBytes==replayedBytes);
     REQUIRE(replay.world().characters.front().civilization.inventory.count(
         ItemKind::DiggingStick,MaterialKind::Wood)>0);
+    const auto& causal=original.cognitiveCausalJournal();
+    REQUIRE(!causal.empty());
+    const CognitiveCausalTrace* linked=nullptr;
+    for(const auto& trace:causal)if(trace.accepted &&trace.origin.actor==actorId &&trace.origin.contextFingerprint==goalFingerprint)linked=&trace;
+    REQUIRE(linked!=nullptr);
+    for(const auto token:{gatherToken,craftToken}){
+        const CognitiveCausalStep* actual=nullptr;
+        for(const auto& step:linked->steps)if(step.token==token)actual=&step;
+        REQUIRE(actual!=nullptr &&actual->result==CognitiveStepResult::Succeeded &&actual->attempted);
+        REQUIRE(actual->learning.changed &&actual->learning.afterCount>actual->learning.beforeCount);
+    }
+    REQUIRE(validCognitiveCausalJournal(causal,original.world(),original.acceptedCognitiveDecisions()));
+    REQUIRE(exportCausalFixture(original,actorId,"completed"));
     std::cout<<"AL2_PRODUCT_TICK_CHAIN seed="<<seed
         <<" actor="<<actorId
         <<" gather_token="<<gatherToken
