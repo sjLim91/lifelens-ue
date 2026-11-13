@@ -10,6 +10,7 @@
 #include "lifelens/ResidentGatherRouteRecovery.h"
 #include "lifelens/ResidentGatherAssessment.h"
 #include "lifelens/ResidentAICompletedPlanGuard.h"
+#include "lifelens/ResidentCognitiveActionLinkSnapshotCodec.h"
 #include "lifelens/ResidentUnifiedAgency.h"
 #include "lifelens/ResidentCognitiveCarePreference.h"
 #include "lifelens/ResidentContextOutcomeLearning.h"
