@@ -33,8 +33,8 @@
 
 ## 최종 병합·배포 검증
 
-- [PR #1023](https://github.com/sjLim91/lifelens-ue/pull/1023) → main `6dcfa886`. [Core CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249905)·[WASM CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249928)·[Web CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249873) 및 전체 10개 workflow 성공. 
-- [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43374145617)·[Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43374359292)·[External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43374463850) 성공. 
+- [PR #1023](https://github.com/sjLim91/lifelens-ue/pull/1023) → main `6dcfa886`. [Core CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249905)·[WASM CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249928)·[Web CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249873) 및 전체 10개 workflow 성공.
+- [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43374145617)·[Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43374359292)·[External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43374463850) 성공.
 - 통합 코드 로컬 Core **178/178** 통과. 원격 Core 전체 회귀·기존 AL-1·결정론·365일 검증 통과.
 - 실제 통제 Core fixture의 승인→Gather/Craft→결과→학습과 실패→대체 원천 복구, 실패 직전/중간 binary 저장 재개, native/WASM 동일 결과, 320/393/915px 관찰 UI를 검증했다. 공개 배포 앱의 별도 브라우저 저장소에 실제 Core checkpoint를 복원해 인과 표시·새로고침 보존과 오류 0건을 확인했다. 실제 Qwen 추론 품질·무개입 AL-2 또는 전체 M10 완료로 계산하지 않는다. 발열 검증은 사용자 지시로 제외했다.
 - 공개 앱과 Runtime source를 같은 main commit으로 확인했다. 실제 사용자 저장소는 수정하지 않았다.

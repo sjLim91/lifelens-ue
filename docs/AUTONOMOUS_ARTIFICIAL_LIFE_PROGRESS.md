@@ -1,13 +1,13 @@
 ## 2026-11-13 M10-03 전체 인과 타임라인 완료
 
-- [PR #1023](https://github.com/sjLim91/lifelens-ue/pull/1023) → main `6dcfa886`. [Core CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249905)·[WASM CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249928)·[Web CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249873) 및 전체 10개 workflow 성공. [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43374145617)·[Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43374359292)·[External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43374463850) 성공. 
+- [PR #1023](https://github.com/sjLim91/lifelens-ue/pull/1023) → main `6dcfa886`. [Core CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249905)·[WASM CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249928)·[Web CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43372249873) 및 전체 10개 workflow 성공. [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43374145617)·[Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43374359292)·[External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43374463850) 성공.
 - 실제 통제 Core fixture의 승인→Gather/Craft→결과→학습과 실패→대체 원천 복구, 실패 직전/중간 binary 저장 재개, native/WASM 동일 결과, 320/393/915px 관찰 UI를 검증했다. 공개 배포 앱의 별도 브라우저 저장소에 실제 Core checkpoint를 복원해 인과 표시·새로고침 보존과 오류 0건을 확인했다. 실제 Qwen 추론 품질·무개입 AL-2 또는 전체 M10 완료로 계산하지 않는다. 발열 검증은 사용자 지시로 제외했다.
 - 완료 **7/86**, 진행 **26/86**, 미완·미검증 **53/86**. M10은 1/7 완료이며 나머지 6개 상태를 유지한다.
 
 ## 2026-11-13 M10 관찰·모션 구현 체크포인트
 
 - 모바일 입력/UI 기존 배포를 보존하고, 실제 행동 근거 타임라인·리그를 따르는 기본복·동물 시간 동기·화면 성능 기록을 추가했다. [구현·검증과 인수 한계](../tasks/M10_OBSERVER_PRESENTATION_2026-11-13.md).
-- M10 7개는 **진행 중**으로 변경한다. 제안→실제 토큰 전 출처 연결, 모든 행동/종별 종합 시각 인수와 물리 Android 비용은 미검증이므로 **완료 6/86을 유지**한다.
+- 후속 M10-03의 전체 인과 연결은 상단 근거에 따라 **완료**했다. 나머지 M10 6개는 진행 중이며 모든 행동/종별 종합 시각 인수와 물리 Android 비용은 미검증이다. 발열은 이번 검증에서 제외했으며 현재 완료 수는 **7/86**이다.
 
 ## 2026-11-10 AL-1 로컬 구현·검증 체크포인트 — 인수 미완료
 
@@ -228,7 +228,7 @@
 
 - 완료: **7/86** (M0-01, M0-02, M0-03, M0-04, M0-05, M6-01, M10-03). 단순 계획 단위 완료 지표이지 전체 시뮬레이션 구현률이 아니다.
 - 검증 완료·병합 검토: **0** (현재 표시 기준).
-- 진행: **26** (M1-07 #926/#929, M1-01 #822/#828/#832/#887, M1-02 #907, M1-03 #841, M1-05 #841, M2-01 #844, M2-03 #844, M2-05 #846, M2-06 #846/#894, M2-07 #830/#835/#838/#885, M2-08 #857/#866, M2-04 #879/#882/#883, M2-09 #864/#880/#894, M3-02 #895, M3-03 #893, M6-04 #881/#886, M9-01 #859/#863, M9-02 #884, M11-03 #852/#854, M11-04 #860/#868).
+- 진행: **26** (M1-07 #926/#929, M1-01 #822/#828/#832/#887, M1-02 #907, M1-03 #841, M1-05 #841, M2-01 #844, M2-03 #844, M2-05 #846, M2-06 #846/#894, M2-07 #830/#835/#838/#885, M2-08 #857/#866, M2-04 #879/#882/#883, M2-09 #864/#880/#894, M3-02 #895, M3-03 #893, M6-04 #881/#886, M9-01 #859/#863, M9-02 #884, M11-03 #852/#854, M11-04 #860/#868, M10-01/02/04/05/06/07).
 - 미완 또는 미검증: **53**.
 - **병렬 트랙:** AI 실행·인지 감사(M0-03, M1-01, M2-01), 메모리/장기 감사(M0-04, M11-04), 야생/생태(M0-02, M6-01), 시간 지속성(M9-01/02)은 파일 소유 영역을 분리한다. 실제 기능 구현/테스트 착수 전에는 신규 병렬 트랙을 완료·진행으로 미리 올리지 않는다.
 
