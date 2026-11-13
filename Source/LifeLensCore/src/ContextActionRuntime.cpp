@@ -399,6 +399,13 @@ bool Simulation::completeContextAction(
                         world_,actor,decision,resolvedPosition);
                 rememberCivilizationAttemptOutcome(
                     actor,decision,world_.minute,false,cause);
+                // Real attempted command failed at Core execution, not at
+                // model planning. Match it to an issued cognition step by the
+                // immutable original pending token in the audit log.
+                emit("AL2_CORE_STEP_FAILED actor="+std::to_string(actor.id)
+                    +" step_token="+std::to_string(token)
+                    +" result_minute="+std::to_string(world_.minute)
+                    +" intent="+civilizationIntentName(decision.intent));
                 reportGatherGoalResult(actor,issued,inventoryBefore,
                     resourceBefore,"failed");
                 if(decision.intent==CivilizationIntent::Gather)
@@ -538,7 +545,9 @@ bool Simulation::completeContextAction(
                    <<"->"<<gatherTool.durabilityAfter;
                 if(gatherTool.broken) log<<" broken";
             }
-            log<<" (civilization utility "<<std::fixed<<std::setprecision(2)<<decision.utility<<")";
+            log<<" (civilization utility "<<std::fixed<<std::setprecision(2)
+               <<decision.utility<<")"
+               <<" core_step_token="<<token;
             emit(log.str());
             completed=true;
             break;
