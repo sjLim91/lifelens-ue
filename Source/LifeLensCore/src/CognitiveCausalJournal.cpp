@@ -57,14 +57,17 @@ void Simulation::recordCognitiveStep(const AcceptedCognitiveDecision& origin,con
     if(trace->steps.size()==MaxCognitiveTraceSteps){trace->steps.erase(trace->steps.begin());++trace->omittedSteps;}
     trace->steps.push_back(std::move(s));
 }
-void Simulation::inheritCognitiveStep(CharacterId actor,std::uint64_t previous,const PendingContextAction& pending) {
-    if(previous==0)return;
-    for(auto& t:cognitiveCausalJournal_)if(t.origin.actor==actor &&t.accepted)
+bool Simulation::inheritCognitiveStep(CharacterId actor,std::uint64_t previous,const PendingContextAction& pending,const AcceptedCognitiveDecision* selectedOrigin) {
+    if(previous==0)return false;
+    for(auto& t:cognitiveCausalJournal_)if(t.origin.actor==actor &&t.accepted
+        &&(!selectedOrigin ||sameCognitiveOrigin(t.origin,*selectedOrigin)))
         for(const auto& s:t.steps)if(s.token==previous){
             const auto origin=t.origin;recordCognitiveStep(origin,pending,CognitiveTraceSource::Continuation);
-            for(auto& next:cognitiveCausalJournal_)for(auto& step:next.steps)if(step.token==pending.token)step.previousToken=previous;
-            return;
+            for(auto& next:cognitiveCausalJournal_)if(sameCognitiveOrigin(next.origin,origin))
+                for(auto& step:next.steps)if(step.token==pending.token){step.previousToken=previous;return true;}
+            return false;
         }
+    return false;
 }
 void Simulation::recordPreferredCognitiveStep(CharacterId actor,const PendingContextAction& pending,CognitiveIntentKind intent,CharacterId target) {
     // This is an explicitly used positive utility contribution, not a claim

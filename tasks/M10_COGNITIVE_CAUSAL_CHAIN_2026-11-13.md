@@ -15,6 +15,7 @@
 
 - 최대 64개 판단, 판단당 24개 실제 단계를 보관하는 Core 소유 관찰 journal이다. planner/utility/physical outcome/RNG는 이 journal을 읽어 결정하지 않는다.
 - 기존 cognition snapshot extension v3에 관찰 journal을 보존한다. v1/v2는 계속 읽으며 과거에 없던 행동 결과를 복원하지 않는다. 비어 있는 journal은 기존 저장 형식을 유지한다. actor/승인 원본/단계 식별자/시간/중복/유한 학습 값 검증에 실패하면 저장·복원을 거부한다.
+- 병합된 AL-2 [#1022](https://github.com/sjLim91/lifelens-ue/pull/1022)·[#1024](https://github.com/sjLim91/lifelens-ue/pull/1024)의 실행 중 cognitiveGoal 저장 tail과 실제 실패 직전 checkpoint 재생을 보존한다. 같은 승인 원본을 이어받는 복구는 원래 토큰을 `Continuation`으로 연결하며 다른 새 판단의 토큰을 이전 판단에 붙이지 않는다.
 - `cognitiveCausalJournalJson(actor)`는 읽기 전용 schema 1이다. 최신 8개 판단을 내보내며 actor/seed/population/generation과 64비트 번호/지문을 lossless 문자열로 전달한다. 승인 후 미선택·대체·유효기간 만료를 구분한다.
 - Web reader는 소유자·세계·시간·토큰·출처·결과·학습 count와 배열/문자열 한도를 검증한다. 확장된 상세를 여는 동안만 1초 간격으로 읽으며 이전 런타임에는 개별 관찰 fallback을 명시한다. 원본 제안→단계 연결을 Web이 생성하지 않는다.
 

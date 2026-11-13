@@ -375,7 +375,7 @@ private:
     std::vector<CognitiveCausalTrace> cognitiveCausalJournal_;
     void recordCognitiveProposal(const AcceptedCognitiveDecision&,bool,CognitiveTraceRejection);
     void recordCognitiveStep(const AcceptedCognitiveDecision&,const PendingContextAction&,CognitiveTraceSource=CognitiveTraceSource::Planner);
-    void inheritCognitiveStep(CharacterId,std::uint64_t,const PendingContextAction&);
+    bool inheritCognitiveStep(CharacterId,std::uint64_t,const PendingContextAction&,const AcceptedCognitiveDecision* selectedOrigin=nullptr);
     void recordPreferredCognitiveStep(CharacterId,const PendingContextAction&,CognitiveIntentKind,CharacterId);
     void finishCognitiveStep(CharacterId,std::uint64_t,CognitiveStepResult,const std::string&,bool=false,const CognitiveLearningEvidence& = {});
     void reconcileCognitiveSteps();

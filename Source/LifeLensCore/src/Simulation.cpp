@@ -10,6 +10,7 @@
 #include "lifelens/ResidentGatherRouteRecovery.h"
 #include "lifelens/ResidentGatherAssessment.h"
 #include "lifelens/ResidentAICompletedPlanGuard.h"
+#include "lifelens/ResidentCognitiveActionLinkSnapshotCodec.h"
 #include "lifelens/ResidentUnifiedAgency.h"
 #include "lifelens/ResidentCognitiveCarePreference.h"
 #include "lifelens/ResidentContextOutcomeLearning.h"
@@ -2260,14 +2261,9 @@ bool Simulation::tryCivilizationDecision(
         pending.sanitationSiteId=sanitationSiteId;
     }
 
-    r.pendingContext=pending;
-    if(cognitiveOrigin)recordCognitiveStep(*cognitiveOrigin,pending);
-    else if(continuation)inheritCognitiveStep(c.id,continuation->token,pending);
-    // AL-2 evidence: the agent really selected this civilization command
-    // and Core issued its unique physical token. Do not credit proposed
-    // intentions, fallback decisions, or an unissued step. Stable journal
-    // fingerprint is the observed cognitive goal key; the token identifies
-    // ONE concrete Core step. Outcome is independently logged by executor.
+    // Only the authoritative accepted journal can attach a cognition goal
+    // to the exact physical action token that Core has now issued. This is
+    // in-flight runtime provenance, not a model-declared or completed action.
     if(cognitiveOrigin!=nullptr
        &&cognitiveOrigin->actor==c.id
        &&cognitiveOrigin->intent==CognitiveIntentKind::CraftUsefulTools
@@ -2275,11 +2271,33 @@ bool Simulation::tryCivilizationDecision(
        &&cognitiveOrigin->minute>=0
        &&cognitiveOrigin->minute<=world_.minute
        &&world_.minute-cognitiveOrigin->minute
-           <=ResidentAgencyGoalHorizonMinutes){
+           <=ResidentAgencyGoalHorizonMinutes
+       &&std::any_of(acceptedCognitiveDecisions_.begin(),
+           acceptedCognitiveDecisions_.end(),
+           [&](const AcceptedCognitiveDecision& accepted){
+               return accepted.actor==c.id
+                   &&accepted.intent==CognitiveIntentKind::CraftUsefulTools
+                   &&accepted.minute==cognitiveOrigin->minute
+                   &&accepted.contextFingerprint
+                       ==cognitiveOrigin->contextFingerprint;
+           })){
+        pending.cognitiveGoal={
+            pending.token,c.id,cognitiveOrigin->contextFingerprint,
+            cognitiveOrigin->minute,pending.issuedMinute};
+    }
+    r.pendingContext=pending;
+    if((!continuation ||!inheritCognitiveStep(c.id,continuation->token,pending,cognitiveOrigin))
+       &&cognitiveOrigin)recordCognitiveStep(*cognitiveOrigin,pending);
+    // AL-2 evidence: the agent really selected this civilization command
+    // and Core issued its unique physical token. Do not credit proposed
+    // intentions, fallback decisions, or an unissued step. Stable journal
+    // fingerprint is the observed cognitive goal key; the token identifies
+    // ONE concrete Core step. Outcome is independently logged by executor.
+    if(pending.cognitiveGoal.active()){
         std::ostringstream trace;
         trace<<"AL2_CORE_COGNITION_STEP_ISSUED actor="<<c.id
-             <<" goal_fp="<<cognitiveOrigin->contextFingerprint
-             <<" thought_minute="<<cognitiveOrigin->minute
+             <<" goal_fp="<<pending.cognitiveGoal.contextFingerprint
+             <<" thought_minute="<<pending.cognitiveGoal.thoughtMinute
              <<" step_token="<<pending.token
              <<" step_minute="<<world_.minute
              <<" intent="<<civilizationIntentName(pending.civilization.intent)
@@ -2464,9 +2482,50 @@ bool Simulation::recoverGatherGoal(
             decision.kind=UnifiedDecisionKind::Civilization;
             decision.civilization=*alternative;
             decision.utility=alternative->utility;
+            // The failed command itself carries a Core-journal-validated
+            // provenance link through save/restore. Audit logs are presentation
+            // history, never an authorization oracle. A legacy pending token
+            // without this link simply recovers physically without claiming
+            // cognition provenance.
+            const AcceptedCognitiveDecision* cognitiveRecovery=nullptr;
+            const auto& originalLink=previous.cognitiveGoal;
+            if(validAttachedResidentCognitiveActionLink(
+                   actor.id,previous,acceptedCognitiveDecisions_,world_.minute)){
+                for(auto it=acceptedCognitiveDecisions_.rbegin();
+                    it!=acceptedCognitiveDecisions_.rend();++it){
+                    if(it->actor!=actor.id) continue;
+                    // A newer accepted strategy must not inherit the former
+                    // goal's physical action just because it has the same
+                    // generic CraftUsefulTools intent.
+                    if(!originalLink.active()
+                       ||it->intent!=CognitiveIntentKind::CraftUsefulTools
+                       ||it->minute!=originalLink.thoughtMinute
+                       ||it->contextFingerprint!=originalLink.contextFingerprint
+                       ||world_.minute-it->minute
+                           >ResidentAgencyGoalHorizonMinutes)
+                        break;
+                    const bool survivalUrgent=std::max({
+                        actor.needs.hunger,actor.needs.thirst,
+                        actor.needs.sleep,actor.needs.bladder,
+                        actor.needs.hygiene
+                    })>=ruleset_.utilityAI.urgentThreshold;
+                    const auto agency=chooseSingleResidentAgencyDecision(
+                        world_,actor,runtime.pos,relationships_,decision,
+                        &*it,&population,std::nullopt,survivalUrgent);
+                    if(agency.authority==ResidentAgencyAuthority::ResidentCognition
+                       &&agency.contextFingerprint==originalLink.contextFingerprint
+                       &&agency.decision.kind==UnifiedDecisionKind::Civilization
+                       &&agency.decision.civilization.intent==CivilizationIntent::Gather
+                       &&agency.decision.civilization.material==alternative->material
+                       &&agency.decision.civilization.resourceNode==alternative->resourceNode)
+                        cognitiveRecovery=&*it;
+                    break;
+                }
+            }
             if(tryCivilizationDecision(actor,runtime,&decision,nullptr,
                     goal.active() ? &goal : nullptr,
-                    selected ? &selected->position : nullptr)){
+                    selected ? &selected->position : nullptr,
+                    cognitiveRecovery)){
                 if(selected &&sameGridPos(runtime.pendingContext.targetPos,selected->position)){
                     runtime.navigationTarget=selected->position;
                     runtime.navigationHasTarget=true;

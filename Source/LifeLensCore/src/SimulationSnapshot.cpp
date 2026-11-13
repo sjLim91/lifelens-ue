@@ -2,6 +2,7 @@
 #include "lifelens/DependentEscortSnapshotCodec.h"
 #include "lifelens/AutonomousGoalActionLinkSnapshotCodec.h"
 #include "lifelens/ResidentGatherGoalSnapshotCodec.h"
+#include "lifelens/ResidentCognitiveActionLinkSnapshotCodec.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/WorldGenerationSnapshotCodec.h"
@@ -130,6 +131,10 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
             return fail("runtime autonomous goal action link mismatches pending Core action");
         if(!validAttachedResidentGatherGoal(item.first,pending,snapshot.world.minute))
             return fail("runtime gather goal mismatches pending Core action");
+        if(!validAttachedResidentCognitiveActionLink(
+               item.first,pending,snapshot.acceptedCognitiveDecisions,
+               snapshot.world.minute))
+            return fail("runtime cognitive goal mismatches Core token and accepted thought");
         if(!validResidentSuspendedGatherGoal(
                item.first,item.second.suspendedGather,snapshot.world.minute)
            ||(item.second.suspendedGather.active()

@@ -186,7 +186,9 @@ int main()
     int gatherUnits=0;
     int travelCells=0;
     bool savedAfterPhysicalGather=false;
+    bool savedBeforePhysicalFailure=false;
     Simulation replay(seed,0,CurrentWorldGenerationVersion,rules);
+    Simulation preFailureReplay(seed,0,CurrentWorldGenerationVersion,rules);
     std::string error;
 
     for(int elapsed=0;elapsed<500;++elapsed){
@@ -197,6 +199,8 @@ int main()
         original.step();
         if(savedAfterPhysicalGather)
             replay.step();
+        if(savedBeforePhysicalFailure)
+            preFailureReplay.step();
         GridPos afterPos{};
         REQUIRE(original.runtimePosition(actorId,afterPos));
         if(afterPos.x!=beforePos.x ||afterPos.y!=beforePos.y)
@@ -215,6 +219,12 @@ int main()
                 if(failedToken==0){
                     failedToken=issued.token;
                     failedSource=issued.civilization.resourceNode;
+                    REQUIRE(issued.cognitiveGoal.active());
+                    REQUIRE(issued.cognitiveGoal.token==failedToken);
+                    REQUIRE(issued.cognitiveGoal.actor==actorId);
+                    REQUIRE(issued.cognitiveGoal.contextFingerprint
+                        ==cognitiveRequestFingerprint(request));
+                    REQUIRE(issued.cognitiveGoal.thoughtMinute==request.minute);
                     // Core issued the builder's physical trip. A separate
                     // resident independently uses the ordinary Core gather
                     // executor at the node while the builder is travelling.
@@ -236,6 +246,53 @@ int main()
                     }
                     REQUIRE(removedByCompetitor>0
                         &&sourceStock(failedSource)==0);
+                    // The competing resident exhausted the REAL stock, but
+                    // our worker has not physically arrived. Save this very
+                    // in-flight, accepted-thought-owned command and restore
+                    // it into a second production Simulation. No token,
+                    // action memory or source choice may be injected.
+                    auto liveState=original.captureSnapshot();
+                    const auto& liveLink=liveState.runtime.at(actorId)
+                        .pendingContext.cognitiveGoal;
+                    REQUIRE(liveLink.active() &&liveLink.token==failedToken);
+                    auto forged=liveState;
+                    forged.runtime.at(actorId).pendingContext.cognitiveGoal
+                        .contextFingerprint^=1ULL;
+                    std::vector<std::uint8_t> invalidBytes;
+                    std::string invalidReason;
+                    REQUIRE(!encodeSimulationSnapshot(
+                        forged,invalidBytes,&invalidReason));
+                    REQUIRE(!invalidReason.empty());
+                    REQUIRE(!preFailureReplay.restoreSnapshot(
+                        forged,&invalidReason));
+                    // Emulate a genuine older v8 save with no optional
+                    // cognition-action tail. Its accepted journal and
+                    // physical pending command are unchanged, but Core must
+                    // not invent an action attribution on legacy decode.
+                    auto legacy=liveState;
+                    legacy.runtime.at(actorId).pendingContext.cognitiveGoal.clear();
+                    std::vector<std::uint8_t> legacyBytes;
+                    REQUIRE(encodeSimulationSnapshot(
+                        legacy,legacyBytes,&error));
+                    SimulationStateSnapshot legacyDecoded;
+                    REQUIRE(decodeSimulationSnapshot(
+                        legacyBytes,legacyDecoded,&error));
+                    REQUIRE(!legacyDecoded.runtime.at(actorId)
+                        .pendingContext.cognitiveGoal.active());
+                    std::vector<std::uint8_t> beforeFailureBytes;
+                    REQUIRE(encodeSimulationSnapshot(
+                        liveState,beforeFailureBytes,&error));
+                    SimulationStateSnapshot decodedBeforeFailure;
+                    REQUIRE(decodeSimulationSnapshot(
+                        beforeFailureBytes,decodedBeforeFailure,&error));
+                    const auto& restoredLink=decodedBeforeFailure
+                        .runtime.at(actorId).pendingContext.cognitiveGoal;
+                    REQUIRE(restoredLink.token==failedToken);
+                    REQUIRE(restoredLink.contextFingerprint
+                        ==cognitiveRequestFingerprint(request));
+                    REQUIRE(preFailureReplay.restoreSnapshot(
+                        decodedBeforeFailure,&error));
+                    savedBeforePhysicalFailure=true;
                 }else if(issued.civilization.resourceNode!=failedSource
                          &&gatherToken==0){
                     gatherToken=issued.token;
@@ -337,9 +394,31 @@ int main()
             witnessedRecovery=true;
     }
     REQUIRE(witnessedPhysicalFailure &&witnessedRecovery);
+    // The builder's own original accepted Core cognition must be credited
+    // through the failed A token, the B recovery token, and the final tool
+    // Craft. A fallback plan or an unrelated latest thought cannot claim a
+    // token: require the exact original fingerprint AND actual Core receipts.
+    const auto goalFingerprint=cognitiveRequestFingerprint(request);
+    const auto hasCognitionStep=[&](std::uint64_t token,const char* intent){
+        const std::string tag=
+            "AL2_CORE_COGNITION_STEP_ISSUED actor="
+            +std::to_string(actorId)
+            +" goal_fp="+std::to_string(goalFingerprint)
+            +" thought_minute="+std::to_string(request.minute)
+            +" step_token="+std::to_string(token)+" ";
+        for(const auto& line:original.logs())
+            if(line.find(tag)!=std::string::npos
+                &&line.find(" intent="+std::string(intent))
+                    !=std::string::npos)
+                return true;
+        return false;
+    };
+    REQUIRE(hasCognitionStep(failedToken,"Gather"));
+    REQUIRE(hasCognitionStep(gatherToken,"Gather"));
+    REQUIRE(hasCognitionStep(craftToken,"Craft"));
     REQUIRE(firstGatherMinute>=480 &&craftMinute>firstGatherMinute);
     REQUIRE(gatherUnits>0 &&travelCells>0);
-    REQUIRE(savedAfterPhysicalGather);
+    REQUIRE(savedAfterPhysicalGather &&savedBeforePhysicalFailure);
     REQUIRE(original.acceptedCognitiveDecisions().size()==1);
     const auto& completed=original.world().characters.front();
     REQUIRE(completed.civilization.inventory.count(
@@ -355,12 +434,15 @@ int main()
 
     // The continuation runs through exactly the same Core tick path after
     // a byte-encoded save/load at the FIRST physical Gather result.
-    std::vector<std::uint8_t> actualBytes,replayedBytes;
+    std::vector<std::uint8_t> actualBytes,replayedBytes,preFailureBytes;
     REQUIRE(encodeSimulationSnapshot(
         original.captureSnapshot(),actualBytes,&error));
     REQUIRE(encodeSimulationSnapshot(
         replay.captureSnapshot(),replayedBytes,&error));
     REQUIRE(actualBytes==replayedBytes);
+    REQUIRE(encodeSimulationSnapshot(
+        preFailureReplay.captureSnapshot(),preFailureBytes,&error));
+    REQUIRE(actualBytes==preFailureBytes);
     REQUIRE(replay.world().characters.front().civilization.inventory.count(
         ItemKind::DiggingStick,MaterialKind::Wood)>0);
     const CognitiveCausalTrace* causal=nullptr;
@@ -369,7 +451,8 @@ int main()
     bool actualFailure=false,actualRecovery=false,actualCraft=false;
     for(const auto& step:causal->steps){
         if(step.token==failedToken)actualFailure=step.result==CognitiveStepResult::Failed &&step.attempted &&step.learning.changed;
-        if(step.token==gatherToken)actualRecovery=step.result==CognitiveStepResult::Succeeded &&step.learning.changed;
+        if(step.token==gatherToken)actualRecovery=step.result==CognitiveStepResult::Succeeded &&step.learning.changed
+            &&step.source==CognitiveTraceSource::Continuation &&step.previousToken==failedToken;
         if(step.token==craftToken)actualCraft=step.result==CognitiveStepResult::Succeeded &&step.learning.changed;
     }
     REQUIRE(actualFailure &&actualRecovery &&actualCraft);
@@ -388,9 +471,13 @@ int main()
         <<" actual_movement_steps="<<travelCells
         <<" source_stock="<<wood.quantity<<"->"
         <<sourceStock(successfulSource)
+        <<" one_cognitive_goal_fp="<<goalFingerprint
+        <<" linked_core_tokens=3"
         <<" real_exhaustion_failure_and_recovery=1"
         <<" direct_gather_and_craft_memories=1"
         <<" serialized_continuation_identical=1"
+        <<" saved_inflight_cognition_link_survives_failure_recovery=1"
+        <<" forged_fingerprint_rejected=1"
         <<" scope=controlled_competing_Core_resident_fixture"
         <<std::endl;
     return 0;

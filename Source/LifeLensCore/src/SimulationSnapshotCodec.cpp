@@ -3,6 +3,7 @@
 #include "lifelens/NaturalEcologySnapshotCodec.h"
 #include "lifelens/AutonomousGoalActionLinkSnapshotCodec.h"
 #include "lifelens/ResidentGatherGoalSnapshotCodec.h"
+#include "lifelens/ResidentCognitiveActionLinkSnapshotCodec.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/EnvironmentalResidueSnapshotCodec.h"
@@ -256,6 +257,12 @@ bool encodeSimulationSnapshot(
             setError(error,"invalid resident gather goal attribution");
             return false;
         }
+        if(!validAttachedResidentCognitiveActionLink(
+               runtime.first,runtime.second.pendingContext,
+               snapshot.acceptedCognitiveDecisions,snapshot.world.minute)){
+            setError(error,"invalid resident cognition action attribution");
+            return false;
+        }
         if(!validResidentSuspendedGatherGoal(
                runtime.first,runtime.second.suspendedGather,snapshot.world.minute)
            ||(runtime.second.suspendedGather.active()
@@ -313,6 +320,17 @@ bool encodeSimulationSnapshot(
         Writer gatherExtension;
         writeResidentGatherGoalExtension(gatherExtension,snapshot);
         body.insert(body.end(),gatherExtension.bytes.begin(),gatherExtension.bytes.end());
+    }
+    // Strictly optional final tail: never alter old byte layouts for residents
+    // with no cognition-linked physical action pending. A real issued token
+    // has at most one Core-validated resident/accepted-thought link.
+    bool hasCognitiveActionLink=false;
+    for(const auto& entry:snapshot.runtime)
+        hasCognitiveActionLink|=entry.second.pendingContext.cognitiveGoal.active();
+    if(hasCognitiveActionLink){
+        Writer linkExtension;
+        writeResidentCognitiveActionLinkExtension(linkExtension,snapshot);
+        body.insert(body.end(),linkExtension.bytes.begin(),linkExtension.bytes.end());
     }
     outBytes=std::move(body);
     if(error) error->clear();
@@ -412,11 +430,19 @@ bool decodeSimulationSnapshot(
     // characters there must never be interpreted as an extension header.
     const auto gatherGoalSearchBegin=ecologyMarker!=bytes.end()
         ? ecologyMarker+sizeof(NaturalEcologyMagic) : bytes.end();
+    const auto cognitiveActionMarker=std::find_end(
+        gatherGoalSearchBegin,bytes.end(),
+        ResidentCognitiveActionLinkExtensionMagic,
+        ResidentCognitiveActionLinkExtensionMagic
+            +sizeof(ResidentCognitiveActionLinkExtensionMagic));
+    const bool hasCognitiveActionExtension=cognitiveActionMarker!=bytes.end();
+    const auto finalTailEnd=hasCognitiveActionExtension
+        ?cognitiveActionMarker:bytes.end();
     const auto gatherGoalMarker=std::find_end(
-        gatherGoalSearchBegin,bytes.end(),ResidentGatherGoalExtensionMagic,
+        gatherGoalSearchBegin,finalTailEnd,ResidentGatherGoalExtensionMagic,
         ResidentGatherGoalExtensionMagic+sizeof(ResidentGatherGoalExtensionMagic));
-    const bool hasGatherGoalExtension=gatherGoalMarker!=bytes.end();
-    const auto legacyTailEnd=hasGatherGoalExtension ? gatherGoalMarker : bytes.end();
+    const bool hasGatherGoalExtension=gatherGoalMarker!=finalTailEnd;
+    const auto legacyTailEnd=hasGatherGoalExtension ? gatherGoalMarker : finalTailEnd;
     const auto escortMarker=std::find_end(
         bytes.begin()+12,legacyTailEnd,DependentEscortMagic,
         DependentEscortMagic+sizeof(DependentEscortMagic));
@@ -591,10 +617,19 @@ bool decodeSimulationSnapshot(
         }
     }
     if(hasGatherGoalExtension){
-        const std::vector<std::uint8_t> gatherBytes(gatherGoalMarker,bytes.end());
+        const std::vector<std::uint8_t> gatherBytes(gatherGoalMarker,finalTailEnd);
         Reader gatherReader(gatherBytes);
         if(!readResidentGatherGoalExtension(gatherReader,decoded) ||!gatherReader.done()){
             setError(error,"invalid resident gather goal extension");return false;
+        }
+    }
+    if(hasCognitiveActionExtension){
+        const std::vector<std::uint8_t> linkBytes(cognitiveActionMarker,bytes.end());
+        Reader linkReader(linkBytes);
+        if(!readResidentCognitiveActionLinkExtension(linkReader,decoded)
+           ||!linkReader.done()){
+            setError(error,"invalid resident cognition action link extension");
+            return false;
         }
     }
     outSnapshot=std::move(decoded);

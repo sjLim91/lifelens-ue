@@ -10,6 +10,7 @@
 #include "SocialUtility.h"
 #include "AutonomousGoalActionLink.h"
 #include "ResidentGatherGoal.h"
+#include "ResidentCognitiveActionLink.h"
 
 namespace lifelens {
 
@@ -34,6 +35,8 @@ struct PendingContextAction {
     // to this same pending social token; clear() drops both atomically.
     AutonomousGoalActionLink autonomousGoal{};
     ResidentGatherGoalLink gatherGoal{};
+    // Core-verified optional provenance for an issued civilization action.
+    ResidentCognitiveActionLink cognitiveGoal{};
     CivilizationUtilityDecision civilization{};
     CharacterId parentingTarget=0;
     ParentingAction parentingAction=ParentingAction::Comfort;
@@ -687,3 +690,4 @@ inline PendingContextActionObservation observePendingContextAction(
 }
 
 } // namespace lifelens
+
