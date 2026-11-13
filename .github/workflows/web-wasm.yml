@@ -62,7 +62,7 @@ jobs:
         if: always()
         with:
           name: cognitive-causal-evidence
-          path: /tmp/lifelens-causal-fixture/*.json
+          path: /tmp/lifelens-causal-fixture/*
           retention-days: 7
 
       - name: Upload browser runtime artifact
