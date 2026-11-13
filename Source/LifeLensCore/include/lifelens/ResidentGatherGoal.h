@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include "Civilization.h"
+#include "ResidentCognitiveActionLink.h"
 
 namespace lifelens {
 
@@ -53,6 +54,9 @@ struct ResidentSuspendedGatherGoal {
     ResidentGatherGoalLink goal{};
     ResourceNodeId source=0;
     int requestedQuantity=0;
+    // This is NOT an active Core token. It remembers only the originally
+    // issued, journal-verified goal while physical survival takes priority.
+    ResidentCognitiveActionLink cognitiveGoal{};
     bool active() const { return goal.active(); }
 };
 
