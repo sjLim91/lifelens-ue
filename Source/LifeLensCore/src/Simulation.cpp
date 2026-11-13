@@ -2239,12 +2239,9 @@ bool Simulation::tryCivilizationDecision(
         pending.sanitationSiteId=sanitationSiteId;
     }
 
-    r.pendingContext=pending;
-    // AL-2 evidence: the agent really selected this civilization command
-    // and Core issued its unique physical token. Do not credit proposed
-    // intentions, fallback decisions, or an unissued step. Stable journal
-    // fingerprint is the observed cognitive goal key; the token identifies
-    // ONE concrete Core step. Outcome is independently logged by executor.
+    // Only the authoritative accepted journal can attach a cognition goal
+    // to the exact physical action token that Core has now issued. This is
+    // in-flight runtime provenance, not a model-declared or completed action.
     if(cognitiveOrigin!=nullptr
        &&cognitiveOrigin->actor==c.id
        &&cognitiveOrigin->intent==CognitiveIntentKind::CraftUsefulTools
@@ -2252,11 +2249,31 @@ bool Simulation::tryCivilizationDecision(
        &&cognitiveOrigin->minute>=0
        &&cognitiveOrigin->minute<=world_.minute
        &&world_.minute-cognitiveOrigin->minute
-           <=ResidentAgencyGoalHorizonMinutes){
+           <=ResidentAgencyGoalHorizonMinutes
+       &&std::any_of(acceptedCognitiveDecisions_.begin(),
+           acceptedCognitiveDecisions_.end(),
+           [&](const AcceptedCognitiveDecision& accepted){
+               return accepted.actor==c.id
+                   &&accepted.intent==CognitiveIntentKind::CraftUsefulTools
+                   &&accepted.minute==cognitiveOrigin->minute
+                   &&accepted.contextFingerprint
+                       ==cognitiveOrigin->contextFingerprint;
+           })){
+        pending.cognitiveGoal={
+            pending.token,c.id,cognitiveOrigin->contextFingerprint,
+            cognitiveOrigin->minute,pending.issuedMinute};
+    }
+    r.pendingContext=pending;
+    // AL-2 evidence: the agent really selected this civilization command
+    // and Core issued its unique physical token. Do not credit proposed
+    // intentions, fallback decisions, or an unissued step. Stable journal
+    // fingerprint is the observed cognitive goal key; the token identifies
+    // ONE concrete Core step. Outcome is independently logged by executor.
+    if(pending.cognitiveGoal.active()){
         std::ostringstream trace;
         trace<<"AL2_CORE_COGNITION_STEP_ISSUED actor="<<c.id
-             <<" goal_fp="<<cognitiveOrigin->contextFingerprint
-             <<" thought_minute="<<cognitiveOrigin->minute
+             <<" goal_fp="<<pending.cognitiveGoal.contextFingerprint
+             <<" thought_minute="<<pending.cognitiveGoal.thoughtMinute
              <<" step_token="<<pending.token
              <<" step_minute="<<world_.minute
              <<" intent="<<civilizationIntentName(pending.civilization.intent)
@@ -2441,43 +2458,28 @@ bool Simulation::recoverGatherGoal(
             decision.kind=UnifiedDecisionKind::Civilization;
             decision.civilization=*alternative;
             decision.utility=alternative->utility;
-            // Preserve AL-2 causal credit only when BOTH facts hold:
-            // (1) this failed physical token was previously issued under
-            // this exact Core-accepted tool thought; (2) the same resident's
-            // current, pure single-agency decision independently selects the
-            // very same live alternate Core Gather. A nearby memory or the
-            // latest proposal alone is not proof of ownership. Missing logs
-            // (including after old snapshot restore) conservatively yield
-            // no cognition attribution, never fabricated authority.
+            // The failed command itself carries a Core-journal-validated
+            // provenance link through save/restore. Audit logs are presentation
+            // history, never an authorization oracle. A legacy pending token
+            // without this link simply recovers physically without claiming
+            // cognition provenance.
             const AcceptedCognitiveDecision* cognitiveRecovery=nullptr;
-            for(auto it=acceptedCognitiveDecisions_.rbegin();
-                it!=acceptedCognitiveDecisions_.rend();++it){
-                if(it->actor!=actor.id) continue;
-                if(it->intent!=CognitiveIntentKind::CraftUsefulTools
-                   ||it->contextFingerprint==0
-                   ||it->minute>previous.issuedMinute
-                   ||world_.minute-it->minute>ResidentAgencyGoalHorizonMinutes)
-                    break;
-                const std::string prefix=
-                    "AL2_CORE_COGNITION_STEP_ISSUED actor="
-                    +std::to_string(actor.id)+" goal_fp="
-                    +std::to_string(it->contextFingerprint)
-                    +" thought_minute="+std::to_string(it->minute)
-                    +" step_token="+std::to_string(previous.token)+" ";
-                bool originalIssuedByThought=false;
-                std::size_t scanned=0;
-                for(auto log=logs_.rbegin();
-                    log!=logs_.rend() &&scanned<512;++log,++scanned){
-                    if(log->find(prefix)!=std::string::npos){
-                        originalIssuedByThought=true;
+            const auto& originalLink=previous.cognitiveGoal;
+            if(validAttachedResidentCognitiveActionLink(
+                   actor.id,previous,acceptedCognitiveDecisions_,world_.minute)){
+                for(auto it=acceptedCognitiveDecisions_.rbegin();
+                    it!=acceptedCognitiveDecisions_.rend();++it){
+                    if(it->actor!=actor.id) continue;
+                    // A newer accepted strategy must not inherit the former
+                    // goal's physical action just because it has the same
+                    // generic CraftUsefulTools intent.
+                    if(!originalLink.active()
+                       ||it->intent!=CognitiveIntentKind::CraftUsefulTools
+                       ||it->minute!=originalLink.thoughtMinute
+                       ||it->contextFingerprint!=originalLink.contextFingerprint
+                       ||world_.minute-it->minute
+                           >ResidentAgencyGoalHorizonMinutes)
                         break;
-                    }
-                }
-                if(originalIssuedByThought){
-                    // An urgent body need still owns its ordinary
-                    // survival/preemption lane. Even if this physical
-                    // alternative was issued, never label that urgency as
-                    // optional model cognition.
                     const bool survivalUrgent=std::max({
                         actor.needs.hunger,actor.needs.thirst,
                         actor.needs.sleep,actor.needs.bladder,
@@ -2487,13 +2489,14 @@ bool Simulation::recoverGatherGoal(
                         world_,actor,runtime.pos,relationships_,decision,
                         &*it,&population,std::nullopt,survivalUrgent);
                     if(agency.authority==ResidentAgencyAuthority::ResidentCognition
+                       &&agency.contextFingerprint==originalLink.contextFingerprint
                        &&agency.decision.kind==UnifiedDecisionKind::Civilization
                        &&agency.decision.civilization.intent==CivilizationIntent::Gather
                        &&agency.decision.civilization.material==alternative->material
                        &&agency.decision.civilization.resourceNode==alternative->resourceNode)
                         cognitiveRecovery=&*it;
+                    break;
                 }
-                break; // A newer accepted thought is never silently replaced.
             }
             if(tryCivilizationDecision(actor,runtime,&decision,nullptr,
                     goal.active() ? &goal : nullptr,
