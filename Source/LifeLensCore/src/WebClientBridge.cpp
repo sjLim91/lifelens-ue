@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <charconv>
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <sstream>
 #include <system_error>
@@ -1311,11 +1312,16 @@ bool WebClientBridge::restoreSnapshotBase64(const std::string& encoded)
     std::vector<std::uint8_t> bytes;
     if(!decodeBase64(encoded,bytes)) return false;
     SimulationStateSnapshot snapshot;
-    if(!decodeSimulationSnapshot(bytes,snapshot)) return false;
+    std::string restoreError;
+    if(!decodeSimulationSnapshot(bytes,snapshot,&restoreError)){
+        std::cerr<<"Core checkpoint decode failed: "<<restoreError<<"\n";return false;
+    }
     auto candidate=std::make_unique<Simulation>(
         snapshot.world.seed,snapshot.world.populationSeed,
         snapshot.world.generationVersion,snapshot.ruleset);
-    if(!candidate->restoreSnapshot(snapshot)) return false;
+    if(!candidate->restoreSnapshot(snapshot,&restoreError)){
+        std::cerr<<"Core checkpoint restore failed: "<<restoreError<<"\n";return false;
+    }
 
     // Rebuild the observer mapping from saved Core authority, including when
     // the same seed loads a different binding or an explicitly unbound save.

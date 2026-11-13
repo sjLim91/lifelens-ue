@@ -19,20 +19,20 @@ try {
   const initial=await readFile(resolve(fixture,'start.bin'));
   client=new module.LifeLensWebClient();
   assert.equal(typeof client.cognitiveCausalJournalJson,'function');
-  assert.equal(client.restoreSnapshotBase64(initial.toString('base64')),true);
+  assert.equal(client.restoreSnapshotBase64(initial.toString('base64')),true,'initial native checkpoint restore');
   assert.deepEqual(JSON.parse(client.cognitiveCausalJournalJson(start.actor)),start);
   const gather=expected.records.flatMap(r=>r.steps).find(s=>s.action==='Gather'&&s.result===1);
   assert(gather && gather.learning.changed);
   client.runMinutes(gather.resultMinute-start.minute);
   const checkpoint=client.saveSnapshotBase64();
-  resumed=new module.LifeLensWebClient();assert(resumed.restoreSnapshotBase64(checkpoint));
+  resumed=new module.LifeLensWebClient();assert.equal(resumed.restoreSnapshotBase64(checkpoint),true,'WASM midpoint checkpoint restore');
   const tail=expected.minute-gather.resultMinute;
   client.runMinutes(tail);resumed.runMinutes(tail);
   const actual=JSON.parse(client.cognitiveCausalJournalJson(start.actor));
   assert.deepEqual(actual,expected,'native-approved goal -> actual WASM Gather/Craft -> actual learning');
   assert.deepEqual(JSON.parse(resumed.cognitiveCausalJournalJson(start.actor)),expected,'save/reload cannot lose or relink a causal step');
   const unchanged=client.saveSnapshotBase64();client.cognitiveCausalJournalJson(start.actor);assert.equal(client.saveSnapshotBase64(),unchanged,'observation is read-only');
-  assert.equal(client.newGame('874213954','',2),true);
+  assert.equal(client.newGame('874213954','',2),true,'fresh WASM new game');
   const req=JSON.parse(client.cognitiveRequestJson('1','Reflection'));
   assert.equal(client.submitLocalCognitiveProposal('1',req.minute,req.worldSeed,'CooperateWithResident',.9,'1','wasm-self-target','Reflection',req.contextFingerprint),false);
   const blocked=JSON.parse(client.cognitiveCausalJournalJson('1'));
@@ -42,7 +42,8 @@ try {
   await writeFile(resolve(fixture,'wasm-causal-result.json'),JSON.stringify(result,null,2));
   console.log('WASM causal journal: PASS '+JSON.stringify(result));
 } catch(error) {
-  console.error('WASM causal journal: FAIL '+(error instanceof Error?error.message:String(error)));process.exitCode=1;
+  console.error('WASM causal journal: FAIL '+(error instanceof Error?error.message:String(error)));
+  if(error instanceof Error)console.error(error.stack.split('\n').filter(line=>line.includes('verify_wasm_causal_journal')).join('\n'));process.exitCode=1;
 } finally {
   client?.delete();resumed?.delete();clearTimeout(timeout);globalThis.fetch=oldFetch;
   if(oldWindow===undefined)delete globalThis.window;else globalThis.window=oldWindow;
