@@ -1,0 +1,654 @@
+{
+  "scope": "actual Core app and explicitly separate production-rig display fixtures; software WebGL, no thermal or physical Android GPU claim",
+  "results": [
+    {
+      "name": "idle",
+      "label": "Male \u00b7 Baby \u00b7 1\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.005937062417441297,
+      "bounds": [
+        0.2961812117658944,
+        0.760491590699802,
+        0.3112179612997691
+      ],
+      "fixture": true,
+      "sex": "Male",
+      "stage": "Baby",
+      "age": 1
+    },
+    {
+      "name": "idle",
+      "label": "Female \u00b7 Baby \u00b7 1\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.005490300218912836,
+      "bounds": [
+        0.23257303648242517,
+        0.6578673000792623,
+        0.2675047208673059
+      ],
+      "fixture": true,
+      "sex": "Female",
+      "stage": "Baby",
+      "age": 1
+    },
+    {
+      "name": "idle",
+      "label": "Male \u00b7 Toddler \u00b7 3\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.009134028934502325,
+      "bounds": [
+        0.41026884453479306,
+        1.0688450183890712,
+        0.4372502152984583
+      ],
+      "fixture": true,
+      "sex": "Male",
+      "stage": "Toddler",
+      "age": 3
+    },
+    {
+      "name": "idle",
+      "label": "Female \u00b7 Toddler \u00b7 3\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.010241396514013346,
+      "bounds": [
+        0.3321179739118517,
+        0.9484601480398691,
+        0.3881921564153448
+      ],
+      "fixture": true,
+      "sex": "Female",
+      "stage": "Toddler",
+      "age": 3
+    },
+    {
+      "name": "idle",
+      "label": "Male \u00b7 Child \u00b7 8\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.01270867844412038,
+      "bounds": [
+        0.5136938389371348,
+        1.3727478008089768,
+        0.561470974920434
+      ],
+      "fixture": true,
+      "sex": "Male",
+      "stage": "Child",
+      "age": 8
+    },
+    {
+      "name": "idle",
+      "label": "Female \u00b7 Child \u00b7 8\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.010193941688243058,
+      "bounds": [
+        0.415896095352517,
+        1.2172087164841212,
+        0.4916601310253362
+      ],
+      "fixture": true,
+      "sex": "Female",
+      "stage": "Child",
+      "age": 8
+    },
+    {
+      "name": "idle",
+      "label": "Male \u00b7 Teen \u00b7 15\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.012960453642024916,
+      "bounds": [
+        0.6341290495161975,
+        1.5574598669498219,
+        0.6399578798645109
+      ],
+      "fixture": true,
+      "sex": "Male",
+      "stage": "Teen",
+      "age": 15
+    },
+    {
+      "name": "idle",
+      "label": "Female \u00b7 Teen \u00b7 15\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.01112095043608008,
+      "bounds": [
+        0.540954548959047,
+        1.451270160271143,
+        0.5883161312161856
+      ],
+      "fixture": true,
+      "sex": "Female",
+      "stage": "Teen",
+      "age": 15
+    },
+    {
+      "name": "idle",
+      "label": "Male \u00b7 Adult \u00b7 30\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.009772882605023625,
+      "bounds": [
+        0.7226000796613959,
+        1.7071820176338797,
+        0.6968803455792776
+      ],
+      "fixture": true,
+      "sex": "Male",
+      "stage": "Adult",
+      "age": 30
+    },
+    {
+      "name": "idle",
+      "label": "Female \u00b7 Adult \u00b7 30\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.010146347661514454,
+      "bounds": [
+        0.5718040047129427,
+        1.4775832967342382,
+        0.6002227831929678
+      ],
+      "fixture": true,
+      "sex": "Female",
+      "stage": "Adult",
+      "age": 30
+    },
+    {
+      "name": "idle",
+      "label": "Male \u00b7 Elderly \u00b7 80\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.015815690707231767,
+      "bounds": [
+        0.6796389155070195,
+        1.6619169029131236,
+        0.6865831654078929
+      ],
+      "fixture": true,
+      "sex": "Male",
+      "stage": "Elderly",
+      "age": 80
+    },
+    {
+      "name": "idle",
+      "label": "Female \u00b7 Elderly \u00b7 80\uc138",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.014555639305257273,
+      "bounds": [
+        0.5376687778603766,
+        1.433509421892266,
+        0.590783350928946
+      ],
+      "fixture": true,
+      "sex": "Female",
+      "stage": "Elderly",
+      "age": 80
+    },
+    {
+      "name": "idle",
+      "label": "\ub300\uae30",
+      "active": "idle",
+      "expected": "idle",
+      "native": true,
+      "minClearance": 0.013959749959012058,
+      "bounds": [
+        0.5956362967132122,
+        1.5429861725153682,
+        0.6331702346898552
+      ],
+      "fixture": true
+    },
+    {
+      "name": "walk",
+      "label": "\uc2e4\uc81c \uad00\ucc30 \uc704\uce58 \uc0ac\uc774 \uac77\uae30",
+      "active": "walk",
+      "expected": "walk",
+      "native": true,
+      "minClearance": 0.003003731613816285,
+      "bounds": [
+        0.43462990644578325,
+        1.5906022411034364,
+        0.5332793883950058
+      ],
+      "fixture": true
+    },
+    {
+      "name": "injury",
+      "label": "\ubd80\uc0c1 \uc0c1\ud0dc\uc758 \uc774\ub3d9",
+      "active": "walk",
+      "expected": "walk",
+      "native": true,
+      "minClearance": 0.009085866750110583,
+      "bounds": [
+        0.7468795609140411,
+        1.561173331668332,
+        0.5194936472661937
+      ],
+      "fixture": true
+    },
+    {
+      "name": "sleep",
+      "label": "\uc9c0\uba74 \uc218\uba74",
+      "active": "sleep",
+      "expected": "sleep",
+      "native": true,
+      "minClearance": 0.0589637630224491,
+      "bounds": [
+        1.6727307999516337,
+        0.2915221589785286,
+        0.590308618333947
+      ],
+      "fixture": true
+    },
+    {
+      "name": "eat",
+      "label": "\uc2e4\uc81c \ubcf4\uc720 \uc74c\uc2dd \uc12d\ucde8",
+      "active": "consume",
+      "expected": "consume",
+      "native": true,
+      "minClearance": 0.011512573836869322,
+      "bounds": [
+        0.6244303425511321,
+        1.5564120997057298,
+        0.6490766136981645
+      ],
+      "fixture": true
+    },
+    {
+      "name": "drink",
+      "label": "\uc2e4\uc81c \ubcf4\uc720 \ubb3c \ub9c8\uc2dc\uae30",
+      "active": "consume",
+      "expected": "consume",
+      "native": true,
+      "minClearance": 0.011512576794022067,
+      "bounds": [
+        0.6244303427609006,
+        1.556412098185902,
+        0.6490766754625013
+      ],
+      "fixture": true
+    },
+    {
+      "name": "toilet",
+      "label": "Core\uac00 \uc9c0\uc815\ud55c \uae34\uae09 \uc6a9\ubcc0 \uc704\uce58",
+      "active": "crouch",
+      "expected": "crouch",
+      "native": true,
+      "minClearance": 0.005848834831907013,
+      "bounds": [
+        0.7889899221860925,
+        0.9148637490695801,
+        0.7303869699544165
+      ],
+      "fixture": true
+    },
+    {
+      "name": "gather",
+      "label": "\ub098\ubb34 \ucc44\uc9d1 \uc791\uc5c5",
+      "active": "gatherWood",
+      "expected": "gatherWood",
+      "native": true,
+      "minClearance": 0.013056599006974423,
+      "bounds": [
+        0.6242601675453755,
+        1.5126958361543519,
+        0.5881620031534169
+      ],
+      "fixture": true
+    },
+    {
+      "name": "mineral",
+      "label": "\ub3cc \ucc44\uc9d1 \uc791\uc5c5",
+      "active": "gatherMineral",
+      "expected": "gatherMineral",
+      "native": true,
+      "minClearance": 0.01105264976261644,
+      "bounds": [
+        0.6012674683040562,
+        1.503667067007262,
+        0.6003721714556918
+      ],
+      "fixture": true
+    },
+    {
+      "name": "craft",
+      "label": "Core \ubc1c\ud589 \u00b7 \uc2dc\uc124 \uc5c6\ub294 \uc190 \uc81c\uc791",
+      "active": "craft",
+      "expected": "craft",
+      "native": true,
+      "minClearance": 0.009896772033954448,
+      "bounds": [
+        0.6239344297414342,
+        1.5490872961734574,
+        0.6141053295026269
+      ],
+      "fixture": true
+    },
+    {
+      "name": "talk",
+      "label": "\uc2e4\uc81c \uc0c1\ub300\uc640 \ub300\ud654\u00b7\uc2dc\uc120",
+      "active": "talk",
+      "expected": "talk",
+      "native": true,
+      "minClearance": 0.01379036939201761,
+      "bounds": [
+        0.6264203428052717,
+        1.5511892113141421,
+        0.579396401551505
+      ],
+      "fixture": true
+    },
+    {
+      "name": "comfort",
+      "label": "\uc0c1\ub300 \uc704\ub85c",
+      "active": "comfort",
+      "expected": "comfort",
+      "native": true,
+      "minClearance": 0.01234222725306644,
+      "bounds": [
+        0.8782360749096256,
+        1.5505906709285355,
+        0.5067462055976073
+      ],
+      "fixture": true
+    },
+    {
+      "name": "teach",
+      "label": "\uc0c1\ub300\uc5d0\uac8c \uc9c0\uc2dd \uc804\uc218",
+      "active": "teach",
+      "expected": "teach",
+      "native": true,
+      "minClearance": 0.01536475215471178,
+      "bounds": [
+        0.6244698873925574,
+        1.5414208492871158,
+        0.588247276944234
+      ],
+      "fixture": true
+    },
+    {
+      "name": "care",
+      "label": "\uc544\uc774 \ub3cc\ubd04",
+      "active": "care",
+      "expected": "care",
+      "native": true,
+      "minClearance": 0.005925483071377968,
+      "bounds": [
+        0.8126732889861168,
+        0.9520663287709024,
+        0.6070790833495958
+      ],
+      "fixture": true
+    },
+    {
+      "species": "Tiger",
+      "behavior": "Rest",
+      "native": true,
+      "clip": "rest",
+      "instances": 1,
+      "fixture": true,
+      "calls": 2
+    },
+    {
+      "species": "Tiger",
+      "behavior": "Forage",
+      "native": true,
+      "clip": "forage",
+      "instances": 1,
+      "fixture": true,
+      "calls": 2
+    },
+    {
+      "species": "Tiger",
+      "behavior": "Drink",
+      "native": true,
+      "clip": "drink",
+      "instances": 1,
+      "fixture": true,
+      "calls": 2
+    },
+    {
+      "species": "Tiger",
+      "behavior": "Roam",
+      "native": true,
+      "clip": "walk",
+      "instances": 1,
+      "fixture": true,
+      "calls": 2
+    },
+    {
+      "species": "Tiger",
+      "behavior": "Flee",
+      "native": true,
+      "clip": "run",
+      "instances": 1,
+      "fixture": true,
+      "calls": 2
+    },
+    {
+      "species": "Tiger",
+      "behavior": "Hunt",
+      "native": true,
+      "clip": "hunt",
+      "instances": 1,
+      "fixture": true,
+      "calls": 2
+    },
+    {
+      "species": "Wolf",
+      "behavior": "Rest",
+      "native": true,
+      "clip": "rest",
+      "instances": 1,
+      "fixture": true,
+      "calls": 7
+    },
+    {
+      "species": "Wolf",
+      "behavior": "Forage",
+      "native": true,
+      "clip": "forage",
+      "instances": 1,
+      "fixture": true,
+      "calls": 7
+    },
+    {
+      "species": "Wolf",
+      "behavior": "Drink",
+      "native": true,
+      "clip": "drink",
+      "instances": 1,
+      "fixture": true,
+      "calls": 7
+    },
+    {
+      "species": "Wolf",
+      "behavior": "Roam",
+      "native": true,
+      "clip": "walk",
+      "instances": 1,
+      "fixture": true,
+      "calls": 7
+    },
+    {
+      "species": "Wolf",
+      "behavior": "Flee",
+      "native": true,
+      "clip": "run",
+      "instances": 1,
+      "fixture": true,
+      "calls": 7
+    },
+    {
+      "species": "Wolf",
+      "behavior": "Hunt",
+      "native": true,
+      "clip": "hunt",
+      "instances": 1,
+      "fixture": true,
+      "calls": 7
+    },
+    {
+      "species": "Deer",
+      "behavior": "Rest",
+      "native": true,
+      "clip": "rest",
+      "instances": 1,
+      "fixture": true,
+      "calls": 52
+    },
+    {
+      "species": "Deer",
+      "behavior": "Forage",
+      "native": true,
+      "clip": "forage",
+      "instances": 1,
+      "fixture": true,
+      "calls": 52
+    },
+    {
+      "species": "Deer",
+      "behavior": "Drink",
+      "native": true,
+      "clip": "drink",
+      "instances": 1,
+      "fixture": true,
+      "calls": 52
+    },
+    {
+      "species": "Deer",
+      "behavior": "Roam",
+      "native": true,
+      "clip": "walk",
+      "instances": 1,
+      "fixture": true,
+      "calls": 52
+    },
+    {
+      "species": "Deer",
+      "behavior": "Flee",
+      "native": true,
+      "clip": "run",
+      "instances": 1,
+      "fixture": true,
+      "calls": 52
+    },
+    {
+      "species": "Deer",
+      "behavior": "Hunt",
+      "native": true,
+      "clip": "hunt",
+      "instances": 1,
+      "fixture": true,
+      "calls": 52
+    },
+    {
+      "species": "Hare",
+      "behavior": "Rest",
+      "native": true,
+      "clip": "rest",
+      "instances": 1,
+      "fixture": true,
+      "calls": 3
+    },
+    {
+      "species": "Hare",
+      "behavior": "Forage",
+      "native": true,
+      "clip": "forage",
+      "instances": 1,
+      "fixture": true,
+      "calls": 3
+    },
+    {
+      "species": "Hare",
+      "behavior": "Drink",
+      "native": true,
+      "clip": "drink",
+      "instances": 1,
+      "fixture": true,
+      "calls": 3
+    },
+    {
+      "species": "Hare",
+      "behavior": "Roam",
+      "native": true,
+      "clip": "walk",
+      "instances": 1,
+      "fixture": true,
+      "calls": 3
+    },
+    {
+      "species": "Hare",
+      "behavior": "Flee",
+      "native": true,
+      "clip": "run",
+      "instances": 1,
+      "fixture": true,
+      "calls": 3
+    },
+    {
+      "species": "Hare",
+      "behavior": "Hunt",
+      "native": true,
+      "clip": "hunt",
+      "instances": 1,
+      "fixture": true,
+      "calls": 3
+    },
+    {
+      "legacyLifecycle": {
+        "results": [
+          {
+            "cycle": 0,
+            "cached": 33,
+            "readyCalls": 1,
+            "pause": true,
+            "occlusion": true,
+            "disposed": true
+          },
+          {
+            "cycle": 1,
+            "cached": 33,
+            "readyCalls": 1,
+            "pause": true,
+            "occlusion": true,
+            "disposed": true
+          },
+          {
+            "cycle": 2,
+            "cached": 33,
+            "readyCalls": 1,
+            "pause": true,
+            "occlusion": true,
+            "disposed": true
+          }
+        ],
+        "lateLoadResurrection": false,
+        "realWebGL": true
+      }
+    }
+  ],
+  "errors": []
+}

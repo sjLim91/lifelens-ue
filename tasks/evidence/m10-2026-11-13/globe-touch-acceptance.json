@@ -1,0 +1,16 @@
+{
+  "source": "9cf25392af667d37bc73c45cb08f182e5d5dd575",
+  "actualBuiltApp": true,
+  "viewport": [
+    393,
+    852
+  ],
+  "coreConnected": true,
+  "actualCdpTouch": true,
+  "orbit": true,
+  "pinch": true,
+  "twoToOneRebase": true,
+  "cancelRecovery": true,
+  "accidentalRegionSelection": false,
+  "pageErrors": []
+}

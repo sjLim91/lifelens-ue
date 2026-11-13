@@ -1,0 +1,127 @@
+{
+  "head": "9cf25392af667d37bc73c45cb08f182e5d5dd575",
+  "main": "b4a426bb5254eccceba71d49b2d85918f1db119c",
+  "ci": [
+    {
+      "id": 43384850614,
+      "name": "Core Tests",
+      "conclusion": "success"
+    },
+    {
+      "id": 43384850557,
+      "name": "Preflight",
+      "conclusion": "success"
+    },
+    {
+      "id": 43384850514,
+      "name": "Cognitive Agent",
+      "conclusion": "success"
+    },
+    {
+      "id": 43384850549,
+      "name": "Web WASM",
+      "conclusion": "success"
+    },
+    {
+      "id": 43384850527,
+      "name": "Web Checks",
+      "conclusion": "success"
+    }
+  ],
+  "publishedVerified": true,
+  "liveBrowserPassed": true,
+  "thermalExcluded": true,
+  "physicalAndroidGpuMeasured": false,
+  "notes": "Actual Core app checks and explicitly separate production-rig display fixtures; mobile frame report uses software WebGL.",
+  "runtime": {
+    "id": 43386525057,
+    "conclusion": "success"
+  },
+  "preview": {
+    "id": 43386737776,
+    "conclusion": "success"
+  },
+  "probe": {
+    "id": 43386868352,
+    "conclusion": "success"
+  },
+  "http": {
+    "source_commit": "b4a426bb5254eccceba71d49b2d85918f1db119c",
+    "index_status": 200,
+    "index_content_type": "text/html; charset=utf-8",
+    "asset": "assets/index-D6QK5ypM.js",
+    "asset_status": 200,
+    "asset_bytes": 1511366,
+    "asset_git_blob": "09cc5de438816d39ca221031601bd8605a566065",
+    "matches_published_blob": true,
+    "runtime_status": 200,
+    "runtime_source": "b4a426bb5254eccceba71d49b2d85918f1db119c"
+  },
+  "causalBrowser": {
+    "source": "b4a426bb5254eccceba71d49b2d85918f1db119c",
+    "asset": "assets/index-D6QK5ypM.js",
+    "runtime": "b4a426bb5254eccceba71d49b2d85918f1db119c",
+    "scope": "real public application restored an isolated actual controlled native Core checkpoint; real deployed WASM read and persisted its approval -> Gather/Craft -> results -> learning; Qwen inference unavailable by test setup",
+    "connectedTimeline": true,
+    "reloadPreserved": true,
+    "pageErrors": []
+  },
+  "publicUi": {
+    "scope": "actual Core app and explicitly separate production-rig display fixtures; software WebGL, no thermal or physical Android GPU claim",
+    "results": [
+      {
+        "path": "actual Core app",
+        "viewports": [
+          320,
+          393,
+          915
+        ],
+        "personalityFields": 14,
+        "goalPreview": true,
+        "idleGlobeFrames": 0,
+        "coreRegionHandoff": true,
+        "boundZoomReturn": true,
+        "mobileFrameCost": {
+          "schema": "lifelens-render-performance-v1",
+          "active": true,
+          "sampleLimit": 300,
+          "sampledFrames": 19,
+          "cpuFrameMs": {
+            "p50": 8.399999998509884,
+            "p95": 538.1000000014901
+          },
+          "deliveredFps": 2.601276359600443,
+          "frameIntervalP95Ms": 1799.9000000000015,
+          "sampledSeconds": 5.766400000000002,
+          "presentationProfile": "mobile",
+          "targetFrameBudgetMs": 33.333333333333336,
+          "surface": {
+            "width": 393,
+            "height": 792,
+            "pixelRatio": 1,
+            "mobile": true,
+            "viewportWidth": 393,
+            "viewportHeight": 792
+          },
+          "latest": {
+            "calls": 225,
+            "triangles": 1403988,
+            "geometries": 597,
+            "textures": 47,
+            "programs": 63
+          },
+          "peak": {
+            "calls": 1964,
+            "triangles": 10158630,
+            "geometries": 597,
+            "textures": 47,
+            "programs": 63
+          }
+        }
+      }
+    ],
+    "errors": []
+  },
+  "sourceAsset": "assets/index-D6QK5ypM.js",
+  "assetGitBlob": "09cc5de438816d39ca221031601bd8605a566065"
+}

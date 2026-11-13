@@ -1,0 +1,22 @@
+[
+  {
+    "name": "phone",
+    "passed": true,
+    "errors": []
+  },
+  {
+    "name": "small-phone",
+    "passed": true,
+    "errors": []
+  },
+  {
+    "name": "landscape",
+    "passed": true,
+    "errors": []
+  },
+  {
+    "name": "desktop",
+    "passed": true,
+    "errors": []
+  }
+]

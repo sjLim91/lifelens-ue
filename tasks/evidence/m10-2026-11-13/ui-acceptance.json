@@ -1,0 +1,56 @@
+{
+  "scope": "actual Core app and explicitly separate production-rig display fixtures; software WebGL, no thermal or physical Android GPU claim",
+  "results": [
+    {
+      "path": "actual Core app",
+      "viewports": [
+        320,
+        393,
+        915
+      ],
+      "personalityFields": 14,
+      "goalPreview": true,
+      "idleGlobeFrames": 0,
+      "coreRegionHandoff": true,
+      "boundZoomReturn": true,
+      "mobileFrameCost": {
+        "schema": "lifelens-render-performance-v1",
+        "active": true,
+        "sampleLimit": 300,
+        "sampledFrames": 14,
+        "cpuFrameMs": {
+          "p50": 7.400000002235174,
+          "p95": 794.6999999992549
+        },
+        "deliveredFps": 1.2500468767578778,
+        "frameIntervalP95Ms": 3483.2000000000044,
+        "sampledSeconds": 7.999700000000004,
+        "presentationProfile": "mobile",
+        "targetFrameBudgetMs": 33.333333333333336,
+        "surface": {
+          "width": 393,
+          "height": 792,
+          "pixelRatio": 1,
+          "mobile": true,
+          "viewportWidth": 393,
+          "viewportHeight": 792
+        },
+        "latest": {
+          "calls": 126,
+          "triangles": 3990191,
+          "geometries": 586,
+          "textures": 38,
+          "programs": 51
+        },
+        "peak": {
+          "calls": 1253,
+          "triangles": 28079465,
+          "geometries": 593,
+          "textures": 38,
+          "programs": 51
+        }
+      }
+    }
+  ],
+  "errors": []
+}
