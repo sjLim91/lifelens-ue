@@ -221,6 +221,30 @@ int main()
                 REQUIRE(paused.cognitiveGoal.actor==actorId);
                 REQUIRE(paused.cognitiveGoal.contextFingerprint
                     ==cognitiveRequestFingerprint(request));
+                // A forged suspended-goal fingerprint can NEVER acquire
+                // resumed cognition authority, even though the old
+                // physical Gather promise remains structurally plausible.
+                auto forged=suspendedState;
+                forged.runtime.at(actorId).suspendedGather.cognitiveGoal
+                    .contextFingerprint^=1ULL;
+                std::vector<std::uint8_t> rejected;
+                std::string why;
+                REQUIRE(!encodeSimulationSnapshot(forged,rejected,&why));
+                REQUIRE(!why.empty());
+                REQUIRE(!replay.restoreSnapshot(forged,&why));
+                // Old v8 suspended goals with NO cognitive provenance must
+                // remain loadable without manufacturing a model thought.
+                auto legacy=suspendedState;
+                legacy.runtime.at(actorId).suspendedGather.cognitiveGoal.clear();
+                std::vector<std::uint8_t> legacyBytes;
+                REQUIRE(encodeSimulationSnapshot(
+                    legacy,legacyBytes,&error));
+                SimulationStateSnapshot oldDecoded;
+                REQUIRE(decodeSimulationSnapshot(
+                    legacyBytes,oldDecoded,&error));
+                REQUIRE(oldDecoded.runtime.at(actorId).suspendedGather.active());
+                REQUIRE(!oldDecoded.runtime.at(actorId)
+                    .suspendedGather.cognitiveGoal.active());
                 std::vector<std::uint8_t> suspendBytes;
                 REQUIRE(encodeSimulationSnapshot(
                     suspendedState,suspendBytes,&error));
