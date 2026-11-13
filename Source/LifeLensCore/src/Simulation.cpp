@@ -2474,9 +2474,18 @@ bool Simulation::recoverGatherGoal(
                     }
                 }
                 if(originalIssuedByThought){
+                    // An urgent body need still owns its ordinary
+                    // survival/preemption lane. Even if this physical
+                    // alternative was issued, never label that urgency as
+                    // optional model cognition.
+                    const bool survivalUrgent=std::max({
+                        actor.needs.hunger,actor.needs.thirst,
+                        actor.needs.sleep,actor.needs.bladder,
+                        actor.needs.hygiene
+                    })>=ruleset_.utilityAI.urgentThreshold;
                     const auto agency=chooseSingleResidentAgencyDecision(
                         world_,actor,runtime.pos,relationships_,decision,
-                        &*it,&population,std::nullopt,false);
+                        &*it,&population,std::nullopt,survivalUrgent);
                     if(agency.authority==ResidentAgencyAuthority::ResidentCognition
                        &&agency.decision.kind==UnifiedDecisionKind::Civilization
                        &&agency.decision.civilization.intent==CivilizationIntent::Gather
