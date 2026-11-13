@@ -263,7 +263,7 @@ export function SelectedResidentReadout({
   const migrationPercent = (value: number | undefined) => typeof value === 'number' && Number.isFinite(value)
     ? formatPercent(value) : '—';
   const activityTarget = !resident.presentation?.active && resident.activityTargetName
-    ? ` → ${resident.activityTargetName}`
+    ? ` → ${formatResidentName(resident.activityTargetName)}`
     : '';
 
   return (

@@ -9,6 +9,7 @@ import {
   formatMaterial,
   formatObjectKind,
   formatParentingAction,
+  formatResidentName,
   formatSocialIntent,
   formatTechnique,
 } from '../localization/korean';
@@ -24,7 +25,8 @@ function targetResidentName(
 ): string {
   const targetId = directive.targetResidentId?.trim();
   if (!targetId || targetId === '0') return '';
-  return residents.find((resident) => resident.id === targetId)?.name ?? '';
+  const name = residents.find((resident) => resident.id === targetId)?.name;
+  return name?.trim() ? formatResidentName(name) : '';
 }
 
 function targetObjectName(

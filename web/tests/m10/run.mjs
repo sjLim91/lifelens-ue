@@ -210,3 +210,7 @@ assert.equal(captures, 1); assert.equal(waterLayer.reflectionDirty, true);
 waterCamera.lookAt(0, waterY, 0); waterLayer.updateReflection(gpu, new THREE.Scene(), waterCamera);
 assert.equal(captures, 2); assert.equal(JSON.stringify(wet), unchangedWet); waterLayer.dispose();
 console.log('PASS offscreen water skips six-face reflection/PMREM, retains dirty state, captures on return and restores GPU state');
+
+const { residentStatusText } = await source('ui/resident-status.ts');
+assert.equal(residentStatusText({ ...base, presentation: { active: true, kind: 'Social', phase: 'Moving', socialIntent: 'Approach', targetResidentId: '2' } }, [{ ...base, id: '2', name: 'Minseok' }]), '민석에게 다가가는 중');
+console.log('PASS Korean resident target name is consistent between status, action cues and causal timeline');
