@@ -264,6 +264,20 @@ int main()
                     REQUIRE(!invalidReason.empty());
                     REQUIRE(!preFailureReplay.restoreSnapshot(
                         forged,&invalidReason));
+                    // Emulate a genuine older v8 save with no optional
+                    // cognition-action tail. Its accepted journal and
+                    // physical pending command are unchanged, but Core must
+                    // not invent an action attribution on legacy decode.
+                    auto legacy=liveState;
+                    legacy.runtime.at(actorId).pendingContext.cognitiveGoal.clear();
+                    std::vector<std::uint8_t> legacyBytes;
+                    REQUIRE(encodeSimulationSnapshot(
+                        legacy,legacyBytes,&error));
+                    SimulationStateSnapshot legacyDecoded;
+                    REQUIRE(decodeSimulationSnapshot(
+                        legacyBytes,legacyDecoded,&error));
+                    REQUIRE(!legacyDecoded.runtime.at(actorId)
+                        .pendingContext.cognitiveGoal.active());
                     std::vector<std::uint8_t> beforeFailureBytes;
                     REQUIRE(encodeSimulationSnapshot(
                         liveState,beforeFailureBytes,&error));
