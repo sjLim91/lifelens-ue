@@ -23,7 +23,9 @@ inline bool validAttachedResidentCognitiveActionLink(
     int currentMinute)
 {
     const auto& link=pending.cognitiveGoal;
-    if(!link.active()) return link.token==0;
+    if(!link.active()) return link.actor==0
+        &&link.contextFingerprint==0 &&link.thoughtMinute==-1
+        &&link.issuedMinute==-1;
     if(!validResidentCognitiveActionLink(link)
        ||actor!=link.actor
        ||!pending.active()
