@@ -135,6 +135,10 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
                item.first,pending,snapshot.acceptedCognitiveDecisions,
                snapshot.world.minute))
             return fail("runtime cognitive goal mismatches Core token and accepted thought");
+        if(!validAttachedResidentSuspendedCognitiveLink(
+               item.first,item.second.suspendedGather,
+               snapshot.acceptedCognitiveDecisions,snapshot.world.minute))
+            return fail("runtime suspended cognition link mismatches original Core token");
         if(!validResidentSuspendedGatherGoal(
                item.first,item.second.suspendedGather,snapshot.world.minute)
            ||(item.second.suspendedGather.active()
