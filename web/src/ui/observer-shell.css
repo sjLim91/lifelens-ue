@@ -211,3 +211,21 @@ button:disabled { opacity: .45; }
 @media (max-width: 800px), (max-width: 1024px) and (pointer: coarse) {
   .mobile-modal .fast-forward-input-row { grid-template-columns: minmax(0, 1fr) auto minmax(100px, 1fr); }
 }
+
+.resident-causal-timeline { margin-block: 18px; }
+.resident-causal-timeline h3 { font-size: 14px; margin-bottom: 10px; }
+.causal-record { padding: 12px; margin-block: 8px; border: 1px solid var(--border, #304239); border-radius: 14px; background: #ffffff04; }
+.causal-record time { color: #a8b7ac; font-size: 11px; overflow-wrap: anywhere; }
+.causal-record ol { list-style: none; padding: 0; margin: 12px 0 0; }
+.causal-record li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 4px 10px; padding: 0 0 12px; margin-left: 4px; border-left: 1px solid #526e5a; }
+.causal-record li:last-child { padding-bottom: 0; }
+.causal-record li > span { color: #a8c5aa; font-size: 11px; padding-left: 10px; }
+.causal-record strong { font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.causal-record small { grid-column: 2; font-size: 11px; color: #a8b7ac; }
+.causal-record .hint { margin-bottom: 0; }
+.render-performance-panel { margin-block: 16px; padding: 12px; border: 1px solid #304239; border-radius: 14px; }
+.render-performance-panel summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+.render-performance-readout dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; font-size: 12px; }
+.render-performance-readout dt { color: #a8b7ac; }
+.render-performance-readout dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.resident-causal-timeline > summary { cursor: pointer; font-weight: 600; font-size: 13px; padding-block: 8px; }

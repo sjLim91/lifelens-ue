@@ -3,6 +3,7 @@ import { RESIDENT_JOINTS, type ResidentJoint } from './resident-rig';
 import type { ResidentAppearanceProfile } from './resident-appearance';
 import { createResidentSkinMaterial } from './resident-surface-material';
 import { syncNativeResidentBody } from './resident-native-body';
+import { installResidentBasicClothing } from './resident-basic-clothing';
 
 // The visual body is new, LifeLens-authored parametric anatomy. The imported
 // CC0 GLB contributes ONLY its existing joint positions, inverse bind matrices
@@ -621,6 +622,7 @@ export function syncResidentAnatomicalBody(
   body.castShadow = true;
   body.receiveShadow = true;
   donor.parent.add(body);
+  installResidentBasicClothing(body, profile);
   for (const sourceMaterial of Array.isArray(donor.material) ? donor.material : [donor.material])
     sourceMaterial.visible = false;
   donor.castShadow = false;

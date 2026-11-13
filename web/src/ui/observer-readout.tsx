@@ -26,6 +26,7 @@ import { residentStatusText } from './resident-status';
 import { summarizeResidentMemories } from './resident-memory';
 import { deriveResidentExperienceHighlights } from './resident-experiences';
 import { ResidentNeeds } from './resident-needs';
+import { ResidentCausalTimeline } from './resident-causal-timeline';
 import { CivilizationEraBadge } from './civilization-era';
 
 export function RuntimeBadge({
@@ -262,7 +263,7 @@ export function SelectedResidentReadout({
   const migrationPercent = (value: number | undefined) => typeof value === 'number' && Number.isFinite(value)
     ? formatPercent(value) : '—';
   const activityTarget = !resident.presentation?.active && resident.activityTargetName
-    ? ` → ${resident.activityTargetName}`
+    ? ` → ${formatResidentName(resident.activityTargetName)}`
     : '';
 
   return (
@@ -286,6 +287,7 @@ export function SelectedResidentReadout({
       </p>
 
       <ResidentNeeds needs={resident.needs} />
+      <ResidentCausalTimeline resident={resident} residents={residents} />
       <CognitiveShadowPanel resident={resident} residents={residents} />
       {experienceHighlights.length > 0 ? (
         <div className="focused-life-section">

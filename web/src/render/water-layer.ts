@@ -64,6 +64,8 @@ export class WaterLayer {
   private reflectionFrame = 0;
   private reflectionDirty = true;
   private readonly reflectionPosition = new THREE.Vector3();
+  private readonly reflectionFrustum = new THREE.Frustum();
+  private readonly reflectionProjection = new THREE.Matrix4();
   private reflectionGenerator: THREE.PMREMGenerator | null = null;
   private reflectionMap: THREE.WebGLRenderTarget | null = null;
   private time = 0;
@@ -170,6 +172,18 @@ export class WaterLayer {
   updateReflection(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera): void {
     if (!this.openWaterMesh.geometry.getAttribute('position')?.count
       && !this.flowWaterMesh.geometry.getAttribute('position')?.count) return;
+    // A cube probe renders the scene six more times. Defer that cost while
+    // neither actual water surface can appear in the observer's view. Keep
+    // dirty state so returning to the river captures the current world.
+    camera.updateWorldMatrix(true, false);
+    this.reflectionProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    this.reflectionFrustum.setFromProjectionMatrix(this.reflectionProjection);
+    this.group.updateWorldMatrix(true, true);
+    if (![this.openWaterMesh, this.flowWaterMesh].some(mesh =>
+      mesh.geometry.getAttribute('position')?.count && this.reflectionFrustum.intersectsObject(mesh))) {
+      this.reflectionDirty = true;
+      return;
+    }
     this.reflectionFrame++;
     const moved = camera.position.distanceToSquared(this.reflectionPosition) > 64;
     if (!this.reflectionDirty && !moved && this.reflectionFrame % (this.mobile ? 240 : 120) !== 0) return;

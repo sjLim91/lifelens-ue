@@ -22,6 +22,7 @@ import {
   ObservationFocusBanner,
 } from './ui/observation-feed';
 import { RenderModeControl } from './ui/render-mode-control';
+import { RenderPerformancePanel } from './ui/render-performance-panel';
 import { HumanTraceDetail, HumanTracePanel } from './ui/human-traces';
 import { WorldActivityPanel } from './ui/world-activity';
 import { SettlementDetail } from './ui/settlement-detail';
@@ -319,6 +320,7 @@ function ObserverPanel({
       </section>
 
       <DiagnosticsPanel />
+      <RenderPerformancePanel />
       <RenderModeControl />
     </aside>
   );
@@ -646,6 +648,7 @@ function MobileObserverModal({
                 </button>
               </section>
 
+              <RenderPerformancePanel />
               <details className="mobile-settings-disclosure">
                 <summary>화면이 보이지 않을 때</summary>
               <section>
