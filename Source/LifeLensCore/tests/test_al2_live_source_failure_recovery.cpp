@@ -336,6 +336,28 @@ int main()
             witnessedRecovery=true;
     }
     REQUIRE(witnessedPhysicalFailure &&witnessedRecovery);
+    // The builder's own original accepted Core cognition must be credited
+    // through the failed A token, the B recovery token, and the final tool
+    // Craft. A fallback plan or an unrelated latest thought cannot claim a
+    // token: require the exact original fingerprint AND actual Core receipts.
+    const auto goalFingerprint=cognitiveRequestFingerprint(request);
+    const auto hasCognitionStep=[&](std::uint64_t token,const char* intent){
+        const std::string tag=
+            "AL2_CORE_COGNITION_STEP_ISSUED actor="
+            +std::to_string(actorId)
+            +" goal_fp="+std::to_string(goalFingerprint)
+            +" thought_minute="+std::to_string(request.minute)
+            +" step_token="+std::to_string(token)+" ";
+        for(const auto& line:original.logs())
+            if(line.find(tag)!=std::string::npos
+                &&line.find(" intent="+std::string(intent))
+                    !=std::string::npos)
+                return true;
+        return false;
+    };
+    REQUIRE(hasCognitionStep(failedToken,"Gather"));
+    REQUIRE(hasCognitionStep(gatherToken,"Gather"));
+    REQUIRE(hasCognitionStep(craftToken,"Craft"));
     REQUIRE(firstGatherMinute>=480 &&craftMinute>firstGatherMinute);
     REQUIRE(gatherUnits>0 &&travelCells>0);
     REQUIRE(savedAfterPhysicalGather);
@@ -376,6 +398,8 @@ int main()
         <<" actual_movement_steps="<<travelCells
         <<" source_stock="<<wood.quantity<<"->"
         <<sourceStock(successfulSource)
+        <<" one_cognitive_goal_fp="<<goalFingerprint
+        <<" linked_core_tokens=3"
         <<" real_exhaustion_failure_and_recovery=1"
         <<" direct_gather_and_craft_memories=1"
         <<" serialized_continuation_identical=1"
