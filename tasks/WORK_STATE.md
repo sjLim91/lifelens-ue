@@ -1,3 +1,8 @@
+## 2026-11-13 M10 Web 관찰·모션 진행
+
+- [M10 구현·검증 체크포인트](M10_OBSERVER_PRESENTATION_2026-11-13.md): 인과 근거 타임라인·리그를 따르는 기본복·동물 배속 동기·화면 성능 JSON·시야 밖 수면 반사 생략. 기존 모바일 UI/카메라와 Core 권위 보존.
+- 실제 Web/Core 브라우저 및 회귀 검증 후 현재 PR의 exact-head CI와 main/Pages/외부 probe를 확인한다. M10 7개는 진행 중이며 제안→토큰 전체 출처/종합 시각 인수/물리 Android 비용 미검증. 전체 완료 **6/86 유지**.
+
 ## 2026-11-10 AL-1 로컬 구현·검증 체크포인트 — 인수 미완료
 
 ## 2026-11-12 AL-1 실제 Core 자율 인과 마무리 — Core-native PASS
@@ -916,5 +921,6 @@ This lane is parallel to active World v2 work and must not fork simulation truth
 - Merged `d8fcd616a344833a0da13707c80be18d8c8638c4`: removed collar-like spherical hair proxies; actual skinned scalp coverage and darker eyes.
 - All three final-head checks pass, including 49 regression cases. Device visual acceptance remains pending; CPU model close-up is diagnostic only.
 - Checkpoint: `tasks/WEB_SCALP_HANDOFF_2026-09-25.md`.
+
 
 

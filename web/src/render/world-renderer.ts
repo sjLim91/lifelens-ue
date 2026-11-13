@@ -10,6 +10,7 @@ import type {
 import { WorldScene, type WorldSceneCameraState } from './world-scene';
 import { useMobilePerformanceProfile } from '../runtime/device-performance';
 import { RenderFramePacer } from './render-frame-pacer';
+import { renderPerformance } from './render-performance';
 
 export class WorldRenderer {
   private readonly renderer: THREE.WebGLRenderer;
@@ -17,6 +18,7 @@ export class WorldRenderer {
   private animationFrame: number | null = null;
   private failed = false;
   private readonly mobilePerformance = useMobilePerformanceProfile();
+  private readonly onVisibilityChange = (): void => renderPerformance.breakContinuity();
   private readonly onWebGLContextLost = (event: Event): void => {
     event.preventDefault();
     this.fail('3D 그래픽 장치 연결이 끊어졌습니다.');
@@ -38,7 +40,11 @@ export class WorldRenderer {
     });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, compactGpu ? 1.35 : 2));
+    // Count all passes (including water reflection), with one reset per frame.
+    this.renderer.info.autoReset = false;
+    renderPerformance.begin(this.performanceSurface());
     canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
   private fail(reason: string, error?: unknown): void {
@@ -52,6 +58,7 @@ export class WorldRenderer {
     if (this.animationFrame !== null) return;
 
     const frames = new RenderFramePacer(this.mobilePerformance ? 30 : null, performance.now());
+    renderPerformance.resume();
     const render = (frameTime: number): void => {
       const deltaSeconds = frames.advance(frameTime);
       if (deltaSeconds === null) {
@@ -65,9 +72,18 @@ export class WorldRenderer {
           this.fail('3D 그래픽 장치 연결이 끊어졌습니다.');
           return;
         }
+        const started = performance.now();
+        this.renderer.info.reset();
         this.world.update(deltaSeconds);
         this.world.updateReflections(this.renderer);
         this.renderer.render(this.world.scene, this.world.camera);
+        const info = this.renderer.info;
+        if (document.hidden) renderPerformance.breakContinuity();
+        else renderPerformance.record(frameTime, performance.now() - started, {
+          calls: info.render.calls, triangles: info.render.triangles,
+          geometries: info.memory.geometries, textures: info.memory.textures,
+          programs: info.programs?.length ?? 0,
+        });
         this.animationFrame = requestAnimationFrame(render);
       } catch (error) {
         this.fail('3D 렌더링 도중 오류가 발생했습니다.', error);
@@ -78,6 +94,7 @@ export class WorldRenderer {
   }
 
   stop(): void {
+    renderPerformance.stop();
     if (this.animationFrame === null) return;
     cancelAnimationFrame(this.animationFrame);
     this.animationFrame = null;
@@ -88,6 +105,12 @@ export class WorldRenderer {
     const safeHeight = Math.max(1, height);
     this.renderer.setSize(safeWidth, safeHeight, false);
     this.world.resize(safeWidth, safeHeight);
+    renderPerformance.setSurface(this.performanceSurface());
+  }
+
+  private performanceSurface() {
+    return { width: this.renderer.domElement.width, height: this.renderer.domElement.height,
+      pixelRatio: this.renderer.getPixelRatio(), mobile: this.mobilePerformance };
   }
 
   setCamera(state: WorldSceneCameraState, immediate = false): void {
@@ -195,6 +218,7 @@ export class WorldRenderer {
   dispose(): void {
     this.failed = true;
     this.stop();
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.renderer.domElement.removeEventListener(
       'webglcontextlost', this.onWebGLContextLost,
     );

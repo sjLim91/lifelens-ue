@@ -229,6 +229,7 @@ export class WorldScene {
 
   setSimulationSpeed(speed: number): void {
     this.residentLayer.setSimulationSpeed(speed);
+    this.wildlifeLayer.setSimulationSpeed(speed);
     this.facilityLayer.setSimulationSpeed(speed);
     this.lifeEventLayer.setSimulationSpeed(speed);
     this.footTrafficLayer.setSpeed(speed);

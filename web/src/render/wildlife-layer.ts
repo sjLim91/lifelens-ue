@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import type { TerrainWindow, WildlifeSpecies, WildlifeAnimalObservation } from '../runtime/core-types';
-import { WORLD_GRID_CONTRACT as grid } from '../runtime/lifelens-contract';
+import {
+  WORLD_GRID_CONTRACT as grid,
+  normalizeSimulationSpeed,
+  residentPresentationMotionTimeScale,
+} from '../runtime/lifelens-contract';
 import { createWildlifeGeometry } from './procedural-wildlife';
 import { wildlifeVisualTravelMultiplier } from './wildlife-motion';
 type WildlifeLod = 'near' | 'mid' | 'far';
@@ -52,6 +56,7 @@ export class WildlifeLayer {
   private readonly rayOrigin=new THREE.Vector3();
   private readonly down=new THREE.Vector3(0,-1,0);
   private animals=new Map<string,Visible>();
+  private simulationSpeed=1;
   private readonly scratch=new Map<string,number>();
   private readonly cameraPosition=new THREE.Vector3();
   private readonly cameraAbsolute=new THREE.Vector3();
@@ -229,11 +234,20 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.17,.145,.13),noseMask*.74);
     this.animals=next;
     this.render();
   }
+  setSimulationSpeed(speed:number):void {
+    this.simulationSpeed=normalizeSimulationSpeed(speed);
+  }
   update(dtSeconds:number,camera?:THREE.Camera):void {
-    const dt=THREE.MathUtils.clamp(Number.isFinite(dtSeconds)?dtSeconds:0,0,.1);
+    // Use the same clock as residents: pause freezes interpolation, rig clips
+    // and far-LOD shaders; 4x accelerates all three together. Clamp real frame
+    // time before scaling so a stalled/hidden tab cannot cause a catch-up leap.
+    const dt=THREE.MathUtils.clamp(Number.isFinite(dtSeconds)?dtSeconds:0,0,.1)
+      *residentPresentationMotionTimeScale(this.simulationSpeed);
     this.time.value+=dt;
     const baseSpeed=grid.worldUnitsPerChunk/grid.gridCellsPerChunk*.75;
-    for(const pose of this.animals.values()){
+    // Keep locomotion state on a zero-time render. Resetting speed at pause
+    // would switch a frozen walk to idle and visibly snap the animal's pose.
+    if(dt>0)for(const pose of this.animals.values()){
       const dx=pose.goalX-pose.x,dz=pose.goalZ-pose.z;
       const distance=Math.hypot(dx,dz);
       if(distance>1e-4){

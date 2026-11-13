@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { CognitiveIntent } from '../cognition/cognitive-contract';
 import { residentAI, residentAIStatusText } from '../cognition/live-resident-ai';
 import type { Resident } from '../runtime/core-types';
-import { formatCognitiveIntent } from '../localization/korean';
+import { formatCognitiveIntent, formatMemoryText } from '../localization/korean';
 
 // ONE resident AI per person. This panel observes its real thought handoff;
 // it does not create a second agent, start a model, or let the viewer turn a
@@ -44,7 +44,7 @@ export function ResidentAILivePanel({ resident }: { resident: Resident }) {
     </p>}
     {decision?.latestPersonalExperience && <p className="hint">
       최근 참고한 실제 경험 ({decision.latestPersonalExperience.minute}분):
-      {' '}{decision.latestPersonalExperience.what}
+      {' '}{formatMemoryText(decision.latestPersonalExperience.what)}
     </p>}
     <details className="resident-ai-session-audit">
       <summary>주민 AI 실행 증거</summary>

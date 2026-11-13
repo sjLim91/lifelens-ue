@@ -504,6 +504,10 @@ export const KOREAN_KNOWLEDGE_LEVEL_LABELS: Record<string, string> = {
 };
 
 export const KOREAN_MEMORY_TOKEN_LABELS: Record<string, string> = {
+  already_reached_before_action: '실행 전에 이미 목표에 도달함',
+  achieved_during_action: '실제 실행 중 신뢰 목표에 도달함',
+  progress_but_not_achieved: '신뢰가 높아졌지만 목표에는 미달함',
+  not_achieved_no_progress: '신뢰 진전 없이 목표에 미달함',
   experienced_unsanitary_surroundings: '비위생적인 주변 환경을 경험함',
   positive_interaction: '좋은 상호작용',
   help: '도움',
@@ -518,6 +522,18 @@ export const KOREAN_MEMORY_TOKEN_LABELS: Record<string, string> = {
 };
 
 export const KOREAN_MEMORY_TAG_LABELS: Record<string, string> = {
+  action_experience: '실제 행동 경험',
+  success: '성공',
+  failure: '실패',
+  eat: '식사',
+  drink: '물 마시기',
+  sleep: '수면',
+  use_toilet: '배변',
+  wash: '위생 관리',
+  goal_action_feedback: '실제 행동의 목표 평가',
+  self_trust: '자신의 신뢰 변화',
+  approach: '다가가기',
+  repair: '관계 회복',
   environment: '환경',
   contamination: '오염',
   human_waste: '배설물',
@@ -790,6 +806,8 @@ export function formatLocationText(value: string | undefined): string {
   const text = value?.trim();
   if (!text) return '';
   if (/[가-힣]/.test(text)) return text;
+  const actionToken = text.match(/^personal-goal-token:([1-9]\d*)$/);
+  if (actionToken) return `실제 행동 #${actionToken[1]}`;
   const grid = text.match(/^grid\s*[:(]?\s*(-?\d+)\s*[,/]\s*(-?\d+)\s*\)?$/i);
   if (grid) return `좌표 ${grid[1]}, ${grid[2]}`;
   const known: Record<string, string> = {
@@ -800,6 +818,7 @@ export function formatLocationText(value: string | undefined): string {
     world: '월드',
     'civilization-worksite': '문명 작업 현장',
     'society-organization': '사회 조직',
+    'personal experience': '직접 경험',
   };
   return translated('장소', text, known, '장소 정보 확인 중');
 }
@@ -852,6 +871,10 @@ export function formatBelief(value: string | undefined): string {
   const text = value?.trim();
   if (!text) return '믿음 내용 미확인';
   if (/[가-힣]/.test(text)) return text;
+  const ownTrust = text.match(/^experienced-self-trust-goal-progress:(Approach|Repair)$/);
+  if (ownTrust) return `${ownTrust[1] === 'Approach' ? '다가가기' : '관계 회복'}가 나의 신뢰 목표에 미친 영향`;
+  const actionOutcome = text.match(/^experienced-action-outcome:(Eat|Drink|Sleep|UseToilet|Wash)$/);
+  if (actionOutcome) return `${KOREAN_GOAL_LABELS[actionOutcome[1]]}를 직접 시도한 결과`;
 
   // Core SocietyInstitutionKind ordinal, as used by membership propositions.
   const institution = text.match(/^institution:([0-5])$/i);

@@ -16,6 +16,7 @@ const rendererCode = ts.transpileModule(
 let lastRenderer = null;
 let lastWorld = null;
 class TestGPU {
+  info = { autoReset: true, reset() {}, render: { calls: 1, triangles: 2 }, memory: { geometries: 1, textures: 1 }, programs: [] };
   constructor(options) {
     this.options = options;
     this.domElement = options.canvas;
@@ -26,6 +27,7 @@ class TestGPU {
     lastRenderer = this;
   }
   setPixelRatio(value) { this.pixelRatio = value; }
+  getPixelRatio() { return this.pixelRatio; }
   setSize() {}
   dispose() { this.disposed = true; }
   getContext() { return { isContextLost: () => this.contextLost }; }
@@ -59,7 +61,9 @@ function frame(at = wall + 16) {
   for (const cb of pending) cb(at);
 }
 const oldWindow = globalThis.window;
+const oldDocument = globalThis.document;
 globalThis.window = { devicePixelRatio: 1 };
+globalThis.document = { hidden: false, addEventListener() {}, removeEventListener() {} };
 try {
   const exports = {};
   function dependency(path) {
@@ -72,11 +76,13 @@ try {
   }
   const devicePerformance = dependency('runtime/device-performance.ts');
   const framePacer = dependency('render/render-frame-pacer.ts');
+  const renderPerformance = dependency('render/render-performance.ts');
   const mockRequire = id => {
     if (id === 'three') return { WebGLRenderer: TestGPU, SRGBColorSpace: 'srgb' };
     if (id === './world-scene') return { WorldScene: TestWorld };
     if (id === '../runtime/device-performance') return devicePerformance;
     if (id === './render-frame-pacer') return framePacer;
+    if (id === './render-performance') return renderPerformance;
     throw Error('Unmocked render dependency: ' + id);
   };
   new Function(
@@ -288,5 +294,6 @@ try {
 } finally {
   if (oldWindow === undefined) delete globalThis.window;
   else globalThis.window = oldWindow;
+  globalThis.document = oldDocument;
 }
 

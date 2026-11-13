@@ -3,6 +3,7 @@ import type { GLTFLoader, GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import type { ResidentAppearanceProfile } from './resident-appearance';
 import { applyBodyProportions } from './resident-appearance';
 import { createResidentSkinMaterial } from './resident-surface-material';
+import { installResidentBasicClothing } from './resident-basic-clothing';
 
 const GROUP = 'LifeLensNativeResident';
 const BODY = 'LifeLensAuthoredAnatomicalBody';
@@ -132,6 +133,7 @@ export function syncNativeResidentBody(model: THREE.Group, profile: ResidentAppe
         applyBodyProportions(mesh, phenotype, model.matrixWorld.clone().invert(), model);
         smoothUVSeams(mesh.geometry);
         if (isBody) {
+          installResidentBasicClothing(mesh, profile);
           const sole = { left: .035, right: .035 };
           const p = mesh.geometry.getAttribute('position'), j = mesh.geometry.getAttribute('skinIndex'), w = mesh.geometry.getAttribute('skinWeight');
           for (const side of ['left', 'right'] as const) {
