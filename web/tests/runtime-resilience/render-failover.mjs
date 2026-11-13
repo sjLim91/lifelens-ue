@@ -43,6 +43,8 @@ class TestWorld {
   camera = {};
   update(dt) { this.deltas.push(dt); }
   updateReflections() {}
+  breakFootTrafficContinuity() {}
+  rebasePresentation() { this.rebased = (this.rebased ?? 0) + 1; }
   dispose() {}
 }
 let nextFrame = 1;
@@ -63,7 +65,10 @@ function frame(at = wall + 16) {
 const oldWindow = globalThis.window;
 const oldDocument = globalThis.document;
 globalThis.window = { devicePixelRatio: 1 };
-globalThis.document = { hidden: false, addEventListener() {}, removeEventListener() {} };
+const visibilityListeners = new Set();
+globalThis.document = { hidden: false,
+  addEventListener(name, fn) { if (name === 'visibilitychange') visibilityListeners.add(fn); },
+  removeEventListener(name, fn) { if (name === 'visibilitychange') visibilityListeners.delete(fn); } };
 try {
   const exports = {};
   function dependency(path) {
@@ -95,6 +100,8 @@ try {
     const handlers = new Map();
     return {
       handlers,
+      width: 400, height: 300,
+      getBoundingClientRect() { return { width: 400, height: 300, left: 0, top: 0 }; },
       addEventListener(name, callback) { handlers.set(name, callback); },
       removeEventListener(name) { handlers.delete(name); },
     };
@@ -112,6 +119,18 @@ try {
     assert.equal(scheduled.size, 0, 'Dead GPU must not keep scheduling frames');
     renderer.dispose();
     assert(!c.handlers.has('webglcontextlost'));
+  }
+  {
+    const renderer = new WorldRenderer(canvas()); renderer.start(); frame();
+    const world = lastWorld, submitted = lastRenderer.renderCalls;
+    renderer.setOccluded(true); assert.equal(scheduled.size, 0);
+    frame(wall + 20000); assert.equal(lastRenderer.renderCalls, submitted);
+    globalThis.document.hidden = true; renderer.setOccluded(false); assert.equal(scheduled.size, 0);
+    globalThis.document.hidden = false; for (const listener of visibilityListeners) listener();
+    assert.equal(scheduled.size, 1); frame(); assert(lastRenderer.renderCalls > submitted);
+    assert.equal(world.rebased, 1, 'returning uses latest Core positions without hidden-path replay');
+    renderer.stop(); for (const listener of visibilityListeners) listener(); assert.equal(scheduled.size, 0);
+    renderer.dispose(); assert.equal(visibilityListeners.size, 0);
   }
   {
     const c = canvas(), failures = [];

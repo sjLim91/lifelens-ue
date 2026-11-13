@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { GlobeInput } from '../input/globe-input';
 import {
   paintNaturalEarthTexture,
   type EarthLandFeatureCollection,
@@ -151,94 +152,44 @@ export function EarthGlobePreview({
 
       const area = holder.current;
       area.appendChild(canvas);
+      let frame = 0, lastFrame = -Infinity;
+      const frameBudget = window.matchMedia('(pointer: coarse)').matches ? 40 : 24;
+      const draw = (time: number) => {
+        frame = 0;
+        if (aborted || document.hidden) return;
+        if (time - lastFrame < frameBudget) { frame = requestAnimationFrame(draw); return; }
+        lastFrame = time;
+        renderer.render(scene, camera);
+      };
+      const requestDraw = () => {
+        if (!aborted && !document.hidden && !frame) frame = requestAnimationFrame(draw);
+      };
+      const onVisibility = () => {
+        cancelAnimationFrame(frame); frame = 0; lastFrame = -Infinity;
+        if (!document.hidden) requestDraw();
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+
       const resize = () => {
         const width = Math.max(1, area.clientWidth);
         const height = Math.max(1, area.clientHeight);
         renderer.setSize(width, height, false);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
+        requestDraw();
       };
       const observer = new ResizeObserver(resize);
       observer.observe(area);
       resize();
 
-      let dragging = false;
-      let didDrag = false;
-      let startX = 0, startY = 0;
-      const activePointers = new Map<number, {x: number; y: number}>();
-      let previousPinchDistance = 0;
-      const touchDistance = () => {
-        const positions = [...activePointers.values()];
-        return positions.length < 2 ? 0 : Math.hypot(
-          positions[0].x - positions[1].x,
-          positions[0].y - positions[1].y,
-        );
-      };
-      let lastX = 0, lastY = 0;
       const picker = new THREE.Raycaster();
       const pointer = new THREE.Vector2();
-      const down = (event: PointerEvent) => {
-        activePointers.set(event.pointerId, {
-          x: event.clientX, y: event.clientY,
-        });
-        canvas.setPointerCapture(event.pointerId);
-        if (activePointers.size >= 2) {
-          previousPinchDistance = touchDistance();
-          didDrag = true;
-          dragging = false;
-          return;
-        }
-        dragging = true;
-        didDrag = false;
-        startX = event.clientX;
-        startY = event.clientY;
-        lastX = event.clientX;
-        lastY = event.clientY;
-      };
-      const move = (event: PointerEvent) => {
-        if (activePointers.has(event.pointerId)) {
-          activePointers.set(event.pointerId, {
-            x: event.clientX, y: event.clientY,
-          });
-        }
-        if (activePointers.size >= 2) {
-          const nextPinchDistance = touchDistance();
-          if (previousPinchDistance > 0 && nextPinchDistance > 0) {
-            zoom((previousPinchDistance - nextPinchDistance) * 0.009);
-          }
-          previousPinchDistance = nextPinchDistance;
-          didDrag = true;
-          return;
-        }
-        if (!dragging) return;
-        if (Math.hypot(event.clientX - startX, event.clientY - startY) > 7) {
-          didDrag = true;
-        }
-        globe.rotation.y += (event.clientX - lastX) * 0.006;
-        globe.rotation.x = THREE.MathUtils.clamp(
-          globe.rotation.x + (event.clientY - lastY) * 0.004,
-          -Math.PI / 2, Math.PI / 2,
-        );
-        lastX = event.clientX;
-        lastY = event.clientY;
-      };
-      const end = (event: PointerEvent) => {
-        const wasPinching = activePointers.size >= 2;
-        activePointers.delete(event.pointerId);
-        if (wasPinching) {
-          previousPinchDistance = 0;
-          dragging = false;
-          didDrag = true;
-          return;
-        }
-        if (!dragging) return;
-        dragging = false;
-        if (didDrag) return;
+      const select = (clientX: number, clientY: number) => {
         const bounds = canvas.getBoundingClientRect();
         if (bounds.width <= 0 || bounds.height <= 0) return;
         pointer.set(
-          ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
-          -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
+          ((clientX - bounds.left) / bounds.width) * 2 - 1,
+          -((clientY - bounds.top) / bounds.height) * 2 + 1,
         );
         globe.updateMatrixWorld(true);
         picker.setFromCamera(pointer, camera);
@@ -252,18 +203,14 @@ export function EarthGlobePreview({
           .normalize().multiplyScalar(1.385);
         marker.visible = true;
         setSelectedSites((current) => ({ ...current, [slot]: location }));
-      };
-      const cancel = (event: PointerEvent) => {
-        activePointers.delete(event.pointerId);
-        previousPinchDistance = 0;
-        dragging = false;
-        didDrag = true;
+        requestDraw();
       };
       const zoom = (change: number) => {
         camera.position.z = THREE.MathUtils.clamp(
           camera.position.z + change, 1.55, 6.5,
         );
         setRegionScale(camera.position.z < 2.8);
+        requestDraw();
         // A closer look at an arbitrary selected point must never expose
         // a different Core settlement. Only the Core-bound surface point
         // immediately in front of the camera can hand off to living residents.
@@ -279,35 +226,21 @@ export function EarthGlobePreview({
         }
       };
       zoomRef.current = zoom;
-      const wheel = (event: WheelEvent) => {
-        event.preventDefault();
-        zoom(event.deltaY * 0.0035);
-      };
-      canvas.addEventListener('pointerdown', down);
-      canvas.addEventListener('pointermove', move);
-      canvas.addEventListener('pointerup', end);
-      canvas.addEventListener('pointercancel', cancel);
-      canvas.addEventListener('wheel', wheel, { passive: false });
-
-      let frame = 0, lastFrame = 0;
-      const frameBudget = window.matchMedia('(pointer: coarse)').matches ? 40 : 24;
-      const tick = (time: number) => {
-        frame = window.requestAnimationFrame(tick);
-        if (time - lastFrame < frameBudget) return;
-        const delta = Math.min(time - lastFrame, 60);
-        lastFrame = time;
-        if (!dragging) globe.rotation.y += delta * 0.000055;
-        renderer.render(scene, camera);
-      };
-      frame = window.requestAnimationFrame(tick);
+      const gestures = new GlobeInput(canvas, {
+        rotate(dx, dy) {
+          globe.rotation.y += dx * .006;
+          globe.rotation.x = THREE.MathUtils.clamp(globe.rotation.x + dy * .004, -Math.PI / 2, Math.PI / 2);
+          requestDraw();
+        },
+        zoom,
+        select,
+      });
+      requestDraw();
       cleanup = () => {
         window.cancelAnimationFrame(frame);
         observer.disconnect();
-        canvas.removeEventListener('pointerdown', down);
-        canvas.removeEventListener('pointermove', move);
-        canvas.removeEventListener('pointerup', end);
-        canvas.removeEventListener('pointercancel', cancel);
-        canvas.removeEventListener('wheel', wheel);
+        gestures.dispose();
+        document.removeEventListener('visibilitychange', onVisibility);
         zoomRef.current = () => {};
         actualMarkerGeometry.dispose();
         actualMarkerMaterial.dispose();

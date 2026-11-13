@@ -11,6 +11,17 @@ export function registeredProductionDirective(p: ResidentPresentationDirective):
   return PRODUCTION_INTENTS.some(v => v === (p.civilizationIntent ?? 'None'))
     && PRODUCTION_ACTIONS.some(v => v === (p.facilityAction ?? 'None'));
 }
+/** A real Core-issued hand craft has no facility or remote spatial target. */
+export function residentLocalCraft(p: ResidentPresentationDirective | null | undefined): boolean {
+  const token = p?.contextActionToken;
+  return p?.active === true && p.kind === 'Civilization' && p.phase === 'Interacting'
+    && p.civilizationIntent === 'Craft' && p.hasTargetGrid === false
+    && (p.facilityAction === undefined || p.facilityAction === 'None')
+    && (p.facilityId === undefined || p.facilityId === '0')
+    && typeof p.civilizationTechnique === 'string' && p.civilizationTechnique !== 'None'
+    && p.civilizationTechnique.length > 0 && typeof token === 'string'
+    && /^[1-9]\d{0,19}$/.test(token) && BigInt(token) <= 18446744073709551615n;
+}
 export interface ProductionTarget { kind: 'resource'|'storage'|'facility'|'site'; id: string;
   gridX: number; gridY: number; accessX: number; accessY: number; }
 const FACILITY_KINDS = ['PrimitiveStorage','FirePit','WorkSurface','SleepingPlace','Shelter','Furnace','CultivatedPlot'];

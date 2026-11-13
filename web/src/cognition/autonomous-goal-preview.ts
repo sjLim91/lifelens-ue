@@ -10,7 +10,7 @@ export const AUTONOMOUS_GOAL_METRICS = [
 export type AutonomousGoalMetric = (typeof AUTONOMOUS_GOAL_METRICS)[number];
 export type AutonomousGoalNeed = 'Hunger' | 'Thirst' | 'Sleep' | 'Bladder' | 'Hygiene';
 export type AutonomousGoalOperator = 'AtMost' | 'AtLeast';
-export type AutonomousGoalEvidenceKind = 'ActorNeed' | 'Remembered' | 'Believed' | 'Related';
+export type AutonomousGoalEvidenceKind = 'ActorNeed' | 'Remembered' | 'Believed' | 'Related' | 'ObservedLocalResource';
 
 export interface AutonomousGoalCondition {
   metric: AutonomousGoalMetric;
@@ -49,7 +49,7 @@ const MAX_HORIZON_MINUTES = 30 * 1440;
 const NEEDS = new Set(['Hunger', 'Thirst', 'Sleep', 'Bladder', 'Hygiene']);
 const OPERATORS = new Set(['AtMost', 'AtLeast']);
 const METRICS = new Set<string>(AUTONOMOUS_GOAL_METRICS);
-const EVIDENCE_KINDS = new Set(['ActorNeed', 'Remembered', 'Believed', 'Related']);
+const EVIDENCE_KINDS = new Set(['ActorNeed', 'Remembered', 'Believed', 'Related', 'ObservedLocalResource']);
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

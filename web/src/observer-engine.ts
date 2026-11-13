@@ -58,6 +58,7 @@ export function startObserverEngine(): () => void {
   let threeWorldRenderer: WorldRenderer | null = null;
   let characterLayer: CharacterLayer | null = null;
   let legacyRenderer: LegacyCanvasWorldRenderer | null = null;
+  let worldViewOccluded = false;
   let renderFailureBanner: HTMLElement | null = null;
   let startupRenderFailure: string | null = null;
 
@@ -347,6 +348,7 @@ export function startObserverEngine(): () => void {
   }
   
   function drawWorld(): void {
+    if (worldViewOccluded || document.hidden) return;
     legacyRenderer?.draw({
       terrain,
       residents: residentSnapshot,
@@ -478,6 +480,7 @@ export function startObserverEngine(): () => void {
     const newWorldSpeed = observerStore.getSnapshot().simulationSpeed;
     simulationClock?.setSpeed(newWorldSpeed);
     threeWorldRenderer?.setSimulationSpeed(newWorldSpeed);
+    characterLayer?.setSimulationSpeed(newWorldSpeed);
     threeWorldRenderer?.resetSocialEvents();
     threeWorldRenderer?.setSelectedResident(null);
     threeWorldRenderer?.setSelectedHumanTrace(null);
@@ -598,6 +601,7 @@ export function startObserverEngine(): () => void {
     const canonicalSpeed = normalizeSimulationSpeed(speed);
     simulationClock?.setSpeed(canonicalSpeed);
     threeWorldRenderer?.setSimulationSpeed(canonicalSpeed);
+    characterLayer?.setSimulationSpeed(canonicalSpeed);
     observerStore.update({ simulationSpeed: canonicalSpeed });
     refreshSafely();
   }
@@ -702,6 +706,7 @@ export function startObserverEngine(): () => void {
     simulationClock?.stop();
     const initialSpeed = observerStore.getSnapshot().simulationSpeed;
     threeWorldRenderer?.setSimulationSpeed(initialSpeed);
+    characterLayer?.setSimulationSpeed(initialSpeed);
     simulationClock = new SimulationClock({
       initialSpeed,
       onAdvance(minutes) {
@@ -725,6 +730,12 @@ export function startObserverEngine(): () => void {
     moveObserver: move,
     recenterObserver,
     recoverRendering: () => enterCanvasFailover('화면이 보이지 않아 수동 복구를 요청했습니다.'),
+    setWorldViewOccluded: occluded => {
+      worldViewOccluded = occluded;
+      threeWorldRenderer?.setOccluded(occluded);
+      characterLayer?.setOccluded(occluded);
+      if (!occluded) drawWorld();
+    },
     selectResident,
     selectHumanTrace,
     selectSettlement,
@@ -821,6 +832,7 @@ export function startObserverEngine(): () => void {
     resizeObserver.disconnect();
     cameraInput.dispose();
     threeWorldRenderer?.dispose();
+    characterLayer?.dispose();
     renderFailureBanner?.remove();
     storageBanner?.remove();
     // Yielded fast-forward work retains its Core until it finishes.

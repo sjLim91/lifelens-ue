@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
+import { normalizeSimulationSpeed, residentPresentationMotionTimeScale } from './runtime/lifelens-contract';
 
 export type ResidentSex = 'Male' | 'Female';
 
@@ -327,6 +328,24 @@ function createHairOverlay(sex: ResidentSex, variantSeed: number, palette: Palet
   return group;
 }
 
+function disposeCharacterObjects(roots: THREE.Object3D[], retained: THREE.Object3D[] = []): void {
+  const resources = (objects: THREE.Object3D[]) => {
+    const values = new Set<{ dispose(): void }>();
+    for (const root of objects) root.traverse(object => {
+      if (!(object instanceof THREE.Mesh)) return;
+      values.add(object.geometry);
+      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+        values.add(material);
+        for (const value of Object.values(material)) if (value instanceof THREE.Texture) values.add(value);
+      }
+      if (object instanceof THREE.SkinnedMesh) values.add(object.skeleton);
+    });
+    return values;
+  };
+  const protectedResources = resources(retained);
+  for (const resource of resources(roots)) if (!protectedResources.has(resource)) resource.dispose();
+}
+
 export class CharacterLayer {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
@@ -343,6 +362,15 @@ export class CharacterLayer {
   private readyState = false;
   private failedState = false;
   private lastFrame = performance.now();
+  private animationFrame: number | null = null;
+  private disposed = false;
+  private occluded = false;
+  private simulationSpeed = 1;
+  private readonly onVisibilityChange = () => {
+    this.cancelFrame();
+    this.lastFrame = performance.now();
+    this.requestFrame();
+  };
 
   constructor(canvas: HTMLCanvasElement, onReady?: () => void) {
     this.onReady = onReady;
@@ -368,7 +396,8 @@ export class CharacterLayer {
     this.scene.add(fill);
 
     void this.load();
-    requestAnimationFrame(this.animate);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    this.requestFrame();
   }
 
   get ready(): boolean {
@@ -381,10 +410,12 @@ export class CharacterLayer {
 
   clearResidents(): void {
     this.pending = [];
-    for (const actor of this.actors.values()) actor.root.visible = false;
+    for (const id of [...this.actors.keys()]) this.releaseActor(id);
+    this.requestFrame();
   }
 
   resize(width: number, height: number, dpr: number): void {
+    if (this.disposed) return;
     this.width = Math.max(1, width);
     this.height = Math.max(1, height);
     this.renderer.setPixelRatio(Math.min(Math.max(dpr, 1), 2));
@@ -397,9 +428,11 @@ export class CharacterLayer {
     this.camera.updateProjectionMatrix();
 
     for (const actor of this.actors.values()) this.applyActorScale(actor);
+    this.requestFrame();
   }
 
   setResidents(placements: ResidentPlacement[]): void {
+    if (this.disposed) return;
     this.pending = placements;
     if (!this.readyState || !this.template) return;
 
@@ -435,20 +468,81 @@ export class CharacterLayer {
         actor.initialized = true;
       }
       actor.root.visible = true;
+      if (this.simulationSpeed === 0) {
+        actor.currentX = tx; actor.currentY = ty;
+        actor.root.position.set(tx, ty, 0);
+      }
     }
+    const inactive = [...this.actors.entries()].filter(([, a]) => !a.root.visible)
+      .sort((a, b) => a[1].lastSeenAt - b[1].lastSeenAt);
+    for (const [id] of inactive.slice(0, Math.max(0, inactive.length - 32))) this.releaseActor(id);
+    this.requestFrame();
+  }
+
+  setSimulationSpeed(speed: number): void {
+    this.simulationSpeed = normalizeSimulationSpeed(speed);
+    this.lastFrame = performance.now();
+    this.requestFrame();
+  }
+
+  setOccluded(occluded: boolean): void {
+    this.occluded = occluded;
+    this.cancelFrame();
+    this.lastFrame = performance.now();
+    if (!occluded) {
+      for (const actor of this.actors.values()) {
+        actor.currentX = actor.targetX; actor.currentY = actor.targetY;
+      }
+      this.requestFrame();
+    }
+  }
+
+  private releaseActor(id: string): void {
+    const actor = this.actors.get(id);
+    if (!actor) return;
+    actor.mixer.stopAllAction(); actor.mixer.uncacheRoot(actor.root);
+    this.scene.remove(actor.root); this.actors.delete(id);
+    disposeCharacterObjects([actor.root], [
+      ...(this.template ? [this.template] : []), ...[...this.actors.values()].map(a => a.root),
+    ]);
+  }
+
+  private cancelFrame(): void {
+    if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
+    this.animationFrame = null;
+  }
+
+  private requestFrame(): void {
+    if (this.disposed || this.occluded || document.hidden || this.animationFrame !== null) return;
+    this.animationFrame = requestAnimationFrame(this.animate);
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true; this.cancelFrame();
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    for (const actor of this.actors.values()) {
+      actor.mixer.stopAllAction(); actor.mixer.uncacheRoot(actor.root);
+    }
+    disposeCharacterObjects([this.scene, ...(this.template ? [this.template] : [])]);
+    this.actors.clear(); this.scene.clear(); this.template = null; this.clips = []; this.pending = [];
+    this.renderer.dispose(); this.renderer.forceContextLoss();
   }
 
   private async load(): Promise<void> {
     try {
-      const base = await this.loader.loadAsync(BASE_MODEL_URL);
+      const base = await this.loadAsset('character', BASE_MODEL_URL);
+      if (this.disposed) { disposeCharacterObjects([base.scene]); return; }
       let animationClips: THREE.AnimationClip[] = [];
       try {
-        const animationAsset = await this.loader.loadAsync(ANIMATION_URL);
+        const animationAsset = await this.loadAsset('ual1', ANIMATION_URL);
         animationClips = animationAsset.animations;
+        disposeCharacterObjects([animationAsset.scene]);
       } catch (error) {
         console.warn('LifeLens character animation asset unavailable; using static human model', error);
       }
 
+      if (this.disposed) { disposeCharacterObjects([base.scene]); return; }
       const source = base.scene;
       source.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(source);
@@ -471,11 +565,17 @@ export class CharacterLayer {
       this.setResidents(this.pending);
       this.onReady?.();
     } catch (error) {
+      if (this.disposed) return;
       this.failedState = true;
       this.readyState = false;
       console.warn('LifeLens 3D resident asset unavailable; keeping compact fallback markers', error);
       this.onReady?.();
     }
+  }
+
+  private async loadAsset(name: string, fallback: string) {
+    try { return await this.loader.loadAsync(`${import.meta.env.BASE_URL}vendor/characters/${name}.glb`); }
+    catch (error) { if (this.disposed) throw error; return this.loader.loadAsync(fallback); }
   }
 
   private ensureActor(placement: ResidentPlacement): Actor {
@@ -586,7 +686,10 @@ export class CharacterLayer {
   }
 
   private readonly animate = (frameTime: number): void => {
-    const dt = Math.min(0.05, Math.max(0, (frameTime - this.lastFrame) / 1000));
+    this.animationFrame = null;
+    if (this.disposed || this.occluded || document.hidden) return;
+    const dt = Math.min(0.05, Math.max(0, (frameTime - this.lastFrame) / 1000))
+      * residentPresentationMotionTimeScale(this.simulationSpeed);
     this.lastFrame = frameTime;
     const ease = 1 - Math.exp(-dt * 10);
 
@@ -595,11 +698,11 @@ export class CharacterLayer {
       actor.currentX += (actor.targetX - actor.currentX) * ease;
       actor.currentY += (actor.targetY - actor.currentY) * ease;
       actor.root.position.set(actor.currentX, actor.currentY, 0);
-      this.setAction(actor, frameTime < actor.movingUntil);
+      if (this.simulationSpeed > 0) this.setAction(actor, frameTime < actor.movingUntil);
       actor.mixer.update(dt);
     }
 
     this.renderer.render(this.scene, this.camera);
-    requestAnimationFrame(this.animate);
+    if (this.readyState && this.simulationSpeed > 0 && [...this.actors.values()].some(a => a.root.visible)) this.requestFrame();
   };
 }

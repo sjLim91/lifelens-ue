@@ -232,3 +232,26 @@ button:disabled { opacity: .45; }
 .causal-step { margin-block: 12px; padding-top: 10px; border-top: 1px solid #304239; }
 .causal-step > summary { cursor: pointer; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; color: #d2dfce; }
 .causal-step > ol { margin-top: 12px; }
+.resident-mind-panel { margin: 14px 0; border-top: 1px solid var(--line, #284234); padding-top: 14px; }
+.resident-mind-panel > summary { cursor: pointer; min-height: 36px; font-weight: 650; }
+.resident-mind-panel > summary span { margin-left: 8px; font-size: 12px; color: #a8bba9; font-weight: 400; }
+.resident-mind-panel section { margin: 12px 0; }
+.resident-mind-panel h3 { font-size: 13px; color: #b6c9b6; }
+.resident-goal-candidates { padding-left: 22px; }
+.resident-goal-candidates li { margin: 12px 0; overflow-wrap: anywhere; }
+.resident-goal-candidates small { display: block; margin-top: 5px; color: #a8bba9; }
+@media (orientation: portrait) and (max-height: 640px) {
+  .earth-globe-footer { max-height: 28dvh; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  .earth-globe-dialog {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(230px, 38%);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    min-height: 0;
+  }
+  .earth-globe-header { grid-column: 1 / -1; padding: 8px 12px; }
+  .earth-scale-controls { grid-column: 1; grid-row: 2; }
+  .earth-globe-stage { grid-column: 1; grid-row: 3; min-height: 0; }
+  .earth-globe-footer { grid-column: 2; grid-row: 2 / 4; max-height: none; min-height: 0; min-width: 0; border-left: 1px solid #274239; }
+}

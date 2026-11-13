@@ -1,5 +1,5 @@
 import type { ResidentPresentationDirective } from '../runtime/core-types';
-import { registeredProductionDirective } from './resident-production-context';
+import { registeredProductionDirective, residentLocalCraft } from './resident-production-context';
 import { PARENTING_ACTIONS } from './resident-life-presentation';
 
 export type ResidentSemanticMotion =
@@ -62,7 +62,7 @@ export function resolveResidentSemanticMotion(
       return 'idle';
     case 'Civilization':
       if (!registeredProductionDirective(presentation)) return 'idle';
-      if (!presentation.hasTargetGrid) return 'idle';
+      if (!presentation.hasTargetGrid) return residentLocalCraft(presentation) ? 'craft' : 'idle';
       if (presentation.facilityAction === 'Plan') return 'crouch';
       if (presentation.facilityKind === 'CultivatedPlot') {
         if (presentation.facilityAction === 'Plant') return 'plant';

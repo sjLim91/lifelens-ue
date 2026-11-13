@@ -18,6 +18,9 @@ function LiveRenderPerformance() {
       <dt>최근 그리기 수</dt><dd>{snapshot.latest.calls.toLocaleString()}회</dd>
       <dt>최근 삼각형 수</dt><dd>{snapshot.latest.triangles.toLocaleString()}개</dd>
       <dt>화면 버퍼</dt><dd>{snapshot.surface.width} × {snapshot.surface.height}</dd>
+      <dt>관찰 화면</dt><dd>{snapshot.surface.viewportWidth ?? '—'} × {snapshot.surface.viewportHeight ?? '—'}</dd>
+      <dt>화면 프로필</dt><dd>{snapshot.presentationProfile === 'mobile' ? '모바일 · 최대 30 FPS' : '데스크톱'}</dd>
+      <dt>기록 구간</dt><dd>{snapshot.sampledFrames}프레임 · {snapshot.sampledSeconds.toFixed(1)}초</dd>
       <dt>그래픽 객체 · 텍스처</dt><dd>{snapshot.latest.geometries} · {snapshot.latest.textures}</dd>
     </dl>
     <p className="hint">최근 최대 {snapshot.sampleLimit}프레임을 측정합니다. 프레임 처리는 장면 갱신과 화면 제출에 걸린 CPU 시간이며, 반사 그리기도 포함합니다.</p>
@@ -29,6 +32,11 @@ function LiveRenderPerformance() {
       document.body.appendChild(a); a.click(); a.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     }}>성능 기록 저장</button>
+    <button type="button" onClick={() => {
+      const current = renderPerformance.snapshot();
+      if (current.surface) renderPerformance.begin(current.surface);
+      setSnapshot(renderPerformance.snapshot());
+    }}>다시 측정</button>
   </div>;
 }
 export function RenderPerformancePanel() {

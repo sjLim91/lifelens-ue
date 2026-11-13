@@ -773,6 +773,11 @@ export default function App() {
     }
   }, []);
 
+  useEffect(() => {
+    observerActions.setWorldViewOccluded(showEarthGlobe);
+    return () => observerActions.setWorldViewOccluded(false);
+  }, [showEarthGlobe]);
+
   return (
     <div id="app">
       <Topbar

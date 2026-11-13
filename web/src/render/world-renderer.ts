@@ -17,8 +17,10 @@ export class WorldRenderer {
   private readonly world = new WorldScene();
   private animationFrame: number | null = null;
   private failed = false;
+  private enabled = false;
+  private occluded = false;
   private readonly mobilePerformance = useMobilePerformanceProfile();
-  private readonly onVisibilityChange = (): void => renderPerformance.breakContinuity();
+  private readonly onVisibilityChange = (): void => this.updatePresentationVisibility();
   private readonly onWebGLContextLost = (event: Event): void => {
     event.preventDefault();
     this.fail('3D 그래픽 장치 연결이 끊어졌습니다.');
@@ -55,6 +57,28 @@ export class WorldRenderer {
   }
 
   start(): void {
+    this.enabled = true;
+    this.updatePresentationVisibility();
+  }
+
+  setOccluded(occluded: boolean): void {
+    if (this.occluded === occluded) return;
+    this.occluded = occluded;
+    this.world.breakFootTrafficContinuity();
+    if (!occluded) this.world.rebasePresentation();
+    this.updatePresentationVisibility();
+  }
+
+  private updatePresentationVisibility(): void {
+    renderPerformance.breakContinuity();
+    if (!this.enabled || this.failed || this.occluded || document.hidden) {
+      this.cancelFrames();
+      return;
+    }
+    this.renderFrames();
+  }
+
+  private renderFrames(): void {
     if (this.animationFrame !== null) return;
 
     const frames = new RenderFramePacer(this.mobilePerformance ? 30 : null, performance.now());
@@ -94,6 +118,11 @@ export class WorldRenderer {
   }
 
   stop(): void {
+    this.enabled = false;
+    this.cancelFrames();
+  }
+
+  private cancelFrames(): void {
     renderPerformance.stop();
     if (this.animationFrame === null) return;
     cancelAnimationFrame(this.animationFrame);
@@ -109,8 +138,10 @@ export class WorldRenderer {
   }
 
   private performanceSurface() {
+    const rect = this.renderer.domElement.getBoundingClientRect();
     return { width: this.renderer.domElement.width, height: this.renderer.domElement.height,
-      pixelRatio: this.renderer.getPixelRatio(), mobile: this.mobilePerformance };
+      pixelRatio: this.renderer.getPixelRatio(), mobile: this.mobilePerformance,
+      viewportWidth: Math.round(rect.width), viewportHeight: Math.round(rect.height) };
   }
 
   setCamera(state: WorldSceneCameraState, immediate = false): void {
