@@ -1,0 +1,13 @@
+{
+  "profile": "actual app restored from controlled native production checkpoint in isolated IndexedDB; software 2D fallback",
+  "controlledFixture": true,
+  "source": "4640a36cacffb93a71c39de4f0ba17a6434f62d0",
+  "fixtureSha256": "62bc8a5eca443d007a5da3ebd8a2e405efac99b3ab14622bc13523d2859bbe6b",
+  "uniqueArtifact": "16928123745832484579",
+  "design": "15171401966717868459",
+  "actualStructureAndPaidEventVisible": true,
+  "appCheckpointWrite": true,
+  "reloadRetainsArtifactAndPrivateKnowledge": true,
+  "mobileAndLandscapeNoOverflow": true,
+  "errors": []
+}

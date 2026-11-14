@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "width": 320,
+      "actualCoreEvidence": true,
+      "noOverflow": true
+    },
+    {
+      "width": 393,
+      "actualCoreEvidence": true,
+      "noOverflow": true
+    },
+    {
+      "width": 915,
+      "actualCoreEvidence": true,
+      "noOverflow": true
+    },
+    {
+      "width": 1440,
+      "actualCoreEvidence": true,
+      "noOverflow": true
+    }
+  ],
+  "errors": [],
+  "profile": "native production Core export rendered by actual React UI; software WebGL, no physical device claim"
+}
