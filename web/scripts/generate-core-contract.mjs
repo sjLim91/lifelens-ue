@@ -48,7 +48,7 @@ const simulationMinutesPerDay =
 
 // Goal observations carry persisted MaterialKind ordinals. Derive the names
 // from the same Core enum instead of maintaining a second Web enum.
-const materialBlock = read('Source/LifeLensCore/include/lifelens/Civilization.h')
+const materialBlock = read('Source/LifeLensCore/include/lifelens/MaterialModel.h')
   .match(/enum class MaterialKind\s*\{([\s\S]*?)\};/);
 if (!materialBlock) throw new Error('Core MaterialKind enum is missing');
 let nextMaterial = 0;

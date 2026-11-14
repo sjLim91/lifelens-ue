@@ -29,6 +29,7 @@ import { deriveResidentExperienceHighlights } from './resident-experiences';
 import { ResidentNeeds } from './resident-needs';
 import { ResidentCausalTimeline } from './resident-causal-timeline';
 import { ResidentMindPanel } from './resident-mind-panel';
+import { ResidentInventionPanel } from './resident-invention';
 import { CivilizationEraBadge } from './civilization-era';
 
 export function RuntimeBadge({
@@ -295,6 +296,7 @@ export function SelectedResidentReadout({
       <ResidentNeeds needs={resident.needs} />
       <ResidentMindPanel key={resident.id} resident={resident} residents={residents} />
       <ResidentCausalTimeline resident={resident} residents={residents} />
+      <ResidentInventionPanel resident={resident} />
       <CognitiveShadowPanel resident={resident} residents={residents} />
       {experienceHighlights.length > 0 ? (
         <div className="focused-life-section">

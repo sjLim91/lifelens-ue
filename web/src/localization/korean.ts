@@ -856,6 +856,13 @@ export function formatMemoryText(value: string | undefined): string {
 export function formatMemoryTag(value: string | undefined): string | null {
   const text = value?.trim();
   if (!text) return null;
+  const artifact = text.match(/^Civilization:Experiment:Artifact:(\d+):(\d+)$/);
+  if (artifact) {
+    const actions: Record<string, string> = { '17': '재료 조합 실험', '18': '발명품 보수',
+      '19': '제작법 기록', '20': '발명품 가열 작업', '21': '제작 기록 학습' };
+    return `${actions[artifact[1]] ?? '발명 작업'} #${artifact[2]}`;
+  }
+
   if (/^fact:\d+$/i.test(text) || /^hop:\d+$/i.test(text)) return null;
   if (/[가-힣]/.test(text)) return text;
   const normalized = normalizeObserverToken(text);

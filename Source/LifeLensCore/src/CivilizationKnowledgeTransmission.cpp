@@ -94,6 +94,35 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
         return;
     }
 
+    // Tagged reuse of the existing teaching payload keeps old saves readable.
+    // A design demonstration owns the same travel/time/survival action slot.
+    for(auto& teacher:world_.characters){
+        auto tr=runtime_.find(teacher.id);
+        if(tr==runtime_.end() ||tr->second.pendingContext.active() ||!tr->second.plan.empty()
+           ||!artifactSafeToWork(teacher))continue;
+        bool scheduled=false;
+        for(const auto& a:teacher.civilization.inventory.artifacts){
+            if(a.uses<1 ||a.durability<=0.02)continue;
+            for(auto& learner:world_.characters){
+                auto lr=runtime_.find(learner.id);
+                if(teacher.id==learner.id ||lr==runtime_.end() ||!artifactSafeToLearn(learner)
+                   ||lr->second.pendingContext.active() ||!lr->second.plan.empty()
+                   ||manhattan(tr->second.pos,lr->second.pos)>2)continue;
+                auto* known=learner.civilization.invention.find(artifactDesignId(a.design));
+                if(known &&(known->reproducible() ||world_.minute<known->learnedMinute+60))continue;
+                PendingContextAction pending;
+                pending.token=issueContextActionToken();pending.kind=ContextActionKind::KnowledgeTeaching;
+                pending.issuedMinute=world_.minute;pending.knowledgeTeachingTarget=learner.id;
+                pending.civilization.experiment=ExperimentKind::ComposeMaterials;
+                pending.civilization.resourceNode=a.id;
+                pending.hasSpatialTarget=true;pending.targetPos=lr->second.pos;
+                tr->second.pendingContext=pending;clearNavigation(tr->second);
+                scheduled=true;break;
+            }
+            if(scheduled)break;
+        }
+    }
+
     struct Candidate {
         CharacterId teacher=0;
         CharacterId learner=0;

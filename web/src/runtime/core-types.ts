@@ -353,6 +353,7 @@ export type ResidentPresentationPhase =
   | 'Interacting';
 
 export interface ResidentPresentationDirective {
+  artifactTool?: PhysicalArtifact | null;
   active?: boolean;
   kind?: ResidentPresentationKind;
   phase?: ResidentPresentationPhase;
@@ -442,7 +443,68 @@ export interface ResidentCivilizationTechnology {
   transformationEffectCount?: number;
 }
 
+export interface ArtifactPart {
+  material: string;
+  shape: number;
+  joint: number;
+  size: number;
+}
+export interface PhysicalArtifact {
+  id: string;
+  designId: string;
+  creatorId: string;
+  createdMinute: number;
+  durability: number;
+  uses: number;
+  repairs: number;
+  cutting: number;
+  digging: number;
+  carrying: number;
+  heating: number;
+  parts: ArtifactPart[];
+}
+export interface ArtifactTechnique {
+  designId: string;
+  originId: string;
+  sourceId: string;
+  source: number;
+  trials: number;
+  successes: number;
+  uses: number;
+  demonstrations: number;
+  confidence: number;
+  reproducible: boolean;
+  parts: ArtifactPart[];
+}
+export interface ArtifactEvent {
+  kind: number;
+  artifactId: string;
+  designId: string;
+  otherId: string;
+  minute: number;
+  rawUnits: number;
+  work: number;
+  effect: number;
+}
+export interface ResidentInvention {
+  artifacts: PhysicalArtifact[];
+  techniques: ArtifactTechnique[];
+  events: ArtifactEvent[];
+  recordCount: number;
+}
+export interface ArtifactCulture {
+  designId: string;
+  livingKnowers: number;
+  historicalKnowers: number;
+  livingMakers: number;
+  workingArtifacts: number;
+  uses: number;
+  repairs: number;
+  records: number;
+}
+
 export interface ResidentCivilization {
+  invention?: ResidentInvention;
   totalInventoryUnits?: number;
   gatheringSkill?: number;
   craftingSkill?: number;
@@ -932,6 +994,8 @@ export interface CivilizationEraObservation {
 }
 
 export interface CivilizationWorldPayload {
+  inventionCultures?: ArtifactCulture[];
+  constructionPatterns?: { facilityKind: number; completed: number; operational: number; uses: number; materials: { material: string; delivered: number }[] }[];
   era?: CivilizationEraObservation;
   available?: boolean;
   minute?: number;

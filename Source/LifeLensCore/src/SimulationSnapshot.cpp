@@ -1,3 +1,4 @@
+#include "lifelens/ArtifactSnapshotCodec.h"
 #include "lifelens/NaturalEcologyValidation.h"
 #include "lifelens/DependentEscortSnapshotCodec.h"
 #include "lifelens/AutonomousGoalActionLinkSnapshotCodec.h"
@@ -29,6 +30,7 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
         return false;
     };
 
+    if(!validArtifactWorld(snapshot.world))return fail("invalid artifact state");
     if(!validDependentEscorts(snapshot))return fail("invalid dependent escort state");
     if(snapshot.version!=SimulationSnapshotVersion) return fail("unsupported snapshot version");
     if(!validSimulationRuleset(snapshot.ruleset)) return fail("snapshot contains invalid simulation ruleset");

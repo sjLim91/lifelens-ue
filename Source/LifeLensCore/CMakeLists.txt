@@ -32,6 +32,9 @@ endif()
 add_executable(ll_harness harness/main.cpp)
 target_link_libraries(ll_harness PRIVATE lifelens_core)
 
+add_executable(ll_invention_audit harness/invention_audit.cpp)
+target_link_libraries(ll_invention_audit PRIVATE lifelens_core)
+
 add_executable(ll_balance_audit harness/balance_audit.cpp)
 target_link_libraries(ll_balance_audit PRIVATE lifelens_core)
 
@@ -232,6 +235,8 @@ lifelens_add_test(test_civilization_era)
 lifelens_add_test(test_primitive_storage_progression)
 
 lifelens_add_test(test_tool_effectiveness)
+lifelens_add_test(test_emergent_artifacts)
+lifelens_add_test(test_artifact_production_replay)
 
 lifelens_add_test(test_primitive_fire_progression)
 

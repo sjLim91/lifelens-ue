@@ -12,7 +12,7 @@ const p=(extra={})=>({active:true,kind:'Civilization',phase:'Moving',civilizatio
 const inv=(material='Wood',quantity=2)=>[{item:'RawMaterial',material,quantity}];
 let passed=0;function test(name,fn){fn();passed++;console.log('PASS',name);}
 test('all actual Core MaterialKind families registered, unknown/zero/missing inventory fail closed',()=>{
- const header=readFileSync(new URL('../../../Source/LifeLensCore/include/lifelens/Civilization.h',import.meta.url),'utf8');
+ const header=readFileSync(new URL('../../../Source/LifeLensCore/include/lifelens/MaterialModel.h',import.meta.url),'utf8');
  const enums=header.match(/enum class MaterialKind\s*\{([\s\S]*?)\};/)[1].replace(/\/\/[^\n]*/g,'').split(',').map(v=>v.trim()).filter(v=>v&&v!=='Unknown');
  assert.deepEqual(Object.keys(PRODUCTION_MATERIALS).sort(),enums.sort());
  for(const material of enums) {const stacks=inv(material);if(material==='Water')stacks.push({item:'SimpleContainer',quantity:1});assert.equal(load(stacks,p({civilizationIntent:'Store',civilizationMaterial:material})),material);}

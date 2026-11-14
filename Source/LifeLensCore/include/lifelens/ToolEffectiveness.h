@@ -13,6 +13,7 @@ struct GatherToolUseProfile {
     bool broken=false;
     ToolCapability capability=ToolCapability::None;
     ItemStack tool{};
+    std::uint64_t artifactId=0;
     double quantityMultiplier=1.0;
     double wear=0.0;
     double durabilityBefore=0.0;
@@ -134,6 +135,21 @@ inline GatherToolUseProfile inspectGatherTool(
             best=candidate;
         }
     }
+    for(const auto& a:inventory.artifacts){
+        if(a.durability<=0.02)continue;
+        const auto p=measureArtifact(a.design);
+        const double performance=result.capability==ToolCapability::Dig?p.digging:
+            (result.capability==ToolCapability::Cut ||result.capability==ToolCapability::Chop?p.cutting:
+            (result.capability==ToolCapability::Carry?p.carrying:0));
+        if(performance<0.25)continue;
+        GatherToolUseProfile candidate;
+        candidate.available=true;candidate.artifactId=a.id;candidate.capability=result.capability;
+        candidate.durabilityBefore=a.durability;
+        candidate.quantityMultiplier=1.1+0.7*std::min(1.0,performance)*a.durability;
+        candidate.wear=result.capability==ToolCapability::Carry?0:0.045/(0.5+p.durability);
+        candidate.durabilityAfter=std::max(0.0,a.durability-candidate.wear);
+        if(!best.available ||candidate.quantityMultiplier>best.quantityMultiplier)best=candidate;
+    }
     return best;
 }
 
@@ -158,6 +174,15 @@ inline bool consumeGatherToolUse(
     GatherToolUseProfile profile=inspectGatherTool(inventory,material);
     if(!profile.available){
         if(outProfile) *outProfile=profile;
+        return false;
+    }
+
+    if(profile.artifactId){
+        for(auto& a:inventory.artifacts)if(a.id==profile.artifactId){
+            a.durability=profile.durabilityAfter;++a.uses;
+            profile.used=true;profile.broken=a.durability<=0.02;
+            if(outProfile)*outProfile=profile;return true;
+        }
         return false;
     }
 

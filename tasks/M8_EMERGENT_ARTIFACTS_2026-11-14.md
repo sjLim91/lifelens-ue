@@ -1,0 +1,53 @@
+# M8 — 구조·물성 기반 발명과 발생 문명
+
+사용자 요청: M8-01~08 전체 구현·검증·통합. 필요한 관련 작업은 사전 승인됨.
+시작 기준: main `f3c7e4f` (#1029). 과거 #968은 미병합·충돌 상태이므로 합치지 않고 최신 Core 권위 위에 구현한다.
+
+현재 상태: **구현 및 통합 검증 중**. 최종 head의 CI·main·배포 근거 확정 전에는 8/8 완료로 표시하지 않는다.
+
+## 구현과 인수 경로
+
+| 단위 | 실제 제품 경로 | 검증 |
+|---|---|---|
+| M8-01 | 재료 물성 → 1~4개 부품의 막대/날/끝/용기/판/끈 + 크기/일체/묶음/끼움 → 베기/파기/운반/가열/내구/질량/작업량. 물·식량 부품, 무결합 날, 다공성 숯 용기를 거부한다. | `test_emergent_artifacts` 구조·물성 대조 |
+| M8-02 | 기존 `TechniqueRecipe`는 개인의 실제 지식·전체 재료 bill·기능을 검사하는 호환 adapter로 남긴다. 새로운 구조 ID가 기존 TechniqueId를 전역 해금하지 않는다. | 기존 제작/기술 회귀 + 옛 v8 저장 byte 왕복 |
+| M8-03 | 같은 주민의 기존 Core 실험 utility 슬롯에서 실제 보유 재료로 구조 가설을 평가한다. 실패는 원료를 잃고 다음 후보 점수에 영향을 준다. 날카로운 취성 시험은 실제 경미한 부상을 낼 수 있다. | 서로 다른 조합·실패·손실·긴급 생존 차단·위조 ID 거부 |
+| M8-04 | 실제 원료/작업 시간을 지불한 기능 시험과 실제 채집 사용이 개인 제작법·신뢰·직접 사용 횟수로 남는다. | 실제 production 토큰/14분/3원료/직접 기억 및 저장 재생 |
+| M8-05 | 구조 성능으로 실제 채집 수량/물 운반이 달라진다. 도구는 마모·파손되고 재료를 써서 제한 횟수 보수된다. 가열판은 실제 불 지식·목재 연료·보유 물을 요구한다. 기존 시설 보수/생산망을 보존한다. | 실제 gather/wear/break/repair, 운반 재사용, 연료 없는 가열 거부 |
+| M8-06 | 실제 사용한 도구의 근접 시범은 기존 이동/행동 토큰/6분 슬롯을 쓴다. 두 번의 시범 뒤 재현 가능해지고 도제 근거가 된다. 불신/낮은 수용성은 도입을 거부한다. 기존 물리 RecordTablet을 소비한 설계 기록은 직접 넘겨 주고 읽어야 학습된다. | 개인별 지식 분리, 두 시범·중간 저장·도제·물리 기록 전달 |
+| M8-07 | 실제 설계별 제작자/생존 지식 보유자/실제 사용/보수/기록과 실제 완공·운영·사용한 시설의 재료 패턴을 읽는다. 기존 사회 역할·교역·기관·정착지 관찰과 함께 제시한다. | 창작 세계 상태 없는 read-only JSON, 사망에 따른 지식 소실, 한글 UI |
+| M8-08 | 같은 재료에서 시드별 실제 실험 성공·실패가 갈리고 실패 경험으로 다른 조합을 택한다. 과거 보유자가 사망한 설계를 새로 실험해 성공하면 재발견이다. 무개입 100/365/1000일 인구·실험·사용·지식 소실·저장 수치를 별도로 기록한다. | 8개 통제 시드 + 별도 무개입 장기 census |
+
+## 저장 계약
+
+- 고유 물건 ID, 정확한 부품 구조, 제작자/시각, 내구·사용·보수, 개인 기술·출처·실패/성공, 실제 ledger, 물리 설계 기록을 보존한다.
+- 기존 v8 본체와 이전 tail은 변경하지 않는다. 새 상태가 있을 때만 길이로 구획된 `LLARTEND` 최종 확장(version 1)을 쓴다. 새 상태가 없는 저장은 이전 byte 표현 그대로다.
+- 로드·직접 restore·저장 모두 중복 물건/설계/소유자, 잘못된 enum/크기/내구/미래 시각, 초과 count/길이, 중복 확장과 잘린 tail을 거부한다. 주민당 물건 32·개인 설계 64·기록 32·최근 ledger 128로 한정한다.
+- native의 libstdc++와 WASM libc++는 **기존 mt19937 텍스트**의 끝 index 표기가 다르다. 이 기존 필드 밖의 모든 물리·지식·실행·확장 바이트를 정확 비교하고, 같은 WASM 코덱으로 정규화한 전체 저장본도 비교한다. 같은 backend의 중간 저장 재개는 전체 byte 동일성을 요구한다. raw cross-toolchain 전체 byte 일치로 과장하지 않는다.
+
+## Web 관찰과 실제 화면
+
+- 주민 상세의 **발명과 제작 지식**, 월드의 **실험 설계의 전파와 쇠퇴 / 생활에서 형성된 건축 양식**은 Core JSON만 소비한다.
+- 실제 Core Gather 토큰이 선택한 구조만 손 위치에 조립해 표시한다. 단순 보유·걷기·수면·대화는 도구 사용으로 꾸미지 않는다. 동일 구조 캐시와 최대 64개 geometry/disposal을 검사한다.
+- `test_artifact_production_replay`가 생성한 실제 Core 결과를 React에 표시해 320/393/915/1440px의 한글·overflow·page error를 확인했다. 이 검사는 통제된 실제 Core 증거이며 무개입 장기 세계나 물리 Android GPU 측정을 대신하지 않는다.
+- 이전 사용자 지시의 실기기 제외 및 발열 제외를 유지한다. 유료 모델·외부 API를 제품 필수 경로에 추가하지 않는다.
+
+## 재현 명령
+
+```sh
+cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j2
+ctest --test-dir build --output-on-failure
+LIFELENS_ARTIFACT_FIXTURE_DIR=/tmp/m8 build/test_artifact_production_replay
+build/ll_invention_audit 874213954 1000
+build/ll_invention_audit 4242001 1000
+build/ll_invention_audit 874213955 1000
+python Tools/build_web_client.py
+node Tools/verify_wasm_artifacts.mjs /tmp/m8
+npm --prefix web run typecheck
+npm --prefix web run build
+python Tools/ci_web.py regressions
+python Tools/validate_masterplan_tracking.py
+```
+
+신규 WASM 증거 생성·동일 재생 검사는 기존 Web WASM CI에 포함한다. 배포·최종 원시 근거와 한계는 검증 종료 후 이 문서에 확정한다.

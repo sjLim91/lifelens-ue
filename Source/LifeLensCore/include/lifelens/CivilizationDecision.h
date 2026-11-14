@@ -26,6 +26,7 @@
 #include "ResidentResourceOutcomePreference.h"
 #include "WildlifeSubsistence.h"
 #include "CoreNavigation.h"
+#include "ArtifactInvention.h"
 
 namespace lifelens {
 
@@ -95,28 +96,7 @@ inline const char* facilityBuildActionName(FacilityBuildAction action)
     }
 }
 
-inline const char* materialName(MaterialKind material)
-{
-    switch(material){
-        case MaterialKind::Stone: return "Stone";
-        case MaterialKind::Flint: return "Flint";
-        case MaterialKind::Wood: return "Wood";
-        case MaterialKind::Fiber: return "Fiber";
-        case MaterialKind::Clay: return "Clay";
-        case MaterialKind::Water: return "Water";
-        case MaterialKind::PlantFood: return "PlantFood";
-        case MaterialKind::Bone: return "Bone";
-        case MaterialKind::Hide: return "Hide";
-        case MaterialKind::CopperOre: return "CopperOre";
-        case MaterialKind::TinOre: return "TinOre";
-        case MaterialKind::IronOre: return "IronOre";
-        case MaterialKind::Charcoal: return "Charcoal";
-        case MaterialKind::CopperMetal: return "CopperMetal";
-        case MaterialKind::TinMetal: return "TinMetal";
-        case MaterialKind::Bronze: return "Bronze";
-        default: return "Unknown";
-    }
-}
+
 
 inline const char* techniqueName(TechniqueId technique)
 {
@@ -1413,6 +1393,66 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const InnovationPressureContextSnapshot innovationContext=
         observeInnovationPressureContext(
             world,self,authoritativePosition,population);
+    if(requestedTechnique==TechniqueId::None &&artifactSafeToWork(self)){
+        CivilizationUtilityDecision candidate;
+        candidate.intent=CivilizationIntent::Experiment;
+        candidate.technique=TechniqueId::None;
+        // Maintenance and recording use the same paid action slot as trials.
+        for(const auto& a:self.civilization.inventory.artifacts){
+            if(a.durability<=0.5 &&a.repairs<6
+               &&a.durability<measureArtifact(a.design).durability
+               &&self.civilization.inventory.count(ItemKind::RawMaterial,a.design.parts.back().material)>0){
+                candidate.experiment=ExperimentKind::RepairArtifact;
+                candidate.resourceNode=a.id;candidate.material=a.design.parts.front().material;
+                candidate.utility=0.40;considerCivilizationDecision(best,candidate);break;
+            }
+        }
+        if(self.civilization.knowledge.knowsAtLeast(TechniqueId::FireMaking,KnowledgeLevel::Reproducible)
+           &&portableWaterCount(self.civilization.inventory)>0
+           &&self.civilization.inventory.count(ItemKind::RawMaterial,MaterialKind::Wood)>0){
+            bool impure=false;
+            for(const auto& water:self.civilization.inventory.stacks())
+                impure|=water.material==MaterialKind::Water &&water.quality<0.95;
+            if(impure)for(const auto& a:self.civilization.inventory.artifacts){
+                if(a.durability<=0.02 ||measureArtifact(a.design).heating<0.5)continue;
+                candidate.experiment=ExperimentKind::HeatWithArtifact;candidate.resourceNode=a.id;
+                candidate.material=a.design.parts.front().material;candidate.utility=0.43;
+                considerCivilizationDecision(best,candidate);break;
+            }
+        }
+        for(const auto& record:self.civilization.inventory.artifactRecords){
+            const auto id=artifactDesignId(record.design);
+            const auto& known=self.civilization.invention.techniques;
+            const auto t=std::find_if(known.begin(),known.end(),[&](const ArtifactTechnique& t){return artifactDesignId(t.design)==id;});
+            if(t!=known.end()&&(t->reproducible()||world.minute<t->learnedMinute+60))continue;
+            candidate.experiment=ExperimentKind::ReadArtifactRecord;candidate.resourceNode=id;
+            candidate.material=record.design.parts.front().material;candidate.utility=0.38;
+            considerCivilizationDecision(best,candidate);break;
+        }
+        const auto proposal=proposeArtifact(self);
+        const auto& ledger=self.civilization.invention.ledger;
+        if(proposal &&(ledger.empty() ||world.minute>=ledger.back().minute+30)){
+            candidate.experiment=ExperimentKind::ComposeMaterials;
+            candidate.resourceNode=artifactDesignId(proposal->design);
+            candidate.quantity=static_cast<int>(std::ceil(measureArtifact(proposal->design).work));
+            candidate.material=proposal->design.parts.front().material;
+            candidate.utility=clampCivilization01(0.20+0.22*proposal->score+0.10*self.personality.curiosity);
+            considerCivilizationDecision(best,candidate);
+        }
+        if(self.civilization.inventory.count(ItemKind::RecordTablet,MaterialKind::Unknown,true)>0){
+            for(const auto& t:self.civilization.invention.techniques){
+                if(!t.reproducible())continue;
+                const auto id=artifactDesignId(t.design);
+                bool recorded=false;
+                for(const auto& r:self.civilization.inventory.artifactRecords)
+                    recorded|=artifactDesignId(r.design)==id;
+                if(recorded)continue;
+                candidate.experiment=ExperimentKind::RecordArtifact;candidate.resourceNode=id;
+                candidate.material=t.design.parts.front().material;candidate.utility=0.32;
+                considerCivilizationDecision(best,candidate);break;
+            }
+        }
+    }
     for(const ExperimentKind kind:CivilizationExperimentCatalog){
         const TechniqueId technique=experimentTechnique(kind);
         if(technique==TechniqueId::None
@@ -3261,6 +3301,31 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
             return result;
         }
         case CivilizationIntent::Experiment: {
+            if(decision.experiment==ExperimentKind::ComposeMaterials){
+                result.experiment=executeArtifactTrial(world,self,decision.resourceNode);
+                result.executed=result.experiment.attempted;result.success=result.experiment.success;
+                result.event=result.experiment.event;return result;
+            }
+            if(decision.experiment==ExperimentKind::ReadArtifactRecord){
+                result.success=readArtifactRecord(self,world.minute,decision.resourceNode);
+                result.executed=result.success;result.event.actor=self.id;
+                result.event.type=CivilizationEventType::Crafted;return result;
+            }
+            if(decision.experiment==ExperimentKind::HeatWithArtifact){
+                result.success=heatWaterWithArtifact(self,decision.resourceNode,world.minute);
+                result.executed=result.success;result.event.actor=self.id;
+                result.event.type=CivilizationEventType::Crafted;
+                result.event.material=MaterialKind::Water;return result;
+            }
+            if(decision.experiment==ExperimentKind::RepairArtifact
+               ||decision.experiment==ExperimentKind::RecordArtifact){
+                result.success=decision.experiment==ExperimentKind::RepairArtifact
+                    ?repairArtifact(self,decision.resourceNode,world.minute)
+                    :artifactSafeToWork(self)&&recordArtifactTechnique(self,decision.resourceNode,world.minute);
+                result.executed=result.success;result.event.actor=self.id;
+                result.event.type=CivilizationEventType::Crafted;
+                result.event.material=decision.material;return result;
+            }
             ExperimentContext context;
             context.worldSeed=world.seed;
             context.actor=self.id;

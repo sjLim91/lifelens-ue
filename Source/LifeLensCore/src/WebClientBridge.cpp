@@ -1,3 +1,5 @@
+#include "lifelens/ArtifactObservation.h"
+#include "lifelens/ToolEffectiveness.h"
 #include "lifelens/NaturalEcologyLifecycle.h"
 #include "lifelens/WildlifeObservation.h"
 #include "lifelens/WebClientBridge.h"
@@ -756,9 +758,19 @@ const char* weatherSummaryName(WeatherSummary summary)
 
 void appendResidentPresentationJson(
     std::ostringstream& out,
-    const ResidentPresentationObservation& presentation)
+    const ResidentPresentationObservation& presentation,
+    const Character* character=nullptr)
 {
     out << "{";
+    out << "\"artifactTool\":";
+    const PhysicalArtifact* activeArtifact=nullptr;
+    if(character &&presentation.active &&presentation.civilizationIntent==CivilizationIntent::Gather){
+        const auto tool=inspectGatherTool(character->civilization.inventory,presentation.civilizationMaterial);
+        for(const auto& a:character->civilization.inventory.artifacts)
+            if(tool.artifactId==a.id)activeArtifact=&a;
+    }
+    if(activeArtifact)appendArtifactJson(out,*activeArtifact);else out<<"null";
+    out<<",";
     out << "\"active\":" << (presentation.active ? "true" : "false") << ",";
     out << "\"kind\":\"" << presentationActionKindName(presentation.kind) << "\",";
     out << "\"phase\":\"" << presentationActionPhaseName(presentation.phase) << "\",";
@@ -798,10 +810,13 @@ std::string civilizationWorldObservationJson(
     const CivilizationWorldObservation& world,
     const SocietyWorldObservation& society,
     const SettlementNetworkObservation& settlementNetwork,
-    const SettlementTradeNetworkObservation& tradeNetwork)
+    const SettlementTradeNetworkObservation& tradeNetwork,
+    const World& authority)
 {
     std::ostringstream out;
     out << "{";
+    out<<"\"constructionPatterns\":";appendConstructionPatternsJson(out,authority);out<<",";
+    out<<"\"inventionCultures\":";appendArtifactCulturesJson(out,authority);out<<",";
     out << "\"available\":true,";
     out << "\"minute\":" << world.minute << ",";
     out << "\"era\":{\"currentEra\":{\"id\":\"" << world.era.id
@@ -1517,7 +1532,7 @@ std::string WebClientBridge::residentRuntimeJson() const
         out << "\"activityTargetId\":\"" << activityTargetId << "\",";
         out << "\"activityTargetName\":\"" << escapeJson(activityTargetName) << "\",";
         out << "\"presentation\":";
-        appendResidentPresentationJson(out, presentation);
+        appendResidentPresentationJson(out, presentation, &character);
         out << ",";
 
         out << "\"emotion\":{";
@@ -1684,7 +1699,7 @@ std::string WebClientBridge::residentsJson() const
             << escapeJson(resident.activityTargetName) << "\",";
 
         out << "\"presentation\":";
-        appendResidentPresentationJson(out, presentation);
+        appendResidentPresentationJson(out, presentation, character);
         out << ",";
 
         out << "\"emotion\":{";
@@ -1801,6 +1816,7 @@ std::string WebClientBridge::residentsJson() const
         out << "},";
 
         out << "\"civilization\":{";
+        out<<"\"invention\":";appendResidentInventionJson(out,character);out<<",";
         out << "\"totalInventoryUnits\":" << civilization.totalInventoryUnits << ",";
         out << "\"gatheringSkill\":"; appendDouble(out, civilization.gatheringSkill); out << ",";
         out << "\"craftingSkill\":"; appendDouble(out, civilization.craftingSkill); out << ",";
@@ -2453,7 +2469,7 @@ std::string WebClientBridge::civilizationWorldJson(
             std::min<std::size_t>(maxRecentDiscoveries, 64)),
         simulation_->observeSocietyWorld(),
         simulation_->observeSettlementNetwork(),
-        simulation_->observeSettlementTradeNetwork());
+        simulation_->observeSettlementTradeNetwork(),simulation_->world());
 }
 
 std::string WebClientBridge::civilizationWorldWindowJson(
@@ -2474,7 +2490,7 @@ std::string WebClientBridge::civilizationWorldWindowJson(
             std::min<std::size_t>(maxRecentDiscoveries,64)),
         simulation_->observeSocietyWorld(),
         simulation_->observeSettlementNetwork(),
-        simulation_->observeSettlementTradeNetwork());
+        simulation_->observeSettlementTradeNetwork(),simulation_->world());
 }
 
 std::string WebClientBridge::worldObjectsJson() const

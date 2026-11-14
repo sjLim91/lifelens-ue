@@ -42,6 +42,11 @@ jobs:
           cmake --build /tmp/lifelens-causal-native --target test_al2_production_gather_craft -j2
           LIFELENS_CAUSAL_FIXTURE_DIR=/tmp/lifelens-causal-fixture /tmp/lifelens-causal-native/test_al2_production_gather_craft
 
+      - name: Export actual native emergent artifact trial
+        run: |
+          cmake --build /tmp/lifelens-causal-native --target test_artifact_production_replay -j2
+          LIFELENS_ARTIFACT_FIXTURE_DIR=/tmp/lifelens-artifact-fixture /tmp/lifelens-causal-native/test_artifact_production_replay
+
       - name: Build LifeLensCore WASM
         run: python Tools/build_web_client.py
 
@@ -56,6 +61,17 @@ jobs:
 
       - name: Verify actual native to WASM causal chain and serialized continuation
         run: node Tools/verify_wasm_causal_journal.mjs /tmp/lifelens-causal-fixture
+
+      - name: Verify native to WASM artifact binary and mid-trial continuation
+        run: node Tools/verify_wasm_artifacts.mjs /tmp/lifelens-artifact-fixture
+
+      - name: Upload invention verification evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emergent-artifact-evidence
+          path: /tmp/lifelens-artifact-fixture/*
+          retention-days: 7
 
       - name: Upload causal verification evidence
         uses: actions/upload-artifact@v4

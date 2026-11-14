@@ -1,8 +1,9 @@
+import { activeArtifact, createArtifactProp } from './artifact-presentation';
 import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
 import { knownProductionMaterial, ownedMaterialUnits, PRODUCTION_MATERIALS } from './production-material-presentation';
 import { registeredProductionDirective } from './resident-production-context';
-import type { ResidentCivilizationItem, ResidentPresentationDirective } from '../runtime/core-types';
+import type { PhysicalArtifact, ResidentCivilizationItem, ResidentPresentationDirective } from '../runtime/core-types';
 
 const DISPLAY_ITEMS = [
   'DiggingStick', 'StoneCuttingTool', 'StoneHammer', 'BronzeAxe', 'BronzePick',
@@ -110,6 +111,7 @@ export class ResidentPropResources {
   readonly empty = new THREE.BufferGeometry();
   private readonly geometries = new Map<string,THREE.BufferGeometry>();
   private disposed = false;
+  private readonly artifactGeometries = new Map<string, THREE.BufferGeometry>();
   constructor() {
     this.empty.setAttribute('position', new THREE.Float32BufferAttribute([], 3));
     this.empty.setAttribute('normal', new THREE.Float32BufferAttribute([], 3));
@@ -138,7 +140,15 @@ export class ResidentPropResources {
   get(item:string,pieces=1): THREE.BufferGeometry {
     return this.geometries.get(item === 'Water' ? 'SimpleContainer' : knownProductionMaterial(item) ? `${item}:${pieces}` : item) ?? this.empty;
   }
-  get geometryCount(): number {return this.geometries.size+1;}
+  getArtifact(artifact: PhysicalArtifact): THREE.BufferGeometry {
+    const key=artifact.designId+JSON.stringify(artifact.parts);
+    const cached=this.artifactGeometries.get(key);if(cached)return cached;
+    // A full cache simply uses a temporary empty presentation. Do not dispose
+    // an active resident's shared geometry while another resident still uses it.
+    if(this.artifactGeometries.size>=64)return this.empty;
+    const geometry=this.merge(createArtifactProp(artifact));this.artifactGeometries.set(key,geometry);return geometry;
+  }
+  get geometryCount(): number {return this.geometries.size+this.artifactGeometries.size+1;}
   private merge(group:THREE.Group): THREE.BufferGeometry {
     const positions:number[]=[],normals:number[]=[],colors:number[]=[];
     const point=new THREE.Vector3(),normal=new THREE.Vector3(),nm=new THREE.Matrix3();
@@ -168,6 +178,7 @@ export class ResidentPropResources {
   dispose(): void {
     if(this.disposed)return;this.disposed=true;
     for(const geometry of this.geometries.values())geometry.dispose();this.geometries.clear();
+    for(const geometry of this.artifactGeometries.values())geometry.dispose();this.artifactGeometries.clear();
     this.empty.dispose();this.material.dispose();
   }
 }
@@ -222,10 +233,11 @@ export class ResidentInventoryProps {
     const items=residentVisibleItems(inventory).filter(i=>!(i === 'SimpleContainer' && jug));
     this.slots.forEach((slot,i)=>{slot.visible=!!items[i];slot.geometry=this.resources.get(items[i] ?? '');});
     this.root.visible=Boolean(this.pelvis) && items.length>0;
-    this.loadRoot.visible=this.hasCarriedLoad || this.hasWaterContainer;
+    const artifact=this.interacting && !this.visuallyMoving ? activeArtifact(p) : null;
+    this.loadRoot.visible=this.hasCarriedLoad || this.hasWaterContainer || Boolean(artifact && this.rightHand);
     const quantity=material ? ownedMaterialUnits(inventory,material):0;
     const pieces=Math.min(WORLD_PRESENTATION.load.maxPieces,Math.max(1,Math.ceil(quantity)));
-    this.load.geometry=this.resources.get(jug?'Water':material ?? '',pieces);
+    this.load.geometry=artifact ? this.resources.getArtifact(artifact) : this.resources.get(jug?'Water':material ?? '',pieces);
     this.load.rotation.x=this.hasWaterContainer ? .65 : 0;this.load.position.y=jug?-.055:0;
   }
   update(): void {

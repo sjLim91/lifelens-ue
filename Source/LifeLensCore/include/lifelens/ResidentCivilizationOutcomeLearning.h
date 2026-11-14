@@ -23,6 +23,10 @@ inline std::string civilizationActionExperienceKey(
        ||decision.intent==CivilizationIntent::Explore){
         label+=':';
         label+=materialName(decision.material);
+    }else if(decision.intent==CivilizationIntent::Experiment
+             &&decision.experiment>=ExperimentKind::ComposeMaterials){
+        label+=":Artifact:"+std::to_string(static_cast<int>(decision.experiment));
+        label+=":"+std::to_string(decision.resourceNode);
     }else if(decision.intent==CivilizationIntent::Craft
              ||decision.intent==CivilizationIntent::Experiment){
         label+=':';

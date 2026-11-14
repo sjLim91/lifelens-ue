@@ -620,8 +620,12 @@ inline const SocialFact* registerSocietyApprenticeshipIfQualified(
             if(fact.proposition==proposition) return &fact;
         }
     }
+    int artifactDemonstrations=0;
+    for(const auto& t:learner.civilization.invention.techniques)
+        if(t.source==teacher.id &&t.provenance==ArtifactKnowledgeSource::Demonstration)
+            artifactDemonstrations+=t.demonstrations;
     if(societyTeachingReceiptCountBetween(
-        book,teacher.id,learner.id)<2) return nullptr;
+        book,teacher.id,learner.id)+artifactDemonstrations<2) return nullptr;
 
     SocialFact fact;
     fact.id=societyAssociationFactId(
