@@ -3,7 +3,7 @@
 사용자 요청: M8-01~08 전체 구현·검증·통합. 필요한 관련 작업은 사전 승인됨.
 시작 기준: main `f3c7e4f` (#1029). 과거 #968은 미병합·충돌 상태이므로 합치지 않고 최신 Core 권위 위에 구현한다.
 
-현재 상태: **구현 및 통합 검증 중**. 최종 head의 CI·main·배포 근거 확정 전에는 8/8 완료로 표시하지 않는다.
+현재 상태: **M8-01~08 전체 8/8 완료**. [PR #1030](https://github.com/sjLim91/lifelens-ue/pull/1030) → main `4640a36cacffb93a71c39de4f0ba17a6434f62d0`. 최종 코드 head `8dcdcbdb1ff0a99085913c804855fd7f4509eba1`의 필수 CI 9/9와 Runtime Release·Pages·External Probe 및 공개 바이트/브라우저 검증을 통과했다. [기계 판독 배포 증거](evidence/m8-2026-11-14/release-proof.json).
 
 ## 구현과 인수 경로
 
@@ -50,7 +50,7 @@ python Tools/ci_web.py regressions
 python Tools/validate_masterplan_tracking.py
 ```
 
-신규 WASM 증거 생성·동일 재생 검사는 기존 Web WASM CI에 포함한다. 배포·최종 원시 근거와 한계는 검증 종료 후 이 문서에 확정한다.
+신규 WASM 증거 생성·동일 재생 검사는 기존 Web WASM CI에 포함한다. 최종 원시 근거와 배포 출처는 아래 인수 결과와 `evidence/m8-2026-11-14/`에 보존한다.
 
 ## 통합 회귀와 비용 확인
 
@@ -58,3 +58,26 @@ python Tools/validate_masterplan_tracking.py
 - 같은 컴파일러로 원래 main `f3c7e4f` Core만 별도 빌드한 대조는 기존 seed `874213955`의 token 2360→2361, 재고 1→8의 자연 인과 검증을 통과했다. 새 월드에 자원/실패/기억을 주입하거나 기능을 늦춰 그 옛 사건을 강제하지 않았다.
 - 새 Core의 **시드 4**에서 같은 90일 관찰 범위와 모든 원래 조건을 유지해 실제 기회를 찾았다. 주민 2, goal/실패 token **1331**, 기억을 유지한 회복 token **1333**, 원천 **8526816152347751445**, 재고 **2→9**, 원천 **108→101**, 실제 이동·직접 성공 기억·정확히 실패 기억 한 건 제거/재삽입의 나머지 snapshot byte 동일성 모두 통과했다. 대조군은 그 회복 원천을 선택하지 않는다. 최종 회귀는 이 자연 시드를 사용하며 **원래 목표까지 실제 달성해야 한다는 assert도 추가**한다. 관찰 기간·재고 양수·기한·이동·수량·단일 기억 차이 조건은 낮추지 않는다.
 - 오래된 quality별 원료 스택 때문에 실제 재고와 보유 기능을 반복 스캔하던 비용을 제거했다. 매 제안에서 실제 재고와 보유 기능을 한 번 계산하되, 기존 원료 스택 순서는 중복까지 그대로 보존해 부동소수 동률 선택도 바꾸지 않는다. 지속 cache나 새 authority를 만들지 않는다. 재료/quality/개인 학습/내구가 다른 **192개 입력의 선택 ID와 16진 부동소수 점수가 전부 동일**했다. 로컬 제안 함수 비교의 원시 중앙값 차이는 `proposal-equivalence.json`에 보존하며, 이를 전체 게임/Android 속도 개선 수치로 확대하지 않는다.
+
+
+## 최종 인수·main·공개 배포
+
+- 구현 PR [#1030](https://github.com/sjLim91/lifelens-ue/pull/1030), 검증 코드 `8dcdcbdb1ff0a99085913c804855fd7f4509eba1`, 실제 main/런타임 `4640a36cacffb93a71c39de4f0ba17a6434f62d0`. [Core CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43566413973)에서 **181/181**, 결정론·기존 AL-1 회복·365일 수면 회귀까지 통과했다. 필수 workflow 9개가 모두 같은 head에서 성공했다.
+- [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43568657563) · [Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43568840164) · [External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43568903456) 성공. [공개 앱](https://sjlim91.github.io/lifelens-ue/index.html)의 JS/CSS·HTML·WASM·runtime 출처/manifest를 실제 gh-pages Git blob과 비교했다. 공개 WASM으로 native fixture를 실행해 물리/지식 byte와 정규화 전체 저장·중간 재개를 다시 검증했다. 공개 실제 앱의 네 명 새 게임·개인 발명 빈 상태·모바일/가로 화면도 오류 없이 통과했다.
+- [배포·CI·브라우저 JSON](evidence/m8-2026-11-14/release-proof.json), [원시 증거 설명](evidence/m8-2026-11-14/README.md), [실제 production 재생](evidence/m8-2026-11-14/native-production-replay.log), [M8 물리/저장 회귀](evidence/m8-2026-11-14/native-unit.log), [WASM 대조](evidence/m8-2026-11-14/wasm-proof.json), [네 화면 크기](evidence/m8-2026-11-14/browser-fixture-proof.json).
+
+### 변경하지 않은 새 게임: 최종 코드 1000일
+
+아래 수치는 실제 `setupNewGame`·`Simulation::step`을 쓰며 시작 원료·주민·행동·기억을 공급하지 않았다. 각 세계에서 100/365/1000일의 native 전체 binary encode/decode/restore 동일성도 통과했다.
+
+| 시드 | 1000일 생존/누적 주민 | 실험/성공 | 실사용/시범 | 시설 | snapshot bytes | 실제 관측 |
+|---|---|---|---|---|---|---|
+| 874213954 | 2/5 | 1/1 | 700/0 | 74 | 5,466,966 | 100일 생존 지식 보유 1명 → 365일 0명. 제작자 사망 뒤 지식 소실 유지 |
+| 4242001 | 4/8 | 0/0 | 0/0 | 34 | 10,394,221 | 시설과 인구는 이어지지만 구조 발명은 발생하지 않은 정체 경로 |
+| 874213955 | 4/7 | 2/1 | 818/1 | 34 | 7,203,123 | 성공 설계의 개인 지식 유지·실사용·자율 근접 시범 발생 |
+
+원시 `natural-*.jsonl`과 Release 빌드 출처 `audit-build.json`을 함께 보존한다. 자연 세계에서 관측하지 않은 자율 보수·완성 도제·기록·재발견을 위 표에 추가하지 않는다. 이 기능들은 별도의 실제 물리 Core 통제 회귀(8개 시드 포함)로 검증했다. 발전·정체·퇴보·재발견을 시대 타이머로 강제하지 않는다.
+
+## 완료 범위
+
+M8-01~08을 완료로 변경했다. 기존 M10 및 다른 milestone 상태를 보존하고 전체 장부를 **21 완료 / 20 진행 / 45 미완·미검증 = 86**으로 검증했다. 과거 [#968](https://github.com/sjLim91/lifelens-ue/pull/968)의 충돌 브랜치를 합치지 않고 최신 main 위의 이번 구조 모델로 대체했다. #968은 superseded로 닫고 원래 브랜치는 보존했다. 기존 지시의 실기기/발열 제외를 유지하며 Qwen 추론·물리 Android GPU·다른 milestone 전체 인수를 주장하지 않는다.

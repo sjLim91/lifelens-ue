@@ -1,0 +1,23 @@
+core-tests	Core regression suite	2026-11-14T06:41:26.0238744Z 100% tests passed out of 181
+core-tests	Core regression suite	2026-11-14T06:41:26.0239199Z Total Test time (real) = 232.46 sec
+core-tests	AL-1 native production resident witness	2026-11-14T06:41:26.5223569Z 100% tests passed out of 1
+core-tests	AL-1 native production resident witness	2026-11-14T06:41:26.5224012Z Total Test time (real) =   0.37 sec
+core-tests	AL-1 genuine Core failure paired causal contrast	2026-11-14T06:41:30.8276754Z 100% tests passed out of 1
+core-tests	AL-1 genuine Core failure paired causal contrast	2026-11-14T06:41:30.8277160Z Total Test time (real) =   4.29 sec
+core-tests	AL-1 untouched New Game recovery observation	2026-11-14T06:41:35.8441272Z 100% tests passed out of 1
+core-tests	AL-1 untouched New Game recovery observation	2026-11-14T06:41:35.8441540Z Total Test time (real) =   5.00 sec
+core-tests	AL-1 controlled Core same-tick route recovery	2026-11-14T06:41:35.8674959Z 100% tests passed out of 1
+core-tests	AL-1 controlled Core same-tick route recovery	2026-11-14T06:41:35.8675323Z Total Test time (real) =   0.01 sec
+core-tests	AL-1 real New Game success-memory causal ablation	2026-11-14T06:41:39.6127775Z 100% tests passed out of 1
+core-tests	AL-1 real New Game success-memory causal ablation	2026-11-14T06:41:39.6128181Z Total Test time (real) =   3.73 sec
+core-tests	AL-1 natural goal to learned physical reexecution	2026-11-14T06:41:43.3582206Z 100% tests passed out of 1
+core-tests	AL-1 natural goal to learned physical reexecution	2026-11-14T06:41:43.3582618Z Total Test time (real) =   3.72 sec
+core-tests	AL-1 natural memory reuse opportunity census	2026-11-14T06:41:46.0000795Z 100% tests passed out of 1
+core-tests	AL-1 natural memory reuse opportunity census	2026-11-14T06:41:46.0001044Z Total Test time (real) =   2.62 sec
+core-tests	Relevant Core changes or nightly 365-day verification	﻿2026-11-14T06:46:07.8820643Z ##[group]Run for seed in 874213954 874213955 2; do
+core-tests	Relevant Core changes or nightly 365-day verification	2026-11-14T06:46:07.8821311Z [36;1mfor seed in 874213954 874213955 2; do[0m
+core-tests	Relevant Core changes or nightly 365-day verification	2026-11-14T06:46:07.8822367Z [36;1m  ./build/ll_balance_audit --days 365 --seed "$seed" --checkpoints 100,365 --sleep-diagnostics > "candidate-$seed.log"[0m
+core-tests	Relevant Core changes or nightly 365-day verification	2026-11-14T06:46:07.8823366Z [36;1mdone[0m
+core-tests	Relevant Core changes or nightly 365-day verification	2026-11-14T06:46:07.8824078Z [36;1mpython3 Tools/verify_sleep_longrun.py candidate-*.log > sleep-longrun-metrics.json[0m
+core-tests	Relevant Core changes or nightly 365-day verification	2026-11-14T06:46:07.8894014Z shell: /usr/bin/bash -e {0}
+core-tests	Relevant Core changes or nightly 365-day verification	2026-11-14T06:46:07.8894464Z ##[endgroup]

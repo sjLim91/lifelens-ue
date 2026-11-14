@@ -1,0 +1,33 @@
+{
+  "profile": "controlled real production Core; supplied initial raw materials and one paid token",
+  "nativeWasmPhysicalAndKnowledgeBytesEqual": true,
+  "legacyRngTextPlatformSpecific": true,
+  "codecNormalizedBinaryEqual": true,
+  "midTrialReplayEqual": true,
+  "readOnly": true,
+  "fetches": 0,
+  "minutes": 15,
+  "artifacts": [
+    {
+      "id": "16928123745832484579",
+      "designId": "15171401966717868459",
+      "creatorId": "1",
+      "createdMinute": 494,
+      "durability": 0.787,
+      "uses": 0,
+      "repairs": 0,
+      "cutting": 0,
+      "digging": 0,
+      "carrying": 2.25,
+      "heating": 0,
+      "parts": [
+        {
+          "material": "Clay",
+          "shape": 3,
+          "joint": 0,
+          "size": 3
+        }
+      ]
+    }
+  ]
+}

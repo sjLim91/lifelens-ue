@@ -1,0 +1,8 @@
+{
+  "profile": "actual WASM Core app using supported 2D fallback; software environment, no physical GPU claim",
+  "source": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+  "fourFounders": true,
+  "emptyNewGameInvention": true,
+  "mobileAndLandscapeNoOverflow": true,
+  "errors": []
+}

@@ -1,8 +1,10 @@
-## 2026-11-14 M8 전체 구현·통합 검증 진행
+## 2026-11-14 M8 전체 8/8 구현·통합 검증·배포 완료
 
-- 사용자 요청으로 M8-01~08 전체를 진행하며 관련 필요한 작업은 사전 승인받았다. 기존 G1 우선순위 문서의 신규 M8 착수 보류는 이번 명시적 요청 범위에서 해제한다.
-- 최신 main `f3c7e4f`에서 구조·물성 기반 고유 발명품, 실제 원료/작업/사용/보수, 개인별 제작 지식·근접 시범·기록·도제, 발생 문화/건축 관찰과 저장 호환을 구현했다. [범위·검증 계약](M8_EMERGENT_ARTIFACTS_2026-11-14.md).
-- 기존 M10과 단일 Core 주민 authority를 보존한다. 최종 원격 CI·main·배포 전에는 M8 완료를 체크하지 않는다. 실기기/발열 제외는 유지한다.
+- [PR #1030](https://github.com/sjLim91/lifelens-ue/pull/1030) → main `4640a36cacffb93a71c39de4f0ba17a6434f62d0`. 최종 코드 head `8dcdcbdb1ff0a99085913c804855fd7f4509eba1`의 필수 CI **9/9**: [Core 181/181·AL-1 인과·365일](https://github.com/sjLim91/lifelens-ue/actions/runs/43566413973), Web WASM·Web Checks·Preflight·Autonomy·Earth·Wildlife 성공. [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43568657563) · [Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43568840164) · [External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43568903456) 성공.
+- M8-01~08: 구조·물성 기반 발명품, 실제 원료/시간 실험·실패·부상, 성능 기반 사용·마모·보수·연료 가열, 개인 지식·기록 전달·근접 시범·도제·도입 거부, 문화/건축의 발생 관찰과 분기 검증을 완료했다. [단위별 실제 경로와 인수 근거](M8_EMERGENT_ARTIFACTS_2026-11-14.md), [원시 증거·배포 출처](evidence/m8-2026-11-14/release-proof.json).
+- 변경하지 않은 새 게임 **3시드 × 100/365/1000일**과 checkpoint native binary 왕복, 실제 production 14분/3원료·두 번의 6분 시범, 실제 배포 WASM의 물리/지식·저장 재생을 검증했다. 자연 결과의 발전·정체·지식 소실과 별도 통제 시드의 실패·재발견을 구분한다. 기존 난수 텍스트의 표준 라이브러리 표현 차이는 저장 대조에서 명시한다.
+- 공개 앱의 런타임 출처 `4640a36cacffb93a71c39de4f0ba17a6434f62d0`와 gh-pages blob/manifest, 실제 브라우저 새 게임·개인 발명 관찰·모바일/가로 화면을 확인했다. React 실제 Core fixture는 320/393/915/1440px 오류/overflow 0. **기존 사용자 지시로 실기기·발열은 제외**하며 소프트웨어/2D 검증을 물리 Android GPU 검사로 계산하지 않는다.
+- 완료 **21/86**, 진행 **20/86**, 미완·미검증 **45/86**. M8은 **8/8**이며 다른 milestone의 상태와 86개 분모는 유지한다.
 
 ## 2026-11-13 M10 전체 7/7 구현·통합 검증·배포 완료
 

@@ -1,0 +1,268 @@
+{
+  "validatedHead": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+  "codePr": "https://github.com/sjLim91/lifelens-ue/pull/1030",
+  "mainMergeSha": "4640a36cacffb93a71c39de4f0ba17a6434f62d0",
+  "mergeTreeMatchesValidatedHead": true,
+  "validatedTree": "f1763923cbf238575b48e67aa887becbce6dc1f1",
+  "checks": [
+    {
+      "id": 43566413932,
+      "name": "LifeLens Earth Surface Coordinate Contract",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43566413932",
+      "headSha": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+      "conclusion": "success"
+    },
+    {
+      "id": 43566413875,
+      "name": "LifeLens Wildlife Binary Persistence",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43566413875",
+      "headSha": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+      "conclusion": "success"
+    },
+    {
+      "id": 43566413891,
+      "name": "LifeLens Earth Solar Geography",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43566413891",
+      "headSha": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+      "conclusion": "success"
+    },
+    {
+      "id": 43566413910,
+      "name": "LifeLens Wildlife Ecology Core Foundation",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43566413910",
+      "headSha": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+      "conclusion": "success"
+    },
+    {
+      "id": 43566413876,
+      "name": "LifeLens Preflight",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43566413876",
+      "headSha": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+      "conclusion": "success"
+    },
+    {
+      "id": 43566413887,
+      "name": "LifeLens Core Autonomy Read-only Audit",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43566413887",
+      "headSha": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+      "conclusion": "success"
+    },
+    {
+      "id": 43566413886,
+      "name": "LifeLens Web WASM",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43566413886",
+      "headSha": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+      "conclusion": "success"
+    },
+    {
+      "id": 43566413889,
+      "name": "LifeLens Web Checks",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43566413889",
+      "headSha": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+      "conclusion": "success"
+    },
+    {
+      "id": 43566413973,
+      "name": "LifeLens Core Tests",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43566413973",
+      "headSha": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+      "conclusion": "success"
+    }
+  ],
+  "runtimeRelease": {
+    "id": 43568657563,
+    "name": "LifeLens Web Runtime Release",
+    "event": "push",
+    "head_sha": "4640a36cacffb93a71c39de4f0ba17a6434f62d0",
+    "conclusion": "success",
+    "created_at": "2026-11-14T06:55:31Z",
+    "updated_at": "2026-11-14T06:57:59Z",
+    "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43568657563"
+  },
+  "preview": {
+    "id": 43568840164,
+    "name": "LifeLens Web Preview",
+    "event": "workflow_run",
+    "head_sha": "4640a36cacffb93a71c39de4f0ba17a6434f62d0",
+    "conclusion": "success",
+    "created_at": "2026-11-14T06:58:01Z",
+    "updated_at": "2026-11-14T06:58:51Z",
+    "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43568840164"
+  },
+  "externalProbe": {
+    "id": 43568903456,
+    "name": "External Preview Probe",
+    "event": "workflow_run",
+    "head_sha": "4640a36cacffb93a71c39de4f0ba17a6434f62d0",
+    "conclusion": "success",
+    "created_at": "2026-11-14T06:58:54Z",
+    "updated_at": "2026-11-14T06:59:17Z",
+    "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43568903456"
+  },
+  "pagesDeployment": {
+    "id": 43568898179,
+    "name": "pages build and deployment",
+    "event": "dynamic",
+    "head_sha": "665504815cdaa797ceab3e7768d801521e8f9d98",
+    "conclusion": "success",
+    "created_at": "2026-11-14T06:58:49Z",
+    "updated_at": "2026-11-14T06:59:22Z",
+    "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43568898179"
+  },
+  "public": {
+    "validatedHead": "8dcdcbdb1ff0a99085913c804855fd7f4509eba1",
+    "runtimeSource": "4640a36cacffb93a71c39de4f0ba17a6434f62d0",
+    "base": "https://sjlim91.github.io/lifelens-ue/",
+    "pagesCommit": "665504815cdaa797ceab3e7768d801521e8f9d98",
+    "checkedAtUtc": "2026-11-14T06:59:40.784123+00:00",
+    "manifestVerified": true,
+    "assets": [
+      {
+        "path": "index.html",
+        "status": 200,
+        "bytes": 2971,
+        "sha256": "d2f00a19090cf84cf9eac3ff0efdb956efcce979deb4de1e508ea9799590af50",
+        "gitBlob": "46e877aa4bec5c476a7791c7a481e732953fcf80",
+        "matchesPublishedTree": true
+      },
+      {
+        "path": "launch.html",
+        "status": 200,
+        "bytes": 2601,
+        "sha256": "ad4cc1f4b1d8215e0364c4706684076cd77752c2f2f1d012f0649d325c4ce056",
+        "gitBlob": "06e72a3834d41ddf80fa48d2472093df7dc379d1",
+        "matchesPublishedTree": true
+      },
+      {
+        "path": "runtime/RUNTIME_COMMIT.txt",
+        "status": 200,
+        "bytes": 41,
+        "sha256": "efd99aa8e87a2ab8fadae4cdb8b2368e67118eabe18b03fed6b3de7daff4ea28",
+        "gitBlob": "a4a73f610beb01e2e8442c1a9e2f0d81113a7a7e",
+        "matchesPublishedTree": true
+      },
+      {
+        "path": "runtime/SHA256SUMS.txt",
+        "status": 200,
+        "bytes": 168,
+        "sha256": "b724a364d09b18db0b4125f416459452636a3c42c7ef80c08b1cfb1907532374",
+        "gitBlob": "a8fd300586cab9e0c2dd6fed662b9c5fe4de1278",
+        "matchesPublishedTree": true
+      },
+      {
+        "path": "runtime/lifelens_core.js",
+        "status": 200,
+        "bytes": 47723,
+        "sha256": "d2b43cb7030e966efac0f446633de821274716400ad12ab0983fc97692752642",
+        "gitBlob": "fb0954eb00575ffa7a63f574eac3495aeecee626",
+        "matchesPublishedTree": true
+      },
+      {
+        "path": "runtime/lifelens_core.wasm",
+        "status": 200,
+        "bytes": 1887651,
+        "sha256": "1eba8cb10ea371dfe4da4b4d58e62a7f821d70a6496ca0f13950ca8cb3d97492",
+        "gitBlob": "bfbd597516f5c42c7956fc878836149535699276",
+        "matchesPublishedTree": true
+      },
+      {
+        "path": "assets/index-C-BTwyTo.js",
+        "status": 200,
+        "bytes": 1516881,
+        "sha256": "03e879bf22beb108cf0aefcf01ded34427ff6c566879273a1a8eeaa5e8b38dcd",
+        "gitBlob": "f41681996bbdbe3f49aa85f3ab116ab10207bcb0",
+        "matchesPublishedTree": true
+      },
+      {
+        "path": "assets/index-QOeWSBxt.css",
+        "status": 200,
+        "bytes": 59164,
+        "sha256": "57ee37a94f63b1a66e6ce4143bff7c7e51940dac9c3935714d353f3ce80cf6ab",
+        "gitBlob": "002817c09fa4b6cc0b56b9d943a73d2e94ad1793",
+        "matchesPublishedTree": true
+      }
+    ]
+  },
+  "publishedWasm": {
+    "profile": "controlled real production Core; supplied initial raw materials and one paid token",
+    "nativeWasmPhysicalAndKnowledgeBytesEqual": true,
+    "legacyRngTextPlatformSpecific": true,
+    "codecNormalizedBinaryEqual": true,
+    "midTrialReplayEqual": true,
+    "readOnly": true,
+    "fetches": 0,
+    "minutes": 15,
+    "artifacts": [
+      {
+        "id": "16928123745832484579",
+        "designId": "15171401966717868459",
+        "creatorId": "1",
+        "createdMinute": 494,
+        "durability": 0.787,
+        "uses": 0,
+        "repairs": 0,
+        "cutting": 0,
+        "digging": 0,
+        "carrying": 2.25,
+        "heating": 0,
+        "parts": [
+          {
+            "material": "Clay",
+            "shape": 3,
+            "joint": 0,
+            "size": 3
+          }
+        ]
+      }
+    ]
+  },
+  "publishedBrowser": {
+    "profile": "actual WASM Core app using supported 2D fallback; software environment, no physical GPU claim",
+    "source": "4640a36cacffb93a71c39de4f0ba17a6434f62d0",
+    "fourFounders": true,
+    "emptyNewGameInvention": true,
+    "mobileAndLandscapeNoOverflow": true,
+    "errors": []
+  },
+  "publishedArtifactPersistence": {
+    "profile": "actual app restored from controlled native production checkpoint in isolated IndexedDB; software 2D fallback",
+    "controlledFixture": true,
+    "source": "4640a36cacffb93a71c39de4f0ba17a6434f62d0",
+    "fixtureSha256": "62bc8a5eca443d007a5da3ebd8a2e405efac99b3ab14622bc13523d2859bbe6b",
+    "uniqueArtifact": "16928123745832484579",
+    "design": "15171401966717868459",
+    "actualStructureAndPaidEventVisible": true,
+    "appCheckpointWrite": true,
+    "reloadRetainsArtifactAndPrivateKnowledge": true,
+    "mobileAndLandscapeNoOverflow": true,
+    "errors": []
+  },
+  "scope": {
+    "untouchedNewGameCensusSeeds": [
+      "874213954",
+      "4242001",
+      "874213955"
+    ],
+    "checkpointsDays": [
+      100,
+      365,
+      1000
+    ],
+    "controlledProduction": "Test needs/rules/skill/raw materials and initial token; gather/teaching assertions also control sources/spacing/relationship. Actual production execution and saved native/WASM state, not untouched emergence.",
+    "visual": "React actual Core fixture 320/393/915/1440 and public full app 393/915 in supported 2D fallback; no physical GPU claim",
+    "userWaivers": [
+      "physical device checks",
+      "thermal checks"
+    ],
+    "legacyRngText": "Native libstdc++ and WASM libc++ stream representations differ. All bytes outside that old field match; same-codec normalized whole binary and same-backend mid-trial replay match."
+  },
+  "recordedAtUtc": "2026-11-14T07:01:56.346351+00:00",
+  "supersededPr": {
+    "head": "3e7cea10d7be93c8ca346acba349366b419b226e",
+    "html_url": "https://github.com/sjLim91/lifelens-ue/pull/968",
+    "merged": false,
+    "number": 968,
+    "state": "closed",
+    "reason": "Unmerged October M8 partial slice superseded by full M8 PR #1030 on current main; original branch retained"
+  }
+}
