@@ -58,7 +58,8 @@ inline std::vector<ArtifactCulture> observeArtifactCultures(const World& w){
         for(const auto& a:c.civilization.inventory.artifacts){auto& g=groups[artifactDesignId(a.design)];
             g.design=artifactDesignId(a.design);g.workingArtifacts+=c.alive&&a.durability>0.02;
             g.uses+=a.uses;g.repairs+=a.repairs;}
-        for(const auto& r:c.civilization.inventory.artifactRecords)++groups[artifactDesignId(r.design)].records;
+        for(const auto& r:c.civilization.inventory.artifactRecords){auto& g=groups[artifactDesignId(r.design)];
+            g.design=artifactDesignId(r.design);++g.records;}
     }
     for(const auto& s:w.storageSites){
         for(const auto& a:s.inventory.artifacts){auto& g=groups[artifactDesignId(a.design)];

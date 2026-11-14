@@ -117,6 +117,7 @@ int main() {
     assert(carrier.civilization.inventory.count(ItemKind::RawMaterial,MaterialKind::Wood)==0);
     assert(rawWaterUnitCount(carrier.civilization.inventory)==1);
     assert(carrier.civilization.inventory.artifacts.back().uses==1);
+    assert(carrier.civilization.invention.ledger.back().rawUnits==1);
     std::cout<<"PASS M8-05: physical gather boost/wear/break/repair and fuel-bounded heating, vessel reuse\n";
 
     auto teacher=worker(5),learner=worker(6),rejecter=worker(7);
@@ -147,6 +148,13 @@ int main() {
     assert(artifactDesignLost(history,artifactDesignId(flint)));
     history.characters[1].alive=true;
     assert(!artifactDesignLost(history,artifactDesignId(flint)));
+    World unread(8);unread.minute=700;unread.characters={worker(5),worker(6)};
+    unread.characters.back().civilization.inventory.artifactRecords.push_back({flint,5,600});
+    const auto unreadCulture=observeArtifactCultures(unread);
+    assert(unreadCulture.size()==1&&unreadCulture.front().design==artifactDesignId(flint)
+        &&unreadCulture.front().records==1&&unreadCulture.front().livingKnowers==0);
+    SocialKnowledgeBook recordOnly;
+    assert(!registerSocietyApprenticeshipIfQualified(recordOnly,teacher,rejecter,700,8));
     std::cout<<"PASS M8-07: culture follows retained personal knowledge/actual use, death causes loss\n";
     std::set<std::uint64_t> paths;int failedTrials=0,rediscoveries=0;
     for(std::uint64_t seed=1;seed<=8;++seed){

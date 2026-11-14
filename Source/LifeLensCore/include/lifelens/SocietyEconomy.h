@@ -621,9 +621,9 @@ inline const SocialFact* registerSocietyApprenticeshipIfQualified(
         }
     }
     int artifactDemonstrations=0;
-    for(const auto& t:learner.civilization.invention.techniques)
-        if(t.source==teacher.id &&t.provenance==ArtifactKnowledgeSource::Demonstration)
-            artifactDemonstrations+=t.demonstrations;
+    for(const auto& event:learner.civilization.invention.ledger)
+        if(event.kind==ArtifactEventKind::Taught &&event.other==teacher.id &&event.artifact!=0)
+            ++artifactDemonstrations;
     if(societyTeachingReceiptCountBetween(
         book,teacher.id,learner.id)+artifactDemonstrations<2) return nullptr;
 
