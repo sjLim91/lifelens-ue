@@ -286,7 +286,10 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
                 case CivilizationIntent::Hunt: return 20;
                 case CivilizationIntent::Store: return 3;
                 case CivilizationIntent::Retrieve: return 3;
-                case CivilizationIntent::Experiment: return 7;
+                case CivilizationIntent::Experiment:
+                    if(action.civilization.experiment==ExperimentKind::ComposeMaterials)
+                        return std::clamp(action.civilization.quantity,7,90);
+                    return 7;
                 case CivilizationIntent::Craft: return 8;
                 case CivilizationIntent::None:
                 default: return 1;

@@ -193,6 +193,22 @@ bool Simulation::completeContextAction(
     if(pending.hasSpatialTarget && !contextActionNearTarget(resolvedPosition,pending.targetPos,1))
         return false;
 
+    const bool artifactWork=pending.kind==ContextActionKind::Civilization
+        &&pending.civilization.intent==CivilizationIntent::Experiment
+        &&pending.civilization.experiment>=ExperimentKind::ComposeMaterials;
+    const bool artifactTeaching=pending.kind==ContextActionKind::KnowledgeTeaching
+        &&pending.knowledgeTeachingTechnique==TechniqueId::None
+        &&pending.civilization.experiment==ExperimentKind::ComposeMaterials
+        &&pending.civilization.resourceNode;
+    if(artifactWork ||artifactTeaching){
+        int duration=artifactTeaching?6:7;
+        if(artifactWork &&pending.civilization.experiment==ExperimentKind::ComposeMaterials){
+            const auto hypothesis=proposeArtifact(actor);
+            if(hypothesis)duration=static_cast<int>(std::ceil(measureArtifact(hypothesis->design).work));
+        }
+        if(world_.minute-pending.issuedMinute<duration)return false;
+    }
+
     if(pending.kind==ContextActionKind::Civilization
        &&pending.civilization.intent==CivilizationIntent::Hunt){
         const auto* animal=findSubsistenceAnimal(
@@ -473,6 +489,9 @@ bool Simulation::completeContextAction(
                     decision.material,
                     &consumedTool)){
                     gatherTool=consumedTool;
+                    if(consumedTool.artifactId)
+                        rememberArtifactUse(actor,consumedTool.artifactId,world_.minute,
+                            result.event.quantity,consumedTool.broken);
                 }
             }
 
@@ -764,6 +783,25 @@ bool Simulation::completeContextAction(
                 return false;
             }
 
+            if(pending.knowledgeTeachingTechnique==TechniqueId::None
+               &&pending.civilization.experiment==ExperimentKind::ComposeMaterials
+               &&pending.civilization.resourceNode){
+                const bool advanced=demonstrateArtifact(actor,*learner,world_.minute,
+                    learnerTrustInTeacher(relationships_,learner->id,actor.id),
+                    pending.civilization.resourceNode);
+                if(advanced){
+                    registerSocietyApprenticeshipIfQualified(
+                        socialKnowledge_,actor,*learner,world_.minute,world_.seed);
+                    for(const auto& a:actor.civilization.inventory.artifacts)
+                        if(a.id==pending.civilization.resourceNode){
+                            transferArtifactRecord(actor,*learner,artifactDesignId(a.design),
+                                resolvedPosition,learnerRuntime->second.pos);break;
+                        }
+                }
+                emitCoreContextOutcome(actor,pending,learner->id,
+                    advanced?CoreContextOutcomeCode::TeachingAdvanced:CoreContextOutcomeCode::TeachingRejected);
+                pending.clear();return advanced;
+            }
             const TechniqueId technique=pending.knowledgeTeachingTechnique;
             if(technique==TechniqueId::None
                || !actor.civilization.knowledge.knowsAtLeast(

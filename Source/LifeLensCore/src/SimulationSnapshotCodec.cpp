@@ -1,3 +1,4 @@
+#include "lifelens/ArtifactSnapshotCodec.h"
 #include "lifelens/NaturalEcologyValidation.h"
 #include "lifelens/DependentEscortSnapshotCodec.h"
 #include "lifelens/NaturalEcologySnapshotCodec.h"
@@ -339,6 +340,16 @@ bool encodeSimulationSnapshot(
         writeResidentCognitiveActionLinkExtension(linkExtension,snapshot);
         body.insert(body.end(),linkExtension.bytes.begin(),linkExtension.bytes.end());
     }
+    if(!validArtifactWorld(snapshot.world)){
+        setError(error,"invalid artifact state");return false;
+    }
+    if(hasArtifactState(snapshot.world)){
+        Writer artifact;writeArtifactState(artifact,snapshot.world);
+        body.insert(body.end(),artifact.bytes.begin(),artifact.bytes.end());
+        Writer footer;footer.u32(static_cast<std::uint32_t>(artifact.bytes.size()));
+        footer.raw(ArtifactTailMagic,sizeof(ArtifactTailMagic));
+        body.insert(body.end(),footer.bytes.begin(),footer.bytes.end());
+    }
     outBytes=std::move(body);
     if(error) error->clear();
     return true;
@@ -349,6 +360,29 @@ bool decodeSimulationSnapshot(
     SimulationStateSnapshot& outSnapshot,
     std::string* error)
 {
+    // Length-delimited final footer avoids interpreting arbitrary memory/log
+    // text or an embedded design ID as a tail marker. Old v8 saves add no bytes.
+    if(bytes.size()>=12 &&std::equal(bytes.end()-8,bytes.end(),ArtifactTailMagic)){
+        const std::size_t footer=bytes.size()-12;
+        std::uint32_t size=0;
+        for(unsigned i=0;i<4;++i)size|=static_cast<std::uint32_t>(bytes[footer+i])<<(8*i);
+        if(size>footer ||size>16*1024*1024 ||footer-size<12){
+            setError(error,"invalid artifact tail length");return false;
+        }
+        const std::vector<std::uint8_t> base(bytes.begin(),bytes.begin()+footer-size);
+        if(base.size()>=8 &&std::equal(base.end()-8,base.end(),ArtifactTailMagic)){
+            setError(error,"duplicate artifact extension");return false;
+        }
+        SimulationStateSnapshot staged;
+        if(!decodeSimulationSnapshot(base,staged,error))return false;
+        if(hasArtifactState(staged.world)){setError(error,"duplicate artifact extension");return false;}
+        const std::vector<std::uint8_t> data(bytes.begin()+footer-size,bytes.begin()+footer);
+        Reader reader(data);
+        if(!readArtifactState(reader,staged.world)||!reader.done()){
+            setError(error,"invalid artifact extension");return false;
+        }
+        outSnapshot=std::move(staged);if(error)error->clear();return true;
+    }
     if(readBinaryFormatVersion(bytes)!=SimulationSnapshotBinaryFormatVersion){
         setError(error,"unsupported snapshot binary format");
         return false;

@@ -1,0 +1,1 @@
+AL1_NATURAL_FAILURE_MEMORY_ABLATION seed=4 actor=2 goal_id=1331 failed_token=1331 retained_memory_token=1333 source=8526816152347751445 inventory=2->9 source_stock=108->101 removed_receipts=1 other_snapshot_bytes_identical=1 physical_completion=1 goal_achieved=1

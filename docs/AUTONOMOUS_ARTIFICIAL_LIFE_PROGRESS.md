@@ -1,3 +1,8 @@
+## 2026-11-14 M8-01~08 구현·통합 검증 진행
+
+- 사용자 명시 요청으로 M8 전체를 구현하고 최종 검증·통합을 진행한다. [실제 경로·저장/검증 범위](../tasks/M8_EMERGENT_ARTIFACTS_2026-11-14.md).
+- 여덟 단위를 진행으로 반영하며 완료 수 13/86은 유지한다. 최종 head CI·main·배포 근거가 확정되면 완료로 변경한다.
+
 ## 2026-11-13 M10 전체 7/7 구현·통합 검증·배포 완료
 
 - [PR #1028](https://github.com/sjLim91/lifelens-ue/pull/1028) → main `b4a426bb`. 최종 PR head `9cf25392`의 필수 CI 5개 성공: [Core Tests](https://github.com/sjLim91/lifelens-ue/actions/runs/43384850614) · [Preflight](https://github.com/sjLim91/lifelens-ue/actions/runs/43384850557) · [Cognitive Agent](https://github.com/sjLim91/lifelens-ue/actions/runs/43384850514) · [Web WASM](https://github.com/sjLim91/lifelens-ue/actions/runs/43384850549) · [Web Checks](https://github.com/sjLim91/lifelens-ue/actions/runs/43384850527). [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43386525057) · [Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43386737776) · [External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43386868352) 성공. 공개 배포 JS blob·WASM 출처와 별도 브라우저 저장소의 실제 Core 인과 기록·재접속 및 모바일 지구→실제 지역→생활 왕복을 검증했다.
@@ -234,8 +239,8 @@
 
 - 완료: **13/86** (M0-01, M0-02, M0-03, M0-04, M0-05, M6-01, M10-01~07). 단순 계획 단위 완료 지표이지 전체 시뮬레이션 구현률이 아니다.
 - 검증 완료·병합 검토: **0** (현재 표시 기준).
-- 진행: **20** (M1-07 #926/#929, M1-01 #822/#828/#832/#887, M1-02 #907, M1-03 #841, M1-05 #841, M2-01 #844, M2-03 #844, M2-05 #846, M2-06 #846/#894, M2-07 #830/#835/#838/#885, M2-08 #857/#866, M2-04 #879/#882/#883, M2-09 #864/#880/#894, M3-02 #895, M3-03 #893, M6-04 #881/#886, M9-01 #859/#863, M9-02 #884, M11-03 #852/#854, M11-04 #860/#868).
-- 미완 또는 미검증: **53**.
+- 진행: **28** (M1-07 #926/#929, M1-01 #822/#828/#832/#887, M1-02 #907, M1-03 #841, M1-05 #841, M2-01 #844, M2-03 #844, M2-05 #846, M2-06 #846/#894, M2-07 #830/#835/#838/#885, M2-08 #857/#866, M2-04 #879/#882/#883, M2-09 #864/#880/#894, M3-02 #895, M3-03 #893, M6-04 #881/#886, M9-01 #859/#863, M9-02 #884, M11-03 #852/#854, M11-04 #860/#868).
+- 미완 또는 미검증: **45**.
 - **병렬 트랙:** AI 실행·인지 감사(M0-03, M1-01, M2-01), 메모리/장기 감사(M0-04, M11-04), 야생/생태(M0-02, M6-01), 시간 지속성(M9-01/02)은 파일 소유 영역을 분리한다. 실제 기능 구현/테스트 착수 전에는 신규 병렬 트랙을 완료·진행으로 미리 올리지 않는다.
 
 ## 전체 단위별 진행 장부
@@ -341,14 +346,14 @@
 
 | 완료 | 단위 | 계획에 정의된 작업 | 상태 | 근거 / 후속 |
 |---|---|---|---|---|
-| [ ] | **M8-01** | 물질 속성/부품/형상/결합/내구/열·에너지의 typed artifact 모델 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M8-02** | 현재 registry recipe를 실제 재료·도구·기술 capability 어댑터로 분리 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M8-03** | 주민의 새로운 조합 가설·소규모 물리 실험·실패/파손/부상 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M8-04** | 결과의 기능 측정(베기/파기/운반/가열)→개인 기술 지식화 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M8-05** | 실제 도구/시설 보수·재사용·생산망·기술 숙련/개선 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M8-06** | 기록/모방/교육/도제·독립 발명/기술 도입/거부 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M8-07** | 경제·제도·문화·건축 양식/정착지 형성의 **발생 관찰 모델** | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
-| [ ] | **M8-08** | 다양한 실험 가능한 seed에서 발전·정체·퇴보·재발견의 분기 | ⬜ 미완 | 기반 구현은 [마스터플랜](AUTONOMOUS_ARTIFICIAL_LIFE_MASTERPLAN_2026-10-20.md) 참조. 완료 판정 미검증 |
+| [ ] | **M8-01** | 물질 속성/부품/형상/결합/내구/열·에너지의 typed artifact 모델 | 🚧 진행 | [구현·검증 기록](../tasks/M8_EMERGENT_ARTIFACTS_2026-11-14.md), 최종 CI/main/배포 대기 |
+| [ ] | **M8-02** | 현재 registry recipe를 실제 재료·도구·기술 capability 어댑터로 분리 | 🚧 진행 | [구현·검증 기록](../tasks/M8_EMERGENT_ARTIFACTS_2026-11-14.md), 최종 CI/main/배포 대기 |
+| [ ] | **M8-03** | 주민의 새로운 조합 가설·소규모 물리 실험·실패/파손/부상 | 🚧 진행 | [구현·검증 기록](../tasks/M8_EMERGENT_ARTIFACTS_2026-11-14.md), 최종 CI/main/배포 대기 |
+| [ ] | **M8-04** | 결과의 기능 측정(베기/파기/운반/가열)→개인 기술 지식화 | 🚧 진행 | [구현·검증 기록](../tasks/M8_EMERGENT_ARTIFACTS_2026-11-14.md), 최종 CI/main/배포 대기 |
+| [ ] | **M8-05** | 실제 도구/시설 보수·재사용·생산망·기술 숙련/개선 | 🚧 진행 | [구현·검증 기록](../tasks/M8_EMERGENT_ARTIFACTS_2026-11-14.md), 최종 CI/main/배포 대기 |
+| [ ] | **M8-06** | 기록/모방/교육/도제·독립 발명/기술 도입/거부 | 🚧 진행 | [구현·검증 기록](../tasks/M8_EMERGENT_ARTIFACTS_2026-11-14.md), 최종 CI/main/배포 대기 |
+| [ ] | **M8-07** | 경제·제도·문화·건축 양식/정착지 형성의 **발생 관찰 모델** | 🚧 진행 | [구현·검증 기록](../tasks/M8_EMERGENT_ARTIFACTS_2026-11-14.md), 최종 CI/main/배포 대기 |
+| [ ] | **M8-08** | 다양한 실험 가능한 seed에서 발전·정체·퇴보·재발견의 분기 | 🚧 진행 | [구현·검증 기록](../tasks/M8_EMERGENT_ARTIFACTS_2026-11-14.md), 최종 CI/main/배포 대기 |
 
 ### M9 — 월드 지속성
 

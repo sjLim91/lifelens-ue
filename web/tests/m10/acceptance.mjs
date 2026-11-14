@@ -11,7 +11,7 @@ const before = JSON.stringify(resident);
 assert.equal(residentPersonalityFacts(resident).length, 14);
 assert.equal(JSON.stringify(resident), before);
 assert.equal(residentPersonalityFacts({ ...resident, personality: { curiosity: NaN, patience: -1, empathy: 2 } }).length, 0);
-const block = readFileSync(new URL('../../../Source/LifeLensCore/include/lifelens/Civilization.h', import.meta.url), 'utf8')
+const block = readFileSync(new URL('../../../Source/LifeLensCore/include/lifelens/MaterialModel.h', import.meta.url), 'utf8')
   .match(/enum class MaterialKind\s*\{([\s\S]*?)\};/)[1].replace(/\/\/[^\n]*/g, '').split(',').map(s => s.trim()).filter(Boolean);
 assert.deepEqual(Object.values(CORE_MATERIAL_NAMES), block);
 for (const [code, material] of Object.entries(CORE_MATERIAL_NAMES)) {

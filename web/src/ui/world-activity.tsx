@@ -369,6 +369,26 @@ export function WorldActivityPanel({
         </div>
       ) : null}
 
+      {(civilization.constructionPatterns?.length ?? 0) > 0 && <details className="focused-life-section">
+        <summary>생활에서 형성된 건축 양식</summary>
+        {civilization.constructionPatterns?.map(pattern => <p key={pattern.facilityKind}>
+          {['공동 보관소', '화덕', '작업대', '잠자리', '쉼터', '용광로', '경작지'][pattern.facilityKind] ?? '미확인 시설'}
+          {' · '}실제 완공 {pattern.completed}곳 · 현재 운영 {pattern.operational}곳 · 사용 {pattern.uses}회
+        </p>)}
+      </details>}
+
+      {(civilization.inventionCultures?.length ?? 0) > 0 && (
+        <details className="focused-life-section">
+          <summary>실험 설계의 전파와 쇠퇴</summary>
+          {civilization.inventionCultures?.slice(0, 24).map(culture => <p key={culture.designId}>
+            설계 #{culture.designId} · 재현 가능 {culture.livingKnowers}명
+            {' · '}제작 경험 {culture.livingMakers}명 · 사용 가능한 물건 {culture.workingArtifacts}개
+            {' · '}실제 사용 {culture.uses}회 · 보수 {culture.repairs}회 · 기록 {culture.records}개
+            {culture.historicalKnowers > 0 && culture.livingKnowers === 0 ? ' · 생존한 제작 지식 보유자 없음' : ''}
+          </p>)}
+        </details>
+      )}
+
       {technologySummaries.length > 0 ? (
         <div className="focused-life-section">
           <h3>기술 발전</h3>

@@ -6,108 +6,12 @@
 #include <vector>
 #include "Ids.h"
 #include "SmartObject.h"
+#include "ArtifactModel.h"
 
 namespace lifelens {
 
 using ResourceNodeId = std::uint64_t;
 using StorageId = std::uint64_t;
-
-enum class MaterialKind {
-    Unknown,
-    Stone,
-    Flint,
-    Wood,
-    Fiber,
-    Clay,
-    Water,
-    PlantFood,
-    Bone,
-    Hide,
-    CopperOre,
-    TinOre,
-    IronOre,
-    Charcoal,
-    CopperMetal,
-    // Appended for C1-F; persisted ordinals above remain stable.
-    TinMetal,
-    Bronze
-};
-
-struct MaterialProperties {
-    double hardness=0.0;
-    double sharpnessPotential=0.0;
-    double brittleness=0.0;
-    double flexibility=0.0;
-    double combustibility=0.0;
-    double heatResistance=0.0;
-    double nutrition=0.0;
-};
-
-inline MaterialProperties materialProperties(MaterialKind kind)
-{
-    switch(kind){
-        case MaterialKind::Stone: return {0.76,0.48,0.52,0.02,0.00,0.88,0.00};
-        case MaterialKind::Flint: return {0.82,0.94,0.86,0.01,0.00,0.90,0.00};
-        case MaterialKind::Wood: return {0.34,0.18,0.20,0.42,0.88,0.24,0.00};
-        case MaterialKind::Fiber: return {0.08,0.02,0.08,0.92,0.72,0.08,0.00};
-        case MaterialKind::Clay: return {0.12,0.01,0.18,0.66,0.00,0.34,0.00};
-        case MaterialKind::Water: return {0.00,0.00,0.00,1.00,0.00,0.04,0.00};
-        case MaterialKind::PlantFood: return {0.04,0.00,0.08,0.36,0.54,0.06,0.72};
-        case MaterialKind::Bone: return {0.58,0.42,0.44,0.08,0.08,0.54,0.00};
-        case MaterialKind::Hide: return {0.10,0.01,0.05,0.88,0.30,0.12,0.00};
-        case MaterialKind::CopperOre: return {0.72,0.12,0.22,0.02,0.00,0.82,0.00};
-        case MaterialKind::TinOre: return {0.62,0.10,0.26,0.02,0.00,0.76,0.00};
-        case MaterialKind::IronOre: return {0.86,0.08,0.20,0.01,0.00,0.94,0.00};
-        case MaterialKind::Charcoal: return {0.18,0.02,0.64,0.02,0.98,0.52,0.00};
-        case MaterialKind::CopperMetal: return {0.56,0.18,0.08,0.42,0.00,0.70,0.00};
-        case MaterialKind::TinMetal: return {0.42,0.12,0.06,0.55,0.00,0.58,0.00};
-        case MaterialKind::Bronze: return {0.78,0.62,0.12,0.28,0.00,0.82,0.00};
-        case MaterialKind::Unknown:
-        default: return {};
-    }
-}
-
-enum class ItemKind {
-    RawMaterial,
-    SharpFlake,
-    StoneCuttingTool,
-    Cordage,
-    SimpleContainer,
-    FuelBundle,
-    DiggingStick,
-    StoneHammer,
-    // C1-F metal tools. Appended to preserve persisted item ordinals.
-    BronzeAxe,
-    BronzePick,
-    // C5 durable proto-record medium. Appended to preserve persisted ordinals.
-    RecordTablet,
-    PrimitiveWrap // A3 persisted item: append-only
-};
-
-enum class ToolCapability {
-    None,
-    Cut,
-    Chop,
-    Dig,
-    Strike,
-    Carry,
-    Heat
-};
-
-inline ToolCapability itemCapability(ItemKind kind)
-{
-    switch(kind){
-        case ItemKind::SharpFlake: return ToolCapability::Cut;
-        case ItemKind::StoneCuttingTool: return ToolCapability::Chop;
-        case ItemKind::DiggingStick: return ToolCapability::Dig;
-        case ItemKind::StoneHammer: return ToolCapability::Strike;
-        case ItemKind::BronzeAxe: return ToolCapability::Chop;
-        case ItemKind::BronzePick: return ToolCapability::Strike;
-        case ItemKind::SimpleContainer: return ToolCapability::Carry;
-        case ItemKind::FuelBundle: return ToolCapability::Heat;
-        default: return ToolCapability::None;
-    }
-}
 
 struct ItemStack {
     ItemKind kind=ItemKind::RawMaterial;
@@ -120,6 +24,8 @@ struct ItemStack {
 class Inventory {
 public:
     const std::vector<ItemStack>& stacks() const { return stacks_; }
+    std::vector<PhysicalArtifact> artifacts;
+    std::vector<ArtifactRecord> artifactRecords;
 
     int count(ItemKind kind,MaterialKind material,bool anyMaterial=false) const
     {
@@ -246,10 +152,10 @@ private:
 
 inline int simpleContainerCount(const Inventory& inventory)
 {
-    return inventory.count(
-        ItemKind::SimpleContainer,
-        MaterialKind::Unknown,
-        true);
+    int capacity=inventory.count(ItemKind::SimpleContainer,MaterialKind::Unknown,true);
+    for(const auto& a:inventory.artifacts)if(a.durability>0.02)
+        capacity+=static_cast<int>(std::floor(measureArtifact(a.design).carrying));
+    return capacity;
 }
 
 inline int rawWaterUnitCount(const Inventory& inventory)
@@ -519,7 +425,12 @@ enum class ExperimentKind {
     AlloyBronze,
     CastBronzeAxe,
     CastBronzePick,
-    WeavePrimitiveWrap
+    WeavePrimitiveWrap,
+    ComposeMaterials,
+    RepairArtifact,
+    RecordArtifact,
+    HeatWithArtifact,
+    ReadArtifactRecord
 };
 
 enum class CivilizationEventType {
@@ -859,6 +770,25 @@ inline ExperimentResult attemptExperiment(
     return result;
 }
 
+// Legacy registry recipes are compatibility adapters: they still require
+// personal technique knowledge and their full physical input bill. An artifact
+// does not grant a TechniqueId, and a familiar item name is never an unlock.
+struct TechniqueCapabilityAdapter {
+    TechniqueRecipe recipe;
+    ToolCapability function=ToolCapability::None;
+    bool knowledgeQualified=false;
+    bool inputsAvailable=false;
+};
+inline TechniqueCapabilityAdapter inspectTechniqueCapability(
+    TechniqueId technique,const Inventory& inventory,const KnowledgeState& knowledge)
+{
+    TechniqueCapabilityAdapter a;a.recipe=techniqueRecipe(technique);
+    a.function=itemCapability(a.recipe.outputKind);
+    a.knowledgeQualified=knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible);
+    a.inputsAvailable=a.recipe.technique!=TechniqueId::None&&hasIngredients(inventory,a.recipe.inputs);
+    return a;
+}
+
 struct CraftResult {
     bool success=false;
     ItemStack output{};
@@ -877,8 +807,9 @@ inline CraftResult reproduceTechnique(
     result.event.technique=technique;
     if(actor==0 || !knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) return result;
 
-    TechniqueRecipe recipe=techniqueRecipe(technique);
-    if(recipe.technique==TechniqueId::None || !hasIngredients(inventory,recipe.inputs)) return result;
+    const auto adapter=inspectTechniqueCapability(technique,inventory,knowledge);
+    if(!adapter.knowledgeQualified ||!adapter.inputsAvailable)return result;
+    const TechniqueRecipe& recipe=adapter.recipe;
     if(!consumeIngredients(inventory,recipe.inputs)) return result;
 
     result.success=true;
@@ -898,6 +829,7 @@ struct IndividualCivilizationState {
     CharacterId character=0;
     Inventory inventory;
     KnowledgeState knowledge;
+    ArtifactLearning invention;
     double gatheringSkill=0.5;
     double craftingSkill=0.5;
     double learningSkill=0.5;

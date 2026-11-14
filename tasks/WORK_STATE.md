@@ -1,3 +1,9 @@
+## 2026-11-14 M8 전체 구현·통합 검증 진행
+
+- 사용자 요청으로 M8-01~08 전체를 진행하며 관련 필요한 작업은 사전 승인받았다. 기존 G1 우선순위 문서의 신규 M8 착수 보류는 이번 명시적 요청 범위에서 해제한다.
+- 최신 main `f3c7e4f`에서 구조·물성 기반 고유 발명품, 실제 원료/작업/사용/보수, 개인별 제작 지식·근접 시범·기록·도제, 발생 문화/건축 관찰과 저장 호환을 구현했다. [범위·검증 계약](M8_EMERGENT_ARTIFACTS_2026-11-14.md).
+- 기존 M10과 단일 Core 주민 authority를 보존한다. 최종 원격 CI·main·배포 전에는 M8 완료를 체크하지 않는다. 실기기/발열 제외는 유지한다.
+
 ## 2026-11-13 M10 전체 7/7 구현·통합 검증·배포 완료
 
 - [PR #1028](https://github.com/sjLim91/lifelens-ue/pull/1028) → main `b4a426bb`. 최종 PR head `9cf25392`의 필수 CI 5개 성공: [Core Tests](https://github.com/sjLim91/lifelens-ue/actions/runs/43384850614) · [Preflight](https://github.com/sjLim91/lifelens-ue/actions/runs/43384850557) · [Cognitive Agent](https://github.com/sjLim91/lifelens-ue/actions/runs/43384850514) · [Web WASM](https://github.com/sjLim91/lifelens-ue/actions/runs/43384850549) · [Web Checks](https://github.com/sjLim91/lifelens-ue/actions/runs/43384850527). [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43386525057) · [Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43386737776) · [External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43386868352) 성공. 공개 배포 JS blob·WASM 출처와 별도 브라우저 저장소의 실제 Core 인과 기록·재접속 및 모바일 지구→실제 지역→생활 왕복을 검증했다.
