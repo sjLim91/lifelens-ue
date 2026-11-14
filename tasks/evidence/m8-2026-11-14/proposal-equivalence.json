@@ -1,0 +1,20 @@
+{
+  "scope": "192 valid controlled carried-material/quality/knowledge/durability configurations; proposal identity and hexadecimal score exactly equal",
+  "identicalProposals": 192,
+  "baselineSourceSha": "e26b077f7c303ee017c947b8ff5ac376d889542d",
+  "optimizedHeaderSha256": "d5442fde9c38f7fa33f8b0f47ce451973678a3672909f50ffcd391aa809f2dbc",
+  "samplesSeconds": {
+    "before": [
+      0.9035952719996203,
+      0.8418360690002373,
+      0.9111378280003919
+    ],
+    "after": [
+      0.09752867099996365,
+      0.09748815300008573,
+      0.09717797200028144
+    ]
+  },
+  "medianSpeedup": 9.268770042230933,
+  "benchmark": "local compiler O2, no physical mobile or whole-simulation performance claim"
+}

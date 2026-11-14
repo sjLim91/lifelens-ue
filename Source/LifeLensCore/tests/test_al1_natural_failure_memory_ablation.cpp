@@ -6,7 +6,12 @@ using namespace al1_test;
 
 int main()
 {
-    constexpr WorldSeed seed=874213955;
+    // M8 structural tools change legitimate untouched-world histories. The
+    // former seed 874213955 no longer presents this rare partial-inventory
+    // failure opportunity within 90 days. Seed 4 supplies a genuine natural
+    // failure with a known alternative; all counterfactual/physical checks
+    // remain, including the unchanged 90-day observation bound.
+    constexpr WorldSeed seed=4;
     Simulation natural(seed);natural.setupNewGame();
     std::optional<SimulationStateSnapshot> boundary;
     CharacterId actor=0;
@@ -73,6 +78,7 @@ int main()
     const int after=resident(learned,actor).civilization.inventory.count(ItemKind::RawMaterial,alternative.material);
     GridPos to{};assert(learned.runtimePosition(actor,to));
     assert(after>before &&resource(learned,alternative.resourceNode).quantity<stock);
+    assert(after>=original.gatherGoal.targetQuantity); // A partial harvest is not goal completion.
     assert(!sameGridPos(from,to));
     bool receipt=false;
     for(const auto& memory:resident(learned,actor).memory.entries)

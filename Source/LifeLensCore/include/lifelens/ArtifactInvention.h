@@ -20,7 +20,7 @@ inline int artifactRawCost(const ArtifactDesign& d) {
 }
 inline bool artifactInputsAvailable(const Inventory& inv,const ArtifactDesign& d) {
     if(!validArtifactDesign(d))return false;
-    std::array<int,18> required{};
+    std::array<int,static_cast<int>(MaterialKind::Bronze)+1> required{};
     for(const auto& p:d.parts)required[static_cast<unsigned>(p.material)]+=p.size;
     for(unsigned i=1;i<required.size();++i)
         if(inv.count(ItemKind::RawMaterial,static_cast<MaterialKind>(i))<required[i])return false;
@@ -46,18 +46,35 @@ inline std::optional<ArtifactHypothesis> proposeArtifact(const Character& c) {
     if(!artifactSafeToWork(c) ||c.civilization.inventory.artifacts.size()>=32)return {};
     const auto& inv=c.civilization.inventory;
     const auto& learning=c.civilization.invention;
+    // One read-only accounting pass per proposal. Preserve raw-stack order,
+    // including repeated materials, so every historical floating-point tie
+    // comparison stays identical while inventory/function scans are shared.
+    std::array<int,static_cast<int>(MaterialKind::Bronze)+1> rawCounts{};
+    std::vector<MaterialKind> carriedMaterials;
+    for(const auto& stack:inv.stacks()){
+        const int material=static_cast<int>(stack.material);
+        if(stack.kind!=ItemKind::RawMaterial ||stack.quantity<=0 ||material<1 ||material>static_cast<int>(MaterialKind::Bronze))continue;
+        rawCounts[material]+=stack.quantity;
+        carriedMaterials.push_back(stack.material);
+    }
+    std::array<double,4> ownedFunctions{};
+    for(int i=0;i<4;++i)ownedFunctions[i]=artifactOwnedFunction(inv,static_cast<ArtifactFunction>(i));
+    const bool knowsFire=c.civilization.knowledge.knowsAtLeast(TechniqueId::FireMaking,KnowledgeLevel::Reproducible);
     std::optional<ArtifactHypothesis> best;
     const auto consider=[&](ArtifactDesign d){
-        if(!artifactInputsAvailable(inv,d))return;
+        if(!validArtifactDesign(d))return;
+        std::array<int,static_cast<int>(MaterialKind::Bronze)+1> required{};
+        for(const auto& part:d.parts)required[static_cast<int>(part.material)]+=part.size;
+        for(std::size_t i=1;i<required.size();++i)if(required[i]>rawCounts[i])return;
         const auto p=measureArtifact(d);
         double utility=0;
         for(int i=0;i<4;++i){
             const auto f=static_cast<ArtifactFunction>(i);
             if(f==ArtifactFunction::Heating
-               &&!c.civilization.knowledge.knowsAtLeast(TechniqueId::FireMaking,KnowledgeLevel::Reproducible))continue;
+               &&!knowsFire)continue;
             const double value=artifactFunctionValue(p,f)
                 *((f==ArtifactFunction::Cutting||f==ArtifactFunction::Digging)?p.durability:1.0);
-            const double baseline=artifactOwnedFunction(inv,f);
+            const double baseline=ownedFunctions[i];
             utility=std::max(utility,value-baseline-0.12);
         }
         if(utility<=0)return; // Familiarity cannot make an identical fresh tool an improvement.
@@ -78,23 +95,22 @@ inline std::optional<ArtifactHypothesis> proposeArtifact(const Character& c) {
     if(c.personality.curiosity<0.55)return best;
     for(int m=1;m<=static_cast<int>(MaterialKind::Bronze);++m){
         const auto material=static_cast<MaterialKind>(m);
-        if(inv.count(ItemKind::RawMaterial,material)<1)continue;
+        if(rawCounts[m]<1)continue;
         for(const auto shape:{ArtifactShape::Edge,ArtifactShape::Point,ArtifactShape::Bowl,ArtifactShape::Plate}){
             for(int size=1;size<=3;++size){
                 ArtifactDesign single{{{material,shape,ArtifactJoint::Integral,size}}};
                 consider(single);
                 if(shape!=ArtifactShape::Edge &&shape!=ArtifactShape::Point)continue;
                 // Enumerate actual material alternatives, not named tool recipes.
-                for(const auto& grip:inv.stacks()){
-                    if(grip.kind!=ItemKind::RawMaterial ||grip.quantity<1
-                       ||grip.material==material)continue;
-                    const auto gp=materialProperties(grip.material);
+                for(const auto grip:carriedMaterials){
+                    if(grip==material)continue;
+                    const auto gp=materialProperties(grip);
                     if(gp.hardness<0.2 ||gp.flexibility<0.2)continue;
                     auto joined=single;
-                    joined.parts.push_back({grip.material,ArtifactShape::Rod,ArtifactJoint::Inserted,1});
+                    joined.parts.push_back({grip,ArtifactShape::Rod,ArtifactJoint::Inserted,1});
                     consider(joined);
                     for(const auto binder:{MaterialKind::Fiber,MaterialKind::Hide}){
-                        if(inv.count(ItemKind::RawMaterial,binder)<1)continue;
+                        if(rawCounts[static_cast<int>(binder)]<1)continue;
                         joined.parts[1].joint=ArtifactJoint::Bound;
                         auto bound=joined;
                         bound.parts.push_back({binder,ArtifactShape::Cord,ArtifactJoint::Bound,1});
