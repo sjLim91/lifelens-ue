@@ -29,7 +29,8 @@ inline bool artifactInputsAvailable(const Inventory& inv,const ArtifactDesign& d
 inline double artifactOwnedFunction(const Inventory& inv,ArtifactFunction f) {
     double best=0;
     for(const auto& a:inv.artifacts)if(a.durability>0.02)
-        best=std::max(best,artifactFunctionValue(measureArtifact(a.design),f)*a.durability);
+        best=std::max(best,artifactFunctionValue(measureArtifact(a.design),f)
+            *((f==ArtifactFunction::Cutting||f==ArtifactFunction::Digging)?a.durability:1.0));
     for(const auto& stack:inv.stacks()){
         if(stack.quantity<=0 ||stack.durability<=0.02)continue;
         const auto capability=itemCapability(stack.kind);
@@ -54,10 +55,12 @@ inline std::optional<ArtifactHypothesis> proposeArtifact(const Character& c) {
             const auto f=static_cast<ArtifactFunction>(i);
             if(f==ArtifactFunction::Heating
                &&!c.civilization.knowledge.knowsAtLeast(TechniqueId::FireMaking,KnowledgeLevel::Reproducible))continue;
-            const double value=artifactFunctionValue(p,f);
+            const double value=artifactFunctionValue(p,f)
+                *((f==ArtifactFunction::Cutting||f==ArtifactFunction::Digging)?p.durability:1.0);
             const double baseline=artifactOwnedFunction(inv,f);
             utility=std::max(utility,value-baseline-0.12);
         }
+        if(utility<=0)return; // Familiarity cannot make an identical fresh tool an improvement.
         utility-=0.025*artifactRawCost(d);
         const auto id=artifactDesignId(d);
         if(learning.techniques.size()>=64 &&std::none_of(learning.techniques.begin(),learning.techniques.end(),

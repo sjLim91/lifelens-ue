@@ -8,6 +8,7 @@
 #include "lifelens/ArtifactObservation.h"
 #include "lifelens/ArtifactSnapshotCodec.h"
 #include "lifelens/Simulation.h"
+#include "lifelens/ResidentAIExistingAffordance.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 #include "lifelens/ToolEffectiveness.h"
 #include "fixtures/cognitive_causal_export.h"
@@ -61,6 +62,8 @@ int main() {
         auto& c=w.characters[0];const auto proposal=proposeArtifact(c);if(!proposal)break;
         const auto id=artifactDesignId(proposal->design);designs.insert(id);
         int beforeRaw=0;for(const auto& s:c.civilization.inventory.stacks())beforeRaw+=s.quantity;
+        for(const auto& owned:c.civilization.inventory.artifacts)
+            assert(artifactDesignId(owned.design)!=id); // A fresh identical tool is not an improvement.
         const auto r=executeArtifactTrial(w,c,id);assert(r.attempted);
         int afterRaw=0;for(const auto& s:c.civilization.inventory.stacks())afterRaw+=s.quantity;
         assert(beforeRaw-afterRaw==artifactRawCost(proposal->design));paid+=beforeRaw-afterRaw;
@@ -88,6 +91,7 @@ int main() {
     Character user=worker(3);user.civilization.inventory.artifacts.push_back(artifact(flint,user.id));
     auto& inv=user.civilization.inventory;
     const auto use=inspectGatherTool(inv,MaterialKind::Fiber);assert(use.artifactId==123);
+    assert(!residentAIToolOutputNeeded(user,TechniqueId::ChippedStoneTool));
     const int boosted=gatheringQuantityWithTool(inv,MaterialKind::Fiber,3);assert(boosted>3);
     raw(user,MaterialKind::Fiber,12);const double pristine=inv.artifacts.front().durability;
     while(inv.artifacts.front().durability>0.02){
@@ -102,6 +106,7 @@ int main() {
     assert(!repairArtifact(user,999,482));
     Character carrier=worker(4);carrier.civilization.inventory.artifacts.push_back(artifact(bowl,4));
     raw(carrier,MaterialKind::Water,1);assert(portableWaterCount(carrier.civilization.inventory)==1);
+    assert(!residentAIToolOutputNeeded(carrier,TechniqueId::SimpleContainer));
     assert(consumePortableWater(carrier.civilization.inventory));assert(rawWaterUnitCount(carrier.civilization.inventory)==0);
     assert(simpleContainerCount(carrier.civilization.inventory)==1);
     carrier.civilization.inventory.artifacts.push_back(artifact(plate,4,124));
@@ -155,17 +160,19 @@ int main() {
         auto* lost=rememberArtifactDesign(former,hypothesis->design,480,12,12,ArtifactKnowledgeSource::Experiment);
         lost->trials=1;lost->successes=1;
         branch.characters={fresh,former};
-        const auto r=executeArtifactTrial(branch,branch.characters.front(),artifactDesignId(hypothesis->design));
-        assert(r.attempted);
-        if(r.success){
-            assert(branch.characters.front().civilization.invention.ledger.back().kind==ArtifactEventKind::Rediscovered);
-            ++rediscoveries;
-        }else{
-            ++failedTrials;
-            const auto alternative=proposeArtifact(branch.characters.front());
-            if(alternative)paths.insert(artifactDesignId(alternative->design));
+        for(int attempt=0;attempt<6;++attempt){
+            const auto next=proposeArtifact(branch.characters.front());if(!next)break;
+            const auto id=artifactDesignId(next->design);paths.insert(id);
+            const bool previouslyLost=artifactDesignLost(branch,id);
+            const auto r=executeArtifactTrial(branch,branch.characters.front(),id);
+            assert(r.attempted);
+            if(r.success){
+                assert(branch.characters.front().civilization.invention.ledger.back().kind
+                    ==(previouslyLost?ArtifactEventKind::Rediscovered:ArtifactEventKind::Created));
+                rediscoveries+=previouslyLost;
+            }else ++failedTrials;
+            branch.minute+=60;
         }
-        paths.insert(artifactDesignId(hypothesis->design));
     }
     assert(rediscoveries>0&&failedTrials>0&&paths.size()>1);
     std::cout<<"PASS M8-08: eight same-inventory seeds diverge on actual loss/retry/re-discovery, no era timer\n";
@@ -206,5 +213,19 @@ int main() {
         assert(adapter.inputsAvailable&&adapter.knowledgeQualified);
         assert(reproduceTechnique(classic.id,technique,classic.civilization.inventory,classic.civilization.knowledge).success);
     }
+    auto cognitive=worker(77);
+    for(auto material:{MaterialKind::Flint,MaterialKind::Wood,MaterialKind::Fiber,MaterialKind::Clay})raw(cognitive,material,12);
+    for(const auto& technology:TechnologyRegistry){
+        if(technology.legacyTechnique==TechniqueId::None)continue;
+        cognitive.civilization.knowledge.learn(technology.legacyTechnique,KnowledgeLevel::Reproducible,1);
+        const auto recipe=techniqueRecipe(technology.legacyTechnique);
+        if(recipe.producesItem)cognitive.civilization.inventory.add({recipe.outputKind,recipe.outputMaterial,12,0.5,1});
+    }
+    AcceptedCognitiveDecision thought;thought.actor=cognitive.id;thought.minute=w.minute;
+    thought.intent=CognitiveIntentKind::CraftUsefulTools;thought.priority=0.9;thought.contextFingerprint=991;
+    const auto selected=chooseResidentAIExistingCivilizationAffordance(w,cognitive,{0,0},thought);
+    assert(selected&&selected->intent==CivilizationIntent::Experiment
+        &&selected->experiment==ExperimentKind::ComposeMaterials);
+    std::cout<<"PASS same resident cognition can select a novel measured tool trial without a parallel planner\n";
     std::cout<<"PASS M8-02/08: legacy craft adapter, exact unique artifact/knowledge save, old v8 byte equality, hostile tail rejection\n";
 }

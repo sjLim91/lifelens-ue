@@ -3,6 +3,13 @@ import * as THREE from 'three';
 import { source } from '../procedural-environment/compile.mjs';
 const { activeArtifact, createArtifactProp } = await source('render/artifact-presentation.ts');
 const { ResidentPropResources } = await source('render/resident-props.ts');
+const { formatMemoryTag } = await source('localization/korean.ts');
+for (let kind=17;kind<=21;++kind) {
+  const translated=formatMemoryTag(`Civilization:Experiment:Artifact:${kind}:18446744073709551615`);
+  assert(translated.includes('18446744073709551615'));
+  assert(!translated.includes('미등록') && !translated.includes('Civilization'));
+}
+
 const artifact = { id: '18446744073709551615', designId: '12345678901234567890', durability: .6,
   parts: [{ material: 'Flint', shape: 1, joint: 0, size: 1 },
     { material: 'Wood', shape: 0, joint: 1, size: 2 },

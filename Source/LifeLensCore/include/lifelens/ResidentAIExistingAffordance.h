@@ -300,6 +300,18 @@ inline bool residentAIToolOutputNeeded(
        ||(itemCapability(recipe.outputKind)==ToolCapability::None
            &&recipe.outputKind!=ItemKind::Cordage))
         return false;
+    const auto capability=itemCapability(recipe.outputKind);
+    // A physically useful structural artifact can already satisfy this
+    // function. Its name need not match a registry item. A thermal plate is
+    // not a replacement for fuel and no artifact substitutes for cordage.
+    for(const auto& a:resident.civilization.inventory.artifacts){
+        if(a.durability<=0.02)continue;
+        const auto measured=measureArtifact(a.design);
+        if(((capability==ToolCapability::Cut||capability==ToolCapability::Chop)
+                &&measured.cutting*a.durability>=0.35)
+           ||(capability==ToolCapability::Dig&&measured.digging*a.durability>=0.25)
+           ||(capability==ToolCapability::Carry&&measured.carrying>=1.0))return false;
+    }
     return resident.civilization.inventory.count(
         recipe.outputKind,recipe.outputMaterial,
         recipe.outputMaterial==MaterialKind::Unknown)
@@ -647,6 +659,14 @@ chooseResidentAIExistingCivilizationAffordance(
                        actor,thought,candidate,world.minute))
                     candidate=chooseResidentAIToolPrerequisite(
                         world,actor,actorPosition,settlementPopulation,&thought);
+            }
+            if(candidate.intent==CivilizationIntent::None){
+                const auto experiment=bestExperimentDecisionAtPosition(
+                    world,actor,actorPosition,settlementPopulation);
+                if(experiment.experiment==ExperimentKind::ComposeMaterials
+                   &&experiment.intent==CivilizationIntent::Experiment
+                   &&!residentAIPlanAlreadyAttempted(actor,thought,experiment,world.minute))
+                    candidate=experiment;
             }
             // A missing tool may require collecting a REAL ingredient or a
             // Core experiment, not a magical craft on this same tick.
