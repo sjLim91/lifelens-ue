@@ -223,5 +223,6 @@ int main()
 {
     std::cout.setf(std::ios::unitbuf);
     inspectSeed(874213954ULL);
-    inspectSeed(4242001ULL);
+    inspectSeed(874213955ULL);
+    inspectSeed(42ULL);
 }

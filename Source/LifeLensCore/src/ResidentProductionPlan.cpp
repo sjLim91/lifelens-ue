@@ -88,7 +88,9 @@ void Simulation::maintainProductionPlan(Character& c,Runtime& r) {
     else if(productionOutputStock(c,p.target)>=p.targetStock)
         abandoned=ProductionPlanReason::SatisfiedElsewhere;
     for(auto it=acceptedCognitiveDecisions_.rbegin();it!=acceptedCognitiveDecisions_.rend();++it)if(it->actor==c.id) {
-        if(it->minute>p.createdMinute &&it->contextFingerprint!=p.cognitiveFingerprint)
+        if(it->minute>p.createdMinute &&it->contextFingerprint!=p.cognitiveFingerprint
+           &&(p.steps.empty() ||p.steps.back().result!=CognitiveStepResult::Pending
+              ||r.pendingContext.token!=p.steps.back().token))
             abandoned=ProductionPlanReason::NewerGoal;
         break;
     }
@@ -115,6 +117,8 @@ bool Simulation::chooseProductionContinuation(Character& c,Runtime& r,
     if(!p.open() ||r.pendingContext.active() ||p.steps.size()>=MaxProductionSteps
        ||world_.minute<r.penaltyUntilMinute)return false;
     if(selectedOrigin &&selectedOrigin->contextFingerprint!=p.cognitiveFingerprint)return false;
+    if(decision.kind==UnifiedDecisionKind::Social
+       &&(decision.social.intent==SocialIntent::Avoid ||decision.social.intent==SocialIntent::Comfort))return false;
     const auto population=settlementPopulation();
     const auto next=nextProductionStep(world_,c,r.pos,p.target,&population);
     if(!executableProductionStep(next)) {
@@ -124,8 +128,13 @@ bool Simulation::chooseProductionContinuation(Character& c,Runtime& r,
     // Retain a modest, bounded commitment within the SAME decision slot.
     // Body emergencies were evaluated before this function; strong competing
     // ordinary choices still win. No new resident or separate planner runs.
-    const double score=std::min(0.85,std::max(next.utility,p.priority)+0.04);
-    if(decision.utility>score)return false;
+    // A native remembered objective has no model-authored strategic priority.
+    // Never let its past curiosity utility displace the live resident choice
+    // (including proven personal source learning). Only an accepted thought
+    // may retain that thought's bounded strategic commitment.
+    const double score=p.cognitiveFingerprint
+        ?std::min(1.0,std::max(next.utility,p.priority)+0.04):next.utility;
+    if(p.cognitiveFingerprint ?decision.utility>score:decision.utility>=score)return false;
     if(p.cognitiveFingerprint) {
         for(auto it=acceptedCognitiveDecisions_.rbegin();it!=acceptedCognitiveDecisions_.rend();++it)
             if(it->actor==c.id &&it->contextFingerprint==p.cognitiveFingerprint &&it->minute==p.thoughtMinute) {selectedOrigin=&*it;break;}
@@ -164,6 +173,7 @@ void Simulation::recordProductionStep(Character& c,Runtime& r,
         p.targetStock=productionOutputStock(c,target)+1;p.priority=d.utility;
         if(origin &&pending.cognitiveGoal.active()) {
             p.cognitiveFingerprint=origin->contextFingerprint;p.thoughtMinute=origin->minute;
+            p.priority=std::max(p.priority,origin->priority);
         }
     }else {
         if(p.steps.size()>=MaxProductionSteps ||p.steps.back().result==CognitiveStepResult::Pending)return;
@@ -175,7 +185,7 @@ void Simulation::recordProductionStep(Character& c,Runtime& r,
            &&!(d.intent==CivilizationIntent::Gather &&next.intent==CivilizationIntent::Gather
                 &&d.material==next.material))return;
     }
-    if(d.intent==CivilizationIntent::Gather &&pending.gatherGoal.active()) {
+    if(p.cognitiveFingerprint &&d.intent==CivilizationIntent::Gather &&pending.gatherGoal.active()) {
         const auto population=settlementPopulation();
         const auto needed=nextProductionStep(world_,c,r.pos,p.target,&population);
         const int held=c.civilization.inventory.count(ItemKind::RawMaterial,d.material);

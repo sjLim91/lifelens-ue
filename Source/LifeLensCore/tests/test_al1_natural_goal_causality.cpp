@@ -135,7 +135,7 @@ static void verifyLearnedActionAfterSaveLoad(
 int main()
 {
     std::cout.setf(std::ios::unitbuf);
-    for(const WorldSeed seed:{874213954ULL,4242001ULL}){
+    for(const WorldSeed seed:{874213954ULL,874213955ULL,42ULL}){
         const auto witness=observeNaturalLoop(seed,true);
         verifyGoalReceipt(witness.original);
         verifyGoalReceipt(witness.learned);

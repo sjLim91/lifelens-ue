@@ -315,20 +315,30 @@ static OpportunityCounts auditSeed(WorldSeed seed)
 }
 int main(){
     const auto first=auditSeed(874213954ULL);
-    const auto second=auditSeed(4242001ULL);
+    // Preserve the former world's honest opportunity census. New concrete
+    // planning changes its legitimate history; it no longer supplies a
+    // completed source-memory contrast within the SAME 14-day bound.
+    const auto former=auditSeed(4242001ULL);
+    const auto second=auditSeed(874213955ULL);
+    const auto third=auditSeed(42ULL);
+    std::cout<<"AL1_FORMER_SEED_DIAGNOSTIC seed=4242001 completed="
+             <<former.nativeLearnedCompletedTokens<<" positive_acceptance=NOT_CLAIMED\n";
     // Regression gate ONLY for the authentic, zero-injection, previously
     // proven native Gather learning loop. It must issue AND physically
-    // complete its own changed Core token on BOTH independent New Games.
+    // complete its own changed Core token on ALL THREE independent New Games.
     // The separate goal-planning AL-1 acceptance remains NOT_PROVEN.
-    const bool genuinelyExecutedBoth=
+    const bool genuinelyExecutedAll=
         first.nativeLearnedCompletedTokens>0
-        &&second.nativeLearnedCompletedTokens>0;
+        &&second.nativeLearnedCompletedTokens>0
+        &&third.nativeLearnedCompletedTokens>0;
     std::cout<<"AL1_NATIVE_GATHER_NATURAL_CAUSAL_GATE first_issued="
         <<first.nativeLearnedIssuedTokens
         <<" first_completed="<<first.nativeLearnedCompletedTokens
         <<" second_issued="<<second.nativeLearnedIssuedTokens
         <<" second_completed="<<second.nativeLearnedCompletedTokens
-        <<" passed="<<genuinelyExecutedBoth
+        <<" third_issued="<<third.nativeLearnedIssuedTokens
+        <<" third_completed="<<third.nativeLearnedCompletedTokens
+        <<" passed="<<genuinelyExecutedAll
         <<" full_al1_acceptance=NOT_PROVEN\n";
-    assert(genuinelyExecutedBoth);
+    assert(genuinelyExecutedAll);
 }

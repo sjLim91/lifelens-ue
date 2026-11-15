@@ -72,6 +72,36 @@ int main() {
     Simulation old(42);old.setupNewGame();const auto legacy=encode(old);
     assert(decodeSimulationSnapshot(legacy,snapshot,&error));assert(!hasProductionPlans(snapshot));
     assert(old.restoreSnapshot(snapshot,&error));assert(encode(old)==legacy);
+    // The original abstract tool thought now binds a CONCRETE output.
+    // Another affordable tool must not silently replace the selected target
+    // after its shared Wood ingredient arrives.
+    auto committed=fixture();auto& maker=committed.world().characters.front();
+    maker.civilization.knowledge.learn(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible,1);
+    maker.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Stone,2,.6,1});
+    maker.civilization.inventory.add({ItemKind::Cordage,MaterialKind::Fiber,1,.6,1});
+    committed.step();
+    assert(committed.residentProductionPlan(actor) &&committed.residentProductionPlan(actor)->target==TechniqueId::DiggingStick);
+    for(int i=0;i<119 &&committed.residentProductionPlan(actor)->open();++i)committed.step();
+    assert(committed.residentProductionPlan(actor)->state==ProductionPlanState::Completed);
+    assert(committed.world().characters.front().civilization.inventory.count(ItemKind::DiggingStick,MaterialKind::Wood)==1);
+    assert(committed.world().characters.front().civilization.inventory.count(ItemKind::StoneHammer,MaterialKind::Stone)==0);
+    // A newly accepted low-priority proposal is not a physical execution
+    // decision. The already-issued real command finishes exactly once; its
+    // actual result survives when the old objective is subsequently dropped.
+    auto changed=fixture();changed.step();
+    const auto originalToken=changed.residentProductionPlan(actor)->steps.front().token;
+    const auto newerRequest=changed.observeCognitiveRequest(actor,CognitiveTriggerKind::Reflection);
+    CognitiveProposal newer;newer.actor=actor;newer.intent=CognitiveIntentKind::ExploreOpportunity;newer.priority=.51;
+    assert(changed.acceptCognitiveProposal(newerRequest,newer,"controlled-update","newer-proposal"));
+    changed.step();
+    const auto* oldPlan=changed.residentProductionPlan(actor);
+    assert(oldPlan &&oldPlan->steps.front().token==originalToken &&oldPlan->steps.front().result==CognitiveStepResult::Succeeded);
+    const auto rawAfter=changed.world().characters.front().civilization.inventory.count(ItemKind::RawMaterial,MaterialKind::Wood);
+    assert(rawAfter==2);changed.step();
+    oldPlan=changed.residentProductionPlan(actor);
+    assert(oldPlan->state==ProductionPlanState::Abandoned &&oldPlan->reason==ProductionPlanReason::NewerGoal);
+    assert(changed.world().characters.front().civilization.inventory.count(ItemKind::RawMaterial,MaterialKind::Wood)==rawAfter);
+    assert(!encode(changed).empty());
     // A permanent survival emergency may consume time, never extend the
     // original promise or retain it forever beyond its deadline.
     auto expired=fixture();expired.step();const auto expires=expired.residentProductionPlan(actor)->expiresMinute;
