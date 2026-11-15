@@ -135,6 +135,8 @@ int main() {
     assert(limited.residentProductionPlan(actor)->state==ProductionPlanState::Abandoned);
     assert(limited.residentProductionPlan(actor)->steps.size()==MaxProductionSteps);
     assert(!encode(limited).empty());
+    limited.runMinutes(140);
+    assert(commandsForOldThought()==MaxProductionSteps);
     // A permanent survival emergency may consume time, never extend the
     // original promise or retain it forever beyond its deadline.
     auto expired=fixture();expired.step();const auto expires=expired.residentProductionPlan(actor)->expiresMinute;

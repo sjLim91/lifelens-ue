@@ -3117,7 +3117,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
        && !urgentProvisionRequired
        && !criticalSurvivalPressure
        && urgentPhysicalGoal==Goal::Idle
-       && world_.minute%15==0){
+       && (world_.minute%15==0
+           ||(r.productionPlan.open() &&r.productionPlan.cognitiveFingerprint))){
         const auto population=settlementPopulation();
         cadenceDecision=chooseUnifiedUtilityDecisionAtPosition(
             world_,c,relationships_,r.pos,0.18,0.14,&population,
@@ -3135,14 +3136,20 @@ void Simulation::beginPlan(Character& c,Runtime& r){
             it!=acceptedCognitiveDecisions_.rend();++it){
             if(it->actor==c.id){ newest=&*it; break; }
         }
-        // An exhausted/expired concrete objective retires that exact old
-        // approval for this strategy. Keep historical approval/evidence, and
-        // let ordinary embodied life continue until a genuinely new thought.
-        const auto& oldProduction=r.productionPlan;
-        if(newest &&oldProduction.state==ProductionPlanState::Abandoned
-           &&(oldProduction.reason==ProductionPlanReason::Budget ||oldProduction.reason==ProductionPlanReason::Deadline)
-           &&oldProduction.cognitiveFingerprint==newest->contextFingerprint
-           &&oldProduction.thoughtMinute==newest->minute)newest=nullptr;
+        // Retire a spent tool strategy using its actual issued-command
+        // journal, even after a later native goal replaces the latest plan.
+        // Historical approval remains intact; a fresh thought gets a fresh
+        // budget. Ordinary embodied life still runs without this approval.
+        if(newest &&newest->intent==CognitiveIntentKind::CraftUsefulTools){
+            for(const auto& trace:cognitiveCausalJournal_)if(trace.accepted
+                &&sameCognitiveOrigin(trace.origin,*newest) &&!trace.steps.empty()){
+                const auto issued=trace.omittedSteps+std::count_if(trace.steps.begin(),trace.steps.end(),
+                    [](const auto& step){return step.token!=0;});
+                if(issued>=MaxProductionSteps
+                   ||world_.minute-trace.steps.front().issuedMinute>=ProductionPlanMinutes)newest=nullptr;
+                break;
+            }
+        }
         std::optional<GridPos> targetPosition;
         if(newest!=nullptr &&newest->target!=0){
             const auto targetRuntime=runtime_.find(newest->target);
