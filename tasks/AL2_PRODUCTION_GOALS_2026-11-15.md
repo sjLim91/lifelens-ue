@@ -2,7 +2,7 @@
 
 사용자가 다음 작업 선정과 구현·배포를 사전 승인했다. 현재 canonical P0 순서의 AL-2를 선택한다. 기준 main `b5dd0b549ae836bdcdcf87c7877fc9b1f29a634c`.
 
-상태: 구현·통합 검증 진행. 정확한 최종 head CI·main·Runtime/Pages/External Probe와 공개 앱 검증 전 완료로 표시하지 않는다.
+상태: **AL-2 Core 제작 목표 납품 체크포인트 완료**. 검증 head `40bf67d80911b38a18886de770e75fdca46965c2`, PR #1032 → main `c5fba0266c0542874719c01a824d985c40257da7`. 아래 실제 배포·원시 검증 근거를 따른다.
 
 - 기존 단일 Core resident agency와 실제 ContextAction을 사용한다. 구체 도구 목표·원래 120분 기한·최대 6개의 실제 명령·실측 보유량·개인 계획 출처를 보존한다.
 - 실제 필요 재료 → 하위 제작법/부품 → 제작/실험의 전제 조건을 같은 registry에서 계산한다. 가상의 재료·관측하지 않은 실행·무료 기술을 만들지 않는다.
@@ -13,6 +13,16 @@
 - 통제 fixture(재료·욕구/지식·생각·경쟁 고갈)와 변경하지 않은 새 게임의 관측을 구분한다. 물리 실기기·발열 제외 지시는 유지한다.
 
 AL-2는 기존 M2/M3 일부를 잇는 납품 체크포인트다. 이를 이유로 M2 전체·M3 전체·G1 또는 86개 단위의 원래 인수조건을 완료 처리하지 않는다.
+
+## 최종 인수·공개 배포
+
+- [PR #1032](https://github.com/sjLim91/lifelens-ue/pull/1032) → main `c5fba0266c0542874719c01a824d985c40257da7`. 검증 head `40bf67d80911b38a18886de770e75fdca46965c2`와 병합 tree 동일, 필수 CI **9/9** 성공: [Core 182/182·인과·장기 생존](https://github.com/sjLim91/lifelens-ue/actions/runs/43686469830), Web WASM·Web Checks·Preflight·Autonomy·Earth·Wildlife. [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43689628377) · [Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43689785812) · [Pages 배포](https://github.com/sjLim91/lifelens-ue/actions/runs/43689851814) · [External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43689857777) 성공.
+- 같은 주민의 구체 제작 목표를 실제 재료/하위 제작법/실험·제작으로 잇고, 실제 실패 후 대안 원천과 실제 생존 행동 후 재개를 같은 원래 120분/최대 6명령 안에서 처리한다. 소진된 이전 생각은 실제 명령 이력으로 종료하고 일반 생활 판단은 계속한다. v8/M8 저장 호환·손상/위조 거부·중간 저장 재생과 한국어 읽기 전용 관찰을 검증했다.
+- 변경하지 않은 새 게임 **3시드 × 365일**: 129개 목표 중 103개 완료/26개 중단, 실제 실패 후 다단계 완료 11건. 1/7/30/100/365일 native binary 왕복, 공개 WASM 물리/계획 byte와 기존 난수 텍스트만 정규화한 전체 저장·중간 재생, 실제 공개 앱 320/393/915/1440px·자동 저장·재접속·오류·가로 넘침 0건 검증.
+- [원시 증거·배포 출처](evidence/al2-2026-11-15/release-proof.json). 자연 관측과 통제된 경쟁 고갈/먹기·생존 선점을 구분하며 실제 Qwen 추론 또는 물리 Android GPU를 검증했다고 주장하지 않는다. 기존 사용자 지시로 실기기·발열 제외.
+- **AL-2 Core 제작 목표 납품 체크포인트 완료**이며 M2/M3/G1 전체 인수가 아니다. 기존 장부 **21/86 완료·20 진행·45 미완/미검증**과 M8/M10 완료를 유지한다.
+- 자연 생존 중단은 세 세계 관측에서 0건이며 실제 먹기→재개는 별도 통제 회귀다. 성공 기억 긍정 인수는 세 독립 시드 `874213954`/`874213955`/`42`, 기존 `4242001`은 추가 진단으로 남긴다. 아래 원인 분석의 관측 범위와 인수 조건을 유지한다.
+- 같은 최종 소스의 [재현 명령과 fixture/원시 로그](evidence/al2-2026-11-15/README.md), [자연 집계](evidence/al2-2026-11-15/natural-summary.json), [공개 파일 출처](evidence/al2-2026-11-15/public-proof.json), [실제 앱 저장·재접속](evidence/al2-2026-11-15/public-app-proof.json).
 
 ## 통합 회귀에서 확인한 실제 목표 유실
 

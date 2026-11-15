@@ -1,0 +1,20 @@
+{
+  "profile": "actual app restored from untouched native Core production checkpoint in isolated IndexedDB; software 2D fallback",
+  "source": "c5fba0266c0542874719c01a824d985c40257da7",
+  "fixtureSha256": "d1838a63bee8acc42f78b9495e2d0be98065e88783ab6571b8f3edd770dfae61",
+  "actor": "3",
+  "goal": "11",
+  "actualFailureGatherSuccessVisible": true,
+  "actualNativeOriginVisible": true,
+  "actualTokensVisible": true,
+  "widths": [
+    320,
+    393,
+    915,
+    1440
+  ],
+  "noOverflow": true,
+  "appCheckpointWrite": true,
+  "reloadRetainsGoalAndSteps": true,
+  "errors": []
+}

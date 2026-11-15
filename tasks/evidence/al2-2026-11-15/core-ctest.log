@@ -1,0 +1,369 @@
+Test project /workspace/build-native
+        Start  95: test_production_new_game
+        Start 145: test_wildlife_world_observation
+  1/182 Test #145: test_wildlife_world_observation ..................   Passed  183.05 sec
+        Start   7: test_core_baseline_freeze
+  2/182 Test  #95: test_production_new_game .........................   Passed  241.20 sec
+        Start  73: test_resident_ai_paired_causal_audit
+  3/182 Test  #73: test_resident_ai_paired_causal_audit .............   Passed   60.25 sec
+        Start 167: test_cultivation_progression
+  4/182 Test   #7: test_core_baseline_freeze ........................   Passed  135.37 sec
+        Start  52: test_resident_sensed_resource_agency
+  5/182 Test #167: test_cultivation_progression .....................   Passed   60.40 sec
+        Start 144: test_wildlife_subsistence
+  6/182 Test  #52: test_resident_sensed_resource_agency .............   Passed   47.28 sec
+        Start  55: test_al1_unmodified_replan_observability
+  7/182 Test  #55: test_al1_unmodified_replan_observability .........   Passed   30.24 sec
+        Start 147: test_resident_predator_avoidance
+  8/182 Test #144: test_wildlife_subsistence ........................   Passed   55.26 sec
+        Start  54: test_al1_causal_counterfactual
+  9/182 Test #147: test_resident_predator_avoidance .................   Passed   31.69 sec
+        Start 109: test_autonomous_civilization_loop
+ 10/182 Test  #54: test_al1_causal_counterfactual ...................   Passed   28.59 sec
+        Start 152: test_web_earth_scenario_handoff
+ 11/182 Test #109: test_autonomous_civilization_loop ................   Passed   29.37 sec
+        Start  62: test_resident_sensed_predator_curiosity
+ 12/182 Test #152: test_web_earth_scenario_handoff ..................   Passed   18.72 sec
+        Start 115: test_settlement_autonomy
+ 13/182 Test  #62: test_resident_sensed_predator_curiosity ..........   Passed   14.43 sec
+        Start 182: test_natural_ecology_lifecycle
+ 14/182 Test #115: test_settlement_autonomy .........................   Passed   18.33 sec
+        Start 163: test_early_survival
+ 15/182 Test #182: test_natural_ecology_lifecycle ...................   Passed   19.58 sec
+        Start 116: test_settlement_capacity
+ 16/182 Test #163: test_early_survival ..............................   Passed   17.17 sec
+        Start 148: test_predator_contact_injury
+ 17/182 Test #116: test_settlement_capacity .........................   Passed   17.09 sec
+        Start 146: test_wildlife_human_proximity
+ 18/182 Test #148: test_predator_contact_injury .....................   Passed   15.67 sec
+        Start  27: test_cognitive_request_receipts
+ 19/182 Test #146: test_wildlife_human_proximity ....................   Passed   15.01 sec
+        Start  60: test_resident_gather_goal_failure
+ 20/182 Test  #27: test_cognitive_request_receipts ..................   Passed   12.12 sec
+        Start  61: test_al1_natural_learning_opportunity_audit
+ 21/182 Test  #60: test_resident_gather_goal_failure ................   Passed    8.52 sec
+        Start  57: test_al1_natural_success_memory_ablation
+ 22/182 Test  #57: test_al1_natural_success_memory_ablation .........   Passed    5.37 sec
+        Start  23: test_al1_natural_failure_memory_ablation
+ 23/182 Test  #61: test_al1_natural_learning_opportunity_audit ......   Passed   10.62 sec
+        Start 156: test_continuous_hydrology
+ 24/182 Test #156: test_continuous_hydrology ........................   Passed   10.11 sec
+        Start 103: test_snapshot_codec
+ 25/182 Test  #23: test_al1_natural_failure_memory_ablation .........   Passed   13.42 sec
+        Start  58: test_al1_natural_goal_causality
+ 26/182 Test  #58: test_al1_natural_goal_causality ..................   Passed    4.71 sec
+        Start  99: test_context_action_competing_parenting
+ 27/182 Test #103: test_snapshot_codec ..............................   Passed    7.88 sec
+        Start 118: test_sleep_environment
+ 28/182 Test  #99: test_context_action_competing_parenting ..........   Passed    4.30 sec
+        Start 114: test_facility_authority
+ 29/182 Test #118: test_sleep_environment ...........................   Passed    5.92 sec
+        Start 129: test_external_physical_execution
+ 30/182 Test #114: test_facility_authority ..........................   Passed    3.30 sec
+        Start  42: test_autonomy_audit
+ 31/182 Test  #42: test_autonomy_audit ..............................   Passed    3.56 sec
+        Start 100: test_dependent_care_priority
+ 32/182 Test #129: test_external_physical_execution .................   Passed    5.00 sec
+        Start  10: test_environmental_consequences
+ 33/182 Test #100: test_dependent_care_priority .....................   Passed    2.70 sec
+        Start  66: test_resident_ai_retry_adaptation
+ 34/182 Test  #10: test_environmental_consequences ..................   Passed    2.74 sec
+        Start 154: test_world_genesis_wg2
+ 35/182 Test  #66: test_resident_ai_retry_adaptation ................   Passed    2.42 sec
+        Start 102: test_core_save_load
+ 36/182 Test #154: test_world_genesis_wg2 ...........................   Passed    3.55 sec
+        Start 108: test_traits_preferences
+ 37/182 Test #102: test_core_save_load ..............................   Passed    2.55 sec
+        Start 128: test_environmental_residue
+ 38/182 Test #108: test_traits_preferences ..........................   Passed    3.18 sec
+        Start  44: test_live_resident_ai
+ 39/182 Test #128: test_environmental_residue .......................   Passed    3.61 sec
+        Start 119: test_sleep_saturation_recovery
+ 40/182 Test  #44: test_live_resident_ai ............................   Passed    2.97 sec
+        Start  96: test_autonomous_family_progression
+ 41/182 Test #119: test_sleep_saturation_recovery ...................   Passed    3.90 sec
+        Start  45: test_resident_ai_existing_affordance
+ 42/182 Test  #96: test_autonomous_family_progression ...............   Passed    2.43 sec
+        Start 111: test_knowledge_teaching_budget
+ 43/182 Test #111: test_knowledge_teaching_budget ...................   Passed    1.68 sec
+        Start 107: test_civilization_spatial_targets
+ 44/182 Test  #45: test_resident_ai_existing_affordance .............   Passed    2.73 sec
+        Start 159: test_world_generation_sanitation_reference
+ 45/182 Test #107: test_civilization_spatial_targets ................   Passed    2.04 sec
+        Start 164: test_survival_reachability
+ 46/182 Test #159: test_world_generation_sanitation_reference .......   Passed    2.38 sec
+        Start 165: test_durable_water_storage
+ 47/182 Test #164: test_survival_reachability .......................   Passed    3.20 sec
+        Start  67: test_resident_ai_firsthand_source_loss
+ 48/182 Test #165: test_durable_water_storage .......................   Passed    2.51 sec
+        Start  72: test_resident_ai_failure_cause
+ 49/182 Test  #67: test_resident_ai_firsthand_source_loss ...........   Passed    1.50 sec
+        Start   6: test_determinism
+ 50/182 Test  #72: test_resident_ai_failure_cause ...................   Passed    1.47 sec
+        Start  43: test_cognitive_web_bridge
+ 51/182 Test   #6: test_determinism .................................   Passed    1.37 sec
+        Start 161: test_web_client_bridge
+ 52/182 Test  #43: test_cognitive_web_bridge ........................   Passed    2.00 sec
+        Start 101: test_dependent_deprivation_mortality
+ 53/182 Test #161: test_web_client_bridge ...........................   Passed    1.74 sec
+        Start 121: test_primitive_storage_progression
+ 54/182 Test #101: test_dependent_deprivation_mortality .............   Passed    1.28 sec
+        Start  97: test_lifecycle_runtime_correctness
+ 55/182 Test  #97: test_lifecycle_runtime_correctness ...............   Passed    1.42 sec
+        Start 123: test_emergent_artifacts
+ 56/182 Test #121: test_primitive_storage_progression ...............   Passed    2.04 sec
+        Start 140: test_earth_scenario_persistence
+ 57/182 Test #140: test_earth_scenario_persistence ..................   Passed    1.76 sec
+        Start 113: test_civilization_observer_read_model
+ 58/182 Test #123: test_emergent_artifacts ..........................   Passed    2.22 sec
+        Start 106: test_civilization_persistence
+ 59/182 Test #113: test_civilization_observer_read_model ............   Passed    1.16 sec
+        Start 178: test_household_migration_decline
+ 60/182 Test #106: test_civilization_persistence ....................   Passed    1.56 sec
+        Start   5: test_action_commitment
+ 61/182 Test   #5: test_action_commitment ...........................   Passed    0.95 sec
+        Start 157: test_continuous_ecology
+ 62/182 Test #178: test_household_migration_decline .................   Passed    2.01 sec
+        Start 120: test_civilization_era
+ 63/182 Test #157: test_continuous_ecology ..........................   Passed    1.55 sec
+        Start 110: test_civilization_knowledge_transmission
+ 64/182 Test #120: test_civilization_era ............................   Passed    1.73 sec
+        Start 117: test_settlement_facility_effects
+ 65/182 Test #110: test_civilization_knowledge_transmission .........   Passed    1.13 sec
+        Start 135: test_designated_sanitation_affordance
+ 66/182 Test #117: test_settlement_facility_effects .................   Passed    1.40 sec
+        Start 126: test_primitive_furnace_smelting
+ 67/182 Test #135: test_designated_sanitation_affordance ............   Passed    1.19 sec
+        Start 177: test_intersettlement_trade
+ 68/182 Test #126: test_primitive_furnace_smelting ..................   Passed    1.25 sec
+        Start   3: test_daily_physiology_budget
+ 69/182 Test #177: test_intersettlement_trade .......................   Passed    1.40 sec
+        Start  64: test_resident_cognitive_opportunities
+ 70/182 Test   #3: test_daily_physiology_budget .....................   Passed    0.82 sec
+        Start  59: test_resident_gather_goal_snapshot
+ 71/182 Test  #64: test_resident_cognitive_opportunities ............   Passed    0.78 sec
+        Start 160: test_hydrology_foundation
+ 72/182 Test  #59: test_resident_gather_goal_snapshot ...............   Passed    0.63 sec
+        Start  22: test_resident_gather_assessment
+ 73/182 Test #160: test_hydrology_foundation ........................   Passed    0.94 sec
+        Start  98: test_context_action_completion
+ 74/182 Test  #22: test_resident_gather_assessment ..................   Passed    0.88 sec
+        Start 133: test_primitive_sanitation_progression
+ 75/182 Test  #98: test_context_action_completion ...................   Passed    0.75 sec
+        Start  28: test_dependent_escort_continuation
+ 76/182 Test #133: test_primitive_sanitation_progression ............   Passed    1.11 sec
+        Start  53: test_al1_production_closed_loop
+ 77/182 Test  #28: test_dependent_escort_continuation ...............   Passed    0.76 sec
+        Start  50: test_resident_production_plan
+ 78/182 Test  #53: test_al1_production_closed_loop ..................   Passed    0.69 sec
+        Start 131: test_environmental_exposure
+ 79/182 Test #131: test_environmental_exposure ......................   Passed    0.96 sec
+        Start 112: test_civilization_knowledge_spatial_authority
+ 80/182 Test #112: test_civilization_knowledge_spatial_authority ....   Passed    0.45 sec
+        Start 136: test_primitive_latrine_progression
+ 81/182 Test #136: test_primitive_latrine_progression ...............   Passed    0.96 sec
+        Start  26: test_cognitive_causal_journal
+ 82/182 Test  #26: test_cognitive_causal_journal ....................   Passed    0.65 sec
+        Start  65: test_resident_ai_completed_plan_guard
+ 83/182 Test  #65: test_resident_ai_completed_plan_guard ............   Passed    0.45 sec
+        Start  86: test_parenting_opportunity_windows
+ 84/182 Test  #86: test_parenting_opportunity_windows ...............   Passed    0.35 sec
+        Start  40: test_core_context_experience_learning
+ 85/182 Test  #40: test_core_context_experience_learning ............   Passed    0.38 sec
+        Start  24: test_cognitive_context_allocation
+ 86/182 Test  #24: test_cognitive_context_allocation ................   Passed    0.40 sec
+        Start  21: test_resident_known_resource_memory
+ 87/182 Test  #50: test_resident_production_plan ....................   Passed    5.25 sec
+        Start  33: test_autonomous_social_outcome_learning
+ 88/182 Test  #21: test_resident_known_resource_memory ..............   Passed    0.27 sec
+        Start  25: test_cognitive_decision_journal
+ 89/182 Test  #33: test_autonomous_social_outcome_learning ..........   Passed    0.32 sec
+        Start 124: test_artifact_production_replay
+ 90/182 Test  #25: test_cognitive_decision_journal ..................   Passed    0.33 sec
+        Start  71: test_resident_ai_civilization_outcome_learning
+ 91/182 Test #124: test_artifact_production_replay ..................   Passed    0.29 sec
+        Start  39: test_action_experience_learning
+ 92/182 Test  #71: test_resident_ai_civilization_outcome_learning ...   Passed    0.21 sec
+        Start 132: test_sanitation_problem_recognition
+ 93/182 Test  #39: test_action_experience_learning ..................   Passed    0.25 sec
+        Start 134: test_population_health
+ 94/182 Test #132: test_sanitation_problem_recognition ..............   Passed    0.36 sec
+        Start 175: test_migration_pressure
+ 95/182 Test #134: test_population_health ...........................   Passed    0.37 sec
+        Start  51: test_al2_live_source_failure_recovery
+ 96/182 Test #175: test_migration_pressure ..........................   Passed    0.23 sec
+        Start  48: test_al2_production_gather_craft
+ 97/182 Test  #51: test_al2_live_source_failure_recovery ............   Passed    0.89 sec
+        Start  49: test_al2_survival_cognition_resume
+ 98/182 Test  #48: test_al2_production_gather_craft .................   Passed    0.89 sec
+        Start 151: test_wildlife_population_codec
+ 99/182 Test #151: test_wildlife_population_codec ...................   Passed    0.11 sec
+        Start 143: test_wildlife_ecology
+100/182 Test #143: test_wildlife_ecology ............................   Passed    0.10 sec
+        Start 158: test_world_generation_milestone_a
+101/182 Test #158: test_world_generation_milestone_a ................   Passed    0.03 sec
+        Start  13: test_emotion_runtime
+102/182 Test  #13: test_emotion_runtime .............................   Passed    0.04 sec
+        Start  19: test_resident_local_perception
+103/182 Test  #19: test_resident_local_perception ...................   Passed    0.01 sec
+        Start 104: test_witness_rumor
+104/182 Test #104: test_witness_rumor ...............................   Passed    0.01 sec
+        Start  75: test_decision_execution
+105/182 Test  #75: test_decision_execution ..........................   Passed    0.01 sec
+        Start  78: test_observer_read_model
+106/182 Test  #78: test_observer_read_model .........................   Passed    0.01 sec
+        Start  85: test_parenting
+107/182 Test  #85: test_parenting ...................................   Passed    0.00 sec
+        Start  63: test_resident_resource_outcome_preference
+108/182 Test  #63: test_resident_resource_outcome_preference ........   Passed    0.02 sec
+        Start   1: test_assertions_enabled
+109/182 Test   #1: test_assertions_enabled ..........................   Passed    0.03 sec
+        Start  94: test_simulation_family_state
+110/182 Test  #94: test_simulation_family_state .....................   Passed    0.01 sec
+        Start  11: test_relationship
+111/182 Test  #11: test_relationship ................................   Passed    0.01 sec
+        Start  87: test_genealogy
+112/182 Test  #87: test_genealogy ...................................   Passed    0.00 sec
+        Start  74: test_social_utility
+113/182 Test  #74: test_social_utility ..............................   Passed    0.01 sec
+        Start  69: test_resident_ai_predator_memory_context
+114/182 Test  #69: test_resident_ai_predator_memory_context .........   Passed    0.00 sec
+        Start  46: test_resident_ai_tool_prerequisite_chain
+115/182 Test  #46: test_resident_ai_tool_prerequisite_chain .........   Passed    0.01 sec
+        Start  15: test_memory_attribution
+116/182 Test  #15: test_memory_attribution ..........................   Passed    0.00 sec
+        Start  79: test_romance
+117/182 Test  #79: test_romance .....................................   Passed    0.00 sec
+        Start  37: test_autonomous_experiment_continuation
+118/182 Test  #37: test_autonomous_experiment_continuation ..........   Passed    0.00 sec
+        Start  77: test_social_communication_read_model
+119/182 Test  #77: test_social_communication_read_model .............   Passed    0.01 sec
+        Start 181: test_settlement_group_relations
+120/182 Test #181: test_settlement_group_relations ..................   Passed    0.04 sec
+        Start 153: test_world_genesis_wg1
+121/182 Test #153: test_world_genesis_wg1 ...........................   Passed    0.01 sec
+        Start  76: test_simulation_social_loop
+122/182 Test  #76: test_simulation_social_loop ......................   Passed    0.01 sec
+        Start  88: test_aging
+123/182 Test  #88: test_aging .......................................   Passed    0.00 sec
+        Start  56: test_al1_immediate_core_route_recovery
+124/182 Test  #56: test_al1_immediate_core_route_recovery ...........   Passed    0.01 sec
+        Start  18: test_cognitive_agent_contract
+125/182 Test  #18: test_cognitive_agent_contract ....................   Passed    0.00 sec
+        Start 169: test_civilization_innovation_pressure
+126/182 Test #169: test_civilization_innovation_pressure ............   Passed    0.00 sec
+        Start 130: test_headless_locomotion
+127/182 Test #130: test_headless_locomotion .........................   Passed    0.01 sec
+        Start  47: test_resident_unified_agency
+128/182 Test  #47: test_resident_unified_agency .....................   Passed    0.01 sec
+        Start 174: test_society_coordination_records
+129/182 Test #174: test_society_coordination_records ................   Passed    0.00 sec
+        Start 150: test_injured_social_provision_care
+130/182 Test #150: test_injured_social_provision_care ...............   Passed    0.01 sec
+        Start  36: test_autonomous_experiment_planner
+131/182 Test  #36: test_autonomous_experiment_planner ...............   Passed    0.04 sec
+        Start  20: test_resident_local_resource_memory
+132/182 Test  #20: test_resident_local_resource_memory ..............   Passed    0.01 sec
+        Start  34: test_autonomous_goal_action_attribution
+133/182 Test  #34: test_autonomous_goal_action_attribution ..........   Passed    0.01 sec
+        Start  68: test_resident_ai_latest_direct_experience
+134/182 Test  #68: test_resident_ai_latest_direct_experience ........   Passed    0.00 sec
+        Start  70: test_resident_ai_care_gift_memory
+135/182 Test  #70: test_resident_ai_care_gift_memory ................   Passed    0.00 sec
+        Start  83: test_birth_genetics
+136/182 Test  #83: test_birth_genetics ..............................   Passed    0.00 sec
+        Start 171: test_civilization_rediscovery_adoption
+137/182 Test #171: test_civilization_rediscovery_adoption ...........   Passed    0.01 sec
+        Start  82: test_pregnancy
+138/182 Test  #82: test_pregnancy ...................................   Passed    0.00 sec
+        Start  31: test_autonomous_affordance_planner
+139/182 Test  #31: test_autonomous_affordance_planner ...............   Passed    0.01 sec
+        Start 173: test_society_associations
+140/182 Test #173: test_society_associations ........................   Passed    0.00 sec
+        Start  38: test_autonomous_two_step_real_gather
+141/182 Test  #38: test_autonomous_two_step_real_gather .............   Passed    0.04 sec
+        Start 166: test_water_transport_bootstrap
+142/182 Test #166: test_water_transport_bootstrap ...................   Passed    0.00 sec
+        Start 168: test_civilization_transformation
+143/182 Test #168: test_civilization_transformation .................   Passed    0.00 sec
+        Start   4: test_utility
+144/182 Test   #4: test_utility .....................................   Passed    0.00 sec
+        Start  92: test_generation_continuity
+145/182 Test  #92: test_generation_continuity .......................   Passed    0.00 sec
+        Start  93: test_observer_read_model_v2
+146/182 Test  #93: test_observer_read_model_v2 ......................   Passed    0.00 sec
+        Start 162: test_human_trace_read_model
+147/182 Test #162: test_human_trace_read_model ......................   Passed    0.01 sec
+        Start  35: test_autonomous_goal_truth_delta
+148/182 Test  #35: test_autonomous_goal_truth_delta .................   Passed    0.00 sec
+        Start 122: test_tool_effectiveness
+149/182 Test #122: test_tool_effectiveness ..........................   Passed    0.00 sec
+        Start 172: test_society_economy
+150/182 Test #172: test_society_economy .............................   Passed    0.01 sec
+        Start 176: test_multiple_settlements
+151/182 Test #176: test_multiple_settlements ........................   Passed    0.00 sec
+        Start  90: test_life_history
+152/182 Test  #90: test_life_history ................................   Passed    0.00 sec
+        Start 180: test_settlement_production_specialization
+153/182 Test #180: test_settlement_production_specialization ........   Passed    0.00 sec
+        Start  32: test_autonomous_social_goal_routing
+154/182 Test  #32: test_autonomous_social_goal_routing ..............   Passed    0.00 sec
+        Start  30: test_autonomous_goal_composer
+155/182 Test  #30: test_autonomous_goal_composer ....................   Passed    0.00 sec
+        Start  29: test_autonomous_goal_contract
+156/182 Test  #29: test_autonomous_goal_contract ....................   Passed    0.03 sec
+        Start 155: test_continuous_terrain
+157/182 Test #155: test_continuous_terrain ..........................   Passed    0.00 sec
+        Start  80: test_household
+158/182 Test  #80: test_household ...................................   Passed    0.00 sec
+        Start 170: test_civilization_technology_graph
+159/182 Test #170: test_civilization_technology_graph ...............   Passed    0.00 sec
+        Start  89: test_death
+160/182 Test  #89: test_death .......................................   Passed    0.00 sec
+        Start  91: test_life_history_wiring
+161/182 Test  #91: test_life_history_wiring .........................   Passed    0.00 sec
+        Start 179: test_settlement_knowledge_specialization
+162/182 Test #179: test_settlement_knowledge_specialization .........   Passed    0.00 sec
+        Start  81: test_marriage
+163/182 Test  #81: test_marriage ....................................   Passed    0.00 sec
+        Start 141: test_earth_natural_land_mask
+164/182 Test #141: test_earth_natural_land_mask .....................   Passed    0.00 sec
+        Start  17: test_social_cognition
+165/182 Test  #17: test_social_cognition ............................   Passed    0.00 sec
+        Start 105: test_civilization_foundation
+166/182 Test #105: test_civilization_foundation .....................   Passed    0.00 sec
+        Start 139: test_earth_region_scenario
+167/182 Test #139: test_earth_region_scenario .......................   Passed    0.00 sec
+        Start 127: test_natural_physical_obstacles
+168/182 Test #127: test_natural_physical_obstacles ..................   Passed    0.00 sec
+        Start  41: test_water_source_experience
+169/182 Test  #41: test_water_source_experience .....................   Passed    0.00 sec
+        Start   2: test_needs
+170/182 Test   #2: test_needs .......................................   Passed    0.00 sec
+        Start 125: test_primitive_fire_progression
+171/182 Test #125: test_primitive_fire_progression ..................   Passed    0.00 sec
+        Start  84: test_lifecycle_growth
+172/182 Test  #84: test_lifecycle_growth ............................   Passed    0.04 sec
+        Start  16: test_belief
+173/182 Test  #16: test_belief ......................................   Passed    0.00 sec
+        Start  14: test_memory
+174/182 Test  #14: test_memory ......................................   Passed    0.00 sec
+        Start   9: test_simulation_climate
+175/182 Test   #9: test_simulation_climate ..........................   Passed    0.00 sec
+        Start 138: test_earth_surface_coordinates
+176/182 Test #138: test_earth_surface_coordinates ...................   Passed    0.00 sec
+        Start  12: test_emotion
+177/182 Test  #12: test_emotion .....................................   Passed    0.00 sec
+        Start 142: test_earth_solar_observation
+178/182 Test #142: test_earth_solar_observation .....................   Passed    0.00 sec
+        Start   8: test_simulation_calendar
+179/182 Test   #8: test_simulation_calendar .........................   Passed    0.00 sec
+        Start 149: test_injury_recovery_needs
+180/182 Test #149: test_injury_recovery_needs .......................   Passed    0.00 sec
+        Start 137: test_world_hierarchy
+181/182 Test  #49: test_al2_survival_cognition_resume ...............   Passed    1.00 sec
+182/182 Test #137: test_world_hierarchy .............................   Passed    0.00 sec
+
+100% tests passed out of 182
+
+Total Test time (real) = 616.93 sec

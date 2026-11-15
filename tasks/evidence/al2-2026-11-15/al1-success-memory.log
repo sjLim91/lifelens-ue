@@ -1,0 +1,21 @@
+test_al1_natural_success_memory_ablation
+test_al1_natural_success_memory_ablation
+57/182 Test: test_al1_natural_success_memory_ablation
+Command: "/workspace/build-native/test_al1_natural_success_memory_ablation"
+Directory: /workspace/build-native
+"test_al1_natural_success_memory_ablation" start time: Nov 15 06:48 UTC
+Output:
+----------------------------------------------------------
+AL1_NATURAL_SUCCESS_MEMORY_ABLATION seed=874213954 actor=2 real_success_minute=2544 decision_minute=2625 removed_records=1 otherwise_identical_snapshot=1 retained_source=7708449827702186996 ablated_source=8371056191655438253 retained_token=143 ablated_token=143 learned_preference=0.0282854 without_memory_preference=0 different_issued_choice=1
+AL1_MEMORY_ABLATION_PHYSICAL_RESULTS seed=874213954 actor=2 retained_completed=1 retained_result_minute=2676 retained_quantity=3 retained_result_token=143 retained_result_source=7708449827702186996 ablated_completed=1 ablated_result_minute=2660 ablated_quantity=3 ablated_result_token=143 ablated_result_source=8371056191655438253 acceptance=ACTUAL_MEMORY_CAUSALITY_AND_RESULTS
+AL1_NATURAL_SUCCESS_MEMORY_ABLATION seed=874213955 actor=3 real_success_minute=1256 decision_minute=1785 removed_records=1 otherwise_identical_snapshot=1 retained_source=5791607189119564993 ablated_source=8667643629153904699 retained_token=84 ablated_token=84 learned_preference=0.0188609 without_memory_preference=0 different_issued_choice=1
+AL1_MEMORY_ABLATION_PHYSICAL_RESULTS seed=874213955 actor=3 retained_completed=1 retained_result_minute=1806 retained_quantity=3 retained_result_token=84 retained_result_source=5791607189119564993 ablated_completed=1 ablated_result_minute=1838 ablated_quantity=3 ablated_result_token=84 ablated_result_source=8667643629153904699 acceptance=ACTUAL_MEMORY_CAUSALITY_AND_RESULTS
+AL1_NATURAL_SUCCESS_MEMORY_ABLATION seed=42 actor=4 real_success_minute=1358 decision_minute=2460 removed_records=1 otherwise_identical_snapshot=1 retained_source=7900167615784403620 ablated_source=6418986930731156067 retained_token=93 ablated_token=93 learned_preference=0.00695057 without_memory_preference=0 different_issued_choice=1
+AL1_MEMORY_ABLATION_PHYSICAL_RESULTS seed=42 actor=4 retained_completed=1 retained_result_minute=2478 retained_quantity=3 retained_result_token=93 retained_result_source=7900167615784403620 ablated_completed=1 ablated_result_minute=2482 ablated_quantity=3 ablated_result_token=93 ablated_result_source=6418986930731156067 acceptance=ACTUAL_MEMORY_CAUSALITY_AND_RESULTS
+<end of output>
+Test time =   5.37 sec
+----------------------------------------------------------
+Test Passed.
+"test_al1_natural_success_memory_ablation" end time: Nov 15 06:48 UTC
+"test_al1_natural_success_memory_ablation" time elapsed: 00:00:05
+----------------------------------------------------------

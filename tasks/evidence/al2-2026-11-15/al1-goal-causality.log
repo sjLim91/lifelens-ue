@@ -1,0 +1,21 @@
+test_al1_natural_goal_causality
+test_al1_natural_goal_causality
+58/182 Test: test_al1_natural_goal_causality
+Command: "/workspace/build-native/test_al1_natural_goal_causality"
+Directory: /workspace/build-native
+"test_al1_natural_goal_causality" start time: Nov 15 06:49 UTC
+Output:
+----------------------------------------------------------
+AL1_NATIVE_SAVE_RESUME seed=874213954 actor=2 learned_token=143 source=7708449827702186996 decision_minute=2625 result_minute=2676 quantity=3 binary_roundtrip=1 identical_production_replay=1 actual_learned_harvest=1 firsthand_result_memory=1
+AL1_NATURAL_GOAL_CHAIN seed=874213954 stage=first-experience actor=2 goal_id=136 token=136 material=Wood source=7708449827702186996 issue_minute=2535 result_minute=2544 quantity=3 inventory=1->4 source_stock=150->147 position=1134,534->1133,538 hunger=0.0562025 thirst=0.25814 fatigue=0.220836 curiosity=0.464902 stage=learned-reexecution actor=2 goal_id=143 token=143 material=Wood source=7708449827702186996 issue_minute=2625 result_minute=2676 quantity=3 inventory=0->3 source_stock=147->144 position=1139,528->1133,540 hunger=0.162403 thirst=0.400597 fatigue=0.304172 curiosity=0.464902 memory_minute=2544 without_memory_native_source=8371056191655438253 injected_goals=0 injected_resources=0 injected_memories=0 model_inference=unconnected acceptance=GOAL_TOKEN_WORLD_MEMORY_REEXECUTION_OBSERVED
+AL1_NATIVE_SAVE_RESUME seed=874213955 actor=3 learned_token=84 source=5791607189119564993 decision_minute=1785 result_minute=1806 quantity=3 binary_roundtrip=1 identical_production_replay=1 actual_learned_harvest=1 firsthand_result_memory=1
+AL1_NATURAL_GOAL_CHAIN seed=874213955 stage=first-experience actor=3 goal_id=54 token=54 material=Fiber source=5791607189119564993 issue_minute=1245 result_minute=1256 quantity=3 inventory=1->4 source_stock=100->97 position=-629,1134->-633,1132 hunger=0.26382 thirst=0.353994 fatigue=0.37621 curiosity=0.552057 stage=learned-reexecution actor=3 goal_id=84 token=84 material=Fiber source=5791607189119564993 issue_minute=1785 result_minute=1806 quantity=3 inventory=0->3 source_stock=103->100 position=-624,1134->-633,1132 hunger=0.402017 thirst=0.632538 fatigue=0.434742 curiosity=0.552057 memory_minute=1256 without_memory_native_source=8667643629153904699 injected_goals=0 injected_resources=0 injected_memories=0 model_inference=unconnected acceptance=GOAL_TOKEN_WORLD_MEMORY_REEXECUTION_OBSERVED
+AL1_NATIVE_SAVE_RESUME seed=42 actor=4 learned_token=93 source=7900167615784403620 decision_minute=2460 result_minute=2478 quantity=3 binary_roundtrip=1 identical_production_replay=1 actual_learned_harvest=1 firsthand_result_memory=1
+AL1_NATURAL_GOAL_CHAIN seed=42 stage=first-experience actor=4 goal_id=58 token=58 material=Fiber source=7900167615784403620 issue_minute=1320 result_minute=1358 quantity=3 inventory=1->4 source_stock=102->99 position=-167,581->-180,587 hunger=0.365238 thirst=0.369998 fatigue=0.214472 curiosity=0.475446 stage=learned-reexecution actor=4 goal_id=93 token=93 material=Fiber source=7900167615784403620 issue_minute=2460 result_minute=2478 quantity=3 inventory=0->3 source_stock=103->100 position=-171,589->-180,589 hunger=0.364986 thirst=0.172046 fatigue=0.228111 curiosity=0.475446 memory_minute=1358 without_memory_native_source=6418986930731156067 injected_goals=0 injected_resources=0 injected_memories=0 model_inference=unconnected acceptance=GOAL_TOKEN_WORLD_MEMORY_REEXECUTION_OBSERVED
+<end of output>
+Test time =   4.71 sec
+----------------------------------------------------------
+Test Passed.
+"test_al1_natural_goal_causality" end time: Nov 15 06:49 UTC
+"test_al1_natural_goal_causality" time elapsed: 00:00:04
+----------------------------------------------------------

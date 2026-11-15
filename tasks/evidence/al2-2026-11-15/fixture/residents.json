@@ -1,0 +1,2772 @@
+{
+  "available": true,
+  "residents": [
+    {
+      "id": "1",
+      "name": "Taeyun",
+      "sex": "Male",
+      "alive": true,
+      "lifeStage": "Adult",
+      "ageYears": 30,
+      "hasBirthMinute": true,
+      "birthMinute": -16114296,
+      "deathMinute": -1,
+      "activityKind": "Idle",
+      "activityLabel": "Idle",
+      "physicalGoal": "Idle",
+      "socialIntent": "None",
+      "activityTargetId": "0",
+      "activityTargetName": "",
+      "presentation": {
+        "artifactTool": null,
+        "active": true,
+        "kind": "Civilization",
+        "phase": "Moving",
+        "physicalGoal": "Idle",
+        "socialIntent": "None",
+        "civilizationIntent": "Gather",
+        "civilizationMaterial": "Stone",
+        "civilizationItem": "RawMaterial",
+        "civilizationTechnique": "None",
+        "civilizationQuantity": 3,
+        "civilizationResourceNode": "5857092510681560531",
+        "civilizationStorage": "0",
+        "facilityAction": "None",
+        "facilityId": "0",
+        "facilityKind": "PrimitiveStorage",
+        "parentingAction": "Comfort",
+        "knowledgeTeachingTechnique": "None",
+        "issuedMinute": 555,
+        "targetResidentId": "0",
+        "hasTargetGrid": true,
+        "targetGridX": 1149,
+        "targetGridY": 559,
+        "hasObjectTarget": false,
+        "objectId": "0",
+        "objectKind": "Chair",
+        "sleepContext": "None",
+        "emergencyFallback": false,
+        "directNaturalWaterSource": false,
+        "designatedSanitationSite": false,
+        "sanitationSiteId": "0",
+        "contextActionToken": "15",
+        "durationTicks": 5
+      },
+      "emotion": {
+        "joy": 0.242524,
+        "sadness": 0,
+        "anger": 0,
+        "fear": 0,
+        "embarrassment": 0,
+        "pride": 0.266777,
+        "jealousy": 0,
+        "affection": 0,
+        "anxiety": 0,
+        "relief": 0.09701,
+        "grief": 0,
+        "valence": 0.14697,
+        "arousal": 0.045595,
+        "intensity": 0.266777
+      },
+      "needs": {
+        "hunger": 0.368639,
+        "thirst": 0.318651,
+        "sleep": 0.240114,
+        "bladder": 0.350967,
+        "hygiene": 0.27309
+      },
+      "health": {
+        "stage": "Well",
+        "functionalCapacity": 1,
+        "pathogenLoad": 0,
+        "illnessSeverity": 0,
+        "immunity": 0.1,
+        "injurySeverity": 0,
+        "environmentalStress": 0,
+        "careKnowledge": 0,
+        "infectionEpisodes": 0,
+        "recoveryEpisodes": 0,
+        "accidentEpisodes": 0,
+        "lastExposureMinute": -1,
+        "lastIllnessMinute": -1,
+        "lastRecoveryMinute": -1,
+        "lastAccidentMinute": -1
+      },
+      "personality": {
+        "introversion": 0.349823,
+        "conscientiousness": 0.518441,
+        "openness": 0.529021,
+        "agreeableness": 0.591045,
+        "emotionalStability": 0.09334,
+        "empathy": 0.658063,
+        "impulsiveness": 0.283642,
+        "riskTolerance": 0.368919,
+        "ambition": 0.442758,
+        "patience": 0.343027,
+        "sociability": 0.386001,
+        "curiosity": 0.405264,
+        "orderliness": 0.313373,
+        "adaptability": 0.653928
+      },
+      "genetics": {
+        "faceShape": 0.286385,
+        "eyePigment": 0.413019,
+        "hairPigment": 0.588415,
+        "skinTone": 0.592907,
+        "heightPotential": 0.376303,
+        "buildPotential": 0.479717,
+        "healthPotential": 0.492661,
+        "learningPotential": 0.344297,
+        "temperamentSensitivity": 0.455924
+      },
+      "lifeCondition": {
+        "physicalHealth": 0.966357,
+        "energyCapacity": 0.955556,
+        "movementCapacity": 0.982222,
+        "reproductivePotential": 1,
+        "workCapacity": 1,
+        "appearanceAgeFactor": 0.324444,
+        "lifeGoalFamilyFocus": 0.383333,
+        "familyRoleSalience": 0.355556
+      },
+      "development": {
+        "attachment": 0.5,
+        "confidence": 0.5,
+        "stress": 0.1,
+        "socialSkill": 0.2,
+        "emotionalSecurity": 0.5,
+        "disciplineInternalization": 0.1,
+        "learningSupport": 0.2,
+        "health": 1
+      },
+      "traits": {
+        "resilience": 0.378164,
+        "creativity": 0.439525,
+        "discipline": 0.413067,
+        "compassion": 0.646702,
+        "adaptability": 0.510584,
+        "boldness": 0.468064,
+        "perseverance": 0.424368,
+        "resourcefulness": 0.507903
+      },
+      "preferences": {
+        "socializing": 0.518092,
+        "solitude": 0.284343,
+        "exploration": 0.472422,
+        "crafting": 0.446472,
+        "gathering": 0.494533,
+        "comfort": 0.374446,
+        "novelty": 0.504442,
+        "order": 0.380824
+      },
+      "civilization": {
+        "invention": {
+          "artifacts": [],
+          "techniques": [],
+          "events": [],
+          "recordCount": 0
+        },
+        "productionPlan": null,
+        "totalInventoryUnits": 9,
+        "gatheringSkill": 0.612272,
+        "craftingSkill": 0.52517,
+        "learningSkill": 0.507013,
+        "knownTechniqueCount": 1,
+        "reproducibleTechniqueCount": 0,
+        "availableCapabilityCount": 0,
+        "knownTechnologyCount": 1,
+        "operationalTechnologyCount": 0,
+        "adoptedTechnologyCount": 0,
+        "latestKnowledgeMinute": 526,
+        "latestTechnique": "SimpleContainer",
+        "wornGarment": null,
+        "inventory": [
+          {
+            "item": "RawMaterial",
+            "material": "Flint",
+            "quantity": 3,
+            "quality": 0.5,
+            "durability": 1
+          },
+          {
+            "item": "RawMaterial",
+            "material": "Fiber",
+            "quantity": 3,
+            "quality": 0.5,
+            "durability": 1
+          },
+          {
+            "item": "RawMaterial",
+            "material": "Clay",
+            "quantity": 3,
+            "quality": 0.5,
+            "durability": 1
+          }
+        ],
+        "techniques": [
+          {
+            "technique": "SimpleContainer",
+            "level": "Observed",
+            "confidence": 0.7056,
+            "successfulUses": 0,
+            "hasProvenance": true,
+            "factId": "2484677104659183715",
+            "originResidentId": "2",
+            "immediateSourceId": "1",
+            "source": "DirectWitness",
+            "learnedMinute": 526,
+            "hopCount": 0
+          }
+        ],
+        "capabilities": [
+          {
+            "capability": "Cut",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Chop",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "ControlFire",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Bind",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "CarryLiquid",
+            "available": false,
+            "knownSupportingTechnologies": 1,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Sanitation",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "StoreGoods",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Dig",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Strike",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "SmeltMetal",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "CultivateFood",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "AlloyMetal",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          }
+        ],
+        "technologies": [
+          {
+            "technology": "SimpleContainer",
+            "legacyTechnique": "SimpleContainer",
+            "primaryCapability": "CarryLiquid",
+            "knowledgeLevel": "Observed",
+            "discovered": true,
+            "reproducible": false,
+            "operational": false,
+            "adopted": false,
+            "adoptionDisposition": "Learning",
+            "adoptionAcceptance01": 0,
+            "successfulUses": 0,
+            "prerequisiteCount": 0,
+            "satisfiedPrerequisiteCount": 0,
+            "prerequisitesSatisfied": true,
+            "transformationEffectCount": 0
+          }
+        ]
+      },
+      "migration": {
+        "candidate": false,
+        "bottleneckMaterial": "PlantFood",
+        "resourceScarcity01": 0,
+        "travelBurden01": 0,
+        "populationPressure01": 0,
+        "settlementAttachment01": 0,
+        "explorationDisposition01": 0.517162,
+        "pressure01": 0.097175,
+        "localResourceUnits": 608,
+        "localReserveUnits": 0,
+        "nearestKnownResourceDistanceGrid": 2,
+        "hasFrontierTarget": false,
+        "frontierChunkX": 0,
+        "frontierChunkY": 0,
+        "frontierGridX": 0,
+        "frontierGridY": 0,
+        "frontierDistanceChunks": 0
+      },
+      "relationships": [
+        {
+          "targetId": "3",
+          "targetName": "Yerin",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.037013,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.007403,
+          "romancePotential": 0.006169
+        },
+        {
+          "targetId": "2",
+          "targetName": "Siwoo",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.010228,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.002046,
+          "romancePotential": 0.001705
+        },
+        {
+          "targetId": "4",
+          "targetName": "Hayun",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.009416,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.001883,
+          "romancePotential": 0.001569
+        }
+      ],
+      "family": {
+        "subjectId": "1",
+        "householdId": "0",
+        "hasRomanceHistory": false,
+        "hasActivePartner": false,
+        "partnerId": "0",
+        "partnerName": "",
+        "partnerStage": "FormerPartners",
+        "cohabitingWithPartner": false,
+        "isGestationalParent": false,
+        "expectingChild": false,
+        "pregnancyPartnerId": "0",
+        "pregnancyPartnerName": "",
+        "parents": [],
+        "children": [],
+        "siblings": []
+      },
+      "household": null,
+      "pregnancy": null,
+      "lifeHistory": [],
+      "memories": [
+        {
+          "who": "2",
+          "sourceCharacter": "1",
+          "what": "demonstrated civilization technique:SimpleContainer",
+          "where": "civilization-worksite",
+          "minute": 526,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979797,
+          "recallScore": 0.726518,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:2484677104659183715",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "1",
+          "sourceCharacter": "1",
+          "what": "자원 목표 재평가: local-competition",
+          "where": "resource-node:7391071507941779584",
+          "minute": 496,
+          "emotionValence": 0,
+          "emotionIntensity": 0,
+          "importance": 0.42,
+          "confidence": 1,
+          "effectiveConfidence": 0.9993,
+          "recallScore": 0.456986,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "gather_assessment_v1",
+            "1 1 7391071507941779584 5 600 91 0 1"
+          ]
+        },
+        {
+          "who": "1",
+          "sourceCharacter": "1",
+          "what": "실제 문명 행동 Civilization:Gather:Flint 수행에 성공했다",
+          "where": "resource-node:6841291122340680728",
+          "minute": 542,
+          "emotionValence": 0.2,
+          "emotionIntensity": 0.18,
+          "importance": 0.28,
+          "confidence": 1,
+          "effectiveConfidence": 0.999823,
+          "recallScore": 0.450648,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Gather:Flint",
+            "success"
+          ]
+        },
+        {
+          "who": "1",
+          "sourceCharacter": "1",
+          "what": "실제 문명 행동 Civilization:Gather:Fiber 수행에 성공했다",
+          "where": "resource-node:7172122167605653174",
+          "minute": 514,
+          "emotionValence": 0.2,
+          "emotionIntensity": 0.18,
+          "importance": 0.28,
+          "confidence": 1,
+          "effectiveConfidence": 0.999492,
+          "recallScore": 0.450364,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Gather:Fiber",
+            "success"
+          ]
+        },
+        {
+          "who": "1",
+          "sourceCharacter": "1",
+          "what": "실제 문명 행동 Civilization:Gather:Clay 수행에 성공했다",
+          "where": "resource-node:7391071507941779584",
+          "minute": 500,
+          "emotionValence": 0.2,
+          "emotionIntensity": 0.18,
+          "importance": 0.28,
+          "confidence": 1,
+          "effectiveConfidence": 0.999327,
+          "recallScore": 0.450223,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Gather:Clay",
+            "success"
+          ]
+        },
+        {
+          "who": "1",
+          "sourceCharacter": "1",
+          "what": "근처 자원의 위치와 당시 수량을 감지했다. 현재 잔량과 접근 가능성은 다시 확인해야 한다.",
+          "where": "grid:1140,566",
+          "minute": 555,
+          "emotionValence": 0,
+          "emotionIntensity": 0,
+          "importance": 0.32,
+          "confidence": 0.6,
+          "effectiveConfidence": 0.32999,
+          "recallScore": 0.295582,
+          "decayPerDay": 0.025,
+          "witnessed": false,
+          "source": "Inferred",
+          "tags": [
+            "resource_observation_v1",
+            "node:7391071507941779584",
+            "material:5",
+            "quantity:82"
+          ]
+        },
+        {
+          "who": "1",
+          "sourceCharacter": "1",
+          "what": "근처 자원의 위치와 당시 수량을 감지했다. 현재 잔량과 접근 가능성은 다시 확인해야 한다.",
+          "where": "grid:1144,564",
+          "minute": 555,
+          "emotionValence": 0,
+          "emotionIntensity": 0,
+          "importance": 0.32,
+          "confidence": 0.6,
+          "effectiveConfidence": 0.32999,
+          "recallScore": 0.295582,
+          "decayPerDay": 0.025,
+          "witnessed": false,
+          "source": "Inferred",
+          "tags": [
+            "resource_observation_v1",
+            "node:9047969529381477487",
+            "material:7",
+            "quantity:90"
+          ]
+        },
+        {
+          "who": "1",
+          "sourceCharacter": "1",
+          "what": "근처 자원의 위치와 당시 수량을 감지했다. 현재 잔량과 접근 가능성은 다시 확인해야 한다.",
+          "where": "grid:1146,567",
+          "minute": 555,
+          "emotionValence": 0,
+          "emotionIntensity": 0,
+          "importance": 0.32,
+          "confidence": 0.6,
+          "effectiveConfidence": 0.32999,
+          "recallScore": 0.295582,
+          "decayPerDay": 0.025,
+          "witnessed": false,
+          "source": "Inferred",
+          "tags": [
+            "resource_observation_v1",
+            "node:6841291122340680728",
+            "material:2",
+            "quantity:45"
+          ]
+        }
+      ],
+      "beliefs": [
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Gather:Clay",
+          "stance": 1,
+          "confidence": 0.632121,
+          "supportWeight": 1,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 500
+        },
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Gather:Fiber",
+          "stance": 1,
+          "confidence": 0.632121,
+          "supportWeight": 1,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 514
+        },
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Gather:Flint",
+          "stance": 1,
+          "confidence": 0.632121,
+          "supportWeight": 1,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 542
+        },
+        {
+          "subject": "2",
+          "proposition": "demonstrated civilization technique:SimpleContainer",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 526
+        }
+      ],
+      "hasPosition": true,
+      "gridX": 1146,
+      "gridY": 566
+    },
+    {
+      "id": "2",
+      "name": "Siwoo",
+      "sex": "Male",
+      "alive": true,
+      "lifeStage": "Adult",
+      "ageYears": 25,
+      "hasBirthMinute": true,
+      "birthMinute": -13300325,
+      "deathMinute": -1,
+      "activityKind": "Idle",
+      "activityLabel": "Idle",
+      "physicalGoal": "Idle",
+      "socialIntent": "None",
+      "activityTargetId": "0",
+      "activityTargetName": "",
+      "presentation": {
+        "artifactTool": null,
+        "active": true,
+        "kind": "Civilization",
+        "phase": "Moving",
+        "physicalGoal": "Idle",
+        "socialIntent": "None",
+        "civilizationIntent": "Gather",
+        "civilizationMaterial": "Flint",
+        "civilizationItem": "RawMaterial",
+        "civilizationTechnique": "None",
+        "civilizationQuantity": 3,
+        "civilizationResourceNode": "6841291122340680728",
+        "civilizationStorage": "0",
+        "facilityAction": "None",
+        "facilityId": "0",
+        "facilityKind": "PrimitiveStorage",
+        "parentingAction": "Comfort",
+        "knowledgeTeachingTechnique": "None",
+        "issuedMinute": 555,
+        "targetResidentId": "0",
+        "hasTargetGrid": true,
+        "targetGridX": 1146,
+        "targetGridY": 567,
+        "hasObjectTarget": false,
+        "objectId": "0",
+        "objectKind": "Chair",
+        "sleepContext": "None",
+        "emergencyFallback": false,
+        "directNaturalWaterSource": false,
+        "designatedSanitationSite": false,
+        "sanitationSiteId": "0",
+        "contextActionToken": "16",
+        "durationTicks": 5
+      },
+      "emotion": {
+        "joy": 0.471102,
+        "sadness": 0,
+        "anger": 0,
+        "fear": 0,
+        "embarrassment": 0,
+        "pride": 0.518212,
+        "jealousy": 0,
+        "affection": 0,
+        "anxiety": 0,
+        "relief": 0.188441,
+        "grief": 0,
+        "valence": 0.285488,
+        "arousal": 0.088567,
+        "intensity": 0.518212
+      },
+      "needs": {
+        "hunger": 0.229019,
+        "thirst": 0.395501,
+        "sleep": 0.246314,
+        "bladder": 0.390003,
+        "hygiene": 0.323934
+      },
+      "health": {
+        "stage": "Well",
+        "functionalCapacity": 1,
+        "pathogenLoad": 0,
+        "illnessSeverity": 0,
+        "immunity": 0.1,
+        "injurySeverity": 0,
+        "environmentalStress": 0,
+        "careKnowledge": 0,
+        "infectionEpisodes": 0,
+        "recoveryEpisodes": 0,
+        "accidentEpisodes": 0,
+        "lastExposureMinute": -1,
+        "lastIllnessMinute": -1,
+        "lastRecoveryMinute": -1,
+        "lastAccidentMinute": -1
+      },
+      "personality": {
+        "introversion": 0.760145,
+        "conscientiousness": 0.29329,
+        "openness": 0.345102,
+        "agreeableness": 0.617934,
+        "emotionalStability": 0.286098,
+        "empathy": 0.437156,
+        "impulsiveness": 0.35255,
+        "riskTolerance": 0.308628,
+        "ambition": 0.569409,
+        "patience": 0.605449,
+        "sociability": 0.380369,
+        "curiosity": 0.464902,
+        "orderliness": 0.473326,
+        "adaptability": 0.274353
+      },
+      "genetics": {
+        "faceShape": 0.634962,
+        "eyePigment": 0.517139,
+        "hairPigment": 0.384203,
+        "skinTone": 0.479105,
+        "heightPotential": 0.335958,
+        "buildPotential": 0.530079,
+        "healthPotential": 0.673556,
+        "learningPotential": 0.577791,
+        "temperamentSensitivity": 0.454662
+      },
+      "lifeCondition": {
+        "physicalHealth": 1,
+        "energyCapacity": 0.974074,
+        "movementCapacity": 0.98963,
+        "reproductivePotential": 1,
+        "workCapacity": 1,
+        "appearanceAgeFactor": 0.272593,
+        "lifeGoalFamilyFocus": 0.327778,
+        "familyRoleSalience": 0.290741
+      },
+      "development": {
+        "attachment": 0.5,
+        "confidence": 0.5,
+        "stress": 0.1,
+        "socialSkill": 0.2,
+        "emotionalSecurity": 0.5,
+        "disciplineInternalization": 0.1,
+        "learningSupport": 0.2,
+        "health": 1
+      },
+      "traits": {
+        "resilience": 0.379087,
+        "creativity": 0.445204,
+        "discipline": 0.425341,
+        "compassion": 0.522933,
+        "adaptability": 0.294389,
+        "boldness": 0.340152,
+        "perseverance": 0.488985,
+        "resourcefulness": 0.391183
+      },
+      "preferences": {
+        "socializing": 0.437066,
+        "solitude": 0.610694,
+        "exploration": 0.369125,
+        "crafting": 0.411288,
+        "gathering": 0.458257,
+        "comfort": 0.504376,
+        "novelty": 0.37642,
+        "order": 0.44574
+      },
+      "civilization": {
+        "invention": {
+          "artifacts": [],
+          "techniques": [],
+          "events": [],
+          "recordCount": 0
+        },
+        "productionPlan": {
+          "id": "10",
+          "target": "SimpleContainer",
+          "createdMinute": 525,
+          "expiresMinute": 645,
+          "finishedMinute": 526,
+          "targetStock": 1,
+          "cognitiveOrigin": false,
+          "state": 2,
+          "reason": 0,
+          "steps": [
+            {
+              "token": "10",
+              "issuedMinute": 525,
+              "finishedMinute": 526,
+              "action": "Experiment",
+              "technique": "SimpleContainer",
+              "material": "Clay",
+              "source": "0",
+              "result": 1,
+              "reason": 0,
+              "stockBefore": 0,
+              "stockAfter": 1,
+              "from": {
+                "x": 1139,
+                "y": 565
+              },
+              "to": {
+                "x": 1139,
+                "y": 565
+              },
+              "attempted": true
+            }
+          ]
+        },
+        "totalInventoryUnits": 4,
+        "gatheringSkill": 0.555726,
+        "craftingSkill": 0.501913,
+        "learningSkill": 0.555067,
+        "knownTechniqueCount": 2,
+        "reproducibleTechniqueCount": 2,
+        "availableCapabilityCount": 1,
+        "knownTechnologyCount": 2,
+        "operationalTechnologyCount": 1,
+        "adoptedTechnologyCount": 0,
+        "latestKnowledgeMinute": 556,
+        "latestTechnique": "SimpleContainer",
+        "wornGarment": null,
+        "inventory": [
+          {
+            "item": "RawMaterial",
+            "material": "Clay",
+            "quantity": 3,
+            "quality": 0.5,
+            "durability": 1
+          },
+          {
+            "item": "SimpleContainer",
+            "material": "Clay",
+            "quantity": 1,
+            "quality": 0.642173,
+            "durability": 1
+          }
+        ],
+        "techniques": [
+          {
+            "technique": "SimpleContainer",
+            "level": "Reproducible",
+            "confidence": 0.884763,
+            "successfulUses": 1,
+            "hasProvenance": true,
+            "factId": "2484677104659183715",
+            "originResidentId": "2",
+            "immediateSourceId": "2",
+            "source": "SelfDiscovery",
+            "learnedMinute": 526,
+            "hopCount": 0
+          },
+          {
+            "technique": "PrimitiveStorage",
+            "level": "Reproducible",
+            "confidence": 0.85564,
+            "successfulUses": 1,
+            "hasProvenance": true,
+            "factId": "9937597121962902720",
+            "originResidentId": "3",
+            "immediateSourceId": "2",
+            "source": "DirectWitness",
+            "learnedMinute": 511,
+            "hopCount": 0
+          }
+        ],
+        "capabilities": [
+          {
+            "capability": "Cut",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Chop",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "ControlFire",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Bind",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "CarryLiquid",
+            "available": true,
+            "knownSupportingTechnologies": 1,
+            "operationalSupportingTechnologies": 1
+          },
+          {
+            "capability": "Sanitation",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "StoreGoods",
+            "available": false,
+            "knownSupportingTechnologies": 1,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Dig",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Strike",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "SmeltMetal",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "CultivateFood",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "AlloyMetal",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          }
+        ],
+        "technologies": [
+          {
+            "technology": "SimpleContainer",
+            "legacyTechnique": "SimpleContainer",
+            "primaryCapability": "CarryLiquid",
+            "knowledgeLevel": "Reproducible",
+            "discovered": true,
+            "reproducible": true,
+            "operational": true,
+            "adopted": false,
+            "adoptionDisposition": "Adopting",
+            "adoptionAcceptance01": 0.465128,
+            "successfulUses": 1,
+            "prerequisiteCount": 0,
+            "satisfiedPrerequisiteCount": 0,
+            "prerequisitesSatisfied": true,
+            "transformationEffectCount": 0
+          },
+          {
+            "technology": "PrimitiveStorage",
+            "legacyTechnique": "PrimitiveStorage",
+            "primaryCapability": "StoreGoods",
+            "knowledgeLevel": "Reproducible",
+            "discovered": true,
+            "reproducible": true,
+            "operational": false,
+            "adopted": false,
+            "adoptionDisposition": "Blocked",
+            "adoptionAcceptance01": 0.465128,
+            "successfulUses": 1,
+            "prerequisiteCount": 0,
+            "satisfiedPrerequisiteCount": 0,
+            "prerequisitesSatisfied": true,
+            "transformationEffectCount": 1
+          }
+        ]
+      },
+      "migration": {
+        "candidate": false,
+        "bottleneckMaterial": "Water",
+        "resourceScarcity01": 0,
+        "travelBurden01": 0,
+        "populationPressure01": 0,
+        "settlementAttachment01": 0,
+        "explorationDisposition01": 0.379155,
+        "pressure01": 0.079659,
+        "localResourceUnits": 254,
+        "localReserveUnits": 0,
+        "nearestKnownResourceDistanceGrid": 37,
+        "hasFrontierTarget": false,
+        "frontierChunkX": 0,
+        "frontierChunkY": 0,
+        "frontierGridX": 0,
+        "frontierGridY": 0,
+        "frontierDistanceChunks": 0
+      },
+      "relationships": [
+        {
+          "targetId": "3",
+          "targetName": "Yerin",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.023796,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.004759,
+          "romancePotential": 0.003966
+        },
+        {
+          "targetId": "1",
+          "targetName": "Taeyun",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.017401,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.00348,
+          "romancePotential": 0.0029
+        },
+        {
+          "targetId": "4",
+          "targetName": "Hayun",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.007789,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.001558,
+          "romancePotential": 0.001298
+        }
+      ],
+      "family": {
+        "subjectId": "2",
+        "householdId": "0",
+        "hasRomanceHistory": false,
+        "hasActivePartner": false,
+        "partnerId": "0",
+        "partnerName": "",
+        "partnerStage": "FormerPartners",
+        "cohabitingWithPartner": false,
+        "isGestationalParent": false,
+        "expectingChild": false,
+        "pregnancyPartnerId": "0",
+        "pregnancyPartnerName": "",
+        "parents": [],
+        "children": [],
+        "siblings": []
+      },
+      "household": null,
+      "pregnancy": null,
+      "lifeHistory": [],
+      "memories": [
+        {
+          "who": "3",
+          "sourceCharacter": "2",
+          "what": "demonstrated civilization technique:SimpleContainer",
+          "where": "civilization-worksite",
+          "minute": 556,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979993,
+          "recallScore": 0.726791,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:17076018323575070776",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "2",
+          "sourceCharacter": "2",
+          "what": "demonstrated civilization technique:SimpleContainer",
+          "where": "civilization-worksite",
+          "minute": 526,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979797,
+          "recallScore": 0.726518,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:2484677104659183715",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "2",
+          "sourceCharacter": "2",
+          "what": "demonstrated civilization technique:PrimitiveStorage",
+          "where": "civilization-worksite",
+          "minute": 511,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979698,
+          "recallScore": 0.726382,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:12235222897864637639",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "3",
+          "sourceCharacter": "2",
+          "what": "demonstrated civilization technique:PrimitiveStorage",
+          "where": "civilization-worksite",
+          "minute": 511,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979698,
+          "recallScore": 0.726382,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:9937597121962902720",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "2",
+          "sourceCharacter": "2",
+          "what": "자원 목표 재평가: local-competition",
+          "where": "resource-node:7391071507941779584",
+          "minute": 492,
+          "emotionValence": 0,
+          "emotionIntensity": 0,
+          "importance": 0.42,
+          "confidence": 1,
+          "effectiveConfidence": 0.999254,
+          "recallScore": 0.456946,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "gather_assessment_v1",
+            "2 2 7391071507941779584 5 600 97 0 1"
+          ]
+        },
+        {
+          "who": "2",
+          "sourceCharacter": "2",
+          "what": "실제 문명 행동 Civilization:Gather:Clay 수행에 성공했다",
+          "where": "resource-node:7391071507941779584",
+          "minute": 541,
+          "emotionValence": 0.2,
+          "emotionIntensity": 0.18,
+          "importance": 0.28,
+          "confidence": 1,
+          "effectiveConfidence": 0.999811,
+          "recallScore": 0.450638,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Gather:Clay",
+            "success"
+          ]
+        },
+        {
+          "who": "2",
+          "sourceCharacter": "2",
+          "what": "실제 문명 행동 Civilization:Experiment:SimpleContainer 수행에 성공했다",
+          "where": "내가 직접 시도한 행동",
+          "minute": 526,
+          "emotionValence": 0.2,
+          "emotionIntensity": 0.18,
+          "importance": 0.28,
+          "confidence": 1,
+          "effectiveConfidence": 0.999634,
+          "recallScore": 0.450486,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Experiment:SimpleContainer",
+            "success"
+          ]
+        },
+        {
+          "who": "2",
+          "sourceCharacter": "2",
+          "what": "실제 문명 행동 Civilization:Experiment:PrimitiveStorage 수행에 성공했다",
+          "where": "내가 직접 시도한 행동",
+          "minute": 511,
+          "emotionValence": 0.2,
+          "emotionIntensity": 0.18,
+          "importance": 0.28,
+          "confidence": 1,
+          "effectiveConfidence": 0.999457,
+          "recallScore": 0.450334,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Experiment:PrimitiveStorage",
+            "success"
+          ]
+        }
+      ],
+      "beliefs": [
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Gather:Clay",
+          "stance": 1,
+          "confidence": 0.864665,
+          "supportWeight": 2,
+          "contradictionWeight": 0,
+          "supportCount": 2,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 541
+        },
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Experiment:PrimitiveStorage",
+          "stance": 1,
+          "confidence": 0.632121,
+          "supportWeight": 1,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 511
+        },
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Experiment:SimpleContainer",
+          "stance": 1,
+          "confidence": 0.632121,
+          "supportWeight": 1,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 526
+        },
+        {
+          "subject": "2",
+          "proposition": "demonstrated civilization technique:PrimitiveStorage",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 511
+        },
+        {
+          "subject": "3",
+          "proposition": "demonstrated civilization technique:PrimitiveStorage",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 511
+        },
+        {
+          "subject": "2",
+          "proposition": "demonstrated civilization technique:SimpleContainer",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 526
+        },
+        {
+          "subject": "3",
+          "proposition": "demonstrated civilization technique:SimpleContainer",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 556
+        }
+      ],
+      "hasPosition": true,
+      "gridX": 1140,
+      "gridY": 565
+    },
+    {
+      "id": "3",
+      "name": "Yerin",
+      "sex": "Female",
+      "alive": true,
+      "lifeStage": "Adult",
+      "ageYears": 34,
+      "hasBirthMinute": true,
+      "birthMinute": -17979148,
+      "deathMinute": -1,
+      "activityKind": "Idle",
+      "activityLabel": "Idle",
+      "physicalGoal": "Idle",
+      "socialIntent": "None",
+      "activityTargetId": "0",
+      "activityTargetName": "",
+      "presentation": {
+        "artifactTool": null,
+        "active": true,
+        "kind": "Civilization",
+        "phase": "Interacting",
+        "physicalGoal": "Idle",
+        "socialIntent": "None",
+        "civilizationIntent": "Experiment",
+        "civilizationMaterial": "Clay",
+        "civilizationItem": "SimpleContainer",
+        "civilizationTechnique": "SimpleContainer",
+        "civilizationQuantity": 1,
+        "civilizationResourceNode": "0",
+        "civilizationStorage": "0",
+        "facilityAction": "None",
+        "facilityId": "0",
+        "facilityKind": "PrimitiveStorage",
+        "parentingAction": "Comfort",
+        "knowledgeTeachingTechnique": "None",
+        "issuedMinute": 556,
+        "targetResidentId": "0",
+        "hasTargetGrid": false,
+        "targetGridX": 0,
+        "targetGridY": 0,
+        "hasObjectTarget": false,
+        "objectId": "0",
+        "objectKind": "Chair",
+        "sleepContext": "None",
+        "emergencyFallback": false,
+        "directNaturalWaterSource": false,
+        "designatedSanitationSite": false,
+        "sanitationSiteId": "0",
+        "contextActionToken": "0",
+        "durationTicks": 0
+      },
+      "emotion": {
+        "joy": 0.460248,
+        "sadness": 0.00337,
+        "anger": 0.043806,
+        "fear": 0,
+        "embarrassment": 0,
+        "pride": 0.506273,
+        "jealousy": 0,
+        "affection": 0,
+        "anxiety": 0.037067,
+        "relief": 0.175675,
+        "grief": 0,
+        "valence": 0.264623,
+        "arousal": 0.100342,
+        "intensity": 0.506273
+      },
+      "needs": {
+        "hunger": 0.299915,
+        "thirst": 0.299608,
+        "sleep": 0.31933,
+        "bladder": 0.292012,
+        "hygiene": 0.175159
+      },
+      "health": {
+        "stage": "Well",
+        "functionalCapacity": 1,
+        "pathogenLoad": 0,
+        "illnessSeverity": 0,
+        "immunity": 0.1,
+        "injurySeverity": 0,
+        "environmentalStress": 0,
+        "careKnowledge": 0,
+        "infectionEpisodes": 0,
+        "recoveryEpisodes": 0,
+        "accidentEpisodes": 0,
+        "lastExposureMinute": -1,
+        "lastIllnessMinute": -1,
+        "lastRecoveryMinute": -1,
+        "lastAccidentMinute": -1
+      },
+      "personality": {
+        "introversion": 0.515682,
+        "conscientiousness": 0.319592,
+        "openness": 0.629282,
+        "agreeableness": 0.525541,
+        "emotionalStability": 0.505208,
+        "empathy": 0.384099,
+        "impulsiveness": 0.528337,
+        "riskTolerance": 0.388232,
+        "ambition": 0.501819,
+        "patience": 0.617847,
+        "sociability": 0.455816,
+        "curiosity": 0.343197,
+        "orderliness": 0.538356,
+        "adaptability": 0.513796
+      },
+      "genetics": {
+        "faceShape": 0.881334,
+        "eyePigment": 0.403256,
+        "hairPigment": 0.342617,
+        "skinTone": 0.580051,
+        "heightPotential": 0.51851,
+        "buildPotential": 0.216416,
+        "healthPotential": 0.349254,
+        "learningPotential": 0.533932,
+        "temperamentSensitivity": 0.518379
+      },
+      "lifeCondition": {
+        "physicalHealth": 0.931416,
+        "energyCapacity": 0.940741,
+        "movementCapacity": 0.976296,
+        "reproductivePotential": 0.88,
+        "workCapacity": 1,
+        "appearanceAgeFactor": 0.365926,
+        "lifeGoalFamilyFocus": 0.427778,
+        "familyRoleSalience": 0.407407
+      },
+      "development": {
+        "attachment": 0.5,
+        "confidence": 0.5,
+        "stress": 0.1,
+        "socialSkill": 0.2,
+        "emotionalSecurity": 0.5,
+        "disciplineInternalization": 0.1,
+        "learningSupport": 0.2,
+        "health": 1
+      },
+      "traits": {
+        "resilience": 0.469054,
+        "creativity": 0.505315,
+        "discipline": 0.459785,
+        "compassion": 0.439666,
+        "adaptability": 0.54095,
+        "boldness": 0.439775,
+        "perseverance": 0.490252,
+        "resourcefulness": 0.488734
+      },
+      "preferences": {
+        "socializing": 0.461754,
+        "solitude": 0.533497,
+        "exploration": 0.46362,
+        "crafting": 0.504393,
+        "gathering": 0.463552,
+        "comfort": 0.557776,
+        "novelty": 0.511829,
+        "order": 0.488625
+      },
+      "civilization": {
+        "invention": {
+          "artifacts": [],
+          "techniques": [],
+          "events": [],
+          "recordCount": 0
+        },
+        "productionPlan": {
+          "id": "11",
+          "target": "SimpleContainer",
+          "createdMinute": 525,
+          "expiresMinute": 645,
+          "finishedMinute": 556,
+          "targetStock": 1,
+          "cognitiveOrigin": false,
+          "state": 2,
+          "reason": 0,
+          "steps": [
+            {
+              "token": "11",
+              "issuedMinute": 525,
+              "finishedMinute": 526,
+              "action": "Experiment",
+              "technique": "SimpleContainer",
+              "material": "Clay",
+              "source": "0",
+              "result": 2,
+              "reason": 11,
+              "stockBefore": 0,
+              "stockAfter": 0,
+              "from": {
+                "x": 1139,
+                "y": 565
+              },
+              "to": {
+                "x": 1139,
+                "y": 565
+              },
+              "attempted": true
+            },
+            {
+              "token": "14",
+              "issuedMinute": 540,
+              "finishedMinute": 541,
+              "action": "Gather",
+              "technique": "None",
+              "material": "Clay",
+              "source": "7391071507941779584",
+              "result": 1,
+              "reason": 0,
+              "stockBefore": 0,
+              "stockAfter": 3,
+              "from": {
+                "x": 1139,
+                "y": 565
+              },
+              "to": {
+                "x": 1139,
+                "y": 565
+              },
+              "attempted": true
+            },
+            {
+              "token": "17",
+              "issuedMinute": 555,
+              "finishedMinute": 556,
+              "action": "Experiment",
+              "technique": "SimpleContainer",
+              "material": "Clay",
+              "source": "0",
+              "result": 1,
+              "reason": 0,
+              "stockBefore": 0,
+              "stockAfter": 1,
+              "from": {
+                "x": 1139,
+                "y": 565
+              },
+              "to": {
+                "x": 1139,
+                "y": 565
+              },
+              "attempted": true
+            }
+          ]
+        },
+        "totalInventoryUnits": 1,
+        "gatheringSkill": 0.615061,
+        "craftingSkill": 0.571895,
+        "learningSkill": 0.571418,
+        "knownTechniqueCount": 2,
+        "reproducibleTechniqueCount": 2,
+        "availableCapabilityCount": 1,
+        "knownTechnologyCount": 2,
+        "operationalTechnologyCount": 1,
+        "adoptedTechnologyCount": 0,
+        "latestKnowledgeMinute": 556,
+        "latestTechnique": "SimpleContainer",
+        "wornGarment": null,
+        "inventory": [
+          {
+            "item": "SimpleContainer",
+            "material": "Clay",
+            "quantity": 1,
+            "quality": 0.647896,
+            "durability": 1
+          }
+        ],
+        "techniques": [
+          {
+            "technique": "SimpleContainer",
+            "level": "Reproducible",
+            "confidence": 0.919879,
+            "successfulUses": 1,
+            "hasProvenance": true,
+            "factId": "2484677104659183715",
+            "originResidentId": "2",
+            "immediateSourceId": "3",
+            "source": "DirectWitness",
+            "learnedMinute": 526,
+            "hopCount": 0
+          },
+          {
+            "technique": "PrimitiveStorage",
+            "level": "Reproducible",
+            "confidence": 0.912614,
+            "successfulUses": 1,
+            "hasProvenance": true,
+            "factId": "9937597121962902720",
+            "originResidentId": "3",
+            "immediateSourceId": "3",
+            "source": "SelfDiscovery",
+            "learnedMinute": 511,
+            "hopCount": 0
+          }
+        ],
+        "capabilities": [
+          {
+            "capability": "Cut",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Chop",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "ControlFire",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Bind",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "CarryLiquid",
+            "available": true,
+            "knownSupportingTechnologies": 1,
+            "operationalSupportingTechnologies": 1
+          },
+          {
+            "capability": "Sanitation",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "StoreGoods",
+            "available": false,
+            "knownSupportingTechnologies": 1,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Dig",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Strike",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "SmeltMetal",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "CultivateFood",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "AlloyMetal",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          }
+        ],
+        "technologies": [
+          {
+            "technology": "SimpleContainer",
+            "legacyTechnique": "SimpleContainer",
+            "primaryCapability": "CarryLiquid",
+            "knowledgeLevel": "Reproducible",
+            "discovered": true,
+            "reproducible": true,
+            "operational": true,
+            "adopted": false,
+            "adoptionDisposition": "Adopting",
+            "adoptionAcceptance01": 0.541524,
+            "successfulUses": 1,
+            "prerequisiteCount": 0,
+            "satisfiedPrerequisiteCount": 0,
+            "prerequisitesSatisfied": true,
+            "transformationEffectCount": 0
+          },
+          {
+            "technology": "PrimitiveStorage",
+            "legacyTechnique": "PrimitiveStorage",
+            "primaryCapability": "StoreGoods",
+            "knowledgeLevel": "Reproducible",
+            "discovered": true,
+            "reproducible": true,
+            "operational": false,
+            "adopted": false,
+            "adoptionDisposition": "Blocked",
+            "adoptionAcceptance01": 0.541524,
+            "successfulUses": 1,
+            "prerequisiteCount": 0,
+            "satisfiedPrerequisiteCount": 0,
+            "prerequisitesSatisfied": true,
+            "transformationEffectCount": 1
+          }
+        ]
+      },
+      "migration": {
+        "candidate": false,
+        "bottleneckMaterial": "Wood",
+        "resourceScarcity01": 0,
+        "travelBurden01": 0,
+        "populationPressure01": 0,
+        "settlementAttachment01": 0,
+        "explorationDisposition01": 0.419967,
+        "pressure01": 0.081643,
+        "localResourceUnits": 899,
+        "localReserveUnits": 0,
+        "nearestKnownResourceDistanceGrid": 4,
+        "hasFrontierTarget": false,
+        "frontierChunkX": 0,
+        "frontierChunkY": 0,
+        "frontierGridX": 0,
+        "frontierGridY": 0,
+        "frontierDistanceChunks": 0
+      },
+      "relationships": [
+        {
+          "targetId": "1",
+          "targetName": "Taeyun",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.038491,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.007698,
+          "romancePotential": 0.006415
+        },
+        {
+          "targetId": "2",
+          "targetName": "Siwoo",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.018141,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.003628,
+          "romancePotential": 0.003023
+        },
+        {
+          "targetId": "4",
+          "targetName": "Hayun",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.009868,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.001974,
+          "romancePotential": 0.001645
+        }
+      ],
+      "family": {
+        "subjectId": "3",
+        "householdId": "0",
+        "hasRomanceHistory": false,
+        "hasActivePartner": false,
+        "partnerId": "0",
+        "partnerName": "",
+        "partnerStage": "FormerPartners",
+        "cohabitingWithPartner": false,
+        "isGestationalParent": false,
+        "expectingChild": false,
+        "pregnancyPartnerId": "0",
+        "pregnancyPartnerName": "",
+        "parents": [],
+        "children": [],
+        "siblings": []
+      },
+      "household": null,
+      "pregnancy": null,
+      "lifeHistory": [],
+      "memories": [
+        {
+          "who": "3",
+          "sourceCharacter": "3",
+          "what": "demonstrated civilization technique:SimpleContainer",
+          "where": "civilization-worksite",
+          "minute": 556,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979993,
+          "recallScore": 0.726791,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:17076018323575070776",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "2",
+          "sourceCharacter": "3",
+          "what": "demonstrated civilization technique:SimpleContainer",
+          "where": "civilization-worksite",
+          "minute": 526,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979797,
+          "recallScore": 0.726518,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:2484677104659183715",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "3",
+          "sourceCharacter": "3",
+          "what": "demonstrated civilization technique:PrimitiveStorage",
+          "where": "civilization-worksite",
+          "minute": 511,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979698,
+          "recallScore": 0.726382,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:9937597121962902720",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "4",
+          "sourceCharacter": "3",
+          "what": "demonstrated civilization technique:PrimitiveStorage",
+          "where": "civilization-worksite",
+          "minute": 511,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979698,
+          "recallScore": 0.726382,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:15304418030178785347",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "3",
+          "sourceCharacter": "3",
+          "what": "실제 문명 행동 Civilization:Experiment:SimpleContainer 수행을 시도했지만 실패했다",
+          "where": "내가 직접 시도한 행동",
+          "minute": 526,
+          "emotionValence": -0.28,
+          "emotionIntensity": 0.38,
+          "importance": 0.42,
+          "confidence": 1,
+          "effectiveConfidence": 0.999675,
+          "recallScore": 0.525694,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Experiment:SimpleContainer",
+            "failure"
+          ]
+        },
+        {
+          "who": "3",
+          "sourceCharacter": "3",
+          "what": "자원 목표 재평가: local-competition",
+          "where": "resource-node:7391071507941779584",
+          "minute": 541,
+          "emotionValence": 0,
+          "emotionIntensity": 0,
+          "importance": 0.42,
+          "confidence": 1,
+          "effectiveConfidence": 0.999816,
+          "recallScore": 0.457439,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "gather_assessment_v1",
+            "14 14 7391071507941779584 5 660 85 0 1"
+          ]
+        },
+        {
+          "who": "3",
+          "sourceCharacter": "3",
+          "what": "자원 목표 재평가: local-competition",
+          "where": "resource-node:7391071507941779584",
+          "minute": 496,
+          "emotionValence": 0,
+          "emotionIntensity": 0,
+          "importance": 0.42,
+          "confidence": 1,
+          "effectiveConfidence": 0.9993,
+          "recallScore": 0.456986,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "gather_assessment_v1",
+            "3 3 7391071507941779584 5 600 94 0 1"
+          ]
+        },
+        {
+          "who": "3",
+          "sourceCharacter": "3",
+          "what": "실제 문명 행동 Civilization:Experiment:SimpleContainer 수행에 성공했다",
+          "where": "내가 직접 시도한 행동",
+          "minute": 556,
+          "emotionValence": 0.2,
+          "emotionIntensity": 0.18,
+          "importance": 0.28,
+          "confidence": 1,
+          "effectiveConfidence": 0.999988,
+          "recallScore": 0.45079,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Experiment:SimpleContainer",
+            "success"
+          ]
+        }
+      ],
+      "beliefs": [
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Gather:Clay",
+          "stance": 1,
+          "confidence": 0.864665,
+          "supportWeight": 2,
+          "contradictionWeight": 0,
+          "supportCount": 2,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 541
+        },
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Experiment:SimpleContainer",
+          "stance": 0,
+          "confidence": 0.864665,
+          "supportWeight": 1,
+          "contradictionWeight": 1,
+          "supportCount": 1,
+          "contradictionCount": 1,
+          "lastUpdatedMinute": 556
+        },
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Experiment:PrimitiveStorage",
+          "stance": 1,
+          "confidence": 0.632121,
+          "supportWeight": 1,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 511
+        },
+        {
+          "subject": "3",
+          "proposition": "demonstrated civilization technique:PrimitiveStorage",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 511
+        },
+        {
+          "subject": "4",
+          "proposition": "demonstrated civilization technique:PrimitiveStorage",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 511
+        },
+        {
+          "subject": "2",
+          "proposition": "demonstrated civilization technique:SimpleContainer",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 526
+        },
+        {
+          "subject": "3",
+          "proposition": "demonstrated civilization technique:SimpleContainer",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 556
+        }
+      ],
+      "hasPosition": true,
+      "gridX": 1139,
+      "gridY": 565
+    },
+    {
+      "id": "4",
+      "name": "Hayun",
+      "sex": "Female",
+      "alive": true,
+      "lifeStage": "Adult",
+      "ageYears": 30,
+      "hasBirthMinute": true,
+      "birthMinute": -15913063,
+      "deathMinute": -1,
+      "activityKind": "Idle",
+      "activityLabel": "Idle",
+      "physicalGoal": "Idle",
+      "socialIntent": "None",
+      "activityTargetId": "0",
+      "activityTargetName": "",
+      "presentation": {
+        "artifactTool": null,
+        "active": true,
+        "kind": "Civilization",
+        "phase": "Moving",
+        "physicalGoal": "Idle",
+        "socialIntent": "None",
+        "civilizationIntent": "Gather",
+        "civilizationMaterial": "Flint",
+        "civilizationItem": "RawMaterial",
+        "civilizationTechnique": "None",
+        "civilizationQuantity": 3,
+        "civilizationResourceNode": "6841291122340680728",
+        "civilizationStorage": "0",
+        "facilityAction": "None",
+        "facilityId": "0",
+        "facilityKind": "PrimitiveStorage",
+        "parentingAction": "Comfort",
+        "knowledgeTeachingTechnique": "None",
+        "issuedMinute": 555,
+        "targetResidentId": "0",
+        "hasTargetGrid": true,
+        "targetGridX": 1146,
+        "targetGridY": 567,
+        "hasObjectTarget": false,
+        "objectId": "0",
+        "objectKind": "Chair",
+        "sleepContext": "None",
+        "emergencyFallback": false,
+        "directNaturalWaterSource": false,
+        "designatedSanitationSite": false,
+        "sanitationSiteId": "0",
+        "contextActionToken": "18",
+        "durationTicks": 5
+      },
+      "emotion": {
+        "joy": 0.294442,
+        "sadness": 0,
+        "anger": 0,
+        "fear": 0,
+        "embarrassment": 0,
+        "pride": 0.323886,
+        "jealousy": 0,
+        "affection": 0,
+        "anxiety": 0,
+        "relief": 0.117777,
+        "grief": 0,
+        "valence": 0.178432,
+        "arousal": 0.055355,
+        "intensity": 0.323886
+      },
+      "needs": {
+        "hunger": 0.243603,
+        "thirst": 0.239651,
+        "sleep": 0.308687,
+        "bladder": 0.392029,
+        "hygiene": 0.237419
+      },
+      "health": {
+        "stage": "Well",
+        "functionalCapacity": 1,
+        "pathogenLoad": 0,
+        "illnessSeverity": 0,
+        "immunity": 0.1,
+        "injurySeverity": 0,
+        "environmentalStress": 0,
+        "careKnowledge": 0,
+        "infectionEpisodes": 0,
+        "recoveryEpisodes": 0,
+        "accidentEpisodes": 0,
+        "lastExposureMinute": -1,
+        "lastIllnessMinute": -1,
+        "lastRecoveryMinute": -1,
+        "lastAccidentMinute": -1
+      },
+      "personality": {
+        "introversion": 0.498073,
+        "conscientiousness": 0.486446,
+        "openness": 0.414414,
+        "agreeableness": 0.63015,
+        "emotionalStability": 0.616371,
+        "empathy": 0.476953,
+        "impulsiveness": 0.54501,
+        "riskTolerance": 0.305171,
+        "ambition": 0.352609,
+        "patience": 0.278589,
+        "sociability": 0.369196,
+        "curiosity": 0.705284,
+        "orderliness": 0.47513,
+        "adaptability": 0.566605
+      },
+      "genetics": {
+        "faceShape": 0.522068,
+        "eyePigment": 0.595211,
+        "hairPigment": 0.374151,
+        "skinTone": 0.580277,
+        "heightPotential": 0.425858,
+        "buildPotential": 0.533042,
+        "healthPotential": 0.40599,
+        "learningPotential": 0.414747,
+        "temperamentSensitivity": 0.358757
+      },
+      "lifeCondition": {
+        "physicalHealth": 0.949582,
+        "energyCapacity": 0.955556,
+        "movementCapacity": 0.982222,
+        "reproductivePotential": 1,
+        "workCapacity": 1,
+        "appearanceAgeFactor": 0.324444,
+        "lifeGoalFamilyFocus": 0.383333,
+        "familyRoleSalience": 0.355556
+      },
+      "development": {
+        "attachment": 0.5,
+        "confidence": 0.5,
+        "stress": 0.1,
+        "socialSkill": 0.2,
+        "emotionalSecurity": 0.5,
+        "disciplineInternalization": 0.1,
+        "learningSupport": 0.2,
+        "health": 1
+      },
+      "traits": {
+        "resilience": 0.547353,
+        "creativity": 0.516302,
+        "discipline": 0.431087,
+        "compassion": 0.519618,
+        "adaptability": 0.53851,
+        "boldness": 0.373686,
+        "perseverance": 0.366143,
+        "resourcefulness": 0.554992
+      },
+      "preferences": {
+        "socializing": 0.469259,
+        "solitude": 0.483751,
+        "exploration": 0.517199,
+        "crafting": 0.414776,
+        "gathering": 0.428038,
+        "comfort": 0.605382,
+        "novelty": 0.539047,
+        "order": 0.439217
+      },
+      "civilization": {
+        "invention": {
+          "artifacts": [
+            {
+              "id": "12563481064564635404",
+              "designId": "15171401966717868459",
+              "creatorId": "4",
+              "createdMinute": 539,
+              "durability": 0.787,
+              "uses": 0,
+              "repairs": 0,
+              "cutting": 0,
+              "digging": 0,
+              "carrying": 2.25,
+              "heating": 0,
+              "parts": [
+                {
+                  "material": "Clay",
+                  "shape": 3,
+                  "joint": 0,
+                  "size": 3
+                }
+              ]
+            }
+          ],
+          "techniques": [
+            {
+              "designId": "15171401966717868459",
+              "originId": "4",
+              "sourceId": "4",
+              "source": 0,
+              "trials": 1,
+              "successes": 1,
+              "uses": 0,
+              "demonstrations": 0,
+              "confidence": 0.25,
+              "reproducible": true,
+              "parts": [
+                {
+                  "material": "Clay",
+                  "shape": 3,
+                  "joint": 0,
+                  "size": 3
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "kind": 1,
+              "artifactId": "12563481064564635404",
+              "designId": "15171401966717868459",
+              "otherId": "0",
+              "minute": 539,
+              "rawUnits": 3,
+              "work": 13.48,
+              "effect": 2.25
+            }
+          ],
+          "recordCount": 0
+        },
+        "productionPlan": null,
+        "totalInventoryUnits": 0,
+        "gatheringSkill": 0.564117,
+        "craftingSkill": 0.483021,
+        "learningSkill": 0.575296,
+        "knownTechniqueCount": 1,
+        "reproducibleTechniqueCount": 1,
+        "availableCapabilityCount": 1,
+        "knownTechnologyCount": 1,
+        "operationalTechnologyCount": 0,
+        "adoptedTechnologyCount": 0,
+        "latestKnowledgeMinute": 511,
+        "latestTechnique": "PrimitiveStorage",
+        "wornGarment": null,
+        "inventory": [],
+        "techniques": [
+          {
+            "technique": "PrimitiveStorage",
+            "level": "Reproducible",
+            "confidence": 0.882618,
+            "successfulUses": 1,
+            "hasProvenance": true,
+            "factId": "9937597121962902720",
+            "originResidentId": "3",
+            "immediateSourceId": "4",
+            "source": "DirectWitness",
+            "learnedMinute": 511,
+            "hopCount": 0
+          }
+        ],
+        "capabilities": [
+          {
+            "capability": "Cut",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Chop",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "ControlFire",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Bind",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "CarryLiquid",
+            "available": true,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Sanitation",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "StoreGoods",
+            "available": false,
+            "knownSupportingTechnologies": 1,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Dig",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "Strike",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "SmeltMetal",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "CultivateFood",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          },
+          {
+            "capability": "AlloyMetal",
+            "available": false,
+            "knownSupportingTechnologies": 0,
+            "operationalSupportingTechnologies": 0
+          }
+        ],
+        "technologies": [
+          {
+            "technology": "PrimitiveStorage",
+            "legacyTechnique": "PrimitiveStorage",
+            "primaryCapability": "StoreGoods",
+            "knowledgeLevel": "Reproducible",
+            "discovered": true,
+            "reproducible": true,
+            "operational": false,
+            "adopted": false,
+            "adoptionDisposition": "Blocked",
+            "adoptionAcceptance01": 0.592198,
+            "successfulUses": 1,
+            "prerequisiteCount": 0,
+            "satisfiedPrerequisiteCount": 0,
+            "prerequisitesSatisfied": true,
+            "transformationEffectCount": 1
+          }
+        ]
+      },
+      "migration": {
+        "candidate": false,
+        "bottleneckMaterial": "Wood",
+        "resourceScarcity01": 0,
+        "travelBurden01": 0,
+        "populationPressure01": 0,
+        "settlementAttachment01": 0,
+        "explorationDisposition01": 0.642878,
+        "pressure01": 0.112851,
+        "localResourceUnits": 899,
+        "localReserveUnits": 0,
+        "nearestKnownResourceDistanceGrid": 5,
+        "hasFrontierTarget": false,
+        "frontierChunkX": 0,
+        "frontierChunkY": 0,
+        "frontierGridX": 0,
+        "frontierGridY": 0,
+        "frontierDistanceChunks": 0
+      },
+      "relationships": [
+        {
+          "targetId": "3",
+          "targetName": "Yerin",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.037048,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.00741,
+          "romancePotential": 0.006175
+        },
+        {
+          "targetId": "2",
+          "targetName": "Siwoo",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.013821,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.002764,
+          "romancePotential": 0.002304
+        },
+        {
+          "targetId": "1",
+          "targetName": "Taeyun",
+          "affection": 0,
+          "trust": 0,
+          "respect": 0,
+          "comfort": 0,
+          "familiarity": 0.004182,
+          "attraction": 0,
+          "romanticInterest": 0,
+          "sexualAttraction": 0,
+          "commitment": 0,
+          "conflict": 0,
+          "jealousy": 0,
+          "fear": 0,
+          "grudge": 0,
+          "socialBond": 0.000836,
+          "romancePotential": 0.000697
+        }
+      ],
+      "family": {
+        "subjectId": "4",
+        "householdId": "0",
+        "hasRomanceHistory": false,
+        "hasActivePartner": false,
+        "partnerId": "0",
+        "partnerName": "",
+        "partnerStage": "FormerPartners",
+        "cohabitingWithPartner": false,
+        "isGestationalParent": false,
+        "expectingChild": false,
+        "pregnancyPartnerId": "0",
+        "pregnancyPartnerName": "",
+        "parents": [],
+        "children": [],
+        "siblings": []
+      },
+      "household": null,
+      "pregnancy": null,
+      "lifeHistory": [],
+      "memories": [
+        {
+          "who": "3",
+          "sourceCharacter": "4",
+          "what": "demonstrated civilization technique:PrimitiveStorage",
+          "where": "civilization-worksite",
+          "minute": 511,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979698,
+          "recallScore": 0.726382,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:9937597121962902720",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "4",
+          "sourceCharacter": "4",
+          "what": "demonstrated civilization technique:PrimitiveStorage",
+          "where": "civilization-worksite",
+          "minute": 511,
+          "emotionValence": 0.32,
+          "emotionIntensity": 0.74,
+          "importance": 0.92,
+          "confidence": 0.98,
+          "effectiveConfidence": 0.979698,
+          "recallScore": 0.726382,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "fact:15304418030178785347",
+            "direct-witness"
+          ]
+        },
+        {
+          "who": "4",
+          "sourceCharacter": "4",
+          "what": "실제 문명 행동 Civilization:Experiment:Artifact:17:15171401966717868459 수행에 성공했다",
+          "where": "내가 직접 시도한 행동",
+          "minute": 539,
+          "emotionValence": 0.2,
+          "emotionIntensity": 0.18,
+          "importance": 0.28,
+          "confidence": 1,
+          "effectiveConfidence": 0.999787,
+          "recallScore": 0.450618,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Experiment:Artifact:17:15171401966717868459",
+            "success"
+          ]
+        },
+        {
+          "who": "4",
+          "sourceCharacter": "4",
+          "what": "실제 문명 행동 Civilization:Experiment:PrimitiveStorage 수행에 성공했다",
+          "where": "내가 직접 시도한 행동",
+          "minute": 511,
+          "emotionValence": 0.2,
+          "emotionIntensity": 0.18,
+          "importance": 0.28,
+          "confidence": 1,
+          "effectiveConfidence": 0.999457,
+          "recallScore": 0.450334,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Experiment:PrimitiveStorage",
+            "success"
+          ]
+        },
+        {
+          "who": "4",
+          "sourceCharacter": "4",
+          "what": "실제 문명 행동 Civilization:Gather:Clay 수행에 성공했다",
+          "where": "resource-node:7391071507941779584",
+          "minute": 492,
+          "emotionValence": 0.2,
+          "emotionIntensity": 0.18,
+          "importance": 0.28,
+          "confidence": 1,
+          "effectiveConfidence": 0.999232,
+          "recallScore": 0.450142,
+          "decayPerDay": 0.02,
+          "witnessed": true,
+          "source": "DirectWitness",
+          "tags": [
+            "action_experience",
+            "Civilization:Gather:Clay",
+            "success"
+          ]
+        },
+        {
+          "who": "4",
+          "sourceCharacter": "4",
+          "what": "근처 자원의 위치와 당시 수량을 감지했다. 현재 잔량과 접근 가능성은 다시 확인해야 한다.",
+          "where": "grid:1139,562",
+          "minute": 555,
+          "emotionValence": 0,
+          "emotionIntensity": 0,
+          "importance": 0.32,
+          "confidence": 0.6,
+          "effectiveConfidence": 0.32999,
+          "recallScore": 0.295582,
+          "decayPerDay": 0.025,
+          "witnessed": false,
+          "source": "Inferred",
+          "tags": [
+            "resource_observation_v1",
+            "node:7172122167605653174",
+            "material:4",
+            "quantity:104"
+          ]
+        },
+        {
+          "who": "4",
+          "sourceCharacter": "4",
+          "what": "근처 자원의 위치와 당시 수량을 감지했다. 현재 잔량과 접근 가능성은 다시 확인해야 한다.",
+          "where": "grid:1140,566",
+          "minute": 555,
+          "emotionValence": 0,
+          "emotionIntensity": 0,
+          "importance": 0.32,
+          "confidence": 0.6,
+          "effectiveConfidence": 0.32999,
+          "recallScore": 0.295582,
+          "decayPerDay": 0.025,
+          "witnessed": false,
+          "source": "Inferred",
+          "tags": [
+            "resource_observation_v1",
+            "node:7391071507941779584",
+            "material:5",
+            "quantity:82"
+          ]
+        },
+        {
+          "who": "4",
+          "sourceCharacter": "4",
+          "what": "근처 자원의 위치와 당시 수량을 감지했다. 현재 잔량과 접근 가능성은 다시 확인해야 한다.",
+          "where": "grid:1135,567",
+          "minute": 555,
+          "emotionValence": 0,
+          "emotionIntensity": 0,
+          "importance": 0.32,
+          "confidence": 0.6,
+          "effectiveConfidence": 0.32999,
+          "recallScore": 0.295582,
+          "decayPerDay": 0.025,
+          "witnessed": false,
+          "source": "Inferred",
+          "tags": [
+            "resource_observation_v1",
+            "node:6528824579227108241",
+            "material:4",
+            "quantity:100"
+          ]
+        }
+      ],
+      "beliefs": [
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Gather:Clay",
+          "stance": 1,
+          "confidence": 0.632121,
+          "supportWeight": 1,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 492
+        },
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Experiment:PrimitiveStorage",
+          "stance": 1,
+          "confidence": 0.632121,
+          "supportWeight": 1,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 511
+        },
+        {
+          "subject": "0",
+          "proposition": "experienced-action-outcome:Civilization:Experiment:Artifact:17:15171401966717868459",
+          "stance": 1,
+          "confidence": 0.632121,
+          "supportWeight": 1,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 539
+        },
+        {
+          "subject": "3",
+          "proposition": "demonstrated civilization technique:PrimitiveStorage",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 511
+        },
+        {
+          "subject": "4",
+          "proposition": "demonstrated civilization technique:PrimitiveStorage",
+          "stance": 1,
+          "confidence": 0.606612,
+          "supportWeight": 0.93296,
+          "contradictionWeight": 0,
+          "supportCount": 1,
+          "contradictionCount": 0,
+          "lastUpdatedMinute": 511
+        }
+      ],
+      "hasPosition": true,
+      "gridX": 1140,
+      "gridY": 565
+    }
+  ]
+}

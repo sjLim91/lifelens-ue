@@ -1,0 +1,14 @@
+{
+  "sourceSha": "40bf67d80911b38a18886de770e75fdca46965c2",
+  "profile": "Release authoritative Core; local test drivers use -O0 with assertions; remote CI uses normal Release",
+  "nativeAuditSha256": "37c94b36af1bbebf29eff6cd09b8d45f647f9375d92167547ca732358064907d",
+  "localWasmSha256": "205f35be8e17afe7cf9e5f2b7d87b6557f4c90d5e89e91c9e3558af263bda562",
+  "sourceSha256": {
+    "Source/LifeLensCore/src/Simulation.cpp": "39e131550804c09765a37360aa166c8a8b61c9d09d34d4d6902a23278f588eba",
+    "Source/LifeLensCore/src/ResidentProductionPlan.cpp": "d4ab16c4bce75b8bc098965f2eba7522af89357bc4440b9dd5d9ab5608cd21d8",
+    "Source/LifeLensCore/src/ContextActionRuntime.cpp": "8715d9aee860c225c6ce3d8981b894f937e4fe4f385ec16d24377153806764d9",
+    "Source/LifeLensCore/include/lifelens/ResidentProductionPlan.h": "ea6fd9092ddcaf13d1a3ba2c8a729f5cb2ff2b9d0bf887e18b638d607abc0aaa",
+    "Source/LifeLensCore/include/lifelens/ResidentProductionPlanCodec.h": "414f7b6c39765402c3f7772a97ae4115dc80d0731b75a6a578039a94c2ad394f",
+    "Source/LifeLensCore/tests/test_resident_production_plan.cpp": "cf11c4e7d8d84c42ac47dcdd1b563907c31847cff4aa7a868095ba6032b731c5"
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "profile": "untouched production New Game; native Core goal checkpoint and real WASM execution",
+  "nativeWasmPhysicalAndPlanBytesEqual": true,
+  "legacyRngTextPlatformSpecific": true,
+  "codecNormalizedBinaryEqual": true,
+  "midPlanReplayEqual": true,
+  "failedRestoreAtomic": true,
+  "readOnly": true,
+  "fetches": 0,
+  "minutes": 31,
+  "world": {
+    "available": true,
+    "worldSeed": "874213954",
+    "populationSeed": "5901341880753099292",
+    "generationVersion": 2,
+    "minute": 557,
+    "totalResidents": 4,
+    "livingResidents": 4,
+    "deceasedResidents": 0,
+    "lifeStages": {
+      "baby": 0,
+      "toddler": 0,
+      "child": 0,
+      "teen": 0,
+      "youngAdult": 0,
+      "adult": 4,
+      "middleAge": 0,
+      "elderly": 0
+    },
+    "households": 0,
+    "activeCouples": 0,
+    "datingCouples": 0,
+    "engagedCouples": 0,
+    "marriedCouples": 0,
+    "separatedCouples": 0,
+    "activePregnancies": 0,
+    "majorLifeEvents": 0,
+    "health": {
+      "exposedResidents": 0,
+      "illResidents": 0,
+      "injuredResidents": 0,
+      "criticalResidents": 0,
+      "meanImmunity": 0.1
+    }
+  },
+  "actor": "3",
+  "plan": {
+    "id": "11",
+    "target": "SimpleContainer",
+    "createdMinute": 525,
+    "expiresMinute": 645,
+    "finishedMinute": 556,
+    "targetStock": 1,
+    "cognitiveOrigin": false,
+    "state": 2,
+    "reason": 0,
+    "steps": [
+      {
+        "token": "11",
+        "issuedMinute": 525,
+        "finishedMinute": 526,
+        "action": "Experiment",
+        "technique": "SimpleContainer",
+        "material": "Clay",
+        "source": "0",
+        "result": 2,
+        "reason": 11,
+        "stockBefore": 0,
+        "stockAfter": 0,
+        "from": {
+          "x": 1139,
+          "y": 565
+        },
+        "to": {
+          "x": 1139,
+          "y": 565
+        },
+        "attempted": true
+      },
+      {
+        "token": "14",
+        "issuedMinute": 540,
+        "finishedMinute": 541,
+        "action": "Gather",
+        "technique": "None",
+        "material": "Clay",
+        "source": "7391071507941779584",
+        "result": 1,
+        "reason": 0,
+        "stockBefore": 0,
+        "stockAfter": 3,
+        "from": {
+          "x": 1139,
+          "y": 565
+        },
+        "to": {
+          "x": 1139,
+          "y": 565
+        },
+        "attempted": true
+      },
+      {
+        "token": "17",
+        "issuedMinute": 555,
+        "finishedMinute": 556,
+        "action": "Experiment",
+        "technique": "SimpleContainer",
+        "material": "Clay",
+        "source": "0",
+        "result": 1,
+        "reason": 0,
+        "stockBefore": 0,
+        "stockAfter": 1,
+        "from": {
+          "x": 1139,
+          "y": 565
+        },
+        "to": {
+          "x": 1139,
+          "y": 565
+        },
+        "attempted": true
+      }
+    ]
+  }
+}

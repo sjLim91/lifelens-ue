@@ -1,0 +1,16 @@
+test_al2_live_source_failure_recovery
+test_al2_live_source_failure_recovery
+51/182 Test: test_al2_live_source_failure_recovery
+Command: "/workspace/build-native/test_al2_live_source_failure_recovery"
+Directory: /workspace/build-native
+"test_al2_live_source_failure_recovery" start time: Nov 15 06:50 UTC
+Output:
+----------------------------------------------------------
+AL2_PRODUCT_FAILURE_RECOVERY_CHAIN seed=874213954 actor=1 failed_token=1 failed_source=9000101 competitor_removed=80 recovered_token=5 alternative_source=9000102 craft_token=6 gather_minute=492 craft_minute=501 harvested=2 actual_movement_steps=6 source_stock=80->78 one_cognitive_goal_fp=5595816243849091199 linked_core_tokens=3 real_exhaustion_failure_and_recovery=1 direct_gather_and_craft_memories=1 serialized_continuation_identical=1 saved_inflight_cognition_link_survives_failure_recovery=1 forged_fingerprint_rejected=1 scope=controlled_competing_Core_resident_fixture
+<end of output>
+Test time =   0.89 sec
+----------------------------------------------------------
+Test Passed.
+"test_al2_live_source_failure_recovery" end time: Nov 15 06:50 UTC
+"test_al2_live_source_failure_recovery" time elapsed: 00:00:00
+----------------------------------------------------------
