@@ -1,0 +1,16 @@
+test_resident_production_plan
+test_resident_production_plan
+50/182 Test: test_resident_production_plan
+Command: "/workspace/build-native/test_resident_production_plan"
+Directory: /workspace/build-native
+"test_resident_production_plan" start time: Nov 15 06:50 UTC
+Output:
+----------------------------------------------------------
+PASS concrete tool goal: real source A failure -> movement/source B -> craft, exact saved replay, forged/torn/old saves, bounded deadline
+<end of output>
+Test time =   5.25 sec
+----------------------------------------------------------
+Test Passed.
+"test_resident_production_plan" end time: Nov 15 06:50 UTC
+"test_resident_production_plan" time elapsed: 00:00:05
+----------------------------------------------------------

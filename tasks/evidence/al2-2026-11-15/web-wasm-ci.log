@@ -1,0 +1,11 @@
+Source: https://github.com/sjLim91/lifelens-ue/actions/runs/43686469819
+PR head: 40bf67d80911b38a18886de770e75fdca46965c2
+Selected original log lines (omitted dependency installation/build noise):
+2026-11-15T06:42:06.1422778Z AL2_PRODUCT_TICK_CHAIN seed=874213954 actor=1 gather_token=1 craft_token=5 gather_minute=484 craft_minute=491 harvested=2 actual_movement_steps=2 source_stock=80->78 direct_gather_and_craft_memories=1 same_cognitive_goal_fp=8407923767923278667 authentic_core_step_links=2 serialized_continuation_identical=1 scope=controlled_Core_new_game_fixture
+2026-11-15T06:42:26.8074757Z PASS concrete tool goal: real source A failure -> movement/source B -> craft, exact saved replay, forged/torn/old saves, bounded deadline
+2026-11-15T06:42:26.9264081Z AL2_PRODUCT_SURVIVAL_RESUME_CHAIN seed=874213954 actor=1 suspended_token=1 resumed_token=5 craft_token=6 gather_minute=488 craft_minute=496 harvested=2 actual_movement_steps=2 source_stock=80->78 direct_gather_and_craft_memories=1 same_cognitive_goal_fp=8407923767923278667 authentic_core_step_links=3 physical_hunger_relief=1 saved_suspended_cognition_link=1 serialized_continuation_identical=1 scope=controlled_Core_survival_interruption
+2026-11-15T06:43:26.8427068Z WASM supplied-bytes smoke: PASS (real Core, population=4, elapsed_minutes=1, fetches=0)
+2026-11-15T06:43:27.0634981Z WASM causal journal: PASS {"scope":"controlled actual Core fixture; no model inference or fabricated action results","nativeWasmExactMatch":true,"serializedContinuation":true,"readOnly":true,"rejectedNoSteps":true,"fetches":0}
+2026-11-15T06:43:27.2895400Z PASS WASM emergent artifact physical bytes, codec-normalized binary equality and mid-trial replay
+2026-11-15T06:43:27.6055860Z Core checkpoint decode failed: invalid resident gather goal extension
+2026-11-15T06:43:27.6077836Z PASS untouched native/WASM failed experiment -> real gather -> successful production, exact saved continuation and atomic malformed restore

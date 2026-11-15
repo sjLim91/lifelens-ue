@@ -7,6 +7,8 @@
 COG는 별도 병렬 연구가 아닌 핵심 제품 경로다. 아래 DU-01/Earth structural priority/COG parallel lane 및 과거 순서는 범위·역사 참조로 보존하며 현재 우선순위를 덮어쓰지 않는다. G1 전에는 그래픽·지구·생태·범용 발명·대규모 확장 신규 착수를 보류하고, 자율행동 루프를 직접 막는 생존·인과·저장 결함만 P0 의존성으로 처리한다. Core 권위와 검증 계약은 유지한다.
 
 
+2026-11-15: [AL-2 Core 제작 목표 납품 체크포인트](../tasks/AL2_PRODUCTION_GOALS_2026-11-15.md)는 #1032의 실제 다단계 실행·실패 회복·생존 재개·저장·공개 배포 검증으로 완료했다. M2/M3/G1 전체를 승격하지 않으며 기존 86단위 인수 장부를 유지한다.
+
 이 문서는 **LifeLens의 canonical execution roadmap**이다.
 
 ## Runtime platform note — 2026-09-29

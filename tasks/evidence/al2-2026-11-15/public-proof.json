@@ -1,0 +1,74 @@
+{
+  "validatedHead": "40bf67d80911b38a18886de770e75fdca46965c2",
+  "runtimeSource": "c5fba0266c0542874719c01a824d985c40257da7",
+  "base": "https://sjlim91.github.io/lifelens-ue/",
+  "pagesCommit": "4739de2e74c1b8186fc0960ccdda174d98016eb4",
+  "checkedAtUtc": "2026-11-15T07:26:25.492428+00:00",
+  "manifestVerified": true,
+  "assets": [
+    {
+      "path": "index.html",
+      "status": 200,
+      "bytes": 2971,
+      "sha256": "73dc26c94f539c2efd04b173e2f648a21b456dea5893873ca7434204dc07a0e2",
+      "gitBlob": "0025aba4c7f7fe4cfac2be77e551b0440440db76",
+      "matchesPublishedTree": true
+    },
+    {
+      "path": "launch.html",
+      "status": 200,
+      "bytes": 2601,
+      "sha256": "ad4cc1f4b1d8215e0364c4706684076cd77752c2f2f1d012f0649d325c4ce056",
+      "gitBlob": "06e72a3834d41ddf80fa48d2472093df7dc379d1",
+      "matchesPublishedTree": true
+    },
+    {
+      "path": "runtime/RUNTIME_COMMIT.txt",
+      "status": 200,
+      "bytes": 41,
+      "sha256": "d11460f85a5456ea66a58bbafc4717ef81376df88609533921b4939d5e2b31e3",
+      "gitBlob": "6ecfaa71ad65fb30cdf7c9fd6824d21a77e0fc06",
+      "matchesPublishedTree": true
+    },
+    {
+      "path": "runtime/SHA256SUMS.txt",
+      "status": 200,
+      "bytes": 168,
+      "sha256": "8cff24ce25b36e2e96362994a963e5265d5796afe692ecd42d0df0b34a3e7a8b",
+      "gitBlob": "40364950472edd15be2832c4d0035a9711dfd465",
+      "matchesPublishedTree": true
+    },
+    {
+      "path": "runtime/lifelens_core.js",
+      "status": 200,
+      "bytes": 47723,
+      "sha256": "d2b43cb7030e966efac0f446633de821274716400ad12ab0983fc97692752642",
+      "gitBlob": "fb0954eb00575ffa7a63f574eac3495aeecee626",
+      "matchesPublishedTree": true
+    },
+    {
+      "path": "runtime/lifelens_core.wasm",
+      "status": 200,
+      "bytes": 1910916,
+      "sha256": "dc3aafa5c2179bb852d8e0c286946fa4ce6e3c6812de714e69742c2290e485ba",
+      "gitBlob": "c0937b439b56833f636b9552bafefc8de2af2dc0",
+      "matchesPublishedTree": true
+    },
+    {
+      "path": "assets/index-DmHH-ysn.js",
+      "status": 200,
+      "bytes": 1519151,
+      "sha256": "fecf11a6f14cbde541eaf242770b7102afbc351e6dc6233c2b6aff9f19b105bb",
+      "gitBlob": "26e7e543abb068771f8f37a3db4dfbc38cdfd6e4",
+      "matchesPublishedTree": true
+    },
+    {
+      "path": "assets/index-QOeWSBxt.css",
+      "status": 200,
+      "bytes": 59164,
+      "sha256": "57ee37a94f63b1a66e6ce4143bff7c7e51940dac9c3935714d353f3ce80cf6ab",
+      "gitBlob": "002817c09fa4b6cc0b56b9d943a73d2e94ad1793",
+      "matchesPublishedTree": true
+    }
+  ]
+}

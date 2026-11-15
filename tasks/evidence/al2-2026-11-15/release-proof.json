@@ -1,0 +1,78 @@
+{
+  "status": "complete",
+  "validatedHead": "40bf67d80911b38a18886de770e75fdca46965c2",
+  "validatedTree": "d6ff8f8c1d09e706ad923c8f664c6d16b0c91201",
+  "mainCodeSha": "c5fba0266c0542874719c01a824d985c40257da7",
+  "mainCodeTree": "d6ff8f8c1d09e706ad923c8f664c6d16b0c91201",
+  "pullRequest": "https://github.com/sjLim91/lifelens-ue/pull/1032",
+  "pagesCommit": "4739de2e74c1b8186fc0960ccdda174d98016eb4",
+  "app": "https://sjlim91.github.io/lifelens-ue/",
+  "workflows": {
+    "runtimeRelease": {
+      "id": 43689628377,
+      "name": "LifeLens Web Runtime Release",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43689628377",
+      "headSha": "c5fba0266c0542874719c01a824d985c40257da7",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-11-15T07:24:03Z"
+    },
+    "preview": {
+      "id": 43689785812,
+      "name": "LifeLens Web Preview",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43689785812",
+      "headSha": "c5fba0266c0542874719c01a824d985c40257da7",
+      "event": "workflow_run",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-11-15T07:25:05Z"
+    },
+    "pages": {
+      "id": 43689851814,
+      "name": "pages build and deployment",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43689851814",
+      "headSha": "4739de2e74c1b8186fc0960ccdda174d98016eb4",
+      "event": "dynamic",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-11-15T07:25:34Z"
+    },
+    "externalProbe": {
+      "id": 43689857777,
+      "name": "External Preview Probe",
+      "url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43689857777",
+      "headSha": "c5fba0266c0542874719c01a824d985c40257da7",
+      "event": "workflow_run",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-11-15T07:25:46Z"
+    }
+  },
+  "validation": {
+    "coreTests": 182,
+    "exactHeadWorkflows": 9,
+    "naturalWorlds365Days": 3,
+    "closedProductionGoals": 129,
+    "completedGoals": 103,
+    "failedThenCompletedGoals": 11,
+    "abandonedGoals": 26,
+    "naturalSurvivalInterruptionsObserved": 0,
+    "controlledActualEatAndResume": true,
+    "actualCommandBudget": 6,
+    "originalDeadlineMinutes": 120,
+    "publicNativeWasmReplay": true,
+    "publicAppSaveReload": true,
+    "viewportWidths": [
+      320,
+      393,
+      915,
+      1440
+    ]
+  },
+  "limits": [
+    "Physical device and thermal checks excluded by prior user instruction.",
+    "Software 2D fallback proof is not physical Android/GPU or actual Qwen inference proof.",
+    "AL-2 Core production-goal checkpoint; no full M2/M3/G1 or86-unit promotion."
+  ]
+}

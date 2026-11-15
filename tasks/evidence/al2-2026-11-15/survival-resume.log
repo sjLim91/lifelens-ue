@@ -1,0 +1,16 @@
+test_al2_survival_cognition_resume
+test_al2_survival_cognition_resume
+49/182 Test: test_al2_survival_cognition_resume
+Command: "/workspace/build-native/test_al2_survival_cognition_resume"
+Directory: /workspace/build-native
+"test_al2_survival_cognition_resume" start time: Nov 15 06:50 UTC
+Output:
+----------------------------------------------------------
+AL2_PRODUCT_SURVIVAL_RESUME_CHAIN seed=874213954 actor=1 suspended_token=1 resumed_token=5 craft_token=6 gather_minute=488 craft_minute=496 harvested=2 actual_movement_steps=2 source_stock=80->78 direct_gather_and_craft_memories=1 same_cognitive_goal_fp=8407923767923278667 authentic_core_step_links=3 physical_hunger_relief=1 saved_suspended_cognition_link=1 serialized_continuation_identical=1 scope=controlled_Core_survival_interruption
+<end of output>
+Test time =   1.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_al2_survival_cognition_resume" end time: Nov 15 06:50 UTC
+"test_al2_survival_cognition_resume" time elapsed: 00:00:00
+----------------------------------------------------------

@@ -1,3 +1,11 @@
+## 2026-11-15 AL-2 Core 제작 목표·실패 회복 병합·배포 완료
+
+- [PR #1032](https://github.com/sjLim91/lifelens-ue/pull/1032) → main `c5fba0266c0542874719c01a824d985c40257da7`. 검증 head `40bf67d80911b38a18886de770e75fdca46965c2`와 병합 tree 동일, 필수 CI **9/9** 성공: [Core 182/182·인과·장기 생존](https://github.com/sjLim91/lifelens-ue/actions/runs/43686469830), Web WASM·Web Checks·Preflight·Autonomy·Earth·Wildlife. [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43689628377) · [Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43689785812) · [Pages 배포](https://github.com/sjLim91/lifelens-ue/actions/runs/43689851814) · [External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43689857777) 성공.
+- 같은 주민의 구체 제작 목표를 실제 재료/하위 제작법/실험·제작으로 잇고, 실제 실패 후 대안 원천과 실제 생존 행동 후 재개를 같은 원래 120분/최대 6명령 안에서 처리한다. 소진된 이전 생각은 실제 명령 이력으로 종료하고 일반 생활 판단은 계속한다. v8/M8 저장 호환·손상/위조 거부·중간 저장 재생과 한국어 읽기 전용 관찰을 검증했다.
+- 변경하지 않은 새 게임 **3시드 × 365일**: 129개 목표 중 103개 완료/26개 중단, 실제 실패 후 다단계 완료 11건. 1/7/30/100/365일 native binary 왕복, 공개 WASM 물리/계획 byte와 기존 난수 텍스트만 정규화한 전체 저장·중간 재생, 실제 공개 앱 320/393/915/1440px·자동 저장·재접속·오류·가로 넘침 0건 검증.
+- [범위·실제 원인과 검증](../tasks/AL2_PRODUCTION_GOALS_2026-11-15.md), [원시 증거·배포 출처](../tasks/evidence/al2-2026-11-15/release-proof.json). 자연 관측과 통제된 경쟁 고갈/먹기·생존 선점을 구분하며 실제 Qwen 추론 또는 물리 Android GPU를 검증했다고 주장하지 않는다. 기존 사용자 지시로 실기기·발열 제외.
+- **AL-2 Core 제작 목표 납품 체크포인트 완료**이며 M2/M3/G1 전체 인수가 아니다. 기존 장부 **21/86 완료·20 진행·45 미완/미검증**과 M8/M10 완료를 유지한다.
+
 ## 2026-11-14 M8 전체 8/8 구현·통합 검증·배포 완료
 
 - [PR #1030](https://github.com/sjLim91/lifelens-ue/pull/1030) → main `4640a36cacffb93a71c39de4f0ba17a6434f62d0`. 최종 코드 head `8dcdcbdb1ff0a99085913c804855fd7f4509eba1`의 필수 CI **9/9**: [Core 181/181·AL-1 인과·365일](https://github.com/sjLim91/lifelens-ue/actions/runs/43566413973), Web WASM·Web Checks·Preflight·Autonomy·Earth·Wildlife 성공. [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43568657563) · [Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43568840164) · [External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43568903456) 성공.

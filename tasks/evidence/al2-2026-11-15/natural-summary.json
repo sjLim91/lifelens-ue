@@ -1,0 +1,168 @@
+{
+  "profile": "untouched New Game, no injected thought/resource/need/memory",
+  "sourceSha": "40bf67d80911b38a18886de770e75fdca46965c2",
+  "worlds": [
+    {
+      "seed": "874213954",
+      "goals": 46,
+      "closed": 46,
+      "completed": 38,
+      "multiStepCompleted": 6,
+      "failedThenCompleted": 6,
+      "abandoned": 8,
+      "maxSteps": 5,
+      "observedSurvivalInterruptedSteps": 0,
+      "checkpoints": [
+        {
+          "profile": "untouched-census",
+          "seed": "874213954",
+          "day": 1,
+          "goals": 12,
+          "closed": 12,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "874213954",
+          "day": 7,
+          "goals": 21,
+          "closed": 21,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "874213954",
+          "day": 30,
+          "goals": 26,
+          "closed": 26,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "874213954",
+          "day": 100,
+          "goals": 34,
+          "closed": 34,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "874213954",
+          "day": 365,
+          "goals": 46,
+          "closed": 46,
+          "binaryRoundtrip": true
+        }
+      ],
+      "sameCensusBytesAsPriorNativePolicy": true
+    },
+    {
+      "seed": "4242001",
+      "goals": 40,
+      "closed": 40,
+      "completed": 38,
+      "multiStepCompleted": 3,
+      "failedThenCompleted": 3,
+      "abandoned": 2,
+      "maxSteps": 3,
+      "observedSurvivalInterruptedSteps": 0,
+      "checkpoints": [
+        {
+          "profile": "untouched-census",
+          "seed": "4242001",
+          "day": 1,
+          "goals": 5,
+          "closed": 5,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "4242001",
+          "day": 7,
+          "goals": 19,
+          "closed": 19,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "4242001",
+          "day": 30,
+          "goals": 27,
+          "closed": 27,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "4242001",
+          "day": 100,
+          "goals": 39,
+          "closed": 39,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "4242001",
+          "day": 365,
+          "goals": 40,
+          "closed": 40,
+          "binaryRoundtrip": true
+        }
+      ],
+      "sameCensusBytesAsPriorNativePolicy": true
+    },
+    {
+      "seed": "874213955",
+      "goals": 43,
+      "closed": 43,
+      "completed": 27,
+      "multiStepCompleted": 2,
+      "failedThenCompleted": 2,
+      "abandoned": 16,
+      "maxSteps": 5,
+      "observedSurvivalInterruptedSteps": 0,
+      "checkpoints": [
+        {
+          "profile": "untouched-census",
+          "seed": "874213955",
+          "day": 1,
+          "goals": 9,
+          "closed": 9,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "874213955",
+          "day": 7,
+          "goals": 20,
+          "closed": 20,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "874213955",
+          "day": 30,
+          "goals": 33,
+          "closed": 33,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "874213955",
+          "day": 100,
+          "goals": 43,
+          "closed": 43,
+          "binaryRoundtrip": true
+        },
+        {
+          "profile": "untouched-census",
+          "seed": "874213955",
+          "day": 365,
+          "goals": 43,
+          "closed": 43,
+          "binaryRoundtrip": true
+        }
+      ],
+      "sameCensusBytesAsPriorNativePolicy": true
+    }
+  ]
+}

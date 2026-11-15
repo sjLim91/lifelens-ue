@@ -1,0 +1,8 @@
+Source: https://github.com/sjLim91/lifelens-ue/actions/runs/43689857777
+2026-11-15T07:25:12.6676386Z ATTEMPT=1 LAUNCH_STATUS=200 LAUNCH_CONTENT_TYPE=content-type: text/html; charset=utf-8
+2026-11-15T07:25:12.7759739Z ATTEMPT=1 APP_STATUS=200 ASSET=assets/index-DmHH-ysn.js ASSET_STATUS=200
+2026-11-15T07:25:12.8455096Z WASM_STATUS=200
+2026-11-15T07:25:12.8486538Z WASM_BYTES=1887651
+2026-11-15T07:25:12.8516005Z LIFELENS_PREVIEW_PASS=https://sjlim91.github.io/lifelens-ue/launch.html
+2026-11-15T07:25:38.8133116Z LIVE_LIFELENS_CORE_BROWSER_PASS {"href":"https://sjlim91.github.io/lifelens-ue/?live-core-probe=43689857777-1","status":"연결됨시뮬레이션 코어 연결됨","living":"인구 4","error":null}
+2026-11-15T07:25:44.1628329Z LIVE_LIFELENS_CORE_BROWSER_PASS attempt=1
