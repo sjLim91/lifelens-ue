@@ -2148,6 +2148,12 @@ bool Simulation::tryCivilizationDecision(
     const AcceptedCognitiveDecision* cognitiveOrigin)
 {
     if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
+    // A child resource predicate cannot spend a seventh command after its
+    // owning concrete plan has exhausted six REAL issued commands.
+    if(continuation &&r.productionPlan.id &&r.productionPlan.steps.size()>=MaxProductionSteps
+       &&std::any_of(r.productionPlan.steps.begin(),r.productionPlan.steps.end(),[&](const auto& step){
+           return step.token==continuation->token;
+       }))return false;
 
     CivilizationUtilityDecision urgentProvision;
     bool urgentProvisionRequired=false;
@@ -3129,6 +3135,14 @@ void Simulation::beginPlan(Character& c,Runtime& r){
             it!=acceptedCognitiveDecisions_.rend();++it){
             if(it->actor==c.id){ newest=&*it; break; }
         }
+        // An exhausted/expired concrete objective retires that exact old
+        // approval for this strategy. Keep historical approval/evidence, and
+        // let ordinary embodied life continue until a genuinely new thought.
+        const auto& oldProduction=r.productionPlan;
+        if(newest &&oldProduction.state==ProductionPlanState::Abandoned
+           &&(oldProduction.reason==ProductionPlanReason::Budget ||oldProduction.reason==ProductionPlanReason::Deadline)
+           &&oldProduction.cognitiveFingerprint==newest->contextFingerprint
+           &&oldProduction.thoughtMinute==newest->minute)newest=nullptr;
         std::optional<GridPos> targetPosition;
         if(newest!=nullptr &&newest->target!=0){
             const auto targetRuntime=runtime_.find(newest->target);

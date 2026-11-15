@@ -10,7 +10,7 @@ static std::vector<std::uint8_t> encode(const Simulation& sim) {
     if(!encodeSimulationSnapshot(sim.captureSnapshot(),b,&e))std::cerr<<e<<'\n';
     assert(!b.empty());return b;
 }
-static Simulation fixture() {
+static Simulation fixture(int extraSources=0) {
     auto rules=DefaultSimulationRuleset;
     rules.needs.hungerPerMinute=rules.needs.thirstPerMinute=rules.needs.sleepPerMinute=0;
     rules.needs.bladderPerMinute=rules.needs.hygienePerMinute=0;
@@ -29,6 +29,7 @@ static Simulation fixture() {
         if(coreGroundTraversable(sim.world(),b.pos) &&buildCoreGroundRoute(sim.world(),position,b.pos,1,route)){reachable=true;break;}
     }
     assert(reachable);sim.world().resourceNodes.push_back(a);sim.world().resourceNodes.push_back(b);
+    for(int i=0;i<extraSources;++i){auto extra=a;extra.id=9000203+i;sim.world().resourceNodes.push_back(extra);}
     const auto request=sim.observeCognitiveRequest(actor.id,CognitiveTriggerKind::Reflection);
     CognitiveProposal proposal;proposal.actor=actor.id;proposal.intent=CognitiveIntentKind::CraftUsefulTools;proposal.priority=.96;
     assert(sim.acceptCognitiveProposal(request,proposal,"controlled-native-test","source-loss-fixture"));
@@ -102,6 +103,38 @@ int main() {
     assert(oldPlan->state==ProductionPlanState::Abandoned &&oldPlan->reason==ProductionPlanReason::NewerGoal);
     assert(changed.world().characters.front().civilization.inventory.count(ItemKind::RawMaterial,MaterialKind::Wood)==rawAfter);
     assert(!encode(changed).empty());
+    // Four actual failed sources, then two one-unit real harvests, exhaust
+    // SIX owned commands while the concrete tool still needs a final craft.
+    // A competitor only removes existing stock; no success/memory is injected.
+    auto limited=fixture(6);bool budgetClosed=false;std::uint64_t budgetFp=0;
+    for(int i=0;i<115 &&!budgetClosed;++i) {
+        const auto state=limited.captureSnapshot();const auto& pending=state.runtime.at(actor).pendingContext;
+        const auto* plan=limited.residentProductionPlan(actor);
+        if(plan &&pending.active() &&pending.civilization.intent==CivilizationIntent::Gather) {
+            const int leave=plan->steps.size()<=4?0:1;
+            for(auto& node:limited.world().resourceNodes)if(node.id==pending.civilization.resourceNode) {
+                node.quantity=std::min(node.quantity,leave);for(auto& tree:node.trees)tree.remainingWood=0;
+            }
+        }
+        limited.step();plan=limited.residentProductionPlan(actor);
+        if(plan &&plan->state==ProductionPlanState::Abandoned &&plan->reason==ProductionPlanReason::Budget) {
+            assert(plan->steps.size()==MaxProductionSteps);
+            assert(plan->steps.back().stockAfter==2);
+            budgetFp=plan->cognitiveFingerprint;budgetClosed=true;
+        }
+    }
+    assert(budgetClosed &&budgetFp);
+    const auto commandsForOldThought=[&](){
+        std::size_t count=0;for(const auto& trace:limited.cognitiveCausalJournal())
+            if(trace.accepted &&trace.origin.actor==actor &&trace.origin.contextFingerprint==budgetFp)count+=trace.steps.size();
+        return count;
+    };
+    assert(commandsForOldThought()==MaxProductionSteps);
+    const int beforeLife=limited.world().minute;limited.runMinutes(20);
+    assert(limited.world().minute==beforeLife+20 &&commandsForOldThought()==MaxProductionSteps);
+    assert(limited.residentProductionPlan(actor)->state==ProductionPlanState::Abandoned);
+    assert(limited.residentProductionPlan(actor)->steps.size()==MaxProductionSteps);
+    assert(!encode(limited).empty());
     // A permanent survival emergency may consume time, never extend the
     // original promise or retain it forever beyond its deadline.
     auto expired=fixture();expired.step();const auto expires=expired.residentProductionPlan(actor)->expiresMinute;
