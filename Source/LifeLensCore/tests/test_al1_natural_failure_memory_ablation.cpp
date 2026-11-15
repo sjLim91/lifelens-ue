@@ -68,13 +68,19 @@ int main()
     const int before=resident(learned,actor).civilization.inventory.count(ItemKind::RawMaterial,alternative.material);
     const int stock=resource(learned,alternative.resourceNode).quantity;
     GridPos from{};assert(learned.runtimePosition(actor,from));
-    bool completed=false;
+    // A real partial recovery is not yet the original objective. Follow only
+    // that SAME goal within its unchanged deadline, including a bounded next
+    // batch or actual survival suspension; a fresh goal cannot pass this check.
+    bool completed=false,firstRecoveryExecuted=false;
     learned.onEvent([&](const std::string& event){
         if(event.find("AL1_CORE_GATHER_RESULT actor=")!=std::string::npos
-           &&number(event,"pending_token")==alternative.token) completed=true;
+           &&number(event,"pending_token")==alternative.token)firstRecoveryExecuted=true;
+        if(event.find("AL1_CORE_GOAL_RESULT actor=")!=std::string::npos
+           &&number(event,"goal_id")==original.gatherGoal.goalId
+           &&event.find(" outcome=achieved ")!=std::string::npos)completed=true;
     });
-    for(int n=0;n<120 &&!completed;++n){learned.step();control.step();}
-    assert(completed);
+    for(int n=0;n<120 &&!completed &&learned.world().minute<=original.gatherGoal.expiresMinute;++n){learned.step();control.step();}
+    assert(firstRecoveryExecuted &&completed);
     const int after=resident(learned,actor).civilization.inventory.count(ItemKind::RawMaterial,alternative.material);
     GridPos to{};assert(learned.runtimePosition(actor,to));
     assert(after>before &&resource(learned,alternative.resourceNode).quantity<stock);

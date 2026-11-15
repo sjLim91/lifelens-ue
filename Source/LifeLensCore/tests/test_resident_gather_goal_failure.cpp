@@ -149,7 +149,7 @@ void competitionReplan(bool fullAlternative,bool exhaustOriginal)
 // A real first Gather can produce fewer materials than its declared goal.
 // The next bounded Core token must reuse that SAME goal; logging a partial
 // success and starting an unrelated fresh objective is not completion.
-void partialGatherContinuesOriginalGoal()
+void partialGatherContinuesOriginalGoal(bool recoveredNative=false)
 {
     Simulation sim(874213954ULL);
     sim.setupNewGame();
@@ -180,15 +180,16 @@ void partialGatherContinuesOriginalGoal()
     first.civilization.material=MaterialKind::Stone;
     first.civilization.quantity=2;
     first.civilization.utility=0.6;
-    first.gatherGoal.goalId=first.gatherGoal.token=101;
+    first.gatherGoal.token=101;first.gatherGoal.goalId=recoveredNative?100:101;
     first.gatherGoal.actor=actor;
     first.gatherGoal.material=MaterialKind::Stone;
     first.gatherGoal.createdMinute=first.gatherGoal.issuedMinute=499;
     first.gatherGoal.expiresMinute=619;
     first.gatherGoal.inventoryAtIssue=0;
     first.gatherGoal.targetQuantity=4;
-    first.gatherGoal.attempt=1;
-    first.gatherGoal.composed=true; // Explicit resident-authored resource predicate.
+    first.gatherGoal.attempt=recoveredNative?2:1;
+    first.gatherGoal.previousToken=recoveredNative?100:0;
+    first.gatherGoal.composed=!recoveredNative; // Explicit resident-authored resource predicate.
     fixture.runtime.at(actor).pendingContext=first;
     fixture.nextContextActionToken=102;
     std::string error;
@@ -217,8 +218,8 @@ void partialGatherContinuesOriginalGoal()
         &&activity.resourceNode==source &&activity.quantity==2);
     const auto second=sim.observePendingContextAction(actor);
     assert(second.active &&second.token!=101 &&second.resourceNode==source);
-    assert(second.gatherGoal.goalId==101 &&second.gatherGoal.previousToken==101
-        &&second.gatherGoal.targetQuantity==4 &&second.gatherGoal.attempt==2
+    assert(second.gatherGoal.goalId==(recoveredNative?100:101) &&second.gatherGoal.previousToken==101
+        &&second.gatherGoal.targetQuantity==4 &&second.gatherGoal.attempt==(recoveredNative?3:2)
         &&second.gatherGoal.createdMinute==499
         &&second.gatherGoal.expiresMinute==619);
 
@@ -237,7 +238,7 @@ void partialGatherContinuesOriginalGoal()
     assert(al1_test::resource(sim,source).quantity<=4);
     assert(!sim.observePendingContextAction(actor).gatherGoal.active());
     std::cout<<"AL1_CONTROLLED_PARTIAL_CONTINUATION actor="<<actor
-        <<" goal_id=101 original_token=101 next_token="<<second.token
+        <<" goal_id="<<first.gatherGoal.goalId<<" original_token=101 next_token="<<second.token
         <<" physical_goal_achieved=1 natural_acceptance=NOT_PROVEN\n";
 }
 
@@ -451,6 +452,7 @@ int main()
 {
     survivalInterruptResumesSameGoal();
     partialGatherContinuesOriginalGoal();
+    partialGatherContinuesOriginalGoal(true);
     competitionReplan(true,false);
     competitionReplan(false,false);
     competitionReplan(false,true);

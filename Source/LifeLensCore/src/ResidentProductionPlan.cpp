@@ -99,6 +99,9 @@ void Simulation::maintainProductionPlan(Character& c,Runtime& r) {
             finishCognitiveStep(c.id,r.pendingContext.token,CognitiveStepResult::Cancelled,"production-goal-ended");
             r.pendingContext.clear();clearNavigation(r);
         }
+        if(r.suspendedGather.active() &&std::any_of(p.steps.begin(),p.steps.end(),[&](const auto& step){
+            return step.token==r.suspendedGather.goal.token;
+        }))r.suspendedGather={};
         p.state=ProductionPlanState::Abandoned;p.reason=abandoned;p.finishedMinute=world_.minute;
         emit("AL2_PRODUCTION_END actor="+std::to_string(c.id)+" goal="+std::to_string(p.id)
              +" reason="+std::to_string(static_cast<int>(p.reason)));

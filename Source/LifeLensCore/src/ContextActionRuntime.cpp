@@ -1,3 +1,4 @@
+#include "lifelens/ResidentCognitiveActionLinkSnapshotCodec.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/EmotionRuntime.h"
 #include "lifelens/AutonomousSocialOutcomeLearning.h"
@@ -462,18 +463,15 @@ bool Simulation::completeContextAction(
                 // invent a replacement source, or override urgent body needs.
                 const auto* remainingSource=findCivilizationResourceNodeSpatial(
                     world_,decision.resourceNode);
-                const bool survivalNeedsAttention=
-                    std::max({actor.needs.hunger,actor.needs.thirst,
-                        actor.needs.sleep,actor.needs.bladder,
-                        actor.needs.hygiene})>=ruleset_.utilityAI.urgentThreshold;
-                if(issued.gatherGoal.composed
+                // A real recovery has retained this concrete predicate too.
+                // Its first successful batch must not silently discard the
+                // original goal merely because it originated in native needs.
+                if((issued.gatherGoal.composed ||issued.gatherGoal.attempt>1)
                    &&result.success &&result.event.type==CivilizationEventType::Gathered
                    &&held>inventoryBefore &&held<issued.gatherGoal.targetQuantity
-                   &&remainingSource &&remainingSource->quantity>0
-                   &&resourceBefore>remainingSource->quantity
+                   &&remainingSource &&resourceBefore>remainingSource->quantity
                    &&world_.minute<issued.gatherGoal.expiresMinute
-                   &&issued.gatherGoal.attempt<ResidentGatherGoalMaxAttempts
-                   &&!survivalNeedsAttention){
+                   &&issued.gatherGoal.attempt<ResidentGatherGoalMaxAttempts){
                     partialGatherToContinue=issued;
                     hasPartialGatherToContinue=true;
                 }
@@ -1109,6 +1107,27 @@ bool Simulation::completeContextAction(
         const int held=actor.civilization.inventory.count(
             ItemKind::RawMaterial,previous.civilization.material);
         if(held<previous.gatherGoal.targetQuantity){
+            const bool survivalNeedsAttention=std::max({actor.needs.hunger,actor.needs.thirst,
+                actor.needs.sleep,actor.needs.bladder,actor.needs.hygiene})>=ruleset_.utilityAI.urgentThreshold;
+            const auto* source=findCivilizationResourceNodeSpatial(world_,previous.civilization.resourceNode);
+            if(survivalNeedsAttention ||!source ||source->quantity<=0) {
+                if(!runtime.suspendedGather.active()) {
+                    runtime.suspendedGather.goal=previous.gatherGoal;
+                    runtime.suspendedGather.source=previous.civilization.resourceNode;
+                    runtime.suspendedGather.requestedQuantity=previous.civilization.quantity;
+                    if(previous.cognitiveGoal.active()
+                       &&validAttachedResidentCognitiveActionLink(actor.id,previous,acceptedCognitiveDecisions_,world_.minute))
+                        runtime.suspendedGather.cognitiveGoal=previous.cognitiveGoal;
+                    if(survivalNeedsAttention &&runtime.productionPlan.open()) {
+                        runtime.productionPlan.state=ProductionPlanState::Paused;
+                        runtime.productionPlan.reason=ProductionPlanReason::Survival;
+                    }
+                    emit(actor.name+" AL2_PARTIAL_GOAL_RETAINED actor="+std::to_string(actor.id)
+                         +" goal_id="+std::to_string(previous.gatherGoal.goalId)
+                         +" original_deadline="+std::to_string(previous.gatherGoal.expiresMinute));
+                }
+                return true;
+            }
             UnifiedUtilityDecision followup;
             followup.kind=UnifiedDecisionKind::Civilization;
             followup.civilization=previous.civilization;

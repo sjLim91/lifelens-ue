@@ -47,7 +47,8 @@ try {
   assert.equal(fetches, 0);
   const proof = { profile: 'untouched production New Game; native Core goal checkpoint and real WASM execution',
     nativeWasmPhysicalAndPlanBytesEqual: true, legacyRngTextPlatformSpecific: true, codecNormalizedBinaryEqual: true,
-    midPlanReplayEqual: true, failedRestoreAtomic: true, readOnly: true, fetches, minutes, actor: actor.id, plan };
+    midPlanReplayEqual: true, failedRestoreAtomic: true, readOnly: true, fetches, minutes,
+    world: JSON.parse(client.worldOverviewJson()), actor: actor.id, plan };
   await writeFile(resolve(directory, 'wasm-proof.json'), JSON.stringify(proof, null, 2));
   await writeFile(resolve(directory, 'residents.json'), JSON.stringify(residents, null, 2));
   console.log('PASS untouched native/WASM failed experiment -> real gather -> successful production, exact saved continuation and atomic malformed restore');
