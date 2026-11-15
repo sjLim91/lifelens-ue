@@ -9,6 +9,7 @@
 #include "Birth.h"
 #include "CognitiveDecisionJournal.h"
 #include "CognitiveCausalJournal.h"
+#include "ResidentProductionPlan.h"
 #include "ContextAction.h"
 #include "DecisionExecution.h"
 #include "ObserverReadModelV2.h"
@@ -38,6 +39,7 @@ struct SimulationRuntimeSnapshot {
     CharacterId socialTarget=0;
     PendingContextAction pendingContext{};
     ResidentSuspendedGatherGoal suspendedGather{};
+    ResidentProductionPlan productionPlan{};
     TradeJourneyState tradeJourney{};
         DependentEscortState dependentEscort{};
     std::vector<GridPos> navigationRoute;

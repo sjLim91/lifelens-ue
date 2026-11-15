@@ -2148,6 +2148,12 @@ bool Simulation::tryCivilizationDecision(
     const AcceptedCognitiveDecision* cognitiveOrigin)
 {
     if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
+    // A child resource predicate cannot spend a seventh command after its
+    // owning concrete plan has exhausted six REAL issued commands.
+    if(continuation &&r.productionPlan.id &&r.productionPlan.steps.size()>=MaxProductionSteps
+       &&std::any_of(r.productionPlan.steps.begin(),r.productionPlan.steps.end(),[&](const auto& step){
+           return step.token==continuation->token;
+       }))return false;
 
     CivilizationUtilityDecision urgentProvision;
     bool urgentProvisionRequired=false;
@@ -2290,6 +2296,7 @@ bool Simulation::tryCivilizationDecision(
             pending.token,c.id,cognitiveOrigin->contextFingerprint,
             cognitiveOrigin->minute,pending.issuedMinute};
     }
+    recordProductionStep(c,r,pending,cognitiveOrigin);
     r.pendingContext=pending;
     if((!continuation ||!inheritCognitiveStep(c.id,continuation->token,pending,cognitiveOrigin))
        &&cognitiveOrigin)recordCognitiveStep(*cognitiveOrigin,pending);
@@ -3110,7 +3117,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
        && !urgentProvisionRequired
        && !criticalSurvivalPressure
        && urgentPhysicalGoal==Goal::Idle
-       && world_.minute%15==0){
+       && (world_.minute%15==0
+           ||(r.productionPlan.open() &&r.productionPlan.cognitiveFingerprint))){
         const auto population=settlementPopulation();
         cadenceDecision=chooseUnifiedUtilityDecisionAtPosition(
             world_,c,relationships_,r.pos,0.18,0.14,&population,
@@ -3127,6 +3135,20 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         for(auto it=acceptedCognitiveDecisions_.rbegin();
             it!=acceptedCognitiveDecisions_.rend();++it){
             if(it->actor==c.id){ newest=&*it; break; }
+        }
+        // Retire a spent tool strategy using its actual issued-command
+        // journal, even after a later native goal replaces the latest plan.
+        // Historical approval remains intact; a fresh thought gets a fresh
+        // budget. Ordinary embodied life still runs without this approval.
+        if(newest &&newest->intent==CognitiveIntentKind::CraftUsefulTools){
+            for(const auto& trace:cognitiveCausalJournal_)if(trace.accepted
+                &&sameCognitiveOrigin(trace.origin,*newest) &&!trace.steps.empty()){
+                const auto issued=trace.omittedSteps+std::count_if(trace.steps.begin(),trace.steps.end(),
+                    [](const auto& step){return step.token!=0;});
+                if(issued>=MaxProductionSteps
+                   ||world_.minute-trace.steps.front().issuedMinute>=ProductionPlanMinutes)newest=nullptr;
+                break;
+            }
         }
         std::optional<GridPos> targetPosition;
         if(newest!=nullptr &&newest->target!=0){
@@ -3156,6 +3178,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
             selectedCognitiveOrigin=newest;
         }
         selectedResourceGoal=embodiedGoal.personalGoal;
+        if(chooseProductionContinuation(c,r,cadenceDecision,selectedCognitiveOrigin))
+            selectedResourceGoal.reset();
     }
 
     // Survival needs that can be satisfied immediately pre-empt settlement
@@ -4682,6 +4706,7 @@ void Simulation::step(){
     advanceDependentCare();
     for(auto& c:world_.characters){
         Runtime& r=runtime_[c.id];
+        maintainProductionPlan(c,r);
         if(!c.alive){
             r.dependentEscort.clear();
             clearRuntimeActivity(r);

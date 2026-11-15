@@ -1,5 +1,6 @@
 #pragma once
 #include "CognitiveCausalJournal.h"
+#include "ResidentProductionPlan.h"
 #include "DependentEscort.h"
 #include <algorithm>
 #include <cstdint>
@@ -79,6 +80,10 @@ public:
         if(it==runtime_.end()) return false;
         outPosition=it->second.pos;
         return true;
+    }
+    const ResidentProductionPlan* residentProductionPlan(CharacterId id) const {
+        const auto it=runtime_.find(id);
+        return it==runtime_.end() ||!it->second.productionPlan.id ?nullptr:&it->second.productionPlan;
     }
     // Private read-only proximity observation: MUST use the resident's
     // authoritative Core runtime position, never the browser camera or
@@ -332,6 +337,7 @@ private:
         CharacterId socialTarget=0;
         PendingContextAction pendingContext{};
         ResidentSuspendedGatherGoal suspendedGather{};
+        ResidentProductionPlan productionPlan{};
         TradeJourneyState tradeJourney{};
         DependentEscortState dependentEscort{};
 
@@ -454,6 +460,10 @@ private:
         Runtime& runtime,
         const char* reason);
     bool completeContextAction(Character& actor,Runtime& runtime,std::uint64_t token,GridPos resolvedPosition);
+    void maintainProductionPlan(Character&,Runtime&);
+    bool chooseProductionContinuation(Character&,Runtime&,UnifiedUtilityDecision&,const AcceptedCognitiveDecision*&);
+    void recordProductionStep(Character&,Runtime&,PendingContextAction&,const AcceptedCognitiveDecision*);
+    void finishProductionStep(CharacterId,std::uint64_t,CognitiveStepResult,const std::string&,bool);
     bool tryCivilizationDecision(
         Character& c,
         Runtime& r,

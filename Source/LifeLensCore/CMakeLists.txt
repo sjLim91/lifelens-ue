@@ -10,6 +10,7 @@ enable_testing()
 add_library(lifelens_core STATIC
     src/Simulation.cpp
     src/CognitiveCausalJournal.cpp
+    src/ResidentProductionPlan.cpp
     src/ContextActionRuntime.cpp
     src/CivilizationKnowledgeTransmission.cpp
     src/SocietyEconomy.cpp
@@ -31,6 +32,9 @@ endif()
 
 add_executable(ll_harness harness/main.cpp)
 target_link_libraries(ll_harness PRIVATE lifelens_core)
+
+add_executable(ll_production_audit harness/production_audit.cpp)
+target_link_libraries(ll_production_audit PRIVATE lifelens_core)
 
 add_executable(ll_invention_audit harness/invention_audit.cpp)
 target_link_libraries(ll_invention_audit PRIVATE lifelens_core)
@@ -122,6 +126,7 @@ lifelens_add_test(test_resident_ai_tool_prerequisite_chain)
 lifelens_add_test(test_resident_unified_agency)
 lifelens_add_test(test_al2_production_gather_craft)
 lifelens_add_test(test_al2_survival_cognition_resume)
+lifelens_add_test(test_resident_production_plan)
 lifelens_add_test(test_al2_live_source_failure_recovery)
 lifelens_add_test(test_resident_sensed_resource_agency)
 lifelens_add_test(test_al1_production_closed_loop)
