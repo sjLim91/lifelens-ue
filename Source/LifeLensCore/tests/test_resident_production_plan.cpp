@@ -1,0 +1,87 @@
+#include <cassert>
+#include <iostream>
+#include "lifelens/Simulation.h"
+#include "lifelens/CoreNavigation.h"
+#include "lifelens/ResidentProductionPlanCodec.h"
+#include "lifelens/SimulationSnapshotCodec.h"
+using namespace lifelens;
+static std::vector<std::uint8_t> encode(const Simulation& sim) {
+    std::vector<std::uint8_t> b;std::string e;
+    if(!encodeSimulationSnapshot(sim.captureSnapshot(),b,&e))std::cerr<<e<<'\n';
+    assert(!b.empty());return b;
+}
+static Simulation fixture() {
+    auto rules=DefaultSimulationRuleset;
+    rules.needs.hungerPerMinute=rules.needs.thirstPerMinute=rules.needs.sleepPerMinute=0;
+    rules.needs.bladderPerMinute=rules.needs.hygienePerMinute=0;
+    Simulation sim(874213954,0,CurrentWorldGenerationVersion,rules);sim.setupNewGame();
+    sim.world().wildlifePopulations.clear();sim.world().wildlifeEnabled=false;
+    for(auto& c:sim.world().characters)c.needs={.03,.03,.03,.03,.03};
+    auto& actor=sim.world().characters.front();actor.civilization.inventory=Inventory{};
+    actor.civilization.knowledge=KnowledgeState{};
+    actor.civilization.knowledge.learn(TechniqueId::DiggingStick,KnowledgeLevel::Reproducible,1);
+    for(auto& n:sim.world().resourceNodes){n.quantity=0;for(auto& t:n.trees)t.remainingWood=0;}
+    GridPos position;assert(sim.runtimePosition(actor.id,position));
+    ResourceNode a;a.id=9000201;a.material=MaterialKind::Wood;a.quantity=a.maxQuantity=20;a.pos=position;a.renewable=false;
+    ResourceNode b=a;b.id=9000202;bool reachable=false;
+    for(int d=2;d<=5 &&!reachable;++d)for(auto off:{GridPos{d,0},GridPos{-d,0},GridPos{0,d},GridPos{0,-d}}) {
+        b.pos={position.x+off.x,position.y+off.y};std::vector<GridPos> route;
+        if(coreGroundTraversable(sim.world(),b.pos) &&buildCoreGroundRoute(sim.world(),position,b.pos,1,route)){reachable=true;break;}
+    }
+    assert(reachable);sim.world().resourceNodes.push_back(a);sim.world().resourceNodes.push_back(b);
+    const auto request=sim.observeCognitiveRequest(actor.id,CognitiveTriggerKind::Reflection);
+    CognitiveProposal proposal;proposal.actor=actor.id;proposal.intent=CognitiveIntentKind::CraftUsefulTools;proposal.priority=.96;
+    assert(sim.acceptCognitiveProposal(request,proposal,"controlled-native-test","source-loss-fixture"));
+    return sim;
+}
+int main() {
+    auto sim=fixture();const auto actor=sim.world().characters.front().id;
+    sim.step();const auto* p=sim.residentProductionPlan(actor);assert(p &&p->steps.size()==1);
+    assert(p->target==TechniqueId::DiggingStick &&p->steps.front().intent==CivilizationIntent::Gather);
+    const auto goal=p->id;const auto deadline=p->expiresMinute;
+    // Controlled competing depletion AFTER a genuine command was issued.
+    // It is not counted as an untouched-world observation or fake receipt.
+    const auto failedSource=p->steps.front().source;
+    for(auto& n:sim.world().resourceNodes)if(n.id==failedSource){n.quantity=0;for(auto& tree:n.trees)tree.remainingWood=0;}
+    const auto saved=encode(sim);SimulationStateSnapshot snapshot;std::string error;
+    assert(decodeSimulationSnapshot(saved,snapshot,&error));
+    Simulation replay(1,0,CurrentWorldGenerationVersion,sim.ruleset());assert(replay.restoreSnapshot(snapshot,&error));
+    for(int i=0;i<120;++i) {
+        sim.step();replay.step();assert(encode(sim)==encode(replay));
+        if(const auto* plan=sim.residentProductionPlan(actor);plan &&!plan->open())break;
+    }
+    p=sim.residentProductionPlan(actor);assert(p &&p->id==goal &&p->expiresMinute==deadline);
+    assert(p->state==ProductionPlanState::Completed &&p->steps.size()>=3 &&p->steps.size()<=6);
+    assert(p->steps.front().result==CognitiveStepResult::Failed);
+    assert(p->steps.front().reason==ProductionPlanReason::SourceExhausted);
+    assert(p->steps[1].source!=failedSource &&p->steps[1].stockAfter>p->steps[1].stockBefore);
+    assert(p->steps.back().intent==CivilizationIntent::Craft &&p->steps.back().stockAfter>=p->targetStock);
+    assert(sim.world().characters.front().civilization.inventory.count(ItemKind::DiggingStick,MaterialKind::Wood)==1);
+    const auto complete=sim.captureSnapshot();assert(validProductionPlans(complete));
+    auto bad=complete;bad.runtime.at(actor).productionPlan.steps.back().token=goal;
+    assert(!replay.restoreSnapshot(bad,&error));
+    std::vector<std::uint8_t> bytes;assert(!encodeSimulationSnapshot(bad,bytes,&error));
+    bad=complete;bad.runtime.at(actor).productionPlan.expiresMinute=deadline+1;
+    assert(!replay.restoreSnapshot(bad,&error));
+    bad=complete;bad.runtime.at(actor).productionPlan.cognitiveFingerprint++;
+    bad.runtime.at(actor).productionPlan.state=ProductionPlanState::Active;
+    bad.runtime.at(actor).productionPlan.finishedMinute=-1;
+    assert(!replay.restoreSnapshot(bad,&error));
+    auto truncated=encode(sim);truncated.pop_back();assert(!decodeSimulationSnapshot(truncated,snapshot,&error));
+    // Old saves have no implicit production goal and no new envelope.
+    Simulation old(42);old.setupNewGame();const auto legacy=encode(old);
+    assert(decodeSimulationSnapshot(legacy,snapshot,&error));assert(!hasProductionPlans(snapshot));
+    assert(old.restoreSnapshot(snapshot,&error));assert(encode(old)==legacy);
+    // A permanent survival emergency may consume time, never extend the
+    // original promise or retain it forever beyond its deadline.
+    auto expired=fixture();expired.step();const auto expires=expired.residentProductionPlan(actor)->expiresMinute;
+    for(int i=0;i<150;++i) {
+        expired.world().characters.front().needs.hunger=.99;
+        expired.step();
+        if(expired.world().minute>expires+1)break;
+    }
+    assert(!expired.residentProductionPlan(actor)->open());
+    assert(expired.residentProductionPlan(actor)->reason==ProductionPlanReason::Deadline);
+    assert(expired.residentProductionPlan(actor)->expiresMinute==expires);
+    std::cout<<"PASS concrete tool goal: real source A failure -> movement/source B -> craft, exact saved replay, forged/torn/old saves, bounded deadline\n";
+}

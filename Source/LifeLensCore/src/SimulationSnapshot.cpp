@@ -1,3 +1,4 @@
+#include "lifelens/ResidentProductionPlanCodec.h"
 #include "lifelens/ArtifactSnapshotCodec.h"
 #include "lifelens/NaturalEcologyValidation.h"
 #include "lifelens/DependentEscortSnapshotCodec.h"
@@ -30,6 +31,7 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
         return false;
     };
 
+    if(!validProductionPlans(snapshot))return fail("invalid resident production plan");
     if(!validArtifactWorld(snapshot.world))return fail("invalid artifact state");
     if(!validDependentEscorts(snapshot))return fail("invalid dependent escort state");
     if(snapshot.version!=SimulationSnapshotVersion) return fail("unsupported snapshot version");
@@ -311,6 +313,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
         target.suspendedGather=source.suspendedGather;
+        target.productionPlan=source.productionPlan;
         target.tradeJourney=source.tradeJourney;
         target.dependentEscort=source.dependentEscort;
         target.navigationRoute=source.navigationRoute;
@@ -357,6 +360,7 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
         target.suspendedGather=source.suspendedGather;
+        target.productionPlan=source.productionPlan;
         target.tradeJourney=source.tradeJourney;
         target.dependentEscort=source.dependentEscort;
         const auto& legacy=source.pendingContext;

@@ -503,7 +503,26 @@ export interface ArtifactCulture {
   records: number;
 }
 
+export interface ResidentProductionPlan {
+  id: string;
+  target: string;
+  createdMinute: number;
+  expiresMinute: number;
+  finishedMinute: number;
+  targetStock: number;
+  cognitiveOrigin: boolean;
+  state: number;
+  reason: number;
+  steps: Array<{
+    token: string; issuedMinute: number; finishedMinute: number;
+    action: string; technique: string; material: string; source: string;
+    result: number; reason: number; stockBefore: number; stockAfter: number;
+    from: { x: number; y: number }; to: { x: number; y: number }; attempted: boolean;
+  }>;
+}
+
 export interface ResidentCivilization {
+  productionPlan?: ResidentProductionPlan | null;
   invention?: ResidentInvention;
   totalInventoryUnits?: number;
   gatheringSkill?: number;

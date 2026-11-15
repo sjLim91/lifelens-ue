@@ -1,3 +1,8 @@
+## 2026-11-15 AL-2 구체 제작 목표·실패 회복 구현/검증 진행
+
+- 사용자 요청으로 다음 P0 납품 묶음 AL-2를 선택하고 배포까지 사전 승인받았다. [범위와 검증 계약](AL2_PRODUCTION_GOALS_2026-11-15.md).
+- 기존 M8/M10과 단일 Core 권위/생존 우선/옛 저장을 보존한다. 최종 CI·병합·공개 배포 검증 뒤 완료로 확정한다. 기존 21/86 완료 수는 유지한다.
+
 ## 2026-11-14 M8 전체 8/8 구현·통합 검증·배포 완료
 
 - [PR #1030](https://github.com/sjLim91/lifelens-ue/pull/1030) → main `4640a36cacffb93a71c39de4f0ba17a6434f62d0`. 최종 코드 head `8dcdcbdb1ff0a99085913c804855fd7f4509eba1`의 필수 CI **9/9**: [Core 181/181·AL-1 인과·365일](https://github.com/sjLim91/lifelens-ue/actions/runs/43566413973), Web WASM·Web Checks·Preflight·Autonomy·Earth·Wildlife 성공. [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43568657563) · [Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43568840164) · [External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43568903456) 성공.

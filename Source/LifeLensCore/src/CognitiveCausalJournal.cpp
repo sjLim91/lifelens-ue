@@ -80,6 +80,7 @@ void Simulation::recordPreferredCognitiveStep(CharacterId actor,const PendingCon
 }
 void Simulation::finishCognitiveStep(CharacterId actor,std::uint64_t token,CognitiveStepResult result,const std::string& reason,bool attempted,const CognitiveLearningEvidence& learning) {
     if(token==0)return;
+    finishProductionStep(actor,token,result,reason,attempted);
     for(auto& t:cognitiveCausalJournal_)if(t.origin.actor==actor)
         for(auto& s:t.steps)if(s.token==token &&s.result==CognitiveStepResult::Pending){
             s.result=result;s.resultMinute=world_.minute;s.reason=reason;s.attempted=attempted;s.learning=learning;return;
@@ -106,6 +107,12 @@ void Simulation::recordCognitiveExchange(CharacterId actor,CharacterId target,st
 }
 
 void Simulation::reconcileCognitiveSteps() {
+    for(auto& entry:runtime_) {
+        auto& p=entry.second.productionPlan;
+        if(p.open() &&!p.steps.empty() &&p.steps.back().result==CognitiveStepResult::Pending
+           &&entry.second.pendingContext.token!=p.steps.back().token)
+            finishProductionStep(entry.first,p.steps.back().token,CognitiveStepResult::Cancelled,"closed-without-execution-evidence",false);
+    }
     for(auto& t:cognitiveCausalJournal_)for(auto& s:t.steps)if(s.result==CognitiveStepResult::Pending){
         const auto r=runtime_.find(t.origin.actor);
         if(r==runtime_.end() ||r->second.pendingContext.token!=s.token ||!r->second.pendingContext.active()){

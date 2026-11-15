@@ -2290,6 +2290,7 @@ bool Simulation::tryCivilizationDecision(
             pending.token,c.id,cognitiveOrigin->contextFingerprint,
             cognitiveOrigin->minute,pending.issuedMinute};
     }
+    recordProductionStep(c,r,pending,cognitiveOrigin);
     r.pendingContext=pending;
     if((!continuation ||!inheritCognitiveStep(c.id,continuation->token,pending,cognitiveOrigin))
        &&cognitiveOrigin)recordCognitiveStep(*cognitiveOrigin,pending);
@@ -3156,6 +3157,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
             selectedCognitiveOrigin=newest;
         }
         selectedResourceGoal=embodiedGoal.personalGoal;
+        if(chooseProductionContinuation(c,r,cadenceDecision,selectedCognitiveOrigin))
+            selectedResourceGoal.reset();
     }
 
     // Survival needs that can be satisfied immediately pre-empt settlement
@@ -4682,6 +4685,7 @@ void Simulation::step(){
     advanceDependentCare();
     for(auto& c:world_.characters){
         Runtime& r=runtime_[c.id];
+        maintainProductionPlan(c,r);
         if(!c.alive){
             r.dependentEscort.clear();
             clearRuntimeActivity(r);

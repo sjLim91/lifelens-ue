@@ -9,6 +9,7 @@ on:
       - 'Tools/build_web_client.py'
       - 'Tools/verify_wasm_supplied_bytes.mjs'
       - 'Tools/verify_wasm_causal_journal.mjs'
+      - 'Tools/verify_wasm_production_plan.mjs'
       - 'Tools/validate_web_client_foundation.py'
       - '.github/workflows/web-wasm.yml'
   push:
@@ -19,6 +20,7 @@ on:
       - 'Tools/build_web_client.py'
       - 'Tools/verify_wasm_supplied_bytes.mjs'
       - 'Tools/verify_wasm_causal_journal.mjs'
+      - 'Tools/verify_wasm_production_plan.mjs'
       - 'Tools/validate_web_client_foundation.py'
       - '.github/workflows/web-wasm.yml'
   workflow_dispatch:
@@ -47,6 +49,13 @@ jobs:
           cmake --build /tmp/lifelens-causal-native --target test_artifact_production_replay -j2
           LIFELENS_ARTIFACT_FIXTURE_DIR=/tmp/lifelens-artifact-fixture /tmp/lifelens-causal-native/test_artifact_production_replay
 
+      - name: Export untouched resident multi-step production and check failure/survival
+        run: |
+          cmake --build /tmp/lifelens-causal-native --target ll_production_audit test_resident_production_plan test_al2_survival_cognition_resume -j2
+          /tmp/lifelens-causal-native/test_resident_production_plan
+          /tmp/lifelens-causal-native/test_al2_survival_cognition_resume
+          LIFELENS_PRODUCTION_FIXTURE_DIR=/tmp/lifelens-production-fixture /tmp/lifelens-causal-native/ll_production_audit 874213954 7 > /tmp/lifelens-production-natural.jsonl
+
       - name: Build LifeLensCore WASM
         run: python Tools/build_web_client.py
 
@@ -64,6 +73,19 @@ jobs:
 
       - name: Verify native to WASM artifact binary and mid-trial continuation
         run: node Tools/verify_wasm_artifacts.mjs /tmp/lifelens-artifact-fixture
+
+      - name: Verify untouched native to WASM production plan and mid-plan continuation
+        run: node Tools/verify_wasm_production_plan.mjs /tmp/lifelens-production-fixture
+
+      - name: Upload resident production evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resident-production-evidence
+          path: |
+            /tmp/lifelens-production-fixture/*
+            /tmp/lifelens-production-natural.jsonl
+          retention-days: 7
 
       - name: Upload invention verification evidence
         uses: actions/upload-artifact@v4

@@ -1,3 +1,4 @@
+#include "lifelens/ResidentProductionPlanCodec.h"
 #include "lifelens/ArtifactSnapshotCodec.h"
 #include "lifelens/NaturalEcologyValidation.h"
 #include "lifelens/DependentEscortSnapshotCodec.h"
@@ -350,6 +351,14 @@ bool encodeSimulationSnapshot(
         footer.raw(ArtifactTailMagic,sizeof(ArtifactTailMagic));
         body.insert(body.end(),footer.bytes.begin(),footer.bytes.end());
     }
+    if(!validProductionPlans(snapshot)){setError(error,"invalid resident production plan");return false;}
+    if(hasProductionPlans(snapshot)) {
+        Writer plan;writeProductionPlans(plan,snapshot);
+        body.insert(body.end(),plan.bytes.begin(),plan.bytes.end());
+        Writer footer;footer.u32(static_cast<std::uint32_t>(plan.bytes.size()));
+        footer.raw(ProductionTailMagic,sizeof(ProductionTailMagic));
+        body.insert(body.end(),footer.bytes.begin(),footer.bytes.end());
+    }
     outBytes=std::move(body);
     if(error) error->clear();
     return true;
@@ -360,6 +369,24 @@ bool decodeSimulationSnapshot(
     SimulationStateSnapshot& outSnapshot,
     std::string* error)
 {
+    // At most two optional outer envelopes (artifact and production). Reject
+    // adversarial alternating/nested footers before recursing into the body.
+    static thread_local unsigned depth=0;
+    struct DecodeDepth {unsigned& value;DecodeDepth(unsigned& d):value(d){++value;}~DecodeDepth(){--value;}} guard(depth);
+    if(depth>3){setError(error,"nested snapshot extensions");return false;}
+    if(bytes.size()>=12 &&std::equal(bytes.end()-8,bytes.end(),ProductionTailMagic)) {
+        const auto footer=bytes.size()-12;std::uint32_t size=0;
+        for(unsigned i=0;i<4;++i)size|=static_cast<std::uint32_t>(bytes[footer+i])<<(8*i);
+        if(size>footer ||size>16*1024*1024 ||footer-size<12){setError(error,"invalid production tail length");return false;}
+        const std::vector<std::uint8_t> base(bytes.begin(),bytes.begin()+footer-size);
+        SimulationStateSnapshot staged;
+        if(!decodeSimulationSnapshot(base,staged,error))return false;
+        if(hasProductionPlans(staged)){setError(error,"duplicate production extension");return false;}
+        const std::vector<std::uint8_t> data(bytes.begin()+footer-size,bytes.begin()+footer);
+        Reader reader(data);
+        if(!readProductionPlans(reader,staged) ||!reader.done()) {setError(error,"invalid production extension");return false;}
+        outSnapshot=std::move(staged);if(error)error->clear();return true;
+    }
     // Length-delimited final footer avoids interpreting arbitrary memory/log
     // text or an embedded design ID as a tail marker. Old v8 saves add no bytes.
     if(bytes.size()>=12 &&std::equal(bytes.end()-8,bytes.end(),ArtifactTailMagic)){

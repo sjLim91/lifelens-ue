@@ -372,6 +372,13 @@ int main()
     REQUIRE(actualBytes==replayedBytes);
     REQUIRE(replay.world().characters.front().civilization.inventory.count(
         ItemKind::DiggingStick,MaterialKind::Wood)>0);
+    const auto* concrete=original.residentProductionPlan(actorId);
+    REQUIRE(concrete &&concrete->state==ProductionPlanState::Completed);
+    REQUIRE(concrete->target==TechniqueId::DiggingStick &&concrete->id==gatherToken);
+    REQUIRE(concrete->cognitiveFingerprint==goalFingerprint);
+    REQUIRE(concrete->steps.size()>=3 &&concrete->steps.size()<=MaxProductionSteps);
+    REQUIRE(concrete->steps.front().result==CognitiveStepResult::Interrupted);
+    REQUIRE(concrete->steps.back().token==craftToken);
     std::cout<<"AL2_PRODUCT_SURVIVAL_RESUME_CHAIN seed="<<seed
         <<" actor="<<actorId
         <<" suspended_token="<<gatherToken

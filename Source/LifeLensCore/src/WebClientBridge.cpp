@@ -1,3 +1,4 @@
+#include "lifelens/ResidentProductionObservation.h"
 #include "lifelens/ArtifactObservation.h"
 #include "lifelens/ToolEffectiveness.h"
 #include "lifelens/NaturalEcologyLifecycle.h"
@@ -1817,6 +1818,7 @@ std::string WebClientBridge::residentsJson() const
 
         out << "\"civilization\":{";
         out<<"\"invention\":";appendResidentInventionJson(out,character);out<<",";
+        out<<"\"productionPlan\":";appendProductionPlanJson(out,simulation_->residentProductionPlan(resident.id));out<<",";
         out << "\"totalInventoryUnits\":" << civilization.totalInventoryUnits << ",";
         out << "\"gatheringSkill\":"; appendDouble(out, civilization.gatheringSkill); out << ",";
         out << "\"craftingSkill\":"; appendDouble(out, civilization.craftingSkill); out << ",";
