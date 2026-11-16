@@ -1,3 +1,10 @@
+## 2026-11-16 Android 앱 내 실행 멈춤 수정·공개 배포 완료
+
+- 사용자 보고: S23 울트라의 ChatGPT 내부 창에서 화면·버튼 전체 멈춤. 모바일 WebView 소프트웨어 GPU의 기존 공개 기본 3D에서 Qwen worker 0개여도 7,297ms 메인 점유 및 8초 무응답을 재현했다. 앞선 짧은 2D 확인과 실제 3D 실행을 구분한다.
+- [PR #1038](https://github.com/sjLim91/lifelens-ue/pull/1038) → UI main `91cae08f8594539a11962f8a01f320447ff02abd`. 정확한 head `8e39aa0a`의 3개 workflow 성공·병합 tree 동일. 앱 내 Android UA 및 `?safe=1`에서는 같은 Core를 GPU 없는 Canvas 2D로 관찰한다. 필요할 때만 3D 모듈을 불러오고, 기존 세계·저장·렌더 선호 설정을 유지한다. Core 소스·검증 런타임 `9202520`은 동일하다.
+- Pages Preview `43851155556`·Pages 배포 `43851311469`·External Probe `43851322925` 성공. 공개 JS blob과 후보 빌드가 일치했다. 공개 자동 호환 경로에서 50초 이상 연속 Core 08:00→18:24·버튼 124ms·GPU/worker/무거운 모듈 요청/오류 0, 실제 1109분 체크포인트 commit→동일 세계·18:29 재접속 확인. 일반 Chrome UA의 복구 URL도 Core 480→551분·오류 0으로 확인했다.
+- [인수·경계](ANDROID_EMBEDDED_FREEZE_2026-11-16.md) · [배포 증거](evidence/embedded-freeze-2026-11-16/release-proof.json). 물리 S23 또는 실제 Qwen 성공 추론의 증거는 아니다. M1 **6/7**, 전체 **27/86 완료·16 진행·43 미완**을 유지한다.
+
 ## 2026-11-16 M1-07 모델 캐시·GPU 호환성 수정 배포 완료 (M1 6/7 유지)
 
 - [PR #1036](https://github.com/sjLim91/lifelens-ue/pull/1036) → UI main `426d428774414bccc038ade61ddb1c3fc39acefe`. 검증 head `664cb8a4`와 병합 tree 동일, Web/WASM 인지/Preflight **3개 workflow 성공**. Core 소스·기존 검증 런타임 `9202520`은 변경하지 않았다.

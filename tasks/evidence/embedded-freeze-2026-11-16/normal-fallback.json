@@ -1,0 +1,9 @@
+{
+  "profile": "ordinary browser, real dynamic GPU modules, WebGL deliberately unavailable, actual Core canvas failover",
+  "worldChunkLoaded": true,
+  "avatarChunkLoaded": true,
+  "before": "1일차 · 08:08",
+  "after": "1일차 · 09:19",
+  "coreContinued": true,
+  "errors": []
+}

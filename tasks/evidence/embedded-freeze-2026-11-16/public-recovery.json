@@ -1,0 +1,14 @@
+{
+  "url": "https://sjlim91.github.io/lifelens-ue/?safe=1&v=91cae08",
+  "profile": "Public explicit safe URL with ordinary Android Chrome UA (no embedded marker), touch/DPR3, software GPU, no forced renderer failure",
+  "beforeMinute": 480,
+  "afterMinute": 551,
+  "clickMs": 598,
+  "gpuContexts": [],
+  "workers": [],
+  "heavyModuleRequests": [],
+  "errors": [],
+  "coreContinued": true,
+  "physicalDeviceValidation": false,
+  "neuralInferenceSuccess": false
+}
