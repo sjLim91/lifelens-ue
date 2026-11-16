@@ -7,6 +7,7 @@ import {
 import type { CognitiveProvider } from './cognitive-provider';
 import { CognitiveProviderError } from './cognitive-provider';
 import { cognitiveSystemPrompt } from './local-cognition-provider';
+import { useCanvasCompatibilityProfile } from '../runtime/device-performance';
 
 // Open-source quantized model. One shared browser engine reasons about each
 // resident's SEPARATE authoritative Core identity and memory context.
@@ -158,7 +159,8 @@ export class BrowserCognitionProvider implements CognitiveProvider {
 }
 
 export function browserWebGPUSupported(): boolean {
-  return typeof navigator !== 'undefined'
+  return !useCanvasCompatibilityProfile()
+    && typeof navigator !== 'undefined'
     && typeof (navigator as Navigator & { gpu?: unknown }).gpu !== 'undefined';
 }
 

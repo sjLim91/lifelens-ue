@@ -239,8 +239,71 @@ try {
       module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020,
     } },
   ).outputText;
+  {
+    const androidChrome = 'Mozilla/5.0 (Linux; Android 13; SM-S918B) Chrome/131.0.0.0 Mobile Safari/537.36';
+    const androidWebView = 'Mozilla/5.0 (Linux; Android 13; SM-S918B; wv) Version/4.0 Chrome/131.0.0.0 Mobile Safari/537.36';
+    const requires = devicePerformance.canvasCompatibilityRequired;
+    assert.equal(requires(androidWebView, ''), true);
+    assert.equal(requires(androidChrome + ' ChatGPT/1.2026', ''), true);
+    assert.equal(requires(androidChrome, ''), false);
+    assert.equal(requires('Desktop Chrome', ''), false);
+    assert.equal(requires(androidChrome, '?safe=1'), true,
+      'a custom tab with an ordinary Chrome UA can use the recovery URL');
+    assert.equal(requires(androidChrome, '?safe=0'), false);
+    assert.equal(requires(androidWebView, '?safe=0'), true);
+
+    const initStart = engineSource.indexOf('const canvasCompatibility =');
+    const initEnd = engineSource.indexOf('function enterCanvasFailover(', initStart);
+    const presentationStart = engineSource.indexOf('async function initializePresentation()');
+    const presentationEnd = engineSource.indexOf('let followResidents', presentationStart);
+    assert(initStart >= 0 && initEnd > initStart);
+    assert(presentationStart >= 0 && presentationEnd > presentationStart);
+    const presentation = engineSource.slice(presentationStart, presentationEnd)
+      .replace(/await import\(['"]\.\/render\/world-renderer['"]\)/g, 'await loadWorldRenderer()')
+      .replace(/await import\(['"]\.\/character-layer['"]\)/g, 'await loadCharacterLayer()');
+    const initialize = new Function('useCanvasCompatibilityProfile', 'readRenderMode',
+      'loadWorldRenderer', 'loadCharacterLayer', 'console', `
+      const canvas = {style:{}}, threeWorldCanvas = {style:{}}, characterCanvas = {style:{}};
+      let stopped = false;
+      ${engineSource.slice(initStart, initEnd)}
+      const residentContinuity = {};
+      const document = {createElement:()=>({setAttribute(){}})};
+      class LegacyCanvasWorldRenderer {}
+      function resizeCanvas() {}
+      function enterCanvasFailover() {}
+      ${presentation}
+      return { ready: initializePresentation(), stop:()=>{stopped=true},
+        state:()=>({requestedRenderMode,effectiveRenderMode}) };
+    `);
+    for (const [ua, query, stored, mode, gpuCount] of [
+      [androidWebView, '', 'three-world', 'legacy-canvas', 0],
+      [androidChrome, '?safe=1', 'three-world', 'legacy-canvas', 0],
+      [androidChrome, '', 'three-world', 'three-world', 1],
+      [androidChrome, '', 'legacy-canvas', 'legacy-canvas', 1],
+    ]) {
+      let constructed = 0, imports = 0;
+      class GPU { constructor() { constructed++; } start() {} }
+      const result = initialize(() => requires(ua, query), () => stored,
+        async()=>{imports++;return {WorldRenderer:GPU}},
+        async()=>{imports++;return {CharacterLayer:GPU}}, { warn() {} });
+      await result.ready;
+      assert.equal(result.state().effectiveRenderMode, mode);
+      assert.equal(constructed, gpuCount,
+        'compatibility startup must avoid both world and avatar WebGL contexts');
+      assert.equal(imports, gpuCount,
+        'compatibility startup must not download or evaluate the heavy 3D dependency graph');
+    }
+    let complete, obsoleteAllocations=0;
+    const pending=initialize(()=>false,()=> 'three-world',
+      ()=>new Promise(resolve=>{complete=resolve}),async()=>{}, {warn(){}});
+    pending.stop();
+    complete({WorldRenderer:class{constructor(){obsoleteAllocations++}}});
+    await pending.ready;
+    assert.equal(obsoleteAllocations,0,'a disposed engine cannot allocate a late GPU renderer');
+    console.log('PASS Android embedded/recovery startup creates no GPU context; ordinary browser keeps 3D');
+  }
   const begin = engineSource.indexOf('function enterCanvasFailover(');
-  const end = engineSource.indexOf("if (requestedRenderMode === 'three-world')", begin);
+  const end = engineSource.indexOf('let worldSession =', begin);
   assert(begin >= 0 && end > begin);
   const failoverCode = engineSource.slice(begin, end);
 

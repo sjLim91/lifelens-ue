@@ -1,0 +1,693 @@
+{
+  "base": "03693a38bbfa15ab8321ab27f2693e31c6d6b97f",
+  "publicUiSha": "426d428774414bccc038ade61ddb1c3fc39acefe",
+  "profile": "S23 Ultra-sized touch/DPR3 Android WebView UA; software WebGL/WebGPU; actual production app, default 3D; no physical phone claim",
+  "samples": [
+    {
+      "wall": 1794824409774,
+      "clock": "1일차 · 00:00",
+      "status": "연결 중시뮬레이션 코어 불러오는 중…",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 847.7000000029802,
+            "duration": 3507
+          }
+        ],
+        "beats": 3,
+        "frames": 18,
+        "workers": []
+      },
+      "heap": 109000000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "0"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 530,
+          "height": 1069,
+          "opacity": "1"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        }
+      ]
+    },
+    {
+      "wall": 1794824417477,
+      "clock": "1일차 · 08:00",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 847.7000000029802,
+            "duration": 3507
+          },
+          {
+            "start": 4972.900000002235,
+            "duration": 214
+          }
+        ],
+        "beats": 6,
+        "frames": 31,
+        "workers": []
+      },
+      "heap": 109000000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "0"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 530,
+          "height": 1069,
+          "opacity": "1"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        }
+      ]
+    },
+    {
+      "wall": 1794824420647,
+      "clock": "1일차 · 08:28",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 847.7000000029802,
+            "duration": 3507
+          },
+          {
+            "start": 4972.900000002235,
+            "duration": 214
+          },
+          {
+            "start": 5369.800000000745,
+            "duration": 7297
+          },
+          {
+            "start": 12675.300000000745,
+            "duration": 1184
+          },
+          {
+            "start": 13963.70000000298,
+            "duration": 107
+          },
+          {
+            "start": 14076,
+            "duration": 105
+          },
+          {
+            "start": 14341.800000000745,
+            "duration": 140
+          },
+          {
+            "start": 14569,
+            "duration": 170
+          },
+          {
+            "start": 14750.70000000298,
+            "duration": 114
+          }
+        ],
+        "beats": 10,
+        "frames": 41,
+        "workers": []
+      },
+      "heap": 109000000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "0"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 530,
+          "height": 1069,
+          "opacity": "1"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        }
+      ]
+    },
+    {
+      "wall": 1794824424470,
+      "clock": "1일차 · 09:17",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 847.7000000029802,
+            "duration": 3507
+          },
+          {
+            "start": 4972.900000002235,
+            "duration": 214
+          },
+          {
+            "start": 5369.800000000745,
+            "duration": 7297
+          },
+          {
+            "start": 12675.300000000745,
+            "duration": 1184
+          },
+          {
+            "start": 13963.70000000298,
+            "duration": 107
+          },
+          {
+            "start": 14076,
+            "duration": 105
+          },
+          {
+            "start": 14341.800000000745,
+            "duration": 140
+          },
+          {
+            "start": 14569,
+            "duration": 170
+          },
+          {
+            "start": 14750.70000000298,
+            "duration": 114
+          },
+          {
+            "start": 15082.60000000149,
+            "duration": 214
+          },
+          {
+            "start": 15353.10000000149,
+            "duration": 232
+          },
+          {
+            "start": 15585.900000002235,
+            "duration": 256
+          },
+          {
+            "start": 15873.900000002235,
+            "duration": 306
+          },
+          {
+            "start": 16201.10000000149,
+            "duration": 147
+          },
+          {
+            "start": 16600.900000002235,
+            "duration": 101
+          }
+        ],
+        "beats": 14,
+        "frames": 50,
+        "workers": []
+      },
+      "heap": 109000000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "0"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 530,
+          "height": 1069,
+          "opacity": "1"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        }
+      ]
+    },
+    {
+      "wall": 1794824428649,
+      "clock": "1일차 · 09:53",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 847.7000000029802,
+            "duration": 3507
+          },
+          {
+            "start": 4972.900000002235,
+            "duration": 214
+          },
+          {
+            "start": 5369.800000000745,
+            "duration": 7297
+          },
+          {
+            "start": 12675.300000000745,
+            "duration": 1184
+          },
+          {
+            "start": 13963.70000000298,
+            "duration": 107
+          },
+          {
+            "start": 14076,
+            "duration": 105
+          },
+          {
+            "start": 14341.800000000745,
+            "duration": 140
+          },
+          {
+            "start": 14569,
+            "duration": 170
+          },
+          {
+            "start": 14750.70000000298,
+            "duration": 114
+          },
+          {
+            "start": 15082.60000000149,
+            "duration": 214
+          },
+          {
+            "start": 15353.10000000149,
+            "duration": 232
+          },
+          {
+            "start": 15585.900000002235,
+            "duration": 256
+          },
+          {
+            "start": 15873.900000002235,
+            "duration": 306
+          },
+          {
+            "start": 16201.10000000149,
+            "duration": 147
+          },
+          {
+            "start": 16600.900000002235,
+            "duration": 101
+          },
+          {
+            "start": 16702.800000000745,
+            "duration": 2177
+          },
+          {
+            "start": 18880.70000000298,
+            "duration": 200
+          },
+          {
+            "start": 19085.60000000149,
+            "duration": 389
+          },
+          {
+            "start": 19495.400000002235,
+            "duration": 147
+          },
+          {
+            "start": 19675.60000000149,
+            "duration": 198
+          },
+          {
+            "start": 20268.800000000745,
+            "duration": 979
+          },
+          {
+            "start": 21263.20000000298,
+            "duration": 628
+          },
+          {
+            "start": 21966.900000002235,
+            "duration": 129
+          },
+          {
+            "start": 22096.5,
+            "duration": 1581
+          }
+        ],
+        "beats": 18,
+        "frames": 51,
+        "workers": []
+      },
+      "heap": 109000000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "0"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 530,
+          "height": 1069,
+          "opacity": "1"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        }
+      ]
+    },
+    {
+      "wall": 1794824431359,
+      "clock": "1일차 · 10:31",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 847.7000000029802,
+            "duration": 3507
+          },
+          {
+            "start": 4972.900000002235,
+            "duration": 214
+          },
+          {
+            "start": 5369.800000000745,
+            "duration": 7297
+          },
+          {
+            "start": 12675.300000000745,
+            "duration": 1184
+          },
+          {
+            "start": 13963.70000000298,
+            "duration": 107
+          },
+          {
+            "start": 14076,
+            "duration": 105
+          },
+          {
+            "start": 14341.800000000745,
+            "duration": 140
+          },
+          {
+            "start": 14569,
+            "duration": 170
+          },
+          {
+            "start": 14750.70000000298,
+            "duration": 114
+          },
+          {
+            "start": 15082.60000000149,
+            "duration": 214
+          },
+          {
+            "start": 15353.10000000149,
+            "duration": 232
+          },
+          {
+            "start": 15585.900000002235,
+            "duration": 256
+          },
+          {
+            "start": 15873.900000002235,
+            "duration": 306
+          },
+          {
+            "start": 16201.10000000149,
+            "duration": 147
+          },
+          {
+            "start": 16600.900000002235,
+            "duration": 101
+          },
+          {
+            "start": 16702.800000000745,
+            "duration": 2177
+          },
+          {
+            "start": 18880.70000000298,
+            "duration": 200
+          },
+          {
+            "start": 19085.60000000149,
+            "duration": 389
+          },
+          {
+            "start": 19495.400000002235,
+            "duration": 147
+          },
+          {
+            "start": 19675.60000000149,
+            "duration": 198
+          },
+          {
+            "start": 20268.800000000745,
+            "duration": 979
+          },
+          {
+            "start": 21263.20000000298,
+            "duration": 628
+          },
+          {
+            "start": 21966.900000002235,
+            "duration": 129
+          },
+          {
+            "start": 22096.5,
+            "duration": 1581
+          },
+          {
+            "start": 23684.5,
+            "duration": 153
+          },
+          {
+            "start": 23844.60000000149,
+            "duration": 618
+          },
+          {
+            "start": 24466.5,
+            "duration": 599
+          },
+          {
+            "start": 25065.900000002235,
+            "duration": 219
+          },
+          {
+            "start": 25286.20000000298,
+            "duration": 996
+          },
+          {
+            "start": 26282.70000000298,
+            "duration": 158
+          }
+        ],
+        "beats": 20,
+        "frames": 51,
+        "workers": []
+      },
+      "heap": 109000000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "0"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 530,
+          "height": 1069,
+          "opacity": "1"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        }
+      ]
+    },
+    {
+      "wall": 1794824434873,
+      "clock": "1일차 · 10:48",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 847.7000000029802,
+            "duration": 3507
+          },
+          {
+            "start": 4972.900000002235,
+            "duration": 214
+          },
+          {
+            "start": 5369.800000000745,
+            "duration": 7297
+          },
+          {
+            "start": 12675.300000000745,
+            "duration": 1184
+          },
+          {
+            "start": 13963.70000000298,
+            "duration": 107
+          },
+          {
+            "start": 14076,
+            "duration": 105
+          },
+          {
+            "start": 14341.800000000745,
+            "duration": 140
+          },
+          {
+            "start": 14569,
+            "duration": 170
+          },
+          {
+            "start": 14750.70000000298,
+            "duration": 114
+          },
+          {
+            "start": 15082.60000000149,
+            "duration": 214
+          },
+          {
+            "start": 15353.10000000149,
+            "duration": 232
+          },
+          {
+            "start": 15585.900000002235,
+            "duration": 256
+          },
+          {
+            "start": 15873.900000002235,
+            "duration": 306
+          },
+          {
+            "start": 16201.10000000149,
+            "duration": 147
+          },
+          {
+            "start": 16600.900000002235,
+            "duration": 101
+          },
+          {
+            "start": 16702.800000000745,
+            "duration": 2177
+          },
+          {
+            "start": 18880.70000000298,
+            "duration": 200
+          },
+          {
+            "start": 19085.60000000149,
+            "duration": 389
+          },
+          {
+            "start": 19495.400000002235,
+            "duration": 147
+          },
+          {
+            "start": 19675.60000000149,
+            "duration": 198
+          },
+          {
+            "start": 20268.800000000745,
+            "duration": 979
+          },
+          {
+            "start": 21263.20000000298,
+            "duration": 628
+          },
+          {
+            "start": 21966.900000002235,
+            "duration": 129
+          },
+          {
+            "start": 22096.5,
+            "duration": 1581
+          },
+          {
+            "start": 23684.5,
+            "duration": 153
+          },
+          {
+            "start": 23844.60000000149,
+            "duration": 618
+          },
+          {
+            "start": 24466.5,
+            "duration": 599
+          },
+          {
+            "start": 25065.900000002235,
+            "duration": 219
+          },
+          {
+            "start": 25286.20000000298,
+            "duration": 996
+          },
+          {
+            "start": 26282.70000000298,
+            "duration": 158
+          },
+          {
+            "start": 26736.800000000745,
+            "duration": 313
+          },
+          {
+            "start": 27067.5,
+            "duration": 2704
+          }
+        ],
+        "beats": 23,
+        "frames": 51,
+        "workers": []
+      },
+      "heap": 109000000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "0"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 530,
+          "height": 1069,
+          "opacity": "1"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        }
+      ]
+    }
+  ],
+  "failure": "main thread unreachable for 8s",
+  "qwenWorkerCount": 0,
+  "maxObservedLongTaskMs": 7297
+}

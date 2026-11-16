@@ -1,6 +1,6 @@
 import { shadowObserver } from './cognition/shadow-observer';
 import { residentAI } from './cognition/live-resident-ai';
-import { CharacterLayer } from './character-layer';
+import type { CharacterLayer } from './character-layer';
 import { LifeLensCoreBridge } from './runtime/core-bridge';
 import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
 import { SimulationClock } from './runtime/simulation-clock';
@@ -31,7 +31,8 @@ import { CameraInput } from './input/camera-input';
 
 import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer';
 import { readRenderMode } from './render/render-mode';
-import { WorldRenderer } from './render/world-renderer';
+import { useCanvasCompatibilityProfile } from './runtime/device-performance';
+import type { WorldRenderer } from './render/world-renderer';
 
 function generateWorldSeed(): string {
   const words = new Uint32Array(2);
@@ -52,7 +53,8 @@ export function startObserverEngine(): () => void {
   const canvas = requireCanvas('#worldCanvas');
   const threeWorldCanvas = requireCanvas('#threeWorldCanvas');
   const characterCanvas = requireCanvas('#characterCanvas');
-  const requestedRenderMode = readRenderMode();
+  const canvasCompatibility = useCanvasCompatibilityProfile();
+  const requestedRenderMode = canvasCompatibility ? 'legacy-canvas' : readRenderMode();
 
   let effectiveRenderMode = requestedRenderMode;
   let threeWorldRenderer: WorldRenderer | null = null;
@@ -96,33 +98,6 @@ export function startObserverEngine(): () => void {
     }
   }
 
-  if (requestedRenderMode === 'three-world') {
-    try {
-      threeWorldRenderer = new WorldRenderer(
-        threeWorldCanvas, enterCanvasFailover,
-      );
-      threeWorldRenderer.start();
-    } catch (error) {
-      effectiveRenderMode = 'legacy-canvas';
-      startupRenderFailure = error instanceof Error ? error.message : String(error);
-      console.warn('LifeLens Three World unavailable; using 2D fallback', error);
-    }
-  }
-
-  if (effectiveRenderMode === 'legacy-canvas') {
-    try {
-      characterLayer = new CharacterLayer(characterCanvas, () => drawWorld());
-    } catch (error) {
-      // A broken GPU cannot be the prerequisite for a Canvas 2D rescue.
-      startupRenderFailure ??= error instanceof Error ? error.message : String(error);
-      console.warn('Legacy WebGL avatars unavailable; using 2D resident markers', error);
-    }
-  }
-
-  canvas.style.opacity = effectiveRenderMode === 'legacy-canvas' ? '1' : '0';
-  threeWorldCanvas.style.opacity = effectiveRenderMode === 'three-world' ? '1' : '0';
-  characterCanvas.style.opacity = effectiveRenderMode === 'legacy-canvas' ? '1' : '0';
-  
   let worldSession: WorldSession | null = null;
   let centerX = 0;
   let centerY = 0;
@@ -131,19 +106,55 @@ export function startObserverEngine(): () => void {
   const residentContinuity = new ResidentContinuity(
     OBSERVER_RUNTIME_CONTRACT.residentContinuityGraceMs,
   );
-  if (effectiveRenderMode === 'legacy-canvas') {
-    legacyRenderer = new LegacyCanvasWorldRenderer(
-      canvas, characterLayer ?? { ready: false, setResidents: () => {} },
-      residentContinuity,
-    );
-    if (startupRenderFailure) {
-      renderFailureBanner = document.createElement('div');
-      renderFailureBanner.className = 'render-fallback-banner';
-      renderFailureBanner.setAttribute('role', 'status');
-      renderFailureBanner.textContent =
-        '3D 그래픽 장치를 사용할 수 없어 2D 관찰 모드로 실행합니다.';
-      canvas.parentElement?.appendChild(renderFailureBanner);
+
+  async function initializePresentation(): Promise<void> {
+    if (requestedRenderMode === 'three-world') {
+      try {
+        const { WorldRenderer } = await import('./render/world-renderer');
+        if (stopped) return;
+        threeWorldRenderer = new WorldRenderer(
+          threeWorldCanvas, enterCanvasFailover,
+        );
+        threeWorldRenderer.start();
+      } catch (error) {
+        effectiveRenderMode = 'legacy-canvas';
+        startupRenderFailure = error instanceof Error ? error.message : String(error);
+        console.warn('LifeLens Three World unavailable; using 2D fallback', error);
+      }
     }
+
+    if (effectiveRenderMode === 'legacy-canvas' && !canvasCompatibility) {
+      try {
+        const { CharacterLayer } = await import('./character-layer');
+        if (stopped) return;
+        characterLayer = new CharacterLayer(characterCanvas, () => drawWorld());
+      } catch (error) {
+        // A broken GPU cannot be the prerequisite for a Canvas 2D rescue.
+        startupRenderFailure ??= error instanceof Error ? error.message : String(error);
+        console.warn('Legacy WebGL avatars unavailable; using 2D resident markers', error);
+      }
+    }
+
+    canvas.style.opacity = effectiveRenderMode === 'legacy-canvas' ? '1' : '0';
+    threeWorldCanvas.style.opacity = effectiveRenderMode === 'three-world' ? '1' : '0';
+    characterCanvas.style.opacity = effectiveRenderMode === 'legacy-canvas' ? '1' : '0';
+
+    if (effectiveRenderMode === 'legacy-canvas') {
+      legacyRenderer = new LegacyCanvasWorldRenderer(
+        canvas, characterLayer ?? { ready: false, setResidents: () => {} },
+        residentContinuity,
+      );
+      if (startupRenderFailure || canvasCompatibility) {
+        renderFailureBanner = document.createElement('div');
+        renderFailureBanner.className = 'render-fallback-banner';
+        renderFailureBanner.setAttribute('role', 'status');
+        renderFailureBanner.textContent = canvasCompatibility
+          ? '앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.'
+          : '3D 그래픽 장치를 사용할 수 없어 2D 관찰 모드로 실행합니다.';
+        canvas.parentElement?.appendChild(renderFailureBanner);
+      }
+    }
+    resizeCanvas();
   }
   let followResidents = false;
   let simulationClock: SimulationClock | null = null;
@@ -755,6 +766,8 @@ export function startObserverEngine(): () => void {
       const lease = await acquireWorldWriterLease();
       if (stopped) { lease.release(); return; }
       worldWriterLease = lease;
+      await initializePresentation();
+      if (stopped) return;
       const core = await LifeLensCoreBridge.connect();
       if (stopped) { core.dispose(); return; }
       ownedCore = core;
