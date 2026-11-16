@@ -231,7 +231,10 @@ async function loadBuiltinWebGPUEngine(
   try {
     const engine = await Promise.race([
       webllm.CreateWebWorkerMLCEngine(worker, modelId, {
-        appConfig: { ...webllm.prebuiltAppConfig, cacheBackend: 'indexeddb' },
+        // Qwen's FP32 embedding shard is 155,582,464 bytes. Chromium rejects
+        // a single IndexedDB value above ~127 MiB, so that backend cannot
+        // cache this model. Cache API stores the response as a streamed blob.
+        appConfig: { ...webllm.prebuiltAppConfig, cacheBackend: 'cache' },
       }),
       crashed,
       cancelled,

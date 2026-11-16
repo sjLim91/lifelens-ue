@@ -1,0 +1,133 @@
+worker http://127.0.0.1:5173/src/cognition/qwen-webgpu.worker.ts
+asset-http 307 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/mlc-chat-config.json
+asset-http 200 https://huggingface.co/api/resolve-cache/models/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/bddd4d584cabe19113f7e4ff46fd9e73b4d3dc89/mlc-chat-config.json
+asset-http 200 https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_86/base/Qwen3-1.7B-q4f32_1_cs1k-webgpu.wasm
+Falling back to maxComputeInvocationsPerWorkgroup=256 due to device limit=256
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/tokenizer.json
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/693ec4b3922b0bd306bf7b4989e115ffbfeb7b0c08b31bc6d956818c6bb07f61
+asset-http 307 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/tensor-cache.json
+asset-http 200 https://huggingface.co/api/resolve-cache/models/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/bddd4d584cabe19113f7e4ff46fd9e73b4d3dc89/tensor-cache.json
+model-progress {"progress":0,"timeElapsed":0,"text":"Start to fetch params"}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_0.bin
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_7.bin
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_21.bin
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_14.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/d8ab75718c61364a84d36027a1783fc51bf925bebc680fa108121bfd1307c745
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/0b995072213131da74650a5b9f3c2df684541af371d86e9fe459807d5e360075
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/2d11ffe44b0295d983bfb028ad213ce6e9ec1c0453dc3aca53dd8d22f2e0d964
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/53244985dff0b9863d35a69c7d1d18aead6626fa317be7aec19376adecf8fac9
+model-progress {"progress":0.029256416386512843,"timeElapsed":6,"text":"Fetching param cache[1/30]: 28MB fetched. 2% completed, 6 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_15.bin
+model-progress {"progress":0.058512832773025686,"timeElapsed":6,"text":"Fetching param cache[2/30]: 55MB fetched. 5% completed, 6 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_8.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/6ac59bbdbe4f789a81398230c3b145f98051d87d27fa002dc6c045fd58310102
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/c89b871d68316877c594a6ab36c5dd47c4709bf5b91fb2c120579414a10928e7
+model-progress {"progress":0.08776924915953853,"timeElapsed":7,"text":"Fetching param cache[3/30]: 82MB fetched. 8% completed, 7 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_22.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/da6bedd0563a4ff20d7aed1803b5289e4b37a0480676e7c1d6dfc3cde39a228b
+model-progress {"progress":0.11702566554605137,"timeElapsed":10,"text":"Fetching param cache[4/30]: 109MB fetched. 11% completed, 10 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_16.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/2bcf96ffab08911d08b849f259b3377f8e03760d000771d69c8c42142f625a99
+model-progress {"progress":0.1462820819325642,"timeElapsed":11,"text":"Fetching param cache[5/30]: 136MB fetched. 14% completed, 11 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_9.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/a062f0eadd7f5508a30c61d0d11da7c15bbf2b97b2027ca23847e1e1bfc032d5
+model-progress {"progress":0.17553849831907706,"timeElapsed":12,"text":"Fetching param cache[6/30]: 163MB fetched. 17% completed, 12 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_23.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/88fb8e149a71bf86aad10bc111bcc2bf0c439dff148e28b3152fc588427cb4a2
+model-progress {"progress":0.2047949147055899,"timeElapsed":15,"text":"Fetching param cache[7/30]: 190MB fetched. 20% completed, 15 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_17.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/9fade1ad42234eb4eed60018326bbbb8d13b0b440e9fe48c6912f55bfbaf303b
+model-progress {"progress":0.23405133109210274,"timeElapsed":16,"text":"Fetching param cache[8/30]: 217MB fetched. 23% completed, 16 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_10.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/40235a9a371dc83cdea264b0d833aa04f0211376adb24dc54c234e912d0f78d5
+model-progress {"progress":0.2633077474786156,"timeElapsed":17,"text":"Fetching param cache[9/30]: 244MB fetched. 26% completed, 17 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_24.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/7d4c921c3c5f0bdaba21eebb125bc0c9fb362b784a85f526c876922a07b72f37
+model-progress {"progress":0.2925641638651284,"timeElapsed":20,"text":"Fetching param cache[10/30]: 271MB fetched. 29% completed, 20 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_18.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/7efb47ab528576ae8a0639ad0d85221d5564eceeb92bbe228b2656cd23404e7f
+model-progress {"progress":0.32182058025164123,"timeElapsed":22,"text":"Fetching param cache[11/30]: 298MB fetched. 32% completed, 22 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+model-progress {"progress":0.3510769966381541,"timeElapsed":22,"text":"Fetching param cache[12/30]: 325MB fetched. 35% completed, 22 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_11.bin
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_25.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/f88a9fe398a8451babc990e98c90b2801c1a99ae947a216572a05c904c2dacef
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/02e04bbd0423258225b9c269577cd69ff3e9fc9aa6e8e273f795fcb329bcf683
+model-progress {"progress":0.38033341302466694,"timeElapsed":26,"text":"Fetching param cache[13/30]: 352MB fetched. 38% completed, 26 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_19.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/caa2e5d9d659abc29348f10153a9609d426e0a03bfb334374d9a3d2dc5bc28bb
+model-progress {"progress":0.4095898294111798,"timeElapsed":28,"text":"Fetching param cache[14/30]: 379MB fetched. 40% completed, 28 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+model-progress {"progress":0.4388462457976926,"timeElapsed":29,"text":"Fetching param cache[15/30]: 406MB fetched. 43% completed, 29 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_12.bin
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_26.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/a23ec93b89e4747dd23ff52d6e5ba8689e42983cc25fe5423c0539a97cfc35ba
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/a437fdcc8f49cc63d6ef4deba0f79c0b004131ce44f079f238dd7077a1f6e18c
+model-progress {"progress":0.5995716767127113,"timeElapsed":30,"text":"Fetching param cache[16/30]: 554MB fetched. 59% completed, 30 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_1.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/8ed38501d89eaff2f77a34085aebf123f7b34bfff353f526ead14485fc546898
+model-progress {"progress":0.6288280930992242,"timeElapsed":32,"text":"Fetching param cache[17/30]: 581MB fetched. 62% completed, 32 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_20.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/e1a5868df4d92f8ac1d190771ae4eb7cb76c3a3089019271904d8e2d5a037b72
+model-progress {"progress":0.658084509485737,"timeElapsed":33,"text":"Fetching param cache[18/30]: 608MB fetched. 65% completed, 33 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_27.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/19bf20f32af92ef1efc553a39b6e1904f4dfdface513eac31165d5ecaaae14e5
+model-progress {"progress":0.6873409258722498,"timeElapsed":35,"text":"Fetching param cache[19/30]: 635MB fetched. 68% completed, 35 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_13.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/3bd6519f43c153708466f05db4a21fda1c089ebe59485417cdea4c1a3fab43a6
+model-progress {"progress":0.7147476923011825,"timeElapsed":37,"text":"Fetching param cache[20/30]: 660MB fetched. 71% completed, 37 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+model-progress {"progress":0.7440041086876953,"timeElapsed":37,"text":"Fetching param cache[21/30]: 687MB fetched. 74% completed, 37 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_2.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/85d90da7df98336e8d65d60458ab937508c480c2d0040bef084eb5c3d829fce1
+model-progress {"progress":0.7732605250742082,"timeElapsed":40,"text":"Fetching param cache[22/30]: 714MB fetched. 77% completed, 40 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_28.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/211770ee11e931c14a50f1dde52a263915c3474e18633c778211a3aee803093a
+model-progress {"progress":0.802516941460721,"timeElapsed":41,"text":"Fetching param cache[23/30]: 741MB fetched. 80% completed, 41 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+model-progress {"progress":0.8317733578472338,"timeElapsed":44,"text":"Fetching param cache[24/30]: 768MB fetched. 83% completed, 44 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_29.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/81b8ab1a0032314e0f9651ed474af95cf14daf1c11a371479b040dc5b2b79e76
+model-progress {"progress":0.8610297742337467,"timeElapsed":45,"text":"Fetching param cache[25/30]: 795MB fetched. 86% completed, 45 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_3.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/32314e8c017f7aa68d5764c9b61d4b291716fdebb1cbaa026f08ba7277a3630a
+model-progress {"progress":0.8829743344539487,"timeElapsed":48,"text":"Fetching param cache[26/30]: 816MB fetched. 88% completed, 48 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+model-progress {"progress":0.9122307508404615,"timeElapsed":51,"text":"Fetching param cache[27/30]: 843MB fetched. 91% completed, 51 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_4.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/7fe563649115da42008b66a0ae22a2eb588b8d5e227690da61a1d74643c4f3cb
+model-progress {"progress":0.9414871672269743,"timeElapsed":55,"text":"Fetching param cache[28/30]: 870MB fetched. 94% completed, 55 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_5.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/9fbb0a218f321f3428875b7508ab9aec42d02ef95cca089fbe0ac5693b83a888
+model-progress {"progress":0.9707435836134871,"timeElapsed":61,"text":"Fetching param cache[29/30]: 897MB fetched. 97% completed, 61 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+asset-http 302 https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f32_1-MLC/resolve/main/params_shard_6.bin
+asset-http 200 https://us.aws.cdn.hf.co/xet-bridge-us/681326a28a7590f77e5803f4/3dcd35af2291ac07143a4acf1410fcdb1e27808fcd3af0463d2ad24046063fce
+model-progress {"progress":1,"timeElapsed":67,"text":"Fetching param cache[30/30]: 924MB fetched. 100% completed, 67 secs elapsed. It can take a while when we first visit this page to populate the cache. Later refreshes will become faster."}
+model-progress {"progress":0.1607254309150187,"timeElapsed":68,"text":"Loading model from cache[1/30]: 149MB loaded. 16% completed, 68 secs elapsed."}
+model-progress {"progress":0.1881321973439513,"timeElapsed":68,"text":"Loading model from cache[2/30]: 174MB loaded. 18% completed, 68 secs elapsed."}
+model-progress {"progress":0.21738861373046417,"timeElapsed":68,"text":"Loading model from cache[3/30]: 201MB loaded. 21% completed, 68 secs elapsed."}
+model-progress {"progress":0.246645030116977,"timeElapsed":68,"text":"Loading model from cache[4/30]: 228MB loaded. 24% completed, 68 secs elapsed."}
+model-progress {"progress":0.27590144650348986,"timeElapsed":69,"text":"Loading model from cache[5/30]: 255MB loaded. 27% completed, 69 secs elapsed."}
+model-progress {"progress":0.3051578628900027,"timeElapsed":69,"text":"Loading model from cache[6/30]: 282MB loaded. 30% completed, 69 secs elapsed."}
+model-progress {"progress":0.3344142792765155,"timeElapsed":69,"text":"Loading model from cache[7/30]: 309MB loaded. 33% completed, 69 secs elapsed."}
+model-progress {"progress":0.36367069566302834,"timeElapsed":69,"text":"Loading model from cache[8/30]: 336MB loaded. 36% completed, 69 secs elapsed."}
+model-progress {"progress":0.3929271120495412,"timeElapsed":69,"text":"Loading model from cache[9/30]: 363MB loaded. 39% completed, 69 secs elapsed."}
+model-progress {"progress":0.42218352843605406,"timeElapsed":70,"text":"Loading model from cache[10/30]: 390MB loaded. 42% completed, 70 secs elapsed."}
+model-progress {"progress":0.4514399448225669,"timeElapsed":70,"text":"Loading model from cache[11/30]: 417MB loaded. 45% completed, 70 secs elapsed."}
+model-progress {"progress":0.4806963612090797,"timeElapsed":70,"text":"Loading model from cache[12/30]: 444MB loaded. 48% completed, 70 secs elapsed."}
+model-progress {"progress":0.5099527775955925,"timeElapsed":70,"text":"Loading model from cache[13/30]: 471MB loaded. 50% completed, 70 secs elapsed."}
+model-progress {"progress":0.5392091939821054,"timeElapsed":71,"text":"Loading model from cache[14/30]: 498MB loaded. 53% completed, 71 secs elapsed."}
+model-progress {"progress":0.5684656103686183,"timeElapsed":71,"text":"Loading model from cache[15/30]: 525MB loaded. 56% completed, 71 secs elapsed."}
+model-progress {"progress":0.5977220267551311,"timeElapsed":71,"text":"Loading model from cache[16/30]: 552MB loaded. 59% completed, 71 secs elapsed."}
+model-progress {"progress":0.626978443141644,"timeElapsed":71,"text":"Loading model from cache[17/30]: 579MB loaded. 62% completed, 71 secs elapsed."}
+model-progress {"progress":0.6562348595281567,"timeElapsed":72,"text":"Loading model from cache[18/30]: 606MB loaded. 65% completed, 72 secs elapsed."}
+model-progress {"progress":0.6854912759146696,"timeElapsed":72,"text":"Loading model from cache[19/30]: 633MB loaded. 68% completed, 72 secs elapsed."}
+model-progress {"progress":0.7147476923011825,"timeElapsed":72,"text":"Loading model from cache[20/30]: 660MB loaded. 71% completed, 72 secs elapsed."}
+model-progress {"progress":0.7440041086876953,"timeElapsed":72,"text":"Loading model from cache[21/30]: 687MB loaded. 74% completed, 72 secs elapsed."}
+model-progress {"progress":0.7732605250742082,"timeElapsed":72,"text":"Loading model from cache[22/30]: 714MB loaded. 77% completed, 72 secs elapsed."}
+model-progress {"progress":0.802516941460721,"timeElapsed":72,"text":"Loading model from cache[23/30]: 741MB loaded. 80% completed, 72 secs elapsed."}
+model-progress {"progress":0.8317733578472338,"timeElapsed":73,"text":"Loading model from cache[24/30]: 768MB loaded. 83% completed, 73 secs elapsed."}
+model-progress {"progress":0.8610297742337467,"timeElapsed":73,"text":"Loading model from cache[25/30]: 795MB loaded. 86% completed, 73 secs elapsed."}
+model-progress {"progress":0.8902861906202595,"timeElapsed":73,"text":"Loading model from cache[26/30]: 822MB loaded. 89% completed, 73 secs elapsed."}
+model-progress {"progress":0.9195426070067724,"timeElapsed":73,"text":"Loading model from cache[27/30]: 849MB loaded. 91% completed, 73 secs elapsed."}
+model-progress {"progress":0.9487990233932851,"timeElapsed":74,"text":"Loading model from cache[28/30]: 876MB loaded. 94% completed, 74 secs elapsed."}
+model-progress {"progress":0.978055439779798,"timeElapsed":74,"text":"Loading model from cache[29/30]: 903MB loaded. 97% completed, 74 secs elapsed."}
+model-progress {"progress":1,"timeElapsed":74,"text":"Loading model from cache[30/30]: 924MB loaded. 100% completed, 74 secs elapsed."}
+model-progress {"progress":1,"timeElapsed":1,"text":"Loading GPU shader modules[4/4]: 100% completed, 1 secs elapsed."}
+model-progress {"progress":1,"timeElapsed":78.895,"text":"Finish loading on WebGPU - google"}
+{ model: 'Qwen3-1.7B-q4f32_1-MLC', loaded: true }
