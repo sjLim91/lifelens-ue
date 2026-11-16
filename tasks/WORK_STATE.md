@@ -1,3 +1,10 @@
+## 2026-11-16 M1-07 모델 캐시·GPU 호환성 수정 배포 완료 (M1 6/7 유지)
+
+- [PR #1036](https://github.com/sjLim91/lifelens-ue/pull/1036) → UI main `426d428774414bccc038ade61ddb1c3fc39acefe`. 검증 head `664cb8a4`와 병합 tree 동일, Web/WASM 인지/Preflight **3개 workflow 성공**. Core 소스·기존 검증 런타임 `9202520`은 변경하지 않았다.
+- 공식 Qwen FP32의 155,582,464-byte 조각이 Chromium IndexedDB 단일 값 제한을 넘는 문제를 실제 파일로 재현하고 Cache API로 수정했다. 보호 장치 전 모델 30조각 전체 초기화 78.895초·캐시 재사용 7.435초 성공. 실제 소프트웨어 추론 24초/별도 180초 모두 시간 초과이므로 성공 판단으로 계산하지 않는다.
+- 실제 fallback GPU의 긴 연산에 따른 화면 지연을 막기 위해 해당 adapter는 모델 import·worker 전에 거부한다. metadata 누락/FP32 하드웨어 GPU는 허용하며 모델·저장 게임·기존 캐시는 삭제/교체하지 않는다. 최종 공개 앱은 실제 SwiftShader에서 모델 worker 0개·오류 0개·Core **480→552분(6초)** 진행했다.
+- Pages Preview/배포/External Probe 성공. 공개 JS가 배포 blob과 일치하고 Cache API 및 fallback 보호 코드가 포함됨을 확인했다. [배포 증거](evidence/m1-qwen-cache-2026-11-16/release-proof.json) · [구현·검증 경계](M1_QWEN_CACHE_2026-11-16.md). **M1 6/7**, 전체 **27/86 완료·16 진행·43 미완** 유지. 지원 GPU의 실제 Qwen 성공 추론 인수는 미입증이며 물리 기기·발열을 새 gate로 추가하지 않는다.
+
 ## 2026-11-16 M1-01~06 통합·배포 완료 / M1-07 실제 추론 검증 대기
 
 - [PR #1034](https://github.com/sjLim91/lifelens-ue/pull/1034) → main `9202520ef972618bacb237815e12cbc9e76335b8`. 최종 head `4721e006271845e645cc74965816b7d3d30ee516`의 Core **183/183**, 결정론·365일 및 Web/WASM/인지/Preflight/자율성/지구/야생 **10개 workflow 성공**. [Core CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43804846622). Runtime Release·Pages·External Probe 성공 및 실제 공개 런타임 출처를 확인했다. [배포 출처](evidence/m1-2026-11-16/release-proof.json).

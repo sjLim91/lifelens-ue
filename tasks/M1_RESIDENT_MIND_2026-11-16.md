@@ -31,3 +31,7 @@
 - 변경하지 않은 새 게임 두 시드 × **1000일**, 1/100/365/1000일 32개 주민 체크포인트: 모든 표시 근거 역추적·48개 감각 기억 상한·binary 왕복 성공. 1000일 생존자는 각각 1/4·2/4이며 장기 생존/G1 완료를 뜻하지 않는다. 실제 native→검증 WASM의 개인 기억/발신자/요약·중간 재생 동일. 실제 Core React UI 320/393/915/1440px와 재접속의 오류/overflow 0(2D fallback).
 - **M1은 6/7**이다. M1-07의 스케줄·취소·만료·모델 부재 처리와 제한된 개인 문맥은 구현했지만, 실제 Qwen 소프트웨어 WebGPU 로딩은 480,361ms에서 제한 시간 종료(`modelLoaded=false`)했다. 실제 신경망 추론 성공/품질/지연을 입증하지 못했으므로 M1-07은 진행으로 유지한다. 기존 지시대로 물리 기기·발열은 제외한다.
 - 원시 검증 결과: [검증 요약](evidence/m1-2026-11-16/validation-summary.json) · [공개 배포 증거](evidence/m1-2026-11-16/release-proof.json). 전체 **27/86 완료·16 진행·43 미완/미검증**. M2/M3/G1 및 다른 단위는 승격하지 않는다.
+
+## M1-07 후속 로딩·GPU 호환성 수정
+
+[#1036](https://github.com/sjLim91/lifelens-ue/pull/1036) UI main `426d4287`의 대용량 Cache API 및 software fallback GPU 선행 거부를 공개 배포했다. 공개 Core는 6초간 480→552분 진행·오류/모델 worker 0개였고 Pages/External Probe가 성공했다. [상세 인수 경계](M1_QWEN_CACHE_2026-11-16.md) · [배포 출처](evidence/m1-qwen-cache-2026-11-16/release-proof.json). 성공 신경망 추론은 여전히 미입증으로 **M1 6/7**을 유지한다.
