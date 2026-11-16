@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
+import { useCanvasCompatibilityProfile } from '../runtime/device-performance';
 import { GlobeInput } from '../input/globe-input';
 import {
   paintNaturalEarthTexture,
@@ -55,6 +55,11 @@ export function EarthGlobePreview({
     let aborted = false;
     let cleanup = () => {};
     const start = async () => {
+      if (useCanvasCompatibilityProfile()) {
+        throw new Error('호환 모드에서는 3D 지구본을 준비하지 않습니다. 일반 브라우저에서 이용해 주세요.');
+      }
+      const THREE = await import('three');
+      if (aborted) return;
       const response = await fetch(`${import.meta.env.BASE_URL}earth/ne_110m_land.geojson`);
       if (!response.ok) throw new Error('지구 자연지리 자료를 읽지 못했습니다.');
       const land = await response.json() as EarthLandFeatureCollection;

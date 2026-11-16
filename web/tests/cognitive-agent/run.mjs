@@ -81,6 +81,30 @@ await test('software WebGPU cannot monopolize the Core compositor; hardware with
   ])assert.equal(residentModelAdapterSupported(adapter),true);
 });
 
+await test('embedded and recovery rendering never starts a GPU model; ordinary browser still loads Qwen',async()=>{
+  const oldWindow=globalThis.window;
+  const oldNavigator=Object.getOwnPropertyDescriptor(globalThis,'navigator');
+  Object.defineProperty(globalThis,'navigator',{configurable:true,value:{gpu:{}}});
+  try {
+    for(const [ua,search,expectedLoads] of [
+      ['Android; wv','',0],['Android Chrome','?safe=1',0],['Android Chrome','',1],
+    ]){
+      globalThis.window={navigator:{userAgent:ua},location:{search}};
+      let loads=0;
+      const provider=await createBrowserResidentCognition(undefined,async()=>{
+        loads++;return {chat:{completions:{create:async()=>({choices:[]})}}};
+      });
+      assert.equal(loads,expectedLoads);
+      assert.equal(provider!==null,expectedLoads===1);
+      await provider?.dispose();
+    }
+  } finally {
+    if(oldWindow===undefined)delete globalThis.window;else globalThis.window=oldWindow;
+    if(oldNavigator)Object.defineProperty(globalThis,'navigator',oldNavigator);
+    else delete globalThis.navigator;
+  }
+});
+
 await test('M1 derived personal hierarchy retains evidence and rejects forged sensory origins',()=>{
   const mind={curiosity:.6,habit:.2,attachment:.3,riskTolerance:.5,trust:.5,
     eligibleEpisodes:2,omittedSummaries:0,

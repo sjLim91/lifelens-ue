@@ -1,0 +1,1562 @@
+{
+  "clickMs": 137,
+  "profile": "S23 Ultra-sized Android WebView UA, touch/DPR3, software WebGL/WebGPU, real candidate code, automatic embedded compatibility (no forced canvas failure)",
+  "samples": [
+    {
+      "wall": 1794825280029,
+      "clock": "1일차 · 08:00",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          }
+        ],
+        "beats": 2,
+        "frames": 9,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825283028,
+      "clock": "1일차 · 08:42",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          }
+        ],
+        "beats": 16,
+        "frames": 158,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825285549,
+      "clock": "1일차 · 09:22",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          }
+        ],
+        "beats": 24,
+        "frames": 215,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825288212,
+      "clock": "1일차 · 09:42",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          }
+        ],
+        "beats": 32,
+        "frames": 307,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825290748,
+      "clock": "1일차 · 10:24",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          }
+        ],
+        "beats": 45,
+        "frames": 430,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825293254,
+      "clock": "1일차 · 10:54",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          }
+        ],
+        "beats": 54,
+        "frames": 531,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825295764,
+      "clock": "1일차 · 11:24",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          }
+        ],
+        "beats": 67,
+        "frames": 646,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825298278,
+      "clock": "1일차 · 11:54",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          }
+        ],
+        "beats": 77,
+        "frames": 748,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825300790,
+      "clock": "1일차 · 12:24",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          }
+        ],
+        "beats": 90,
+        "frames": 891,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825303303,
+      "clock": "1일차 · 12:54",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          }
+        ],
+        "beats": 102,
+        "frames": 1037,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825305807,
+      "clock": "1일차 · 13:24",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          }
+        ],
+        "beats": 115,
+        "frames": 1183,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825308351,
+      "clock": "1일차 · 13:54",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          },
+          {
+            "start": 31197.300000000745,
+            "duration": 289
+          },
+          {
+            "start": 32456.10000000149,
+            "duration": 167
+          }
+        ],
+        "beats": 127,
+        "frames": 1304,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825310858,
+      "clock": "1일차 · 14:24",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          },
+          {
+            "start": 31197.300000000745,
+            "duration": 289
+          },
+          {
+            "start": 32456.10000000149,
+            "duration": 167
+          }
+        ],
+        "beats": 139,
+        "frames": 1441,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825313364,
+      "clock": "1일차 · 14:54",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          },
+          {
+            "start": 31197.300000000745,
+            "duration": 289
+          },
+          {
+            "start": 32456.10000000149,
+            "duration": 167
+          }
+        ],
+        "beats": 152,
+        "frames": 1585,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825315881,
+      "clock": "1일차 · 15:24",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          },
+          {
+            "start": 31197.300000000745,
+            "duration": 289
+          },
+          {
+            "start": 32456.10000000149,
+            "duration": 167
+          },
+          {
+            "start": 38697.300000000745,
+            "duration": 132
+          }
+        ],
+        "beats": 164,
+        "frames": 1727,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825318392,
+      "clock": "1일차 · 15:54",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          },
+          {
+            "start": 31197.300000000745,
+            "duration": 289
+          },
+          {
+            "start": 32456.10000000149,
+            "duration": 167
+          },
+          {
+            "start": 38697.300000000745,
+            "duration": 132
+          }
+        ],
+        "beats": 177,
+        "frames": 1872,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825320898,
+      "clock": "1일차 · 16:24",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          },
+          {
+            "start": 31197.300000000745,
+            "duration": 289
+          },
+          {
+            "start": 32456.10000000149,
+            "duration": 167
+          },
+          {
+            "start": 38697.300000000745,
+            "duration": 132
+          },
+          {
+            "start": 44956.300000000745,
+            "duration": 108
+          }
+        ],
+        "beats": 189,
+        "frames": 2015,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825323402,
+      "clock": "1일차 · 16:54",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          },
+          {
+            "start": 31197.300000000745,
+            "duration": 289
+          },
+          {
+            "start": 32456.10000000149,
+            "duration": 167
+          },
+          {
+            "start": 38697.300000000745,
+            "duration": 132
+          },
+          {
+            "start": 44956.300000000745,
+            "duration": 108
+          },
+          {
+            "start": 46197.300000000745,
+            "duration": 118
+          }
+        ],
+        "beats": 202,
+        "frames": 2157,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825325907,
+      "clock": "1일차 · 17:24",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          },
+          {
+            "start": 31197.300000000745,
+            "duration": 289
+          },
+          {
+            "start": 32456.10000000149,
+            "duration": 167
+          },
+          {
+            "start": 38697.300000000745,
+            "duration": 132
+          },
+          {
+            "start": 44956.300000000745,
+            "duration": 108
+          },
+          {
+            "start": 46197.300000000745,
+            "duration": 118
+          }
+        ],
+        "beats": 215,
+        "frames": 2302,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "wall": 1794825328412,
+      "clock": "1일차 · 17:54",
+      "status": "연결됨시뮬레이션 코어 연결됨",
+      "banner": "앱 내 브라우저 호환 모드 · 2D 화면으로 세계와 주민을 계속 관찰합니다.",
+      "freeze": {
+        "longTasks": [
+          {
+            "start": 310.4000000022352,
+            "duration": 3264
+          },
+          {
+            "start": 7447.300000000745,
+            "duration": 494
+          },
+          {
+            "start": 8697.300000000745,
+            "duration": 983
+          },
+          {
+            "start": 9947.400000002235,
+            "duration": 508
+          },
+          {
+            "start": 11197.199999999255,
+            "duration": 499
+          },
+          {
+            "start": 12447.300000000745,
+            "duration": 677
+          },
+          {
+            "start": 13697.300000000745,
+            "duration": 386
+          },
+          {
+            "start": 16197.300000000745,
+            "duration": 790
+          },
+          {
+            "start": 18697.300000000745,
+            "duration": 186
+          },
+          {
+            "start": 19956.199999999255,
+            "duration": 222
+          },
+          {
+            "start": 22447.300000000745,
+            "duration": 683
+          },
+          {
+            "start": 31197.300000000745,
+            "duration": 289
+          },
+          {
+            "start": 32456.10000000149,
+            "duration": 167
+          },
+          {
+            "start": 38697.300000000745,
+            "duration": 132
+          },
+          {
+            "start": 44956.300000000745,
+            "duration": 108
+          },
+          {
+            "start": 46197.300000000745,
+            "duration": 118
+          },
+          {
+            "start": 51197.199999999255,
+            "duration": 286
+          }
+        ],
+        "beats": 226,
+        "frames": 2433,
+        "workers": [],
+        "gpuContexts": []
+      },
+      "heap": 10600000,
+      "canvas": [
+        {
+          "id": "worldCanvas",
+          "width": 786,
+          "height": 1584,
+          "opacity": "1"
+        },
+        {
+          "id": "threeWorldCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "0"
+        },
+        {
+          "id": "characterCanvas",
+          "width": 300,
+          "height": 150,
+          "opacity": "1"
+        }
+      ]
+    }
+  ],
+  "events": [],
+  "savedCheckpoint": {
+    "minute": 1080,
+    "worldSeed": "2402437124697918155",
+    "bytes": 159440
+  },
+  "restoredClock": "1일차 · 18:00",
+  "realCommittedSaveReload": true,
+  "neuralInferenceSuccess": false,
+  "forbiddenGpuModules": [],
+  "requestedResources": 12,
+  "physicalDeviceValidation": false
+}
