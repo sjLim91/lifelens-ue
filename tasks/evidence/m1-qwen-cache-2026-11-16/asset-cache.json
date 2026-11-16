@@ -25,14 +25,16 @@
     "softwareWebGPU": true,
     "downloadedShards": 30,
     "modelLoaded": true,
-    "reportedSeconds": 78.895
+    "reportedSeconds": 78.895,
+    "scope": "Diagnostic before fallback-adapter guard; final production skips neural inference on reported software fallback adapters"
   },
   "testOnlySettings": [
     "Chromium SwiftShader software WebGPU",
     "executor proxy certificate exception confined to QA browser"
   ],
   "productionChanges": [
-    "WebLLM asset cache backend indexeddb -> cache"
+    "WebLLM asset cache backend indexeddb -> cache",
+    "Reject explicitly reported fallback adapters before WebLLM import/worker creation; hardware without shader-f16 remains eligible"
   ],
   "unchanged": [
     "single Qwen3-1.7B weights",
