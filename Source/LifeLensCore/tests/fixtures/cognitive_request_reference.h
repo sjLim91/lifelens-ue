@@ -27,6 +27,7 @@ inline CognitiveRequest referenceBuildCognitiveRequest(
     for(const MemoryRecord& memory:actor.memory.entries){
         CognitiveMemoryEvidence evidence;
         evidence.who=memory.who;
+        evidence.sourceCharacter=memory.sourceCharacter;
         evidence.source=memory.source;
         evidence.witnessed=memory.witnessed;
         evidence.minute=memory.minute;
