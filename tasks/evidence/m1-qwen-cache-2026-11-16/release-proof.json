@@ -1,0 +1,102 @@
+{
+  "status": "deployed-and-verified",
+  "pullRequest": "https://github.com/sjLim91/lifelens-ue/pull/1036",
+  "validatedHead": "664cb8a4e8be7bebd7ceac74ef29b9ad3b6204f8",
+  "validatedTree": "53406d7ef1650a9ad6b5f9261fab3f5a46cd9033",
+  "mainUiSha": "426d428774414bccc038ade61ddb1c3fc39acefe",
+  "mainUiTree": "53406d7ef1650a9ad6b5f9261fab3f5a46cd9033",
+  "coreRuntimeSha": "9202520ef972618bacb237815e12cbc9e76335b8",
+  "coreSourceUnchanged": true,
+  "coreReleaseEvidence": "../m1-2026-11-16/release-proof.json",
+  "exactHeadWorkflows": [
+    {
+      "id": 43845686989,
+      "name": "LifeLens Preflight",
+      "head_sha": "664cb8a4e8be7bebd7ceac74ef29b9ad3b6204f8",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43845686989"
+    },
+    {
+      "id": 43845686933,
+      "name": "Web Cognitive Agent",
+      "head_sha": "664cb8a4e8be7bebd7ceac74ef29b9ad3b6204f8",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43845686933"
+    },
+    {
+      "id": 43845686969,
+      "name": "LifeLens Web Checks",
+      "head_sha": "664cb8a4e8be7bebd7ceac74ef29b9ad3b6204f8",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43845686969"
+    }
+  ],
+  "deploymentWorkflows": {
+    "preview": {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "426d428774414bccc038ade61ddb1c3fc39acefe",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43846345141",
+      "id": 43846345141,
+      "name": "LifeLens Web Preview",
+      "status": "completed"
+    },
+    "pages": {
+      "conclusion": "success",
+      "event": "dynamic",
+      "head_sha": "d8af0e0825517e7d7429f4b556cb8a7e7894b396",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43846475604",
+      "id": 43846475604,
+      "name": "pages build and deployment",
+      "status": "completed"
+    },
+    "probe": {
+      "conclusion": "success",
+      "event": "workflow_run",
+      "head_sha": "426d428774414bccc038ade61ddb1c3fc39acefe",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43846487565",
+      "id": 43846487565,
+      "name": "External Preview Probe",
+      "status": "completed"
+    }
+  },
+  "publicHttp": {
+    "http": 200,
+    "script": "assets/index-CCozSj46.js",
+    "publicBlobSha": "573eb9d5d42631d47bda522713a39c518f701e48",
+    "pagesBlobSha": "573eb9d5d42631d47bda522713a39c518f701e48",
+    "pagesCommit": "d8af0e0825517e7d7429f4b556cb8a7e7894b396",
+    "blobMatches": true,
+    "cacheApiConfigured": true,
+    "fallbackGuardPresent": true,
+    "coreRuntimeSource": "9202520ef972618bacb237815e12cbc9e76335b8"
+  },
+  "publicBrowser": {
+    "url": "https://sjlim91.github.io/lifelens-ue/",
+    "profile": "Public production app, actual software WebGPU fallback reported; supported 2D presentation fallback",
+    "beforeMinute": 480,
+    "afterMinute": 552,
+    "adapter": {
+      "available": true,
+      "fallback": true,
+      "architecture": "swiftshader"
+    },
+    "qwenWorkers": 0,
+    "modelStatus": "unconnected",
+    "coreContinued": true,
+    "errors": [],
+    "neuralInferenceSuccess": false
+  },
+  "milestone": {
+    "done": 6,
+    "total": 7,
+    "inProgress": [
+      "M1-07"
+    ]
+  },
+  "neuralInferenceSuccess": false,
+  "remaining": "Actual successful Qwen proposal/quality/latency on a supported hardware WebGPU adapter is unproved in this CPU/software-GPU executor."
+}

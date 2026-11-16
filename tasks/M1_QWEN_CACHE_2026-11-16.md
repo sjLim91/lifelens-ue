@@ -25,3 +25,9 @@ WebLLM asset cache를 `indexeddb`에서 라이브러리 기본 지원인 `cache`
 [원래 모델·저장소 비교](evidence/m1-qwen-cache-2026-11-16/asset-cache.json) · [초기화 원시 로그](evidence/m1-qwen-cache-2026-11-16/initialization.log) · [제품 제한의 실제 추론](evidence/m1-qwen-cache-2026-11-16/software-webgpu-24s.json).
 
 M1-07의 성공 추론 인수는 여전히 미입증이다. **M1 6/7을 유지**한다.
+
+## 통합·공개 배포
+
+[#1036](https://github.com/sjLim91/lifelens-ue/pull/1036) → UI main `426d428774414bccc038ade61ddb1c3fc39acefe`, 검증 head `664cb8a4`와 tree 동일. 정확한 head의 Web Checks·Web Cognitive Agent·Preflight 세 workflow가 모두 성공했다. Core 소스와 검증 런타임 `9202520`은 동일하다.
+
+Pages Preview `43846345141`, Pages 배포 `43846475604`, External Probe `43846487565` 성공. 공개 JS가 gh-pages `d8af0e08`의 blob `573eb9d5d42631d47bda522713a39c518f701e48`과 같고 두 수정이 포함됨을 확인했다. 공개 실제 fallback GPU는 worker 0개·오류 0개·Core 480→552분(6초) 진행. [원시 배포 증거](evidence/m1-qwen-cache-2026-11-16/release-proof.json).
