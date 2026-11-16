@@ -1,0 +1,86 @@
+{
+  "status": "deployed-and-verified",
+  "pullRequest": "https://github.com/sjLim91/lifelens-ue/pull/1038",
+  "validatedHead": "8e39aa0aa4e5277b6216c9767fa9dc7ff0e834ff",
+  "validatedTree": "08836e0abd37fa9a139dfcf849f23cc9c1ac68fb",
+  "mainUiSha": "91cae08f8594539a11962f8a01f320447ff02abd",
+  "mainUiTree": "08836e0abd37fa9a139dfcf849f23cc9c1ac68fb",
+  "coreSourceUnchanged": true,
+  "coreRuntimeSha": "9202520ef972618bacb237815e12cbc9e76335b8",
+  "exactHeadWorkflows": [
+    {
+      "id": 43850573850,
+      "name": "LifeLens Preflight",
+      "head_sha": "8e39aa0aa4e5277b6216c9767fa9dc7ff0e834ff",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43850573850"
+    },
+    {
+      "id": 43850573662,
+      "name": "LifeLens Web Checks",
+      "head_sha": "8e39aa0aa4e5277b6216c9767fa9dc7ff0e834ff",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43850573662"
+    },
+    {
+      "id": 43850573756,
+      "name": "Web Cognitive Agent",
+      "head_sha": "8e39aa0aa4e5277b6216c9767fa9dc7ff0e834ff",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43850573756"
+    }
+  ],
+  "deploymentWorkflows": {
+    "preview": {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "91cae08f8594539a11962f8a01f320447ff02abd",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43851155556",
+      "id": 43851155556,
+      "name": "LifeLens Web Preview",
+      "status": "completed"
+    },
+    "pages": {
+      "conclusion": "success",
+      "event": "dynamic",
+      "head_sha": "8b6cc96be8769547fb9d761ed68b670100a4cf6b",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43851311469",
+      "id": 43851311469,
+      "name": "pages build and deployment",
+      "status": "completed"
+    },
+    "probe": {
+      "conclusion": "success",
+      "event": "workflow_run",
+      "head_sha": "91cae08f8594539a11962f8a01f320447ff02abd",
+      "html_url": "https://github.com/sjLim91/lifelens-ue/actions/runs/43851322925",
+      "id": 43851322925,
+      "name": "External Preview Probe",
+      "status": "completed"
+    }
+  },
+  "publicHttp": {
+    "http": 200,
+    "script": "assets/index-8yw8Gcn1.js",
+    "pagesCommit": "8b6cc96be8769547fb9d761ed68b670100a4cf6b",
+    "publicBlobSha": "fc7d9794025ddbf12c1694f0830f616650773dfb",
+    "pagesBlobSha": "fc7d9794025ddbf12c1694f0830f616650773dfb",
+    "candidateBuildMatches": true,
+    "compatibilityBannerPresent": true,
+    "safeQueryPresent": true,
+    "coreRuntime": "9202520ef972618bacb237815e12cbc9e76335b8"
+  },
+  "publicAutoEvidence": "public-auto.json",
+  "publicRecoveryEvidence": "public-recovery.json",
+  "normalBrowserFailureEvidence": "normal-fallback.json",
+  "milestoneCountsUnchanged": true,
+  "physicalDeviceValidation": false,
+  "neuralInferenceSuccess": false,
+  "entryBytes": {
+    "previousPublicUi": 1524418,
+    "currentPublicUi": 522691
+  }
+}

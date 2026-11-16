@@ -1,0 +1,255 @@
+{
+  "url": "https://sjlim91.github.io/lifelens-ue/?v=91cae08",
+  "profile": "S23 Ultra-sized Android WebView UA, touch/DPR3, software WebGL/WebGPU, real public production code, automatic embedded compatibility (no forced canvas failure)",
+  "sampleCount": 20,
+  "sampledSeconds": 50.053,
+  "clickMs": 124,
+  "firstClock": "1일차 · 08:00",
+  "lastClock": "1일차 · 18:24",
+  "continuousHeartbeatAndFrames": true,
+  "samples": [
+    {
+      "wall": 1794825851792,
+      "clock": "1일차 · 08:00",
+      "beats": 5,
+      "frames": 36,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825854299,
+      "clock": "1일차 · 08:54",
+      "beats": 16,
+      "frames": 152,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825857607,
+      "clock": "1일차 · 09:15",
+      "beats": 20,
+      "frames": 189,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825861646,
+      "clock": "1일차 · 09:34",
+      "beats": 22,
+      "frames": 191,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825864157,
+      "clock": "1일차 · 10:48",
+      "beats": 26,
+      "frames": 218,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825866667,
+      "clock": "1일차 · 11:18",
+      "beats": 39,
+      "frames": 342,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825869178,
+      "clock": "1일차 · 11:48",
+      "beats": 50,
+      "frames": 444,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825871685,
+      "clock": "1일차 · 12:18",
+      "beats": 62,
+      "frames": 570,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825874199,
+      "clock": "1일차 · 12:49",
+      "beats": 75,
+      "frames": 696,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825876752,
+      "clock": "1일차 · 13:24",
+      "beats": 87,
+      "frames": 815,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825879265,
+      "clock": "1일차 · 13:54",
+      "beats": 100,
+      "frames": 953,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825881784,
+      "clock": "1일차 · 14:24",
+      "beats": 112,
+      "frames": 1069,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825884294,
+      "clock": "1일차 · 14:54",
+      "beats": 125,
+      "frames": 1213,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825886800,
+      "clock": "1일차 · 15:24",
+      "beats": 138,
+      "frames": 1342,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825889306,
+      "clock": "1일차 · 15:54",
+      "beats": 150,
+      "frames": 1483,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825891813,
+      "clock": "1일차 · 16:24",
+      "beats": 163,
+      "frames": 1623,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825894318,
+      "clock": "1일차 · 16:54",
+      "beats": 175,
+      "frames": 1764,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825896827,
+      "clock": "1일차 · 17:24",
+      "beats": 188,
+      "frames": 1886,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825899336,
+      "clock": "1일차 · 17:54",
+      "beats": 196,
+      "frames": 1975,
+      "heap": 10000000
+    },
+    {
+      "wall": 1794825901845,
+      "clock": "1일차 · 18:24",
+      "beats": 206,
+      "frames": 2068,
+      "heap": 10000000
+    }
+  ],
+  "longTasks": [
+    {
+      "start": 1239.800000000745,
+      "duration": 3382
+    },
+    {
+      "start": 6693.199999999255,
+      "duration": 110
+    },
+    {
+      "start": 8494.10000000149,
+      "duration": 484
+    },
+    {
+      "start": 9744.199999999255,
+      "duration": 1150
+    },
+    {
+      "start": 10994.199999999255,
+      "duration": 1512
+    },
+    {
+      "start": 12508.10000000149,
+      "duration": 2099
+    },
+    {
+      "start": 14651.699999999255,
+      "duration": 1891
+    },
+    {
+      "start": 16546.800000000745,
+      "duration": 1503
+    },
+    {
+      "start": 18091.699999999255,
+      "duration": 274
+    },
+    {
+      "start": 18643.39999999851,
+      "duration": 102
+    },
+    {
+      "start": 22246.199999999255,
+      "duration": 435
+    },
+    {
+      "start": 28494.10000000149,
+      "duration": 250
+    },
+    {
+      "start": 29747.699999999255,
+      "duration": 227
+    },
+    {
+      "start": 30994.10000000149,
+      "duration": 153
+    },
+    {
+      "start": 32244.10000000149,
+      "duration": 143
+    },
+    {
+      "start": 34744.10000000149,
+      "duration": 217
+    },
+    {
+      "start": 35994.10000000149,
+      "duration": 197
+    },
+    {
+      "start": 40994.10000000149,
+      "duration": 191
+    },
+    {
+      "start": 50994.10000000149,
+      "duration": 211
+    },
+    {
+      "start": 52244.199999999255,
+      "duration": 846
+    },
+    {
+      "start": 54744.10000000149,
+      "duration": 220
+    },
+    {
+      "start": 55994.199999999255,
+      "duration": 686
+    }
+  ],
+  "gpuContexts": [],
+  "workers": [],
+  "forbiddenGpuModules": [],
+  "errors": [],
+  "savedCheckpoint": {
+    "minute": 1109,
+    "worldSeed": "15315957424514282850",
+    "bytes": 173740
+  },
+  "restoredClock": "1일차 · 18:29",
+  "realCommittedSaveReload": true,
+  "physicalDeviceValidation": false,
+  "neuralInferenceSuccess": false
+}
