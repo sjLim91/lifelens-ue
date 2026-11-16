@@ -1,0 +1,8 @@
+{
+  "profile": "actual Core app and production Qwen worker on software WebGPU; 2D presentation fallback",
+  "beforeMinute": 480,
+  "afterMinute": 552,
+  "modelWorkers": 1,
+  "coreContinued": true,
+  "neuralInferenceSuccess": false
+}

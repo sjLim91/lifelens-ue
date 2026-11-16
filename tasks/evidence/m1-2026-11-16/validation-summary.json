@@ -1,0 +1,97 @@
+{
+  "validatedHead": "4721e006271845e645cc74965816b7d3d30ee516",
+  "nativeWasmProductSource": "f23afad8069d384c63612203825e68e6ff51bf78",
+  "productCoreUnchangedAfterEvidence": true,
+  "nativeTests": {
+    "allRegressionCount": 183,
+    "naturalSuccessMemorySeeds": [
+      874213954,
+      874213955,
+      42
+    ],
+    "contextAllocationBaselineBytes": 9003515,
+    "contextAllocationCandidateBytes": 904127
+  },
+  "longrun": {
+    "seeds": [
+      874213954,
+      4242001
+    ],
+    "days": [
+      1,
+      100,
+      365,
+      1000
+    ],
+    "residentCheckpoints": 32,
+    "perceptionMemoryLimit": 48,
+    "maxDisplayedSummaries": 24,
+    "originalEpisodesRetained": true
+  },
+  "browser": {
+    "profile": "real Core WASM and React UI, WebGL deliberately disabled to exercise supported 2D fallback; no physical GPU or model claim",
+    "results": [
+      {
+        "width": 320,
+        "height": 568,
+        "overflow": false,
+        "actualCoreMindVisible": true
+      },
+      {
+        "width": 393,
+        "height": 852,
+        "overflow": false,
+        "actualCoreMindVisible": true
+      },
+      {
+        "width": 915,
+        "height": 412,
+        "overflow": false,
+        "actualCoreMindVisible": true
+      },
+      {
+        "width": 1440,
+        "height": 900,
+        "overflow": false,
+        "actualCoreMindVisible": true
+      }
+    ],
+    "reload": true,
+    "errors": []
+  },
+  "wasm": {
+    "source": "f23afad8069d384c63612203825e68e6ff51bf78",
+    "nativeWasmPersonalMindEqual": true,
+    "speakerPreserved": true,
+    "readOnly": true,
+    "binaryContinuation": true,
+    "ciRuntime": 43803203227
+  },
+  "qwen": {
+    "softwareGPU": true,
+    "adapterAvailable": true,
+    "modelLoaded": false,
+    "inference": "unavailable",
+    "loadMs": 480361
+  },
+  "coreDuringActualModelInitialization": {
+    "profile": "actual Core app and production Qwen worker on software WebGPU; 2D presentation fallback",
+    "beforeMinute": 480,
+    "afterMinute": 552,
+    "modelWorkers": 1,
+    "coreContinued": true,
+    "neuralInferenceSuccess": false
+  },
+  "m1CompletedUnits": [
+    "M1-01",
+    "M1-02",
+    "M1-03",
+    "M1-04",
+    "M1-05",
+    "M1-06"
+  ],
+  "m1IncompleteUnits": [
+    "M1-07"
+  ],
+  "physicalDeviceAndThermalTesting": "excluded by prior user instruction; no hardware inference or performance claim"
+}
