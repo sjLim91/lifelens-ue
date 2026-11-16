@@ -32,6 +32,9 @@ function visibleTags(memory: ResidentMemory): string[] {
 function semanticKey(memory: ResidentMemory, tags: string[]): string {
   return [
     memory.who ?? '',
+    memory.source ?? 'unknown',
+    memory.witnessed === true ? 'witnessed' : memory.witnessed === false ? 'unwitnessed' : 'unknown',
+    memory.sourceCharacter ?? 'unknown',
     formatMemoryText(memory.what),
     formatLocationText(memory.where),
     tags.join('|'),
