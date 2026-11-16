@@ -1,3 +1,11 @@
+## 2026-11-16 M1-01~06 통합·배포 완료 / M1-07 실제 추론 검증 대기
+
+- [PR #1034](https://github.com/sjLim91/lifelens-ue/pull/1034) → main `9202520ef972618bacb237815e12cbc9e76335b8`. 최종 head `4721e006271845e645cc74965816b7d3d30ee516`의 Core **183/183**, 결정론·365일 및 Web/WASM/인지/Preflight/자율성/지구/야생 **10개 workflow 성공**. [Core CI](https://github.com/sjLim91/lifelens-ue/actions/runs/43804846622). Runtime Release·Pages·External Probe 성공 및 실제 공개 런타임 출처를 확인했다. [배포 출처](evidence/m1-2026-11-16/release-proof.json).
+- 실제 가림·시각/흔적/불 소리, 발신자·출처별 기억과 개인 장소/자원/위험/사람/도구 요약, 근거 ID와 저장 재생, 한 판단 슬롯의 개인 경험 성향을 통합했다. 직접 경험·전언·추정·다른 발신자의 같은 문장을 UI에서도 합치지 않는다. 기존 v8 저장·기본 성격·생존 선점·단일 Qwen을 보존한다.
+- 변경하지 않은 새 게임 두 시드 × **1000일**, 1/100/365/1000일 32개 주민 체크포인트: 모든 표시 근거 역추적·48개 감각 기억 상한·binary 왕복 성공. 1000일 생존자는 각각 1/4·2/4이며 장기 생존/G1 완료를 뜻하지 않는다. 실제 native→검증 WASM의 개인 기억/발신자/요약·중간 재생 동일. 실제 Core React UI 320/393/915/1440px와 재접속의 오류/overflow 0(2D fallback).
+- **M1은 6/7**이다. M1-07의 스케줄·취소·만료·모델 부재 처리와 제한된 개인 문맥은 구현했지만, 실제 Qwen 소프트웨어 WebGPU 로딩은 480,361ms에서 제한 시간 종료(`modelLoaded=false`)했다. 실제 신경망 추론 성공/품질/지연을 입증하지 못했으므로 M1-07은 진행으로 유지한다. 기존 지시대로 물리 기기·발열은 제외한다.
+- 단위별 경로·원시 증거: [M1 인수 기록](M1_RESIDENT_MIND_2026-11-16.md). 전체 **27/86 완료·16 진행·43 미완/미검증**. M2/M3/G1 및 다른 단위는 승격하지 않는다.
+
 ## 2026-11-15 AL-2 Core 제작 목표·실패 회복 병합·배포 완료
 
 - [PR #1032](https://github.com/sjLim91/lifelens-ue/pull/1032) → main `c5fba0266c0542874719c01a824d985c40257da7`. 검증 head `40bf67d80911b38a18886de770e75fdca46965c2`와 병합 tree 동일, 필수 CI **9/9** 성공: [Core 182/182·인과·장기 생존](https://github.com/sjLim91/lifelens-ue/actions/runs/43686469830), Web WASM·Web Checks·Preflight·Autonomy·Earth·Wildlife. [Runtime Release](https://github.com/sjLim91/lifelens-ue/actions/runs/43689628377) · [Pages Preview](https://github.com/sjLim91/lifelens-ue/actions/runs/43689785812) · [Pages 배포](https://github.com/sjLim91/lifelens-ue/actions/runs/43689851814) · [External Probe](https://github.com/sjLim91/lifelens-ue/actions/runs/43689857777) 성공.
