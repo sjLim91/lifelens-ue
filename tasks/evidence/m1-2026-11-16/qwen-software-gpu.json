@@ -1,0 +1,7 @@
+{
+  "softwareGPU": true,
+  "adapterAvailable": true,
+  "modelLoaded": false,
+  "inference": "unavailable",
+  "loadMs": 480361
+}

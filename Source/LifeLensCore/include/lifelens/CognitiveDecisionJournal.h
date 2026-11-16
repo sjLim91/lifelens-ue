@@ -80,6 +80,7 @@ inline std::uint64_t cognitiveRequestFingerprint(const CognitiveRequest& r)
         // Same words with different origins must NOT share a context hash.
         integer(static_cast<std::uint64_t>(m.source));
         integer(m.witnessed ? 1ULL : 0ULL);
+        if(m.sourceCharacter){integer(0x4d454d535243ULL);integer(m.sourceCharacter);}
         number(m.recallScore);number(m.confidence);number(m.importance);
         number(m.emotionValence);number(m.emotionIntensity);
         str(m.what);str(m.where);
@@ -107,6 +108,35 @@ inline std::uint64_t cognitiveRequestFingerprint(const CognitiveRequest& r)
                 static_cast<std::int64_t>(fact.position.y)));
             integer(static_cast<std::uint64_t>(fact.distanceCells));
             integer(static_cast<std::uint64_t>(fact.abundance));
+        }
+    }
+    if(r.hasMindObservation){
+        integer(0x4d494e445631ULL);
+        const auto& mind=r.mindObservation;
+        for(double value:{mind.curiosity,mind.habit,mind.attachment,mind.riskTolerance,mind.trust}) number(value);
+        integer(mind.eligibleEpisodes);integer(mind.omittedSummaries);
+        integer(mind.summaries.size());
+        for(const auto& summary:mind.summaries){
+            str(summary.domain);integer(static_cast<std::uint64_t>(summary.source));
+            integer(summary.subject);integer(summary.episodes);
+            integer(summary.successes);integer(summary.failures);
+            integer(summary.firstMinute);integer(summary.lastMinute);number(summary.stance);
+            integer(summary.omittedEvidence);integer(summary.evidenceIds.size());
+            for(const auto id:summary.evidenceIds) integer(id);
+        }
+        integer(mind.places.size());
+        for(const auto& place:mind.places){
+            str(place.place);integer(place.minute);number(place.confidence);
+            integer(static_cast<std::uint64_t>(place.source));integer(place.evidenceId);
+        }
+    }
+    if(!r.sensoryFacts.empty()){
+        integer(0x53454e534f5259ULL);integer(r.sensoryFacts.size());
+        for(const auto& fact:r.sensoryFacts){
+            integer(static_cast<std::uint64_t>(fact.channel));
+            integer(static_cast<std::uint64_t>(fact.subject));integer(fact.subjectId);
+            integer(fact.minute);integer(fact.hasPosition);integer(fact.position.x);
+            integer(fact.position.y);integer(fact.distanceCells);
         }
     }
     integer(r.beliefs.size());

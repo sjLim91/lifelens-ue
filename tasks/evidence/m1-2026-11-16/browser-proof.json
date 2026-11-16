@@ -1,0 +1,31 @@
+{
+  "profile": "real Core WASM and React UI, WebGL deliberately disabled to exercise supported 2D fallback; no physical GPU or model claim",
+  "results": [
+    {
+      "width": 320,
+      "height": 568,
+      "overflow": false,
+      "actualCoreMindVisible": true
+    },
+    {
+      "width": 393,
+      "height": 852,
+      "overflow": false,
+      "actualCoreMindVisible": true
+    },
+    {
+      "width": 915,
+      "height": 412,
+      "overflow": false,
+      "actualCoreMindVisible": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "actualCoreMindVisible": true
+    }
+  ],
+  "reload": true,
+  "errors": []
+}

@@ -43,6 +43,19 @@ export function worldPresentationChecks({ test, source, flatWindow }) {
   });
 
   const { SimulationClock } = source('runtime/simulation-clock.ts');
+  test('같은 내용의 직접 경험·전언·추정과 다른 발신자는 별도 기억으로 남긴다', () => {
+    const base = { who: '2', what: 'heard help', where: 'grid:1,2', minute: 20,
+      confidence: 1, tags: ['social'] };
+    const direct = { ...base, source: 'DirectWitness', witnessed: true, sourceCharacter: '1' };
+    const told = { ...base, source: 'ToldByOther', witnessed: false, sourceCharacter: '3' };
+    const input = [direct, told, { ...told, sourceCharacter: '4' },
+      { ...base, source: 'Inferred', witnessed: false, sourceCharacter: '1' }, base];
+    const before = JSON.stringify(input);
+    const groups = summarizeResidentMemories(input, 8);
+    assert.equal(groups.length, 5);
+    assert(groups.every(group => group.repeatCount === 1));
+    assert.equal(JSON.stringify(input), before);
+  });
   const { SIMULATION_TIME_CONTRACT: time, REAL_MS_PER_SIMULATION_MINUTE_AT_1X: msPerMinute } = source('runtime/lifelens-contract.ts');
   const resident = (x, y = 0) => ({ id: 'walker', alive: true, hasPosition: true, gridX: x, gridY: y });
   function actualClock(speed, check) {

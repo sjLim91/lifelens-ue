@@ -70,6 +70,52 @@ const proposal=(req,intent=req.allowedIntents[0],targetResident=null)=>({
   rationale:'Short factual reason.',
 });
 
+await test('M1 derived personal hierarchy retains evidence and rejects forged sensory origins',()=>{
+  const mind={curiosity:.6,habit:.2,attachment:.3,riskTolerance:.5,trust:.5,
+    eligibleEpisodes:2,omittedSummaries:0,
+    summaries:[{domain:'resource',source:'DirectWitness',subject:'0',episodes:2,
+      successes:1,failures:1,firstMinute:80,lastMinute:90,stance:0,
+      omittedEvidence:0,evidenceIds:['11','12']}],
+    places:[{place:'grid:1,2',minute:90,source:'Inferred',confidence:.4,evidenceId:'11'}],
+    perceptions:[{channel:'청각',subject:'place',subjectId:'0',minute:100,distanceCells:4,hasPosition:false}]};
+  const input={...request(),mind};
+  assert.deepEqual(parseCognitiveRequest(input).mind,mind);
+  for(const mutate of [
+    m=>{m.summaries[0].evidenceIds.push('11');},
+    m=>{m.summaries[0].lastMinute=101;},
+    m=>{m.summaries[0].successes=3;},
+    m=>{m.perceptions[0].subjectId='10';},
+    m=>{m.perceptions[0].hasPosition=true;m.perceptions[0].x=3;m.perceptions[0].y=4;},
+    m=>{m.perceptions[0].minute=99;},
+    m=>{m.curiosity=NaN;},
+  ]){
+    const changed=structuredClone(input);mutate(changed.mind);
+    assert.throws(()=>parseCognitiveRequest(changed));
+  }
+});
+
+await test('M1 queued thought expires before spending another GPU call',async()=>{
+  let minute=100,finish;
+  const calls=[];
+  const provider={name:'controlled-queue',reason:async(req)=>{
+    calls.push(req.actor);
+    if(req.actor==='1')await new Promise(resolve=>{finish=resolve;});
+    return proposal(req);
+  }};
+  const scheduler=new CognitionScheduler(provider,()=>minute,
+    {maxConcurrent:1,maxQueued:1,timeoutMs:1000,staleAfterSimulationMinutes:5});
+  const first=scheduler.submitObserved(request('1'));
+  await Promise.resolve();
+  const queued=scheduler.submitObserved(request('2'));
+  minute=106;finish();
+  assert.equal((await first).status,'stale');
+  assert.equal((await queued).status,'stale');
+  assert.deepEqual(calls,['1']);
+  // The discarded actor watermark must not strand its next fresh thought.
+  assert.equal((await scheduler.submitObserved(request('2',106))).status,'validated');
+  scheduler.dispose();
+});
+
 await test('only loopback local endpoints are accepted',()=>{
   for(const value of [
     'http://localhost:8080',

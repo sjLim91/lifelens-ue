@@ -240,6 +240,54 @@ bool parseCognitiveTriggerName(
     return true;
 }
 
+void appendResidentMindJson(std::ostringstream& out,const ResidentMindObservation& mind,
+    const std::vector<PerceptionFact>& perceptions={})
+{
+    out << "{\"curiosity\":";appendDouble(out,mind.curiosity);
+    out << ",\"habit\":";appendDouble(out,mind.habit);
+    out << ",\"attachment\":";appendDouble(out,mind.attachment);
+    out << ",\"riskTolerance\":";appendDouble(out,mind.riskTolerance);
+    out << ",\"trust\":";appendDouble(out,mind.trust);
+    out << ",\"eligibleEpisodes\":" << mind.eligibleEpisodes;
+    out << ",\"omittedSummaries\":" << mind.omittedSummaries;
+    out << ",\"summaries\":[";
+    bool first=true;
+    for(const auto& summary:mind.summaries){
+        if(!first)out << ",";first=false;
+        out << "{\"domain\":\"" << escapeJson(summary.domain) << "\",\"source\":\""
+            << cognitiveMemorySourceName(summary.source) << "\",\"subject\":\"" << summary.subject
+            << "\",\"episodes\":" << summary.episodes << ",\"successes\":" << summary.successes
+            << ",\"failures\":" << summary.failures << ",\"firstMinute\":" << summary.firstMinute
+            << ",\"lastMinute\":" << summary.lastMinute << ",\"stance\":";
+        appendDouble(out,summary.stance);
+        out << ",\"omittedEvidence\":" << summary.omittedEvidence << ",\"evidenceIds\":[";
+        for(std::size_t i=0;i<summary.evidenceIds.size();++i){
+            if(i)out << ",";out << "\"" << summary.evidenceIds[i] << "\"";
+        }
+        out << "]}";
+    }
+    out << "],\"places\":[";first=true;
+    for(const auto& place:mind.places){
+        if(!first)out << ",";first=false;
+        out << "{\"place\":\"" << escapeJson(place.place) << "\",\"minute\":" << place.minute
+            << ",\"source\":\"" << cognitiveMemorySourceName(place.source) << "\",\"confidence\":";
+        appendDouble(out,place.confidence);
+        out << ",\"evidenceId\":\"" << place.evidenceId << "\"}";
+    }
+    out << "],\"perceptions\":[";first=true;
+    for(const auto& fact:perceptions){
+        if(!first)out << ",";first=false;
+        out << "{\"channel\":\"" << perceptionChannelName(fact.channel)
+            << "\",\"subject\":\"" << perceptionSubjectName(fact.subject)
+            << "\",\"subjectId\":\"" << fact.subjectId << "\",\"minute\":" << fact.minute
+            << ",\"distanceCells\":" << fact.distanceCells
+            << ",\"hasPosition\":" << (fact.hasPosition?"true":"false");
+        if(fact.hasPosition)out << ",\"x\":" << fact.position.x << ",\"y\":" << fact.position.y;
+        out << "}";
+    }
+    out << "]}";
+}
+
 void appendCognitiveRequestJson(
     std::ostringstream& out,
     const CognitiveRequest& request)
@@ -301,6 +349,7 @@ void appendCognitiveRequestJson(
         first=false;
         out << "{";
         out << "\"who\":\"" << memory.who << "\",";
+        out << "\"sourceCharacter\":\"" << memory.sourceCharacter << "\",";
         out << "\"source\":\"" << cognitiveMemorySourceName(memory.source) << "\",";
         out << "\"witnessed\":" << (memory.witnessed ? "true" : "false") << ",";
         out << "\"minute\":" << memory.minute << ",";
@@ -320,6 +369,11 @@ void appendCognitiveRequestJson(
     }
     out << "],";
 
+    if(request.hasMindObservation){
+        out << "\"mind\":";
+        appendResidentMindJson(out,request.mindObservation,request.sensoryFacts);
+        out << ",";
+    }
     out << "\"localPerception\":";
     if(!request.localProximityObserved){
         out << "null,";
@@ -2080,6 +2134,11 @@ std::string WebClientBridge::residentsJson() const
         }
         out << "],";
 
+        if(character){
+            out << "\"mind\":";
+            appendResidentMindJson(out,observeResidentMind(*character,world.minute));
+            out << ",";
+        }
         out << "\"memories\":[";
         for (std::size_t i = 0; i < memories.size(); ++i) {
             if (i != 0) out << ",";

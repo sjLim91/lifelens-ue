@@ -169,6 +169,21 @@ export class CognitionScheduler {
         item.resolve(outcome('stale'));
         continue;
       }
+      // A valid submission can expire while waiting for another resident's
+      // inference. Check again at dispatch, before occupying the GPU.
+      let currentMinute: number;
+      try { currentMinute = this.simulationMinute(); }
+      catch { currentMinute = Number.NaN; }
+      if (!Number.isSafeInteger(currentMinute) || currentMinute < item.request.minute
+        || currentMinute - item.request.minute > this.config.staleAfterSimulationMinutes) {
+        item.resolve(outcome('stale'));
+        if (!this.activeRequestsHasActor(item.request.actor)
+          && !this.queue.some(waiting => waiting.request.actor === item.request.actor)) {
+          this.latestByActor.delete(item.request.actor);
+          this.latestMinuteByActor.delete(item.request.actor);
+        }
+        continue;
+      }
       this.active += 1;
       this.activeRequests.add(item);
       void this.execute(item);

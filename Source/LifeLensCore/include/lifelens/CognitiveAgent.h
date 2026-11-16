@@ -135,6 +135,7 @@ inline const char* cognitiveMemorySourceName(MemorySource source)
 
 struct CognitiveMemoryEvidence {
     CharacterId who=0;
+    CharacterId sourceCharacter=0;
     // Provenance is a property of a resident's memory, not World truth.
     // Do not collapse firsthand observation, hearsay and inference.
     MemorySource source=MemorySource::Inferred;
@@ -187,6 +188,10 @@ struct CognitiveRequest {
     GridPos localObserverPosition{};
     int localRadiusCells=0;
     std::vector<ObservedLocalResource> localResources;
+    std::vector<PerceptionFact> sensoryFacts;
+    // Derived from this actor's saved evidence; never model-authored truth.
+    bool hasMindObservation=false;
+    ResidentMindObservation mindObservation;
     std::vector<CognitiveBeliefEvidence> beliefs;
     std::vector<CognitiveRelationshipEvidence> relationships;
     std::vector<CognitiveIntentKind> allowedIntents;
@@ -492,6 +497,7 @@ inline CognitiveRequest buildCognitiveRequest(
     for(const auto& selected:memories){
         CognitiveMemoryEvidence evidence;
         evidence.who=selected.who;
+        evidence.sourceCharacter=selected.sourceCharacter;
         evidence.source=selected.source;
         evidence.witnessed=selected.witnessed;
         evidence.minute=selected.minute;
