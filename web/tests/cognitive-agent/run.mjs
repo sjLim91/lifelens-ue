@@ -10,6 +10,7 @@ const { parseAutonomousGoalPreview } = await source('cognition/autonomous-goal-p
 const {
   BrowserCognitionProvider, createBrowserResidentCognition,
   BUILTIN_RESIDENT_MODEL, BUILTIN_RESIDENT_MODEL_FP32, builtinResidentModelForFeatures,
+  residentModelAdapterSupported,
   workerBackedBrowserEngine, QWEN_WORKER_INIT_TIMEOUT_MS,
 }=await source('cognition/browser-cognition-provider.ts');
 
@@ -68,6 +69,16 @@ const proposal=(req,intent=req.allowedIntents[0],targetResident=null)=>({
   priority:.7,
   targetResident,
   rationale:'Short factual reason.',
+});
+
+await test('software WebGPU cannot monopolize the Core compositor; hardware without f16 stays eligible',()=>{
+  assert.equal(residentModelAdapterSupported({features:new Set(),info:{isFallbackAdapter:true}}),false);
+  assert.equal(residentModelAdapterSupported({features:new Set(['shader-f16']),isFallbackAdapter:true}),false);
+  for(const adapter of [
+    {features:new Set(),info:{isFallbackAdapter:false}},
+    {features:new Set(['shader-f16']),info:{isFallbackAdapter:false}},
+    {features:new Set()},
+  ])assert.equal(residentModelAdapterSupported(adapter),true);
 });
 
 await test('M1 derived personal hierarchy retains evidence and rejects forged sensory origins',()=>{

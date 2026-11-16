@@ -22,6 +22,20 @@ export function builtinResidentModelForFeatures(features: ReadonlySet<string>): 
   return features.has('shader-f16') ? BUILTIN_RESIDENT_MODEL : BUILTIN_RESIDENT_MODEL_FP32;
 }
 
+interface ResidentGPUAdapter {
+  features: ReadonlySet<string>;
+  info?: { isFallbackAdapter?: boolean };
+  isFallbackAdapter?: boolean;
+}
+
+export function residentModelAdapterSupported(adapter: ResidentGPUAdapter): boolean {
+  // A software adapter shares CPU/compositor resources with Core and the UI.
+  // Its uninterruptible prefill can stall rendering even in a separate worker.
+  // Missing metadata remains compatible with older hardware WebGPU browsers.
+  return adapter.info?.isFallbackAdapter !== true
+    && adapter.isFallbackAdapter !== true;
+}
+
 interface BrowserChatRequest {
   messages: Array<{ role: 'system' | 'user'; content: string }>;
   temperature: number;
@@ -196,11 +210,14 @@ async function loadBuiltinWebGPUEngine(
   // GPU compilation, model prefill, decoding and heavyweight loading happen
   // in the single dedicated Worker. This preserves on-device/free Qwen.
   const gpu = (navigator as Navigator & {
-    gpu?: { requestAdapter(options: { powerPreference: 'high-performance' }): Promise<{ features: ReadonlySet<string> } | null> };
+    gpu?: { requestAdapter(options: { powerPreference: 'high-performance' }): Promise<ResidentGPUAdapter | null> };
   }).gpu;
   const adapter = await gpu?.requestAdapter({ powerPreference: 'high-performance' });
   if (signal?.aborted) throw new Error('Qwen initialization cancelled');
   if (!adapter) throw new Error('No WebGPU adapter available for Qwen3-1.7B');
+  if (!residentModelAdapterSupported(adapter)) {
+    throw new Error('Software WebGPU adapter cannot run resident Qwen within its real-time budget');
+  }
   modelId = builtinResidentModelForFeatures(adapter.features);
   const webllm = await import('@mlc-ai/web-llm');
   if (signal?.aborted) throw new Error('Qwen initialization cancelled');
@@ -231,7 +248,10 @@ async function loadBuiltinWebGPUEngine(
   try {
     const engine = await Promise.race([
       webllm.CreateWebWorkerMLCEngine(worker, modelId, {
-        appConfig: { ...webllm.prebuiltAppConfig, cacheBackend: 'indexeddb' },
+        // Qwen's FP32 embedding shard is 155,582,464 bytes. Chromium rejects
+        // a single IndexedDB value above ~127 MiB, so that backend cannot
+        // cache this model. Cache API stores the response as a streamed blob.
+        appConfig: { ...webllm.prebuiltAppConfig, cacheBackend: 'cache' },
       }),
       crashed,
       cancelled,

@@ -1,0 +1,137 @@
+{
+  "profile": "Real app and production automatic controller; actual SwiftShader fallback adapter rejected before a Qwen worker; 2D presentation fallback",
+  "boot": {
+    "minute": 640,
+    "state": {
+      "enabled": true,
+      "automatic": true,
+      "discovering": false,
+      "suspended": false,
+      "pendingActor": null,
+      "configuration": null,
+      "accepted": 0,
+      "rejected": 0,
+      "inferenceAttempts": 0,
+      "lastInferenceMs": null,
+      "maxInferenceMs": null,
+      "inferenceTimeouts": 0,
+      "modelLoadMs": null,
+      "lastDecision": null,
+      "byResident": {}
+    },
+    "evidence": {
+      "schemaVersion": 1,
+      "kind": "lifelens-qwen-device-observation",
+      "collectedFrom": "current-browser-session",
+      "modelConnected": false,
+      "modelName": null,
+      "modelLoadMs": null,
+      "inferenceAttempts": 0,
+      "lastInferenceMs": null,
+      "maxInferenceMs": null,
+      "inferenceTimeouts": 0,
+      "audit": null,
+      "proof": {
+        "modelReady": false,
+        "coreApprovedTypedProposal": false,
+        "corePhysicalOutcomeObserved": false,
+        "actionCausedByModelProven": false
+      },
+      "interpretation": "이 JSON은 현재 브라우저의 관측 기록입니다. 모델 연결·Core 판단 승인·Core 물리 경험 증가는 서로 다른 증거이며 인과관계가 자동으로 입증되지 않습니다. 삼성 갤럭시 실기기 성공을 외부에서 확인한 기록도 아닙니다."
+    },
+    "workers": []
+  },
+  "ready": {
+    "minute": 640,
+    "state": {
+      "enabled": true,
+      "automatic": true,
+      "discovering": false,
+      "suspended": false,
+      "pendingActor": null,
+      "configuration": null,
+      "accepted": 0,
+      "rejected": 0,
+      "inferenceAttempts": 0,
+      "lastInferenceMs": null,
+      "maxInferenceMs": null,
+      "inferenceTimeouts": 0,
+      "modelLoadMs": null,
+      "lastDecision": null,
+      "byResident": {}
+    },
+    "evidence": {
+      "schemaVersion": 1,
+      "kind": "lifelens-qwen-device-observation",
+      "collectedFrom": "current-browser-session",
+      "modelConnected": false,
+      "modelName": null,
+      "modelLoadMs": null,
+      "inferenceAttempts": 0,
+      "lastInferenceMs": null,
+      "maxInferenceMs": null,
+      "inferenceTimeouts": 0,
+      "audit": null,
+      "proof": {
+        "modelReady": false,
+        "coreApprovedTypedProposal": false,
+        "corePhysicalOutcomeObserved": false,
+        "actionCausedByModelProven": false
+      },
+      "interpretation": "이 JSON은 현재 브라우저의 관측 기록입니다. 모델 연결·Core 판단 승인·Core 물리 경험 증가는 서로 다른 증거이며 인과관계가 자동으로 입증되지 않습니다. 삼성 갤럭시 실기기 성공을 외부에서 확인한 기록도 아닙니다."
+    },
+    "workers": []
+  },
+  "after": {
+    "minute": 711,
+    "state": {
+      "enabled": true,
+      "automatic": true,
+      "discovering": false,
+      "suspended": false,
+      "pendingActor": null,
+      "configuration": null,
+      "accepted": 0,
+      "rejected": 0,
+      "inferenceAttempts": 0,
+      "lastInferenceMs": null,
+      "maxInferenceMs": null,
+      "inferenceTimeouts": 0,
+      "modelLoadMs": null,
+      "lastDecision": null,
+      "byResident": {}
+    },
+    "evidence": {
+      "schemaVersion": 1,
+      "kind": "lifelens-qwen-device-observation",
+      "collectedFrom": "current-browser-session",
+      "modelConnected": false,
+      "modelName": null,
+      "modelLoadMs": null,
+      "inferenceAttempts": 0,
+      "lastInferenceMs": null,
+      "maxInferenceMs": null,
+      "inferenceTimeouts": 0,
+      "audit": null,
+      "proof": {
+        "modelReady": false,
+        "coreApprovedTypedProposal": false,
+        "corePhysicalOutcomeObserved": false,
+        "actionCausedByModelProven": false
+      },
+      "interpretation": "이 JSON은 현재 브라우저의 관측 기록입니다. 모델 연결·Core 판단 승인·Core 물리 경험 증가는 서로 다른 증거이며 인과관계가 자동으로 입증되지 않습니다. 삼성 갤럭시 실기기 성공을 외부에서 확인한 기록도 아닙니다."
+    },
+    "workers": []
+  },
+  "softwareAdapterRejectedBeforeWorker": true,
+  "coreContinued": true,
+  "neuralInferenceSuccess": false,
+  "adapter": {
+    "info": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    },
+    "shaderF16": false
+  }
+}

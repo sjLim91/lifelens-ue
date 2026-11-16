@@ -1,0 +1,47 @@
+{
+  "model": "Qwen3-1.7B-q4f32_1-MLC",
+  "modelCommit": "bddd4d584cabe19113f7e4ff46fd9e73b4d3dc89",
+  "originalShard": {
+    "dataPath": "params_shard_0.bin",
+    "format": "raw-shard",
+    "nbytes": 155582464,
+    "md5sum": "c738b02f2921806bec6241c056c7d89f"
+  },
+  "downloadMatchesManifest": true,
+  "browserStorage": {
+    "indexeddb": {
+      "status": "error",
+      "reason": "UnknownError: The serialized keys and/or value are too large (size=155582514 bytes, max=133169152 bytes)."
+    },
+    "cache": {
+      "status": "stored",
+      "milliseconds": 1607
+    }
+  },
+  "method": "Same actual downloaded model shard, verified against official manifest, served from local HTTP for isolated browser storage comparison. No synthetic weights.",
+  "initialization": {
+    "backend": "cache",
+    "source": "official model assets over HTTPS through executor proxy",
+    "softwareWebGPU": true,
+    "downloadedShards": 30,
+    "modelLoaded": true,
+    "reportedSeconds": 78.895,
+    "scope": "Diagnostic before fallback-adapter guard; final production skips neural inference on reported software fallback adapters"
+  },
+  "testOnlySettings": [
+    "Chromium SwiftShader software WebGPU",
+    "executor proxy certificate exception confined to QA browser"
+  ],
+  "productionChanges": [
+    "WebLLM asset cache backend indexeddb -> cache",
+    "Reject explicitly reported fallback adapters before WebLLM import/worker creation; hardware without shader-f16 remains eligible"
+  ],
+  "unchanged": [
+    "single Qwen3-1.7B weights",
+    "24-second production inference deadline",
+    "Core authority",
+    "no alternate model",
+    "existing saved games"
+  ],
+  "neuralInferenceSuccess": false
+}
