@@ -9,6 +9,7 @@ enable_testing()
 
 add_library(lifelens_core STATIC
     src/Simulation.cpp
+    src/ResidentMind.cpp
     src/CognitiveCausalJournal.cpp
     src/ResidentProductionPlan.cpp
     src/ContextActionRuntime.cpp
@@ -89,6 +90,7 @@ lifelens_add_test(test_emotion)
 lifelens_add_test(test_emotion_runtime)
 
 lifelens_add_test(test_memory)
+lifelens_add_test(test_resident_mind)
 lifelens_add_test(test_memory_attribution)
 
 lifelens_add_test(test_belief)

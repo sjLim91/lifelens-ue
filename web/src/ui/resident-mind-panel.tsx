@@ -15,6 +15,9 @@ export function ResidentMindPanel({ resident, residents }: { resident: Resident;
     && observation.preview.minute <= Number(world.minute) ? observation.preview : null;
   const facts = residentPersonalityFacts(resident);
   const p = resident.presentation;
+  const mind = resident.mind;
+  const domains: Record<string, string> = { resource: '자원', tool: '도구', person: '사람', action: '행동', ordinary: '일상', danger: '위험', animal: '동물', place: '장소', trace: '흔적' };
+  const sources: Record<string, string> = { DirectWitness: '직접 경험', ToldByOther: '전해 들음', Inferred: '추정' };
   const active = resident.alive === true && p?.active === true && p.phase !== 'Idle';
   const target = residents.find(r => r.id === p?.targetResidentId);
   const inspect = () => setObservation({ worldKey, preview: shadowObserver.inspectCoreAutonomousGoals(resident.id) });
@@ -55,5 +58,20 @@ export function ResidentMindPanel({ resident, residents }: { resident: Resident;
         <button type="button" disabled={resident.alive !== true} onClick={inspect}>목표 후보 새로 확인</button>
       </section>
     </details>
+    {mind && <details className="resident-mind-panel">
+      <summary>경험과 마음 <span>{mind.eligibleEpisodes}건의 개인 근거</span></summary>
+      <div className="focused-life-chips">
+        {([['호기심', mind.curiosity], ['습관', mind.habit], ['장소 애착', mind.attachment], ['위험 감수', mind.riskTolerance], ['경험한 상대 신뢰', mind.trust]] as const)
+          .map(([label, value]) => <span key={label}>{label} <b>{formatPercent(value)}</b></span>)}
+      </div>
+      <p className="hint">기억의 출처를 구분한 개인 판단입니다. 현재 자원의 잔량이나 행동 성공을 보장하지 않습니다.</p>
+      {mind.summaries.length ? <ul>{mind.summaries.map(item => <li key={`${item.domain}:${item.source}:${item.subject}`}>
+        <b>{domains[item.domain] ?? '기억'} · {sources[item.source]}</b> {item.episodes}건
+        {(item.successes > 0 || item.failures > 0) && ` · 실제 성공 ${item.successes} / 실패 ${item.failures}`}
+        <small> · {formatDay(item.lastMinute)}까지</small>
+      </li>)}</ul> : <p className="hint">아직 정리할 개인 경험이 없습니다.</p>}
+      {mind.omittedSummaries > 0 && <p className="hint">추가 {mind.omittedSummaries}건의 원래 기억은 저장되어 있습니다.</p>}
+      {mind.places.length > 0 && <p className="hint">기억한 장소 {mind.places.length}곳 · 직접 경험과 추정을 구분하여 보관합니다.</p>}
+    </details>}
   </>;
 }

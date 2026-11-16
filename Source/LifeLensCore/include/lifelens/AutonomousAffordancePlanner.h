@@ -147,6 +147,11 @@ inline AutonomousAffordancePlan draftAutonomousAffordancePlan(
     nonSensorContext.localObserverPosition={};
     nonSensorContext.localRadiusCells=0;
     nonSensorContext.localResources.clear();
+    nonSensorContext.sensoryFacts.clear();
+    // These are read-only sensory/derived views, not execution permissions.
+    // Their full hash remains bound to the issuing Simulation receipt.
+    nonSensorContext.hasMindObservation=false;
+    nonSensorContext.mindObservation={};
     plan.contextFingerprint=cognitiveRequestFingerprint(request);
     if(cognitiveRequestFingerprint(nonSensorContext)
        !=cognitiveRequestFingerprint(authoritative))

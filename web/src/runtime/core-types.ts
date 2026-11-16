@@ -571,6 +571,7 @@ export interface ResidentMigrationPressure {
 }
 
 export interface Resident {
+  mind?: import('../cognition/resident-mind-contract').ResidentMind;
   id: string;
   name: string;
   sex?: 'Male' | 'Female';

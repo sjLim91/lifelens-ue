@@ -50,6 +50,8 @@ inline void rememberActionOutcome(
             memory.confidence=1.0;
             memory.witnessed=true;
             memory.source=MemorySource::DirectWitness;
+            memory.who=actor.id;
+            memory.sourceCharacter=actor.id;
             memory.importance=success ? 0.28 : 0.42;
             memory.emotionValence=success ? 0.20 : -0.28;
             memory.emotionIntensity=success ? 0.18 : 0.38;
@@ -58,6 +60,8 @@ inline void rememberActionOutcome(
     }
 
     MemoryRecord memory;
+    memory.who=actor.id;
+    memory.sourceCharacter=actor.id;
     memory.what=success ? "시도한 행동에 성공했다" : "시도한 행동에 실패했다";
     memory.where="personal experience";
     memory.minute=minute;

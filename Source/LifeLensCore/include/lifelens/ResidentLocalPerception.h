@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "World.h"
+#include "ResidentMind.h"
 
 namespace lifelens {
 
@@ -78,6 +79,7 @@ inline ResidentLocalPerception observeLocalResourceProximity(
            ||node.quantity<=0) continue;
         const auto distance=perceptionGridDistance(actualPosition,node.pos);
         if(distance>view.radiusCells) continue;
+        if(!residentHasLineOfSight(world,actualPosition,node.pos)) continue;
         ObservedLocalResource candidate{
             node.id,node.material,node.pos,static_cast<int>(distance),
             node.quantity<3

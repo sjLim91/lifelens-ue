@@ -227,6 +227,7 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
             world,actor,candidate,socialKnowledge,households);
     };
     double bestRank=baseline.utility;
+    const double personalCuriosity=residentOptionalCuriosityMultiplier(actor,world.minute);
     for(const auto& goal:goals){
         if(goal.desiredState.size()!=1
            ||goal.desiredState.front().metric
@@ -298,7 +299,8 @@ inline ResidentSensedResourceGoalChoice chooseResidentSensedResourceGoal(
                 baseline.kind==UnifiedDecisionKind::Civilization
                 &&baseline.civilization.intent==CivilizationIntent::Explore;
             const double rank=executable.utility
-                +(scarcityExploration ? 0.0 : 0.12*goal.priority);
+                +(scarcityExploration ? 0.0 : 0.12*goal.priority
+                    *personalCuriosity);
             if(rank>bestRank+1e-12){
                 bestRank=rank;
                 answer.agency.decision.kind=UnifiedDecisionKind::Civilization;

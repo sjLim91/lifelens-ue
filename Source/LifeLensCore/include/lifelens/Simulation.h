@@ -220,6 +220,32 @@ public:
         request.worldSeed=world_.seed;
         request.populationSeed=world_.populationSeed;
         request.generationVersion=world_.generationVersion;
+        if(local.actor==id){
+            std::vector<ResidentSensoryPosition> people;
+            for(const auto& other:world_.characters){
+                GridPos position{};
+                if(other.alive &&runtimePosition(other.id,position))
+                    people.push_back({other.id,position});
+            }
+            request.sensoryFacts=perceiveResidentEnvironment(
+                world_,id,local.observerPosition,people);
+        }
+        request.hasMindObservation=true;
+        request.mindObservation=observeResidentMind(*character,world_.minute);
+        // Qwen shares a bounded input budget with the existing eight episodic
+        // memories. The full read-only resident view retains 24 summaries.
+        auto& mind=request.mindObservation;
+        std::stable_sort(mind.summaries.begin(),mind.summaries.end(),
+            [](const auto& a,const auto& b){return a.lastMinute>b.lastMinute;});
+        while(mind.summaries.size()>4){
+            mind.omittedSummaries+=mind.summaries.back().episodes;
+            mind.summaries.pop_back();
+        }
+        for(auto& summary:mind.summaries)while(summary.evidenceIds.size()>4){
+            summary.evidenceIds.pop_back();++summary.omittedEvidence;
+        }
+        if(mind.places.size()>4)mind.places.resize(4);
+        if(request.sensoryFacts.size()>4)request.sensoryFacts.resize(4);
         return request;
     }
     // Model transport receipt; does not mutate simulation/RNG or saved truth.

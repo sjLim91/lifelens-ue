@@ -1,3 +1,5 @@
+import { parseResidentMind, type ResidentMind } from './resident-mind-contract';
+
 export const COGNITIVE_TRIGGERS = [
   'RepeatedFailure',
   'ResourceScarcity',
@@ -42,6 +44,7 @@ export type CognitiveMemorySource = (typeof COGNITIVE_MEMORY_SOURCES)[number];
 
 export interface CognitiveMemoryDto {
   who: string;
+  sourceCharacter?: string;
   source?: CognitiveMemorySource;
   witnessed?: boolean;
   minute: number;
@@ -91,6 +94,7 @@ export interface CoreLocalPerceptionDto {
 }
 
 export interface CognitiveRequestDto {
+  mind?: ResidentMind;
   // Absent/null means no Core runtime position was available. Never
   // reinterpret it as evidence that there are no resources in the world.
   localPerception?: CoreLocalPerceptionDto | null;
@@ -255,6 +259,11 @@ export function parseCognitiveRequest(
     if (memory.witnessed !== undefined && typeof memory.witnessed !== 'boolean') {
       throw new Error('cognitive memory witnessed flag is invalid');
     }
+    if (memory.sourceCharacter !== undefined && (typeof memory.sourceCharacter !== 'string'
+      || !/^(0|[1-9][0-9]{0,19})$/.test(memory.sourceCharacter)
+      || BigInt(memory.sourceCharacter) > 18446744073709551615n)) {
+      throw new Error('cognitive memory source character is invalid');
+    }
   }
   validateEntries(beliefs, ['subject', 'proposition'], ['stance', 'confidence', 'lastUpdatedMinute']);
   validateEntries(relationships, ['target'], ['socialBond', 'affection', 'trust', 'respect', 'conflict', 'fear', 'grudge']);
@@ -317,6 +326,7 @@ export function parseCognitiveRequest(
     memories,
     beliefs,
     relationships,
+    ...(candidate.mind !== undefined ? { mind: parseResidentMind(candidate.mind, candidate.minute) } : {}),
     ...(candidate.localPerception !== undefined ? { localPerception } : {}),
     allowedIntents: candidate.allowedIntents as CognitiveIntent[],
   };

@@ -130,6 +130,10 @@ try {
   // core-bridge now imports the shared cognition contract, so preserve that
   // production dependency in this flat standalone-test compiler.
   compile(
+    'resident-mind-contract',
+    readFileSync(join(root,'src/cognition/resident-mind-contract.ts'),'utf8'),
+  );
+  compile(
     'cognitive-contract',
     readFileSync(join(root,'src/cognition/cognitive-contract.ts'),'utf8'),
   );

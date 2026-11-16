@@ -4713,6 +4713,17 @@ void Simulation::step(){
             continue;
         }
 
+        if(!requiresDirectCare(c.lifeStage) &&world_.minute%15==0){
+            std::vector<ResidentSensoryPosition> people;
+            people.reserve(world_.characters.size());
+            for(const auto& other:world_.characters){
+                GridPos actual{};
+                if(other.alive &&runtimePosition(other.id,actual))
+                    people.push_back({other.id,actual});
+            }
+            rememberResidentPerceptions(c,r.pos,world_.minute,
+                perceiveResidentEnvironment(world_,c.id,r.pos,people));
+        }
         // Every 12 in-world hours the ONE resident mind may retain a
         // bounded INFERRED local resource hint from its physical position.
         // Proximity is not line-of-sight or future resource certainty.
