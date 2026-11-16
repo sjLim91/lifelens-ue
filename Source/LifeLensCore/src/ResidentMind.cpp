@@ -342,8 +342,23 @@ ResidentMindObservation observeResidentMind(const Character& actor,int minute)
 
 double residentOptionalCuriosityMultiplier(const Character& actor,int minute)
 {
-    const auto mind=observeResidentMind(actor,minute);
-    return std::clamp(1.0+0.10*(mind.curiosity-actor.personality.curiosity)
-        +0.04*(mind.riskTolerance-actor.personality.riskTolerance),0.97,1.03);
+    // The executive needs only recent verified outcomes. Do not rebuild the
+    // entire long-term hierarchy (hashing/sorting every episode) each time it
+    // compares optional goals in a centuries-long world.
+    std::map<std::tuple<std::string,CharacterId,int>,bool> attempts;
+    for(const auto& memory:actor.memory.entries){
+        if(memory.minute<0 ||memory.minute>minute ||minute-memory.minute>30*1440
+           ||!validEpisode(memory,actor.id,minute)
+           ||!verifiedAction(actor,memory,minute)) continue;
+        auto& succeeded=attempts[{memory.tags[1],memory.who,memory.minute}];
+        succeeded=succeeded ||memory.tags[2]=="success";
+    }
+    std::size_t successes=0;
+    for(const auto& attempt:attempts)if(attempt.second)++successes;
+    const double experience=(2.0*successes-attempts.size())/(attempts.size()+3.0);
+    const double curiosity=std::clamp(actor.personality.curiosity+0.10*experience,0.0,1.0);
+    const double risk=std::clamp(actor.personality.riskTolerance+0.10*experience,0.0,1.0);
+    return std::clamp(1.0+0.10*(curiosity-actor.personality.curiosity)
+        +0.04*(risk-actor.personality.riskTolerance),0.97,1.03);
 }
 } // namespace lifelens
