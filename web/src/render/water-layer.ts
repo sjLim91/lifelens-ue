@@ -5,6 +5,8 @@ import type {
   TerrainWindow,
 } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
+import { waterGeometrySignature } from './water-geometry-signature';
+import { readWorldVisualStyle } from './world-visual-style';
 import {
   buildFlowWaterSurfaceGeometry,
   buildOpenWaterSurfaceGeometry,
@@ -57,6 +59,7 @@ export class WaterLayer {
     this.flowWaterMaterial,
   );
 
+  private readonly illustrated = readWorldVisualStyle() === 'illustrated';
   private surfaceSignature = '';
   private readonly mobile = useMobileVegetationProfile();
   private readonly reflectionTarget = new THREE.WebGLCubeRenderTarget(this.mobile ? 64 : 128, { type: THREE.HalfFloatType });
@@ -99,16 +102,7 @@ export class WaterLayer {
   }
 
   setTerrain(window: TerrainWindow): void {
-    const signature = [
-      window.worldSeed ?? '0',
-      window.centerChunkX,
-      window.centerChunkY,
-      ...window.chunks.map((chunk) => (
-        `${chunk.x}:${chunk.y}:${chunk.waterKind}:${Number(
-          chunk.elevation01,
-        ).toFixed(5)}`
-      )).sort(),
-    ].join('|');
+    const signature = waterGeometrySignature(window);
 
     if (signature === this.surfaceSignature) {
       return;
@@ -232,7 +226,12 @@ export class WaterLayer {
 
   private applyAllSurfaceStates(): void {
     const openBrightness = 0.68 + this.daylight01 * 0.32;
-    this.openWaterMaterial.color.setScalar(openBrightness);
+    if (this.illustrated) {
+      // Color-only water/shore contrast. No new river, water source or path.
+      this.openWaterMaterial.color.setRGB(openBrightness * 0.82, openBrightness * 1.0, openBrightness * 1.11);
+    } else {
+      this.openWaterMaterial.color.setScalar(openBrightness);
+    }
     this.openWaterMaterial.roughness = THREE.MathUtils.clamp(
       0.12 + this.wind01 * 0.28 + this.rain01 * 0.18,
       0.12,
@@ -240,7 +239,11 @@ export class WaterLayer {
     );
 
     const flowBrightness = 0.72 + this.daylight01 * 0.28;
-    this.flowWaterMaterial.color.setScalar(flowBrightness);
+    if (this.illustrated) {
+      this.flowWaterMaterial.color.setRGB(flowBrightness * 0.84, flowBrightness * 1.02, flowBrightness * 1.12);
+    } else {
+      this.flowWaterMaterial.color.setScalar(flowBrightness);
+    }
     this.flowWaterMaterial.roughness = THREE.MathUtils.clamp(
       0.18 + this.wind01 * 0.25 + this.rain01 * 0.18,
       0.18,
