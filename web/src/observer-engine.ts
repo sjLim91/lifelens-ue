@@ -30,6 +30,7 @@ import { humanTraceFocus, visibleHumanTraces } from './state/human-traces';
 import { CameraInput } from './input/camera-input';
 
 import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer';
+import { IsometricCanvasWorldRenderer } from './render/isometric-canvas-world-renderer';
 import { readRenderMode } from './render/render-mode';
 import { useCanvasCompatibilityProfile } from './runtime/device-performance';
 import type { WorldRenderer } from './render/world-renderer';
@@ -54,12 +55,18 @@ export function startObserverEngine(): () => void {
   const threeWorldCanvas = requireCanvas('#threeWorldCanvas');
   const characterCanvas = requireCanvas('#characterCanvas');
   const canvasCompatibility = useCanvasCompatibilityProfile();
-  const requestedRenderMode = canvasCompatibility ? 'legacy-canvas' : readRenderMode();
+  const preferredRenderMode = readRenderMode();
+  // The 2.5D Canvas requires no WebGL and is safe in embedded Android.
+  // An explicit ?safe=1 still enforces the proven legacy rescue path.
+  const requestedRenderMode = new URLSearchParams(window.location?.search ?? '').get('safe') === '1'
+    || (canvasCompatibility && preferredRenderMode === 'three-world')
+    ? 'legacy-canvas' : preferredRenderMode;
 
   let effectiveRenderMode = requestedRenderMode;
   let threeWorldRenderer: WorldRenderer | null = null;
   let characterLayer: CharacterLayer | null = null;
   let legacyRenderer: LegacyCanvasWorldRenderer | null = null;
+  let isometricRenderer: IsometricCanvasWorldRenderer | null = null;
   let worldViewOccluded = false;
   let renderFailureBanner: HTMLElement | null = null;
   let startupRenderFailure: string | null = null;
@@ -73,6 +80,7 @@ export function startObserverEngine(): () => void {
     console.warn('LifeLens 3D rendering unavailable; using 2D Core observer', reason, error);
     const failedRenderer = threeWorldRenderer;
     threeWorldRenderer = null;
+    isometricRenderer = null;
     try { failedRenderer?.dispose(); } catch (disposeError) {
       console.warn('Failed to dispose unavailable WebGL renderer', disposeError);
     }
@@ -123,6 +131,16 @@ export function startObserverEngine(): () => void {
       }
     }
 
+    if (requestedRenderMode === 'isometric-canvas') {
+      try {
+        isometricRenderer = new IsometricCanvasWorldRenderer(canvas, residentContinuity);
+      } catch (error) {
+        effectiveRenderMode = 'legacy-canvas';
+        startupRenderFailure = error instanceof Error ? error.message : String(error);
+        console.warn('LifeLens 2.5D Canvas unavailable; using safe observer', error);
+      }
+    }
+
     if (effectiveRenderMode === 'legacy-canvas' && !canvasCompatibility) {
       try {
         const { CharacterLayer } = await import('./character-layer');
@@ -135,7 +153,7 @@ export function startObserverEngine(): () => void {
       }
     }
 
-    canvas.style.opacity = effectiveRenderMode === 'legacy-canvas' ? '1' : '0';
+    canvas.style.opacity = effectiveRenderMode === 'three-world' ? '0' : '1';
     threeWorldCanvas.style.opacity = effectiveRenderMode === 'three-world' ? '1' : '0';
     characterCanvas.style.opacity = effectiveRenderMode === 'legacy-canvas' ? '1' : '0';
 
@@ -248,7 +266,9 @@ export function startObserverEngine(): () => void {
   let localPanX = 0;
   let localPanZ = 0;
   function groundPointAtClient(x: number, y: number): { x: number; z: number } | null {
-    return threeWorldRenderer?.groundPointAtClient(x, y) ?? legacyRenderer?.groundPointAtClient(x, y) ?? null;
+    return isometricRenderer?.groundPointAtClient(x, y)
+      ?? threeWorldRenderer?.groundPointAtClient(x, y)
+      ?? legacyRenderer?.groundPointAtClient(x, y) ?? null;
   }
 
   function applyCameraPan(pan: { x: number; z: number }): void {
@@ -293,6 +313,9 @@ export function startObserverEngine(): () => void {
     drawWorld();
   }
   const cameraInput = new CameraInput(canvas, {
+    touchDragMode: requestedRenderMode === 'isometric-canvas' ? 'pan' : 'orbit',
+    leftDragMode: requestedRenderMode === 'isometric-canvas' ? 'pan' : 'select',
+    rightDragMode: requestedRenderMode === 'isometric-canvas' ? 'pan' : 'orbit',
     initialAngle: angle,
     initialElevation: elevation,
     initialZoom: zoom,
@@ -330,14 +353,17 @@ export function startObserverEngine(): () => void {
       if (before && after) applyCameraPan({ x: before.x - after.x, z: before.z - after.z });
     },
     onTap(clientX, clientY) {
-      if (!threeWorldRenderer) return;
-      const residentId = threeWorldRenderer.pickResident(clientX, clientY);
+      const residentId = isometricRenderer?.pickResident(clientX, clientY)
+        ?? threeWorldRenderer?.pickResident(clientX, clientY);
       if (residentId) selectResident(residentId);
       else {
-        const traceId = threeWorldRenderer.pickHumanTrace(clientX, clientY);
+        const traceId = isometricRenderer?.pickHumanTrace(clientX, clientY)
+          ?? threeWorldRenderer?.pickHumanTrace(clientX, clientY);
         if (traceId) selectHumanTrace(traceId);
-        else selectSettlement(threeWorldRenderer.pickSettlement(clientX, clientY));
+        else selectSettlement(isometricRenderer?.pickSettlement(clientX, clientY)
+          ?? threeWorldRenderer?.pickSettlement(clientX, clientY) ?? null);
       }
+      drawWorld();
     },
   });
   
@@ -360,6 +386,21 @@ export function startObserverEngine(): () => void {
   
   function drawWorld(): void {
     if (worldViewOccluded || document.hidden) return;
+    if (isometricRenderer) {
+      const selected = observerStore.getSnapshot();
+      try {
+        isometricRenderer.draw({
+          terrain, residents: residentSnapshot,
+          civilization: selected.civilization,
+          centerX, centerY, zoom, panX: localPanX, panZ: localPanZ,
+          selectedResidentId: selected.selectedResidentId,
+          selectedHumanTraceId: selected.selectedHumanTraceId,
+          selectedSettlementId: selected.selectedSettlementId,
+        });
+      } catch (error) {
+        enterCanvasFailover('2.5D 화면을 복구 가능한 2D 화면으로 전환합니다.', error);
+      }
+    }
     legacyRenderer?.draw({
       terrain,
       residents: residentSnapshot,

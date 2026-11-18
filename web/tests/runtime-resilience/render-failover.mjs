@@ -269,6 +269,7 @@ try {
       const residentContinuity = {};
       const document = {createElement:()=>({setAttribute(){}})};
       class LegacyCanvasWorldRenderer {}
+      class IsometricCanvasWorldRenderer {}
       function resizeCanvas() {}
       function enterCanvasFailover() {}
       ${presentation}
@@ -280,6 +281,7 @@ try {
       [androidChrome, '?safe=1', 'three-world', 'legacy-canvas', 0],
       [androidChrome, '', 'three-world', 'three-world', 1],
       [androidChrome, '', 'legacy-canvas', 'legacy-canvas', 1],
+      [androidWebView, '', 'isometric-canvas', 'isometric-canvas', 0],
     ]) {
       let constructed = 0, imports = 0;
       class GPU { constructor() { constructed++; } start() {} }
@@ -341,6 +343,7 @@ try {
     const residentContinuity = {};
     let renderFailureBanner = null;
     let legacyRenderer = null;
+    let isometricRenderer = null;
     let threeWorldRenderer = { dispose() { incrementDispose(); } };
     function resizeCanvas() { incrementResize(); }
     ${failoverCode}

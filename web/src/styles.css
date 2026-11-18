@@ -36,6 +36,11 @@ button, input { font: inherit; }
 #worldCanvas:active { cursor: grabbing; }
 #threeWorldCanvas { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; transition: opacity .18s ease; }
 #characterCanvas { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; transition: opacity .18s ease; }
+.isometric-view-switch { position: absolute; z-index: 9; top: 12px; right: 12px; padding: .43rem .65rem;
+  border: 1px solid rgba(220,235,204,.42); border-radius: 8px;
+  background: rgba(22,44,40,.91); color: #e9f2df; font-size: .75rem; font-weight: 700; }
+.isometric-view-switch:hover { background: rgba(41,79,62,.96); }
+
 .world-overlay { position: absolute; z-index: 4; top: 14px; left: 14px; display: flex; align-items: flex-start; align-content: flex-start; gap: .45rem; flex-wrap: wrap; pointer-events: none; }
 .world-overlay span { padding: .34rem .55rem; border: 1px solid rgba(125, 151, 129, .25); border-radius: 6px; background: rgba(8, 13, 10, .78); color: #d9e5da; font-size: .7rem; }
 

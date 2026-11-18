@@ -29,7 +29,7 @@ import { SettlementDetail } from './ui/settlement-detail';
 import { FastForwardControl } from './ui/fast-forward-control';
 import { EarthGlobePreview } from './ui/earth-globe-preview';
 import { RegionMapPreview } from './ui/region-map-preview';
-import { readRenderMode } from './render/render-mode';
+import { readRenderMode, writeRenderMode, urlForRenderMode } from './render/render-mode';
 import { readWorldVisualStyle, urlForWorldVisualStyle } from './render/world-visual-style';
 import { useCanvasCompatibilityProfile } from './runtime/device-performance';
 import { visibleHumanTraces } from './state/human-traces';
@@ -75,7 +75,8 @@ function WorldViewport({
   onMobileView: (view: MobileModalView) => void;
 }) {
   const snapshot = useObserverSnapshot();
-  const experimentalWorldStyleAvailable = !useCanvasCompatibilityProfile() && readRenderMode() === 'three-world';
+  const activeRenderMode = readRenderMode();
+  const experimentalWorldStyleAvailable = !useCanvasCompatibilityProfile() && activeRenderMode === 'three-world';
   const currentWorldStyle = readWorldVisualStyle();
   const selectedTrace = visibleHumanTraces(snapshot.terrain)
     .find(trace => trace.id === snapshot.selectedHumanTraceId);
@@ -91,6 +92,19 @@ function WorldViewport({
       <canvas id="threeWorldCanvas" aria-label="라이프렌즈 3차원 세계" />
       <canvas id="characterCanvas" aria-label="라이프렌즈 주민" />
       <WorldOverlay snapshot={snapshot} />
+      <button
+        type="button"
+        className="isometric-view-switch"
+        aria-label={activeRenderMode === 'isometric-canvas' ? '기존 3D 관찰 화면 열기' : '2.5D 아이소메트릭 관찰 화면 열기'}
+        title="2.5D M0 · 같은 Core 월드를 보여줍니다. 주민 스프라이트와 모든 시설 표현은 후속 단계입니다."
+        onClick={() => {
+          const next = activeRenderMode === 'isometric-canvas' ? 'three-world' : 'isometric-canvas';
+          writeRenderMode(next);
+          window.location.assign(urlForRenderMode(window.location.href, next));
+        }}
+      >
+        {activeRenderMode === 'isometric-canvas' ? '3D 기존 화면' : '2.5D 화면'}
+      </button>
       {experimentalWorldStyleAvailable && (
         <button
           type="button"

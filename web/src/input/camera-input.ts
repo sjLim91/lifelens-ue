@@ -15,6 +15,10 @@ export interface CameraInputOptions {
   minElevation?: number;
   maxElevation?: number;
   rotateSensitivity?: number;
+  /** 2.5D uses direct one-finger/left-drag panning, unlike 3D orbit. */
+  touchDragMode?: 'pan' | 'orbit';
+  leftDragMode?: 'pan' | 'select';
+  rightDragMode?: 'pan' | 'orbit';
   onChange: (state: CameraInputState, zoomAnchor?: { x: number; y: number }) => void;
   onPan?: (deltaX: number, deltaY: number, anchor?: { x: number; y: number }) => void;
   onTap?: (clientX: number, clientY: number) => void;
@@ -168,7 +172,7 @@ export class CameraInput {
         this.multiTouchGesture = false;
         // Canonical Android contract:
         // one-finger drag = orbit, short one-finger release = select.
-        this.dragMode = 'orbit';
+        this.dragMode = this.options.touchDragMode ?? 'orbit';
         this.drag = { x: event.clientX, y: event.clientY };
         this.tapCandidate = {
           pointerId: event.pointerId,
@@ -191,7 +195,7 @@ export class CameraInput {
     // Canonical PC contract:
     // left = selection, middle = pan, right = orbit.
     if (event.button === 2) {
-      this.dragMode = 'orbit';
+      this.dragMode = this.options.rightDragMode ?? 'orbit';
       this.drag = { x: event.clientX, y: event.clientY };
       this.tapCandidate = null;
     } else if (event.button === 1) {
@@ -199,7 +203,7 @@ export class CameraInput {
       this.drag = { x: event.clientX, y: event.clientY };
       this.tapCandidate = null;
     } else {
-      this.dragMode = 'select';
+      this.dragMode = this.options.leftDragMode ?? 'select';
       this.drag = { x: event.clientX, y: event.clientY };
       this.tapCandidate = {
         pointerId: event.pointerId,
@@ -311,7 +315,7 @@ export class CameraInput {
 
     const remaining = [...this.pointers.values()];
     if (!this.multiTouchGesture && remaining.length === 1 && remaining[0].pointerType === 'touch') {
-      this.dragMode = 'orbit';
+      this.dragMode = this.options.touchDragMode ?? 'orbit';
       this.drag = { x: remaining[0].x, y: remaining[0].y };
     } else {
       this.dragMode = null;
