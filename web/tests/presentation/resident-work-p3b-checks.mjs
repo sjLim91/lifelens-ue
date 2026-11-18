@@ -32,6 +32,9 @@ export function residentWorkP3bChecks({ test, source, THREE }) {
     try {
       targets.setSnapshot({ available: true, storages: [storage] });
       assert.equal(targets.resolve(storeTask)?.id, storage.id);
+      // The real ResidentWorldLayer explicitly enters fail-closed validation
+      // before the first/updated inventory is applied.
+      props.setTargetVerified(false);
       props.setInventory(inventory, storeTask);
       assert.equal(props.hasCarriedLoad, false, 'cargo should not appear before Core target validation');
       props.setTargetVerified(targets.resolve(storeTask) !== null);
