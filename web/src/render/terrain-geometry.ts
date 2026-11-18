@@ -2,10 +2,12 @@ import * as THREE from 'three';
 import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createTerrainColorSampler } from './terrain-surface';
+import type { WorldVisualStyle } from './world-visual-style';
 
 export interface TerrainGeometryOptions {
   chunkWorldSize?: number;
   elevationScale?: number;
+  visualStyle?: WorldVisualStyle;
 }
 
 function average(values: Array<number | null>, fallback: number): number {
@@ -112,7 +114,7 @@ export function createTerrainGeometryBuilder(
     options.elevationScale ?? WORLD_GRID_CONTRACT.elevationScale;
   const half = chunkWorldSize * 0.5;
   const sampleElevation = createTerrainElevationSampler(window);
-  const sampleColor = createTerrainColorSampler(window);
+  const sampleColor = createTerrainColorSampler(window, options.visualStyle ?? 'classic');
   const color = new THREE.Color();
   const patches = new Map(window.chunks.map(chunk => [
     `${chunk.x}:${chunk.y}`,
@@ -184,7 +186,7 @@ export function createTerrainGeometryBuilder(
         sampleNormal(chunk.x + tx, chunk.y + ty);
         if (chunk.elevationSamples?.length === 289) {
           const rock = THREE.MathUtils.clamp((0.96 - normal.y) * 6, 0, 0.8);
-          color.lerp(new THREE.Color(0x888477), rock);
+          color.lerp(new THREE.Color(options.visualStyle === 'illustrated' ? 0xb4b3a1 : 0x888477), rock);
         }
         colors.push(color.r, color.g, color.b);
         normals.push(normal.x, normal.y, normal.z);
