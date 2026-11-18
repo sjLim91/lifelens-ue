@@ -131,12 +131,18 @@ export function isometricM0Checks({ test, source, chunk, windowOf }) {
       assert.equal(readRenderMode(), 'isometric-canvas');
       const url = urlForRenderMode('https://example.com/lifelens-ue/?safe=1&seed=4242#world',
         'isometric-canvas');
-      assert.equal(new URL(url).searchParams.get('view'), '2.5d');
+      assert.equal(new URL(url).searchParams.get('view'), 'region');
       assert.equal(new URL(url).searchParams.get('seed'), '4242');
       assert.equal(new URL(url).searchParams.get('safe'), '1');
       assert.equal(new URL(url).hash, '#world');
       globalThis.window.location.search = new URL(url).search;
       assert.equal(readRenderMode(), 'isometric-canvas');
+      const fieldUrl = urlForRenderMode(url, 'field-canvas');
+      assert.equal(new URL(fieldUrl).searchParams.get('view'), '2.5d');
+      assert.equal(new URL(fieldUrl).searchParams.get('seed'), '4242');
+      assert.equal(new URL(fieldUrl).hash, '#world');
+      globalThis.window.location.search = '?view=2.5d';
+      assert.equal(readRenderMode(), 'field-canvas');
       globalThis.window.location.search = '?view=3d';
       assert.equal(readRenderMode(), 'three-world');
     } finally {
