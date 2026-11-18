@@ -456,6 +456,12 @@ export class ResidentWorldLayer {
     for (const storage of civilization.storages ?? []) this.interactionSites.set(`storage:${storage.id}`, storage);
   }
 
+  private cargoTargetVerified(p: ResidentPresentationDirective | null | undefined): boolean {
+    return p?.kind !== 'Civilization'
+      || residentLocalCraft(p)
+      || this.productionTargets.resolve(p) !== null;
+  }
+
   // Read the current interpolated actor position, never its future Core target.
   // Return a copy so presentation snapshots cannot mutate resident movement.
   socialEventAnchor(id: string): SocialEventAnchor | null {
@@ -1063,6 +1069,8 @@ export class ResidentWorldLayer {
       existing.lifeStageVisual = deriveResidentLifeVisualState(facts).stage;
       existing.appearanceFacts = facts;
       // Missing inventory is unknown: do not leave an already-consumed tool visible.
+      // Verify the new Core target before a DTO refresh can display cargo.
+      existing.inventoryProps.setTargetVerified(this.cargoTargetVerified(resident.presentation));
       existing.inventoryProps.setInventory(resident.civilization?.inventory, resident.presentation);
       return existing;
     }
@@ -1114,6 +1122,7 @@ export class ResidentWorldLayer {
     if (walk) walk.time = ((appearance.seed >>> 8) % 991) / 991 * Math.max(.001, walk.getClip().duration);
 
     const inventoryProps = new ResidentInventoryProps(visual, model, this.propResources);
+    inventoryProps.setTargetVerified(this.cargoTargetVerified(resident.presentation));
     inventoryProps.setInventory(resident.civilization?.inventory, resident.presentation);
     const actor: ResidentActor = {
       root,
