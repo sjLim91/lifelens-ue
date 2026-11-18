@@ -13,6 +13,7 @@ import { closeObserverP3Checks } from './close-observer-p3-checks.mjs';
 import { residentWorkP3bChecks } from './resident-work-p3b-checks.mjs';
 import { observedWorkReachP3cChecks } from './observed-work-reach-p3c-checks.mjs';
 import { isometricM0Checks } from './isometric-m0-checks.mjs';
+import { isometricM1Checks } from './isometric-m1-checks.mjs';
 import { resourceEnvironmentChecks } from './resource-environment-checks.mjs';
 import { worldPresentationChecks } from './world-presentation-checks.mjs';
 
@@ -639,6 +640,7 @@ closeObserverP3Checks({ test, source, chunk, windowOf, THREE, withScene });
 residentWorkP3bChecks({ test, source, THREE });
 observedWorkReachP3cChecks({ test, source, THREE });
 isometricM0Checks({ test, source, chunk, windowOf });
+isometricM1Checks({ test, source, chunk, windowOf });
 worldPresentationChecks({ test, source, THREE, flatWindow });
 
 terrainSeamChecks({ test, source, chunk, windowOf, withScene, near });
