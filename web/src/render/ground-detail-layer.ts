@@ -13,6 +13,7 @@ import { createTerrainElevationSampler } from './terrain-geometry';
 import { terrainDressingSignature } from './terrain-dressing-signature';
 import { createVisibleWaterFootprintTester } from './water-geometry';
 import { useMobileVegetationProfile } from './vegetation-profile';
+import { ILLUSTRATED_GROUND_PALETTE, readWorldVisualStyle } from './world-visual-style';
 
 import { NaturalResourceProjection, type DressingCandidate } from './natural-resource-projection';
 import { WORLD_PRESENTATION } from './world-presentation-config';
@@ -73,6 +74,7 @@ export class GroundDetailLayer {
   readonly group = new THREE.Group();
 
   private readonly mobileProfile = useMobileVegetationProfile();
+  private readonly illustrated = readWorldVisualStyle() === 'illustrated';
   private readonly grassGeometry = createGrassGeometry('meadow', 9);
   private readonly shrubGeometry = createShrubGeometry('wild-shrub');
   private readonly rockGeometry = createStoneGeometry('ground-rock');
@@ -125,6 +127,7 @@ export class GroundDetailLayer {
   }
 
   constructor() {
+    if (this.illustrated) this.rockMaterial.flatShading = true;
     this.flowers.count = this.fruits.count = 0;
     this.plantWeather.install(this.grassMaterial, false, true);
     this.plantWeather.install(this.shrubMaterial);
@@ -236,14 +239,15 @@ export class GroundDetailLayer {
         );
         this.grass.setMatrixAt(grassIndex, this.matrix);
 
+        const grassPalette: readonly number[] = this.illustrated ? ILLUSTRATED_GROUND_PALETTE.grass : GRASS_PALETTE;
         const paletteIndex = Math.min(
-          GRASS_PALETTE.length - 1,
+          grassPalette.length - 1,
           Math.floor(
             candidateHash(candidate, seed, chunk, 127)
-            * GRASS_PALETTE.length,
+            * grassPalette.length,
           ),
         );
-        this.color.setHex(GRASS_PALETTE[paletteIndex]);
+        this.color.setHex(grassPalette[paletteIndex]);
         this.grass.setColorAt(grassIndex, this.color);
         grassIndex += 1;
       }
@@ -302,14 +306,15 @@ export class GroundDetailLayer {
         if (clamp01(candidate.fruit01) > candidateHash(candidate, seed, chunk, 607))
           this.fruits.setMatrixAt(fruitIndex++, this.matrix);
 
+        const shrubPalette: readonly number[] = this.illustrated ? ILLUSTRATED_GROUND_PALETTE.shrub : SHRUB_PALETTE;
         const paletteIndex = Math.min(
-          SHRUB_PALETTE.length - 1,
+          shrubPalette.length - 1,
           Math.floor(
             candidateHash(candidate, seed, chunk, 233)
-            * SHRUB_PALETTE.length,
+            * shrubPalette.length,
           ),
         );
-        this.color.setHex(SHRUB_PALETTE[paletteIndex]);
+        this.color.setHex(shrubPalette[paletteIndex]);
         this.shrubs.setColorAt(shrubIndex, this.color);
         shrubIndex += 1;
       }
@@ -373,15 +378,16 @@ export class GroundDetailLayer {
         );
         this.rocks.setMatrixAt(rockIndex, this.matrix);
 
+        const rockPalette: readonly number[] = this.illustrated ? ILLUSTRATED_GROUND_PALETTE.rock : ROCK_PALETTE;
         const paletteIndex = Math.min(
-          ROCK_PALETTE.length - 1,
+          rockPalette.length - 1,
           Math.floor(
             candidateHash(candidate, seed, chunk, 337)
-            * ROCK_PALETTE.length,
+            * rockPalette.length,
           ),
         );
         const mineralColors: Record<string, number> = WORLD_PRESENTATION.naturalResources.colors;
-        this.color.setHex(mineralColors[candidate.material ?? ''] ?? ROCK_PALETTE[paletteIndex]);
+        this.color.setHex(mineralColors[candidate.material ?? ''] ?? rockPalette[paletteIndex]);
         this.rocks.setColorAt(rockIndex, this.color);
         rockIndex += 1;
       }
