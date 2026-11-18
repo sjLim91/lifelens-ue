@@ -72,9 +72,10 @@ export class VegetationLayer {
   }
   update(camera: THREE.Camera): void { for (const asset of this.actualTrees) asset.update(camera); }
   setObservationFocus(camera: THREE.Camera, target: THREE.Vector3 | null,
-    selected: boolean, residents: readonly THREE.Vector3[] = []): void {
+    selected: boolean, residents: readonly THREE.Vector3[] = [],
+    selectedResident: THREE.Vector3 | null = null): void {
     this.observerClarity.set(camera, target, selected);
-    this.observerClarity.setResidents(residents);
+    this.observerClarity.setResidents(residents, selectedResident);
   }
 
   setTerrain(window: TerrainWindow, resources = new NaturalResourceProjection({ available: false }, window)): void {
