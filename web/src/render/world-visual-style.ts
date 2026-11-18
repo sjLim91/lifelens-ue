@@ -15,7 +15,7 @@ export function worldStyleFromSearch(search: string): WorldVisualStyle {
 export function readWorldVisualStyle(): WorldVisualStyle {
   return typeof window === 'undefined'
     ? 'classic'
-    : worldStyleFromSearch(window.location.search);
+    : worldStyleFromSearch(window.location?.search ?? '');
 }
 
 export function urlForWorldVisualStyle(href: string, style: WorldVisualStyle): string {
