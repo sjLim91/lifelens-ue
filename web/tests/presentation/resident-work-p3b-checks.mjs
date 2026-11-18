@@ -32,8 +32,9 @@ export function residentWorkP3bChecks({ test, source, THREE }) {
     try {
       targets.setSnapshot({ available: true, storages: [storage] });
       assert.equal(targets.resolve(storeTask)?.id, storage.id);
-      props.setTargetVerified(targets.resolve(storeTask) !== null);
       props.setInventory(inventory, storeTask);
+      assert.equal(props.hasCarriedLoad, false, 'cargo should not appear before Core target validation');
+      props.setTargetVerified(targets.resolve(storeTask) !== null);
       assert.equal(props.hasCarriedLoad, true);
       assert.equal(props.loadRoot.visible, true);
       const bogus = { ...storeTask, civilizationStorage: 'missing-node' };
