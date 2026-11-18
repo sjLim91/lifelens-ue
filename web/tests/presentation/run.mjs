@@ -9,6 +9,7 @@ import { mapSurfaceChecks } from './map-surface-checks.mjs';
 import { illustratedRegionMapChecks } from './illustrated-region-map-checks.mjs';
 import { illustratedWorldStyleChecks } from './illustrated-world-style-checks.mjs';
 import { illustratedWorldP2Checks } from './illustrated-world-p2-checks.mjs';
+import { closeObserverP3Checks } from './close-observer-p3-checks.mjs';
 import { resourceEnvironmentChecks } from './resource-environment-checks.mjs';
 import { worldPresentationChecks } from './world-presentation-checks.mjs';
 
@@ -631,6 +632,7 @@ mapSurfaceChecks({ test, source, THREE });
 illustratedRegionMapChecks({ test, source, chunk, windowOf });
 illustratedWorldStyleChecks({ test, source, chunk, windowOf });
 illustratedWorldP2Checks({ test, source, chunk, windowOf, THREE });
+closeObserverP3Checks({ test, source, chunk, windowOf, THREE, withScene });
 worldPresentationChecks({ test, source, THREE, flatWindow });
 
 terrainSeamChecks({ test, source, chunk, windowOf, withScene, near });

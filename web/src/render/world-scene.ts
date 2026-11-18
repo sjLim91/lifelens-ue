@@ -276,6 +276,9 @@ export class WorldScene {
 
   setSelectedHumanTrace(id: string | null): void {
     this.humanTraceLayer.setSelectedTrace(id);
+    // Keep a genuine constructed facility's close-up cutaway in sync with
+    // the Core trace selected by the observer. No independent UI site state.
+    this.facilityLayer.setSelectedTrace(id);
   }
 
   setSelectedSettlement(id: string | null): void { this.settlementFocusLayer.select(id); }
