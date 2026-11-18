@@ -7,6 +7,8 @@ import { createTerrainElevationSampler } from './terrain-geometry';
 import { shade, terrainColor } from './terrain-presentation';
 import { createIsometricProjection, type IsometricView } from './isometric-projection';
 import { forestSilhouettes, observedRiverLinks, stableNatureUnit, terrainSlopeLight } from './isometric-natural-presentation';
+import { observedGroundBrushes, observedShoreEdges, observedSlopeContrast,
+  shoreStrokeWidths, waterTileEdge } from './isometric-shoreline-presentation';
 
 export interface IsometricWorldDrawOptions {
   terrain: TerrainWindow | null;
@@ -42,7 +44,9 @@ const empty = (): IsometricPaintResult =>
 const valid = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 const waterFill = (chunk: TerrainChunk): string | null => {
   if (chunk.waterKind === 'Ocean') return '#316e89';
-  if (chunk.waterKind === 'Coast') return '#538e9a';
+  // Coast is a shoreland zone, NOT an entire ocean-water tile.
+  // Only the observed ocean-facing edge gets water and foam overlays.
+  if (chunk.waterKind === 'Coast') return '#bca982';
   if (chunk.waterKind === 'Lake') return '#438ca1';
   return null;
 };
@@ -109,10 +113,29 @@ export function paintIsometricWorld(
         const p2 = point(chunk.x + u + d - .5, chunk.y + v + d - .5, c);
         const p3 = point(chunk.x + u - .5, chunk.y + v + d - .5, e);
         const light = terrainSlopeLight(a, b, c, e);
-        // High-frequency mottling made the height lattice look like a
-        // debugging checkerboard. Preserve the Core slope, not tile noise.
-        const variation = (hash(chunk.x, chunk.y, ix * 17 + iy) - .5) * .008;
+        // One low-frequency tint for the whole chunk avoids the M0 tiny
+        // checkerboard while preserving the real Core 17x17 slope gradient.
+        const variation = (hash(chunk.x, chunk.y, 31) - .5) * .006;
         polygon([p0, p1, p2, p3], shade(base, light + variation));
+      }
+    }
+    // A subtle rock/soil face is visible only on measured steep Core slopes.
+    // It is a shading accent on the existing surface, not new terrain.
+    if (chunk.waterKind !== 'Ocean' && chunk.waterKind !== 'Lake' && tile >= 24) {
+      const h0 = sample(chunk.x,chunk.y,.12,.12);
+      const h1 = sample(chunk.x,chunk.y,.88,.12);
+      const h2 = sample(chunk.x,chunk.y,.88,.88);
+      const h3 = sample(chunk.x,chunk.y,.12,.88);
+      const contrast = observedSlopeContrast([h0,h1,h2,h3]);
+      if (contrast > .2) {
+        const upper = point(chunk.x - .32, chunk.y - .23, sample(chunk.x,chunk.y,.18,.27));
+        const lower = point(chunk.x + .29, chunk.y + .27, sample(chunk.x,chunk.y,.79,.77));
+        const middle = point(chunk.x + .03, chunk.y - .07, sample(chunk.x,chunk.y,.53,.43));
+        ctx.strokeStyle = 'rgba(48,55,47,' + Math.min(.23,contrast*.18).toFixed(3) + ')';
+        ctx.lineWidth = Math.min(3.1,Math.max(.7,tile*.017));
+        ctx.lineCap = 'round';
+        ctx.beginPath();ctx.moveTo(upper.x,upper.y);
+        ctx.quadraticCurveTo(middle.x,middle.y,lower.x,lower.y);ctx.stroke();
       }
     }
     if (chunk.x === options.centerX && chunk.y === options.centerY) {
@@ -123,6 +146,81 @@ export function paintIsometricWorld(
       ctx.beginPath(); ctx.moveTo(corners[0].x, corners[0].y);
       for (let i = 1; i < 4; i++) ctx.lineTo(corners[i].x, corners[i].y);
       ctx.closePath(); ctx.stroke();
+    }
+  }
+
+  // M1-02: ocean/lake ribbons are confined to real Core neighbor edges.
+  // The beach is sand-colored land: only the adjacent *observed* sea/lake
+  // boundary carries the coastal shallows and light foam.
+  const shoreline = observedShoreEdges(terrain);
+  const shoreWidths = shoreStrokeWidths(tile);
+  for (const edge of shoreline) {
+    const [{u:au,v:av},{u:bu,v:bv}] = waterTileEdge(edge.side);
+    const { water } = edge;
+    const a = point(water.x + au - .5,water.y + av - .5,
+      sample(water.x,water.y,au,av)+.003);
+    const b = point(water.x + bu - .5,water.y + bv - .5,
+      sample(water.x,water.y,bu,bv)+.003);
+    if (!visible((a.x+b.x)*.5,(a.y+b.y)*.5,tile*.9)) continue;
+    const normalX = (a.y-b.y), normalY = (b.x-a.x);
+    const length = Math.max(1,Math.hypot(normalX,normalY));
+    const controlX = (a.x+b.x)*.5 + normalX/length*edge.variation*tile*.085;
+    const controlY = (a.y+b.y)*.5 + normalY/length*edge.variation*tile*.085;
+    const drawEdge = (width:number,color:string) => {
+      ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(a.x,a.y);
+      ctx.quadraticCurveTo(controlX,controlY,b.x,b.y);ctx.stroke();
+    };
+    drawEdge(shoreWidths.bank,edge.kind==='sea' ? '#a8bd99':'#698b80');
+    drawEdge(shoreWidths.water,edge.kind==='sea' ? '#78aca8':'#79b6ad');
+    if (tile>=20) drawEdge(shoreWidths.glint,'rgba(231,236,206,.69)');
+  }
+
+  // Reflective fragments exist ONLY on reported lake/ocean water surfaces.
+  // Their positions are seeded drawing detail, never physical water movement.
+  if (tile >= 20) for (const chunk of chunks) {
+    if (chunk.waterKind !== 'Lake' && chunk.waterKind !== 'Ocean') continue;
+    for (let i=0;i<2;i++) {
+      const u=.24 + hash(chunk.x,chunk.y,390+i*2)*.52;
+      const v=.24 + hash(chunk.x,chunk.y,391+i*2)*.52;
+      const p=point(chunk.x+u-.5,chunk.y+v-.5,sample(chunk.x,chunk.y,u,v)+.004);
+      if (!visible(p.x,p.y,tile*.5)) continue;
+      ctx.strokeStyle='rgba(183,217,212,.32)';
+      ctx.lineWidth=Math.min(1.5,Math.max(.5,tile*.009));
+      ctx.lineCap='round';ctx.beginPath();
+      ctx.moveTo(p.x-tile*.07,p.y);ctx.lineTo(p.x+tile*.075,p.y-tile*.005);
+      ctx.stroke();
+    }
+  }
+
+  // Source-grounded grass, gravel and wetlands break the flat tile appearance
+  // without registering pretend trees, resources, animals or buildings.
+  if (tile>=18) for (const chunk of chunks) {
+    for (const brush of observedGroundBrushes(chunk,seeds)) {
+      const {u,v,scale,kind}=brush;
+      const p=point(chunk.x+u-.5,chunk.y+v-.5,sample(chunk.x,chunk.y,u,v)+.005);
+      if (!visible(p.x,p.y,tile*.5)) continue;
+      const size=Math.min(6.5,tile*.042)*scale;
+      if (kind==='grass') {
+        ctx.strokeStyle='rgba(97,139,83,.67)';
+        ctx.lineWidth=Math.max(.55,Math.min(1.1,tile*.007));
+        ctx.lineCap='round';ctx.beginPath();
+        ctx.moveTo(p.x-size*.5,p.y);
+        ctx.lineTo(p.x-size*.72,p.y-size*.8);
+        ctx.moveTo(p.x,p.y+size*.08);
+        ctx.lineTo(p.x+size*.07,p.y-size*1.15);
+        ctx.moveTo(p.x+size*.48,p.y);
+        ctx.lineTo(p.x+size*.75,p.y-size*.68);
+        ctx.stroke();
+      } else if (kind==='wetland') {
+        ctx.fillStyle='rgba(75,128,109,.36)';
+        ctx.beginPath();ctx.ellipse(p.x,p.y,size*1.1,size*.39,-.2,0,Math.PI*2);ctx.fill();
+      } else {
+        polygon([{x:p.x-size*.7,y:p.y-size*.18},
+          {x:p.x+size*.42,y:p.y-size*.35},
+          {x:p.x+size*.83,y:p.y+size*.16},
+          {x:p.x-size*.2,y:p.y+size*.39}], '#929a85');
+      }
     }
   }
 
