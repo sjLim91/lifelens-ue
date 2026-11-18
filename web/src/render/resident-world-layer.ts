@@ -51,6 +51,7 @@ import { createResidentAuthoredMotions } from './resident-authored-motion';
 import { ResidentGroundSurface } from './resident-grounding';
 import { ResidentProceduralMotion } from './resident-procedural-motion';
 import { ResidentPhysicalTargets } from './resident-interaction-context';
+import { boundedVisualWorkReach } from './resident-work-reach';
 
 const BASE_MODEL_COMMIT = 'ddd5fc34a445bcded3cf9836607aaeebc19a5c78';
 const BASE_MODEL_URL =
@@ -226,6 +227,8 @@ export class ResidentWorldLayer {
   private readonly physicalTargets = new ResidentPhysicalTargets();
   private readonly cameraPosition = new THREE.Vector3();
   private readonly handTarget = new THREE.Vector3();
+  private readonly workGazeTarget = new THREE.Vector3();
+  private readonly reachShoulder = new THREE.Vector3();
   private readonly gazeTarget = new THREE.Vector3();
   private readonly frustum = new THREE.Frustum();
   private readonly viewProjection = new THREE.Matrix4();
@@ -699,11 +702,10 @@ export class ResidentWorldLayer {
       const socialGaze = interaction && targetActor?.root.visible && targetActor.initialized
         && actor.current.distanceTo(targetActor.current) <= 3
         ? this.gazeTarget.set(targetActor.current.x, targetActor.current.y + targetActor.root.scale.y * .85, targetActor.current.z) : null;
-      // During an actual Core-confirmed work/gather/storage interaction,
-      // the resident looks at the SAME observed location as the hand.
-      // No fabricated resource target or independent work animation.
+      // Look at the real Core resource center, not the optional near-hand
+      // visual gesture waypoint. Neither target changes action authority.
       const workGaze = interaction && actor.presentation?.kind === 'Civilization'
-        && observedTarget && hand ? hand : null;
+        && observedTarget && hand ? this.workGazeTarget : null;
       actor.procedural.afterMotion({ dt: motionDt, moving: presentationMoving, sleeping: sleepHandled,
         detailed, ground: this.ground, handTarget: hand, gazeTarget: socialGaze ?? workGaze });
       actor.inventoryProps.update();
@@ -1362,7 +1364,19 @@ export class ResidentWorldLayer {
     // Heights describe existing rendered affordances, never a generated object.
     const height=site.kind==='facility' && p.facilityKind==='WorkSurface' ? .7
       : site.kind==='storage' ? .35 : p.civilizationMaterial==='Wood' ? .75 : .08;
-    return this.handTarget.set(x,ground+height,z);
+    // This always remains the real Core-backed site center for eye tracking.
+    this.workGazeTarget.set(x, ground + height, z);
+    if (site.kind !== 'resource') return this.handTarget.copy(this.workGazeTarget);
+    const shoulder = actor.procedural.rig.joints.get('rightArm');
+    if (!shoulder) return null;
+    actor.root.updateWorldMatrix(true, true);
+    shoulder.getWorldPosition(this.reachShoulder);
+    // A resource may be further from its Core access cell than the avatar's
+    // anatomical reach. Aim the hand toward it without stretching bones or
+    // claiming that the resident is touching/picking up the distant node.
+    return boundedVisualWorkReach(
+      this.reachShoulder, this.workGazeTarget, actor.root.scale.y, this.handTarget,
+    );
   }
 
   private syncWalkPlaybackRate(

@@ -89,6 +89,33 @@ test('resource facing uses Core node center without moving from access cell',()=
  for(let i=0;i<30;i++)l.update(1/60);assert(Math.abs(a.root.rotation.y-Math.PI/2)<.01);assert(a.current.equals(before));
  a.presentation=p({hasTargetGrid:false});assert.equal(l.interactionTargetYaw(a),null);
 });
+test('Core resource access cell keeps the resident fixed while the real eye and bounded hand align',()=>{
+ const workTerrain={...terrain,chunks:[
+  {x:2,y:2,elevation01:.03,waterKind:'None'},
+  {x:3,y:2,elevation01:.03,waterKind:'None'},
+ ]};
+ const resource={id:'reachable-wood',gridX:80,gridY:64,hasAccessGrid:true,
+  accessGridX:64,accessGridY:64,material:'Wood',quantity:10,maxQuantity:10};
+ l.setCivilization({available:true,resources:[resource]});
+ const directive=p({kind:'Civilization',phase:'Interacting',
+  civilizationIntent:'Gather',civilizationMaterial:'Wood',
+  civilizationResourceNode:resource.id,targetGridX:64,targetGridY:64});
+ l.setResidents([resident('work-arm',directive,{gridX:64,gridY:64})],workTerrain,0,0);
+ const actor=l.actors.get('work-arm'),original=actor.current.clone();
+ assert(l.productionTargets.interacting(directive,actor.current.x,actor.current.z,0,0));
+ const hand=l.interactionHandTarget(actor);
+ const eye=l.workGazeTarget.clone();
+ assert(hand,'real Core resource should yield a bounded observed hand gesture');
+ const shoulder=actor.procedural.rig.joints.get('rightArm');
+ assert(shoulder,'verified resident rig has a right arm');
+ const shoulderPos=shoulder.getWorldPosition(new THREE.Vector3());
+ assert(hand.distanceTo(shoulderPos)<=actor.root.scale.y*.58+1e-5,
+  'hand stretched past the resident anatomy');
+ const size=8,span=32,actualX=(resource.gridX/span-.5)*size;
+ assert(Math.abs(eye.x-actualX)<1e-7,'resident looked at gesture waypoint instead of Core resource');
+ assert(eye.distanceTo(hand)>1,'far resource incorrectly made reachable as a literal touch');
+ assert(actor.current.equals(original),'visual arm action moved the authoritative actor root');
+});
 test('visible arrival guards interactions and preserves walk grace',()=>{
  const r=resident('arrival',p({kind:'Physical',physicalGoal:'Eat',targetGridX:80}),{civilization:{inventory:[{item:'RawMaterial',material:'PlantFood',quantity:1}]}});l.setResidents([r],terrain,0,0);l.setResidents([{...r,gridX:80}],terrain,0,0);const a=l.actors.get('arrival');
  for(let i=0;i<5;i++){l.update(1/60);assert.equal(a.active,'walk');assert(a.current.distanceTo(a.target)>.008);}
