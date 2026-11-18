@@ -262,3 +262,55 @@ button:disabled { opacity: .45; }
   .earth-globe-stage { grid-column: 1; grid-row: 3; min-height: 0; }
   .earth-globe-footer { grid-column: 2; grid-row: 2 / 4; max-height: none; min-height: 0; min-width: 0; border-left: 1px solid #274239; }
 }
+
+
+/* Field observer: keep the event feed useful without hiding the residents. */
+@media (max-width: 800px), (max-width: 1024px) and (pointer: coarse) {
+  .field-observer-world .observation-feed-overlay.field-compact-observation {
+    bottom: calc(148px + env(safe-area-inset-bottom, 0px));
+    left: max(10px, env(safe-area-inset-left));
+    right: auto;
+    width: min(280px, calc(100% - 24px));
+    max-height: 29svh;
+    padding: 6px 8px;
+    background: rgba(12, 28, 20, .79);
+    border: 1px solid rgba(171, 194, 151, .30);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .field-observer-world .field-compact-observation.is-collapsed {
+    width: auto;
+    max-width: min(230px, calc(100% - 24px));
+  }
+  .field-observer-world .field-compact-observation .observation-feed-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 30px;
+    border: 0;
+    padding: 1px 5px;
+    background: none;
+    color: #e7f0dc;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .field-observer-world .field-compact-observation .observation-feed-toggle span:last-child {
+    color: #c4d4b7;
+    font-size: 10px;
+  }
+  .field-observer-world .field-compact-observation.is-collapsed .observation-feed-items {
+    display: none;
+  }
+  .field-observer-world .field-compact-observation.is-expanded .observation-feed-items {
+    display: grid;
+    overflow-y: auto;
+    max-height: calc(29svh - 44px);
+    gap: 5px;
+  }
+  .field-observer-world .field-compact-observation.is-expanded .observation-event.compact {
+    display: block;
+    font-size: 11px;
+    padding: 6px;
+  }
+}
