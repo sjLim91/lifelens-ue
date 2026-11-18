@@ -86,9 +86,9 @@ export function isometricM102Checks({test,source,chunk,windowOf}) {
         parseInt(color.slice(1,3),16), parseInt(color.slice(3,5),16),
         parseInt(color.slice(5,7),16),
       ];
-      const rgb = /^rgb\\(\\s*(\\d+)[, ]+\\s*(\\d+)[, ]+\\s*(\\d+)\\s*\\)$/.exec(color);
-      assert.ok(rgb, 'unsupported Canvas CSS color: ' + color);
-      return rgb.slice(1).map(Number);
+      const rgb = color.startsWith('rgb(') ? color.match(/[0-9]+/g)?.map(Number) : null;
+      assert.ok(rgb && rgb.length === 3, 'unsupported Canvas CSS color: ' + color);
+      return rgb;
     };
     const sandChannels = channels(sandy), seaChannels = channels(blue);
     assert.ok(sandChannels[0]>sandChannels[2]+25,'coast still painted as ocean blue');
