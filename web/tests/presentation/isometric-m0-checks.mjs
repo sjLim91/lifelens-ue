@@ -16,7 +16,7 @@ export function isometricM0Checks({ test, source, chunk, windowOf }) {
     const ops = [];
     const ctx = {};
     for (const op of ['clearRect','fillRect','fillText','beginPath','moveTo','lineTo',
-      'closePath','fill','stroke','arc','ellipse','strokeRect']) {
+      'closePath','fill','stroke','arc','ellipse','strokeRect','quadraticCurveTo']) {
       ctx[op] = (...args) => { ops.push([op, ...args]); };
     }
     return { ctx, ops };
