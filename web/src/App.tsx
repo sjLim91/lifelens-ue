@@ -87,7 +87,7 @@ function WorldViewport({
     : null;
 
   return (
-    <section className="world">
+    <section className={`world ${activeRenderMode === 'field-canvas' ? 'field-observer-world' : ''}`}>
       <canvas id="worldCanvas" aria-label="라이프렌즈 세계 관찰 화면" />
       <canvas id="threeWorldCanvas" aria-label="라이프렌즈 3차원 세계" />
       <canvas id="characterCanvas" aria-label="라이프렌즈 주민" />
@@ -143,6 +143,7 @@ function WorldViewport({
       {!selectedTrace && (
         <ObservationFeedOverlay
           observations={snapshot.observations}
+          compactOnMobile={activeRenderMode === 'field-canvas'}
           onFocus={(event) => observerActions.focusObservation(event)}
         />
       )}

@@ -5,10 +5,12 @@ import { runtimeDiagnostics } from '../runtime/runtime-diagnostics';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import { shade, terrainColor } from './terrain-presentation';
-import { observedRiverLinks, stableNatureUnit } from './isometric-natural-presentation';
+import { observedRiverLinks } from './isometric-natural-presentation';
 import type { IsometricWorldDrawOptions } from './isometric-canvas-world-renderer';
 import { createFieldProjection, type FieldView } from './field-projection';
 import { FieldSpriteAtlas, type FieldSpriteName, type FieldSpritePainter } from './field-asset-atlas';
+import { fieldCoreClearances, fieldDecorativePositionClear, fieldFacilityArt,
+  fieldSpriteVisualOcclusion, fieldVisualUnit } from './field-scene-clarity';
 
 export type FieldMarkerKind = 'resident' | 'trace' | 'settlement' | 'animal';
 export interface FieldMarker {
@@ -27,6 +29,7 @@ export interface FieldPaintResult {
 const blankCounts = (): Record<FieldSpriteName,number> => ({
   pine:0,cedar:0,oak:0,bush:0,cliff:0,rock:0,flowers:0,
   citizen_f:0,citizen_m:0,deer:0,hare:0,hut:0,fire:0,
+  workbench:0,store:0,sleeping:0,furnace:0,farm:0,site:0,flag:0,
 });
 const clamp01 = (n: unknown) => Number.isFinite(Number(n)) ? Math.max(0,Math.min(1,Number(n))) : 0;
 
@@ -59,7 +62,7 @@ export function paintFieldWorld(
     x-options.centerX,y-options.centerY,h);
   const visible=(x:number,y:number,r=tile)=>x+r>=0&&x-r<=width&&y+r>=0&&y-r<=height;
   const seed=String(terrain.worldSeed??'0');
-  const rand=(x:number,y:number,salt:number)=>stableNatureUnit(seed,x,y,salt);
+  const rand=(x:number,y:number,salt:number)=>fieldVisualUnit(seed,x,y,salt);
   const poly=(points:Array<{x:number;y:number}>,fill:string)=>{
     ctx.fillStyle=fill;ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
     for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
@@ -132,8 +135,13 @@ export function paintFieldWorld(
     items.push({name,x:p.x,y:p.y,w,h,depth:p.y,marker,selected,label});
     if(marker)result.markers.push(marker);
   };
-  // F1 original art placements: clustering is aesthetic, density comes ONLY
-  // from Core's actual canopy, rock, shrub and grass coverage observations.
+  // The real Core resident/facility/animal locations reserve an *observer
+  // sightline*, not simulation space. Decorative forest cover must not make
+  // a real person's life impossible to watch.
+  const clearance=fieldCoreClearances(terrain,options.residents,
+    options.civilization,continuity);
+  // Forest decoration follows Core canopy coverage but leaves actual working
+  // sites readable. The underlying ecology remains untouched.
   for(const c of chunks) {
     if(c.waterKind==='Ocean'||c.waterKind==='Lake')continue;
     const forest=clamp01(c.forestCoverage01),rock=clamp01(c.rockCoverage01);
@@ -141,10 +149,16 @@ export function paintFieldWorld(
     const biome=String(c.biome??'').toLowerCase();
     const cold=/taiga|boreal|tundra|conifer/.test(biome);
     const addScenery=(name:FieldSpriteName,u:number,v:number,w:number,h:number)=>{
+      const gx=c.x+u,gy=c.y+v;
+      const radius=(name==='cliff'?.15:name==='rock'?.075:name==='flowers'?.025
+        :name==='bush'?.055:.105);
+      if(!fieldDecorativePositionClear(gx,gy,clearance,radius))return;
       const p=screen(c.x+u-.5,c.y+v-.5,sample(c.x,c.y,u,v));
       put(name,p,w,h);
     };
-    const trees=forest>=.18?Math.min(11,Math.max(1,Math.floor(forest*11))):0;
+    // F1 legacy generated up to 11 near-identical trees per chunk, saturating
+    // mobile frames. Cap canopy sprites while retaining actual Core coverage.
+    const trees=forest>=.18?Math.min(6,Math.max(1,Math.ceil(forest*5.3))):0;
     for(let i=0;i<trees;i++) {
       const u=.08+rand(c.x,c.y,1000+i*4)*.84;
       const v=.08+rand(c.x,c.y,1001+i*4)*.84;
@@ -186,8 +200,9 @@ export function paintFieldWorld(
     const elevation=sampleGrid(trace.gridX,trace.gridY);
     if(elevation===null)continue;
     const p=projection.gridPoint(trace.gridX,trace.gridY,elevation);
-    const name:FieldSpriteName=/fire|pit|hearth|camp/i.test(trace.facilityKind)?'fire':'hut';
-    const size=name==='fire'?tile*.26:tile*.52;
+    const facilityArt=fieldFacilityArt(trace);
+    const name=facilityArt.sprite;
+    const size=tile*facilityArt.size;
     const marker:FieldMarker={kind:'trace',id:trace.id,x:p.x,y:p.y,radius:Math.max(17,size*.36)};
     put(name,p,size,size*(name==='fire'?.86:.93),marker,
       trace.id===options.selectedHumanTraceId);
@@ -198,9 +213,10 @@ export function paintFieldWorld(
     const elevation=sampleGrid(settlement.gridX,settlement.gridY);
     if(elevation===null)continue;
     const p=projection.gridPoint(settlement.gridX,settlement.gridY,elevation);
-    const size=tile*.5,marker:FieldMarker={
-      kind:'settlement',id:settlement.id,x:p.x,y:p.y,radius:Math.max(20,size*.45)};
-    put('hut',p,size,size*.91,marker,settlement.id===options.selectedSettlementId);
+    // A settlement is an administrative site, not an additional physical hut.
+    const size=tile*.17,marker:FieldMarker={
+      kind:'settlement',id:settlement.id,x:p.x,y:p.y,radius:Math.max(18,size*.65)};
+    put('flag',p,size,size*1.2,marker,settlement.id===options.selectedSettlementId);
   }
   // The resident's drawn footpoint and click selection both use the same
   // continuity position, not a decorative/random offset or future target.
@@ -210,7 +226,7 @@ export function paintFieldWorld(
     const elevation=sampleGrid(pos.x,pos.y);
     if(elevation===null)continue;
     const p=projection.gridPoint(pos.x,pos.y,elevation);
-    const size=Math.max(33,Math.min(77,tile*.29));
+    const size=Math.max(45,Math.min(94,tile*.37));
     const marker:FieldMarker={kind:'resident',id:resident.id,x:p.x,y:p.y-8,radius:size*.54};
     const label=(resident as Resident & {name?:string}).name;
     put(resident.sex==='Female'?'citizen_f':'citizen_m',p,size,size*1.33,marker,
@@ -230,9 +246,17 @@ export function paintFieldWorld(
     put(name,p,size,size*.82,
       {kind:'animal',id:animal.id,x:p.x,y:p.y,radius:Math.max(10,size*.44)});
   }
+  const people=items.filter(item=>item.name==='citizen_f'||item.name==='citizen_m')
+    .map(item=>({x:item.x,y:item.y,selected:Boolean(item.selected)}));
+  // Preserve projected depth order; only translucent foreground vegetation
+  // and buildings that would actually mask a real resident are softened.
+  // The highlighted resident has a final screen-space outline on top.
   items.sort((a,b)=>a.depth-b.depth||a.x-b.x);
   for(const item of items) {
     const left=item.x-item.w*.5,top=item.y-item.h*.93;
+    const previousAlpha=ctx.globalAlpha;
+    const opacity=fieldSpriteVisualOcclusion(item,people);
+    if(opacity<1)ctx.globalAlpha=opacity;
     if(item.selected) {
       ctx.strokeStyle='#f6e9b1';ctx.lineWidth=2.4;ctx.beginPath();
       ctx.ellipse(item.x,item.y,item.w*.54,item.w*.18,0,0,Math.PI*2);ctx.stroke();
@@ -240,12 +264,21 @@ export function paintFieldWorld(
     const drawn=art.draw(ctx,item.name,left,top,item.w,item.h);
     result.sprites[item.name]++;
     if(!drawn){
-      // Temporary startup placeholder only while the original SVG loads.
+      // Temporary startup placeholder only while an original SVG loads.
       ctx.fillStyle=item.name.startsWith('citizen')?'#ebd3a4':'#426b4d';
       ctx.beginPath();ctx.ellipse(item.x,item.y-item.h*.52,
         item.w*.29,item.h*.38,0,0,Math.PI*2);ctx.fill();
     }
-    if(item.selected&&item.label){
+    if(previousAlpha!==undefined)ctx.globalAlpha=previousAlpha;
+  }
+  for(const item of items){
+    if(!item.selected||!item.marker)continue;
+    // Draw after scenery to keep the selected Core target readable even
+    // when the real foliage would otherwise hide the observation marker.
+    ctx.strokeStyle='#fff2af';ctx.lineWidth=2.8;ctx.beginPath();
+    ctx.ellipse(item.x,item.y,Math.max(11,item.w*.52),
+      Math.max(5,item.w*.18),0,0,Math.PI*2);ctx.stroke();
+    if(item.label){
       ctx.font='bold 12px sans-serif';ctx.textAlign='center';
       ctx.fillStyle='#ffffff';ctx.strokeStyle='rgba(24,39,31,.88)';ctx.lineWidth=3;
       ctx.strokeText(item.label,item.x,item.y-item.h-7);

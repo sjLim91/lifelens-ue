@@ -2,6 +2,7 @@
 export const FIELD_SPRITES = [
   'pine','cedar','oak','bush','cliff','rock','flowers',
   'citizen_f','citizen_m','deer','hare','hut','fire',
+  'workbench','store','sleeping','furnace','farm','site','flag',
 ] as const;
 export type FieldSpriteName = typeof FIELD_SPRITES[number];
 export interface FieldSpritePainter {
