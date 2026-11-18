@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 export function illustratedWorldStyleChecks({ test, source, chunk, windowOf }) {
   const {
-    worldStyleFromSearch, urlForWorldVisualStyle, ILLUSTRATED_GROUND_PALETTE,
+    worldStyleFromSearch, readWorldVisualStyle, urlForWorldVisualStyle, ILLUSTRATED_GROUND_PALETTE,
   } = source('render/world-visual-style.ts');
   const { terrainSurfaceColor } = source('render/terrain-surface.ts');
   const { buildChunkGeometry } = source('render/terrain-geometry.ts');
@@ -19,6 +19,19 @@ export function illustratedWorldStyleChecks({ test, source, chunk, windowOf }) {
     assert.equal(new URL(changed).hash, '#view');
     assert.equal(urlForWorldVisualStyle(changed, 'classic'), original);
     assert.equal(ILLUSTRATED_GROUND_PALETTE.foliage.length, 7);
+  });
+
+  test('P1 gracefully uses classic when a compatibility test or WebView supplies no location', () => {
+    const before = globalThis.window;
+    try {
+      globalThis.window = { matchMedia: () => ({ matches: true }) };
+      assert.equal(readWorldVisualStyle(), 'classic');
+      globalThis.window = { location: { search: '?world-style=illustrated' } };
+      assert.equal(readWorldVisualStyle(), 'illustrated');
+    } finally {
+      if (before === undefined) delete globalThis.window;
+      else globalThis.window = before;
+    }
   });
 
   test('P1 keeps original terrain colors as default; illustrated ecology is distinct and deterministic', () => {
