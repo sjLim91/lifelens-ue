@@ -1,4 +1,3 @@
-import type { IsometricWorldDrawOptions } from './isometric-canvas-world-renderer';
 
 export const FIELD_SPRITES = [
   'pine','cedar','oak','bush','cliff','rock','flowers',
