@@ -6,6 +6,7 @@ import { storedGoodsPiles } from './stored-goods-presentation';
 import { RESIDENT_PRESENTATION_CONTRACT, WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import { readWorldVisualStyle } from './world-visual-style';
 import { SurfaceSnowModifier } from './environment-surface-presentation';
 
 import { facilityProductionStocks } from './facility-production-presentation';
@@ -92,6 +93,8 @@ function constructionProgress(trace: FacilityTrace): number {
 export class FacilityLayer {
   readonly group = new THREE.Group();
   private disposed = false;
+  private selectedTraceId: string | null = null;
+  private readonly illustrated = readWorldVisualStyle() === 'illustrated';
 
   private readonly boxGeometry = createPlankGeometry();
   private readonly vesselGeometry = createVesselGeometry();
@@ -198,6 +201,11 @@ export class FacilityLayer {
     this.updateStorageCutaway();
     this.activities = new Map([...facilityActivitySites(residents)]
     .sort((a, b) => Number(b[1] === 'Repair') - Number(a[1] === 'Repair'))); }
+  setSelectedTrace(id: string | null): void {
+    if (this.selectedTraceId === id) return;
+    this.selectedTraceId = id;
+    this.updateStorageCutaway();
+  }
   setSimulationSpeed(speed: number): void { this.paused = speed <= 0; }
   update(deltaSeconds: number, camera?: THREE.Camera): void {
     if (!this.paused) this.activityTime += Math.min(0.1, Math.max(0, deltaSeconds));
@@ -291,6 +299,20 @@ export class FacilityLayer {
 
   constructor() {
     this.group.name = 'facilities';
+    if (this.illustrated) {
+      // Visual-only finish on existing Core-backed structures. This adds no
+      // geometry, facility, worker, or work progress.
+      this.woodMaterial.color.setHex(0x97704d);
+      this.darkWoodMaterial.color.setHex(0x604a35);
+      this.stoneMaterial.color.setHex(0x929487);
+      this.earthMaterial.color.setHex(0x75664e);
+      this.thatchMaterial.color.setHex(0xab9669);
+      this.beddingMaterial.color.setHex(0xb4a58b);
+      for (const material of [
+        this.woodMaterial, this.darkWoodMaterial, this.stoneMaterial,
+        this.earthMaterial, this.thatchMaterial, this.beddingMaterial,
+      ]) material.flatShading = true;
+    }
     for (const material of [this.woodMaterial, this.darkWoodMaterial]) {
       material.vertexColors = true; installWoodGrain(material);
     }
@@ -337,12 +359,26 @@ export class FacilityLayer {
       this.productionTargets.clear(); this.storageInteractions.clear(); this.residents = [];
     }
     const facilities = facilityPresentationTraces(window, this.civilization);
+    const sampleElevation = createTerrainElevationSampler(window);
+    const { gridCellsPerChunk: span, worldUnitsPerChunk: size, elevationScale } =
+      WORLD_GRID_CONTRACT;
+    const facilityGroundHeight = (trace: FacilityTrace): number => {
+      const chunkX = Math.floor(trace.gridX / span);
+      const chunkY = Math.floor(trace.gridY / span);
+      return sampleElevation(
+        chunkX, chunkY,
+        trace.gridX / span - chunkX,
+        trace.gridY / span - chunkY,
+      ) * elevationScale;
+    };
+    // Only the ground heights at *observed facility sites* affect the
+    // placement. Include detailed Core 17x17 terrain samples implicitly via
+    // these heights, without serializing the whole terrain window per tick.
     const signature = JSON.stringify([
       window.worldSeed,
       window.centerChunkX,
       window.centerChunkY,
-      window.chunks.map(chunk => [chunk.x, chunk.y, chunk.elevation01]),
-      facilities.map(trace => this.visualSignature(trace)),
+      facilities.map(trace => [this.visualSignature(trace), facilityGroundHeight(trace)]),
     ]);
     if (signature === this.signature) return;
     this.signature = signature;
@@ -356,19 +392,8 @@ export class FacilityLayer {
       return;
     }
 
-    const sampleElevation = createTerrainElevationSampler(window);
-    const {
-      gridCellsPerChunk: span,
-      worldUnitsPerChunk: size,
-      elevationScale,
-    } = WORLD_GRID_CONTRACT;
-
     const nextStructures = new Map<string, { signature: string; group: THREE.Group }>();
     for (const trace of facilities) {
-      const chunkX = Math.floor(trace.gridX / span);
-      const chunkY = Math.floor(trace.gridY / span);
-      const localX01 = trace.gridX / span - chunkX;
-      const localY01 = trace.gridY / span - chunkY;
       const worldX = (
         trace.gridX / span
         - window.centerChunkX
@@ -379,12 +404,7 @@ export class FacilityLayer {
         - window.centerChunkY
         - 0.5
       ) * size;
-      const groundY = sampleElevation(
-        chunkX,
-        chunkY,
-        localX01,
-        localY01,
-      ) * elevationScale;
+      const groundY = facilityGroundHeight(trace);
 
       const facility = this.facility(trace);
       const structureSignature = JSON.stringify([window.worldSeed, this.visualSignature(trace)]);
@@ -511,7 +531,14 @@ export class FacilityLayer {
 
   private updateStorageCutaway(): void {
     for (const { group } of this.structures.values()) {
-      const cutaway = this.storageInteractions.has(group.userData.storageId);
+      const storageId = group.userData.storageId;
+      // A selected, actually linked operational storage may reveal existing
+      // contents without inventing goods or changing the Core storage state.
+      // Keep the pre-existing Store/Retrieve cutaway for working residents.
+      const cutaway = Boolean(storageId) && (
+        this.storageInteractions.has(storageId)
+        || this.selectedTraceId === group.userData.traceId
+      );
       for (const part of group.children) if (part.userData.storageCutaway) part.visible = !cutaway;
     }
   }
