@@ -212,7 +212,14 @@ test('inventory ownership never creates floating equipment or unrelated cargo',(
  const a=l.actors.get('prop-owner');
  assert.equal(a.inventoryProps.root.visible,false,'owned tools have no equipped Core token');
  assert.equal(a.inventoryProps.loadRoot.visible,false,'social movement does not create a cargo bundle');
- l.setResidents([{...idle,presentation:p({kind:'Civilization',phase:'Moving',civilizationIntent:'Store',civilizationMaterial:'Wood'})}],terrain,0,0);
+ // A real Core storage target and matching access cell are necessary for a
+ // cargo transfer; a free-floating Store directive alone is not enough.
+ l.setCivilization({available:true,storages:[{id:'real-storage',gridX:64,gridY:64}]});
+ l.setResidents([{...idle,presentation:p({kind:'Civilization',phase:'Moving',
+   civilizationIntent:'Store',civilizationMaterial:'Wood',civilizationStorage:'missing-storage'})}],terrain,0,0);
+ assert.equal(a.inventoryProps.loadRoot.visible,false,'unknown storage cannot authorize visible cargo');
+ l.setResidents([{...idle,presentation:p({kind:'Civilization',phase:'Moving',
+   civilizationIntent:'Store',civilizationMaterial:'Wood',civilizationStorage:'real-storage'})}],terrain,0,0);
  assert.equal(a.inventoryProps.loadRoot.visible,true,'Core-authorized physical storage transfer retains cargo');
 });
 test('worn fiber wrap is a body-fitted, live-skinned mesh rather than a rigid cylinder',()=>{
