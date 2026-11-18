@@ -2,7 +2,21 @@ import type { CivilizationWorldPayload, HumanTrace, Resident, TerrainWindow } fr
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { ResidentContinuity } from '../runtime/resident-continuity';
 import { visibleHumanTraces } from '../state/human-traces';
+import { stableNatureUnit } from './isometric-natural-presentation';
 import type { FieldSpriteName } from './field-asset-atlas';
+
+/**
+ * Independent, well-dispersed visual placement stream.
+ * Adjacent salts in raw seeded FNV correlated strongly, producing columns
+ * of identical trees; avalanche diffusion fixes that without random calls.
+ */
+export function fieldVisualUnit(seed:string,x:number,y:number,salt:number):number {
+  let h=Math.floor(stableNatureUnit(seed,x,y,salt)*4294967296)>>>0;
+  h^=h>>>16;h=Math.imul(h,0x7feb352d);
+  h^=h>>>15;h=Math.imul(h,0x846ca68b);
+  h^=h>>>16;
+  return (h>>>0)/4294967296;
+}
 
 export type FacilityTrace = Extract<HumanTrace, {kind:'Facility'}>;
 export interface FieldFacilityArt {
@@ -16,20 +30,20 @@ export interface FieldFacilityArt {
 /** Never describe a storage/worksite/sleeping mat as a completed house. */
 export function fieldFacilityArt(trace: FacilityTrace): FieldFacilityArt {
   const kinds: Record<string, {sprite:FieldSpriteName;size:number;clearance:number}> = {
-    Shelter:{sprite:'hut',size:.42,clearance:.27},
-    PrimitiveStorage:{sprite:'store',size:.31,clearance:.20},
-    WorkSurface:{sprite:'workbench',size:.31,clearance:.21},
-    SleepingPlace:{sprite:'sleeping',size:.31,clearance:.19},
-    FirePit:{sprite:'fire',size:.24,clearance:.17},
-    Furnace:{sprite:'furnace',size:.35,clearance:.23},
-    CultivatedPlot:{sprite:'farm',size:.42,clearance:.27},
+    Shelter:{sprite:'hut',size:.42,clearance:.18},
+    PrimitiveStorage:{sprite:'store',size:.31,clearance:.12},
+    WorkSurface:{sprite:'workbench',size:.31,clearance:.13},
+    SleepingPlace:{sprite:'sleeping',size:.31,clearance:.12},
+    FirePit:{sprite:'fire',size:.24,clearance:.11},
+    Furnace:{sprite:'furnace',size:.35,clearance:.14},
+    CultivatedPlot:{sprite:'farm',size:.42,clearance:.18},
   };
   // Unfinished, ruined or unknown facilities must not visually claim that
   // an operational building exists. The selectable construction site is real.
   const operational = trace.state === 'Operational';
-  if(!operational) return {sprite:'site',size:.29,clearance:.18,operational:false};
+  if(!operational) return {sprite:'site',size:.29,clearance:.12,operational:false};
   return {...(kinds[trace.facilityKind]??{
-    sprite:'site' as FieldSpriteName,size:.29,clearance:.18}),operational:true};
+    sprite:'site' as FieldSpriteName,size:.29,clearance:.12}),operational:true};
 }
 
 export interface FieldClearance {
@@ -61,13 +75,13 @@ export function fieldCoreClearances(
   }
   for(const r of residents){
     const p=continuity.positionFor(r);
-    if(p)push(r.id,'resident',p.x,p.y,.20);
+    if(p)push(r.id,'resident',p.x,p.y,.13);
   }
   for(const settlement of civilization.available?civilization.settlements??[]:[]){
-    if(settlement.active)push(settlement.id,'settlement',settlement.gridX,settlement.gridY,.13);
+    if(settlement.active)push(settlement.id,'settlement',settlement.gridX,settlement.gridY,.09);
   }
   for(const animal of terrain.wildlife?.available?terrain.wildlife.animals:[]){
-    push(animal.id,'animal',animal.gridX,animal.gridY,.12);
+    push(animal.id,'animal',animal.gridX,animal.gridY,.09);
   }
   return out;
 }
