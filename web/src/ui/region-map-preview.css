@@ -94,3 +94,11 @@
   .illustrated-map-legend { gap: 5px 9px; font-size: 10px; }
   .illustrated-map-footer { line-height: 1.35; }
 }
+
+/* Keep the added map action usable beside globe/status on 320–390px devices. */
+@media (max-width: 420px) {
+  .earth-topbar-actions { gap: 4px; }
+  .earth-topbar-actions .earth-globe-open { padding: 0 6px; font-size: 10px; min-height: 34px; }
+  .brand-name strong { font-size: 14px; }
+  .earth-topbar-actions .status { padding: 0 5px; font-size: 9px; }
+}
