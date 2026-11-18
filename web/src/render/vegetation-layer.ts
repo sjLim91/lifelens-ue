@@ -18,6 +18,7 @@ import {
 } from './vegetation-profile';
 
 import { NaturalResourceProjection } from './natural-resource-projection';
+import { ILLUSTRATED_GROUND_PALETTE, readWorldVisualStyle } from './world-visual-style';
 
 const MAX_TREES = VEGETATION_PRESENTATION_CONTRACT.maxTrees;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -38,6 +39,7 @@ export class VegetationLayer {
   private readonly observerClarity = new ObserverFoliageClarity();
 
   private readonly mobileProfile = useMobileVegetationProfile();
+  private readonly illustrated = readWorldVisualStyle() === 'illustrated';
   private readonly treeVariantMatrices = PROCEDURAL_TREE_VARIANTS.map(
     () => new Float32Array(MAX_TREES * 16),
   );
@@ -183,8 +185,10 @@ export class VegetationLayer {
         this.matrix.compose(this.position, this.rotation, this.scale);
 
         const variantIndex = treeVariantForEnvironment(chunk, random());
+        const foliagePalette: readonly number[] = this.illustrated
+          ? ILLUSTRATED_GROUND_PALETTE.foliage : TREE_FOLIAGE_PALETTE;
         const paletteLength = PROCEDURAL_TREE_VARIANTS[variantIndex].species === 'pine'
-          ? 3 : TREE_FOLIAGE_PALETTE.length;
+          ? 3 : foliagePalette.length;
         const foliageColorIndex = Math.min(
           paletteLength - 1,
           Math.floor(
@@ -193,7 +197,7 @@ export class VegetationLayer {
           ),
         );
         this.treeColor.setHex(
-          TREE_FOLIAGE_PALETTE[foliageColorIndex],
+          foliagePalette[foliageColorIndex],
         );
         this.treeColor.offsetHSL(
           (

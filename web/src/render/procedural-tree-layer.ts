@@ -3,6 +3,7 @@ import type { DynamicEnvironment, TerrainChunk } from '../runtime/core-types';
 import { clamp01, snowPresentationCoverage } from './environment-surface-presentation';
 import { injectFoliageClarity, ObserverFoliageClarity } from './observer-foliage-clarity';
 import { acquireTreeGeometry, TREE_TEMPLATES, type TreeSpecies } from './procedural-tree-generator';
+import { readWorldVisualStyle } from './world-visual-style';
 
 export const PROCEDURAL_TREE_VARIANTS = TREE_TEMPLATES.flatMap(t =>
   [0, 1].map(variant => ({ species: t.id, seed: `${t.id}:${variant}` })));
@@ -85,8 +86,9 @@ export class ProceduralTreeAsset {
     this.weather = new PlantWeatherMaterial(clarity);
     this.packed = new Float32Array(capacity * 16); this.tints = new Float32Array(capacity * 3);
     this.selected = new Uint8Array(capacity); this.selected.fill(255);
-    const barkMaterial = new THREE.MeshLambertMaterial({ vertexColors: true });
-    const leafMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    const illustrated = readWorldVisualStyle() === 'illustrated';
+    const barkMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: illustrated });
+    const leafMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, flatShading: illustrated });
     this.weather.install(leafMaterial, species === 'pine');
     this.levels = (this.mobile ? [true] : [false, true]).map(low => {
       const cached = acquireTreeGeometry(species, seed, low);

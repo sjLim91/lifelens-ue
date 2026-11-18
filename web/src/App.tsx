@@ -29,6 +29,9 @@ import { SettlementDetail } from './ui/settlement-detail';
 import { FastForwardControl } from './ui/fast-forward-control';
 import { EarthGlobePreview } from './ui/earth-globe-preview';
 import { RegionMapPreview } from './ui/region-map-preview';
+import { readRenderMode } from './render/render-mode';
+import { readWorldVisualStyle, urlForWorldVisualStyle } from './render/world-visual-style';
+import { useCanvasCompatibilityProfile } from './runtime/device-performance';
 import { visibleHumanTraces } from './state/human-traces';
 import { formatResidentName } from './ui/observer-format';
 import type { EarthPreviewGeoPoint } from './earth/globe-region-picking';
@@ -72,6 +75,8 @@ function WorldViewport({
   onMobileView: (view: MobileModalView) => void;
 }) {
   const snapshot = useObserverSnapshot();
+  const experimentalWorldStyleAvailable = !useCanvasCompatibilityProfile() && readRenderMode() === 'three-world';
+  const currentWorldStyle = readWorldVisualStyle();
   const selectedTrace = visibleHumanTraces(snapshot.terrain)
     .find(trace => trace.id === snapshot.selectedHumanTraceId);
   const focusedObservation = snapshot.focusedObservationId
@@ -86,6 +91,20 @@ function WorldViewport({
       <canvas id="threeWorldCanvas" aria-label="라이프렌즈 3차원 세계" />
       <canvas id="characterCanvas" aria-label="라이프렌즈 주민" />
       <WorldOverlay snapshot={snapshot} />
+      {experimentalWorldStyleAvailable && (
+        <button
+          type="button"
+          className="world-style-switch"
+          aria-label={currentWorldStyle === 'illustrated' ? '기존 환경 스타일로 전환' : '일러스트 환경 스타일로 전환'}
+          title="실험용 화면 스타일 · 주민 행동과 저장 데이터는 변경되지 않습니다."
+          onClick={() => {
+            const next = currentWorldStyle === 'illustrated' ? 'classic' : 'illustrated';
+            window.location.assign(urlForWorldVisualStyle(window.location.href, next));
+          }}
+        >
+          {currentWorldStyle === 'illustrated' ? '환경: 기존 보기' : '환경: 그림풍 보기'}
+        </button>
+      )}
 
 
       {focusedObservation ? (

@@ -7,6 +7,7 @@ import ts from 'typescript';
 import { terrainSeamChecks } from './terrain-seam-checks.mjs';
 import { mapSurfaceChecks } from './map-surface-checks.mjs';
 import { illustratedRegionMapChecks } from './illustrated-region-map-checks.mjs';
+import { illustratedWorldStyleChecks } from './illustrated-world-style-checks.mjs';
 import { resourceEnvironmentChecks } from './resource-environment-checks.mjs';
 import { worldPresentationChecks } from './world-presentation-checks.mjs';
 
@@ -627,6 +628,7 @@ resourceEnvironmentChecks({ test, source, THREE, flatWindow });
 
 mapSurfaceChecks({ test, source, THREE });
 illustratedRegionMapChecks({ test, source, chunk, windowOf });
+illustratedWorldStyleChecks({ test, source, chunk, windowOf });
 worldPresentationChecks({ test, source, THREE, flatWindow });
 
 terrainSeamChecks({ test, source, chunk, windowOf, withScene, near });

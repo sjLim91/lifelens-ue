@@ -13,6 +13,13 @@ button:disabled { opacity: .45; }
 .brand-name > span { color: var(--shell-muted); font-size: 10px; letter-spacing: .01em; }
 .earth-topbar-actions { gap: 10px; }
 .earth-globe-open { min-height: 40px; padding: 0 13px; display: inline-flex; align-items: center; border-color: #385044; border-radius: 12px; background: #182a22; font-size: 12px; text-decoration: none; }
+/* P1 opt-in world-color experiment. Does not alter the observer overlay or camera. */
+.world-style-switch { position: absolute; z-index: 6; top: 143px; right: 14px; min-height: 36px; padding: 7px 12px; border-radius: 11px; border: 1px solid #6b8c65; background: rgba(20, 43, 29, .93); color: #e9f2d8; font-size: 11px; box-shadow: 0 4px 18px #0003; }
+.world-style-switch:hover:not(:disabled) { background: #315a37; }
+@media (max-width: 800px), (max-width: 1024px) and (pointer: coarse) {
+  .world-style-switch { top: 131px; right: max(12px, env(safe-area-inset-right)); padding: 7px 9px; font-size: 10px; }
+}
+
 .asset-credits-link { color: var(--shell-muted); background: transparent; border-color: transparent; }
 .status { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 10px; font-size: 11px; white-space: nowrap; }
 .status.ready { background: #152d20; color: #cbe8c5; border-color: #2e5139; }
