@@ -646,7 +646,13 @@ export class ResidentWorldLayer {
           RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits
         || actor.walkGraceRemainingSeconds > 0
       );
-      actor.inventoryProps.setInteractionAllowed(residentLocalCraft(actor.presentation) || actor.presentation?.kind !== 'Civilization'
+      const localCraft = residentLocalCraft(actor.presentation);
+      const observedTarget = this.productionTargets.resolve(actor.presentation);
+      // Core's target ID, kind, access cell and snapshot must all agree before
+      // rendering goods/tools. A mere inventory stack never creates a task.
+      actor.inventoryProps.setTargetVerified(actor.presentation?.kind !== 'Civilization'
+        || localCraft || observedTarget !== null);
+      actor.inventoryProps.setInteractionAllowed(localCraft || actor.presentation?.kind !== 'Civilization'
         || this.productionTargets.interacting(actor.presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY));
       actor.inventoryProps.setVisuallyMoving(presentationMoving);
       const physicalAllowed = actor.presentation?.kind !== 'Physical' || this.physicalTargets.allows(actor.motionFacts, actor.presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY);
@@ -683,10 +689,17 @@ export class ResidentWorldLayer {
         && actor.current.distanceTo(child.current) <= 3 && !presentationMoving));
       const interaction = !presentationMoving && physicalAllowed && (!actor.presentation || actor.presentation.kind !== 'Civilization' || this.productionTargets.interacting(actor.presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY));
       const targetActor = actor.presentation?.targetResidentId ? this.actors.get(actor.presentation.targetResidentId) : undefined;
-      const gaze = interaction && targetActor?.root.visible && targetActor.initialized && actor.current.distanceTo(targetActor.current) <= 3
-        ? this.gazeTarget.set(targetActor.current.x, targetActor.current.y + targetActor.root.scale.y * .85, targetActor.current.z) : null;
       const hand = interaction ? this.interactionHandTarget(actor) : null;
-      actor.procedural.afterMotion({ dt: motionDt, moving: presentationMoving, sleeping: sleepHandled, detailed, ground: this.ground, handTarget: hand, gazeTarget: gaze });
+      const socialGaze = interaction && targetActor?.root.visible && targetActor.initialized
+        && actor.current.distanceTo(targetActor.current) <= 3
+        ? this.gazeTarget.set(targetActor.current.x, targetActor.current.y + targetActor.root.scale.y * .85, targetActor.current.z) : null;
+      // During an actual Core-confirmed work/gather/storage interaction,
+      // the resident looks at the SAME observed location as the hand.
+      // No fabricated resource target or independent work animation.
+      const workGaze = interaction && actor.presentation?.kind === 'Civilization'
+        && observedTarget && hand ? hand : null;
+      actor.procedural.afterMotion({ dt: motionDt, moving: presentationMoving, sleeping: sleepHandled,
+        detailed, ground: this.ground, handTarget: hand, gazeTarget: socialGaze ?? workGaze });
       actor.inventoryProps.update();
     }
 
