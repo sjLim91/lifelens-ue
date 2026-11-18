@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
+import type { WorldVisualStyle } from './world-visual-style';
 
 const clamp01 = (value: unknown): number => Math.max(0, Math.min(1, Number(value) || 0));
 const smooth = (t: number): number => t * t * (3 - 2 * t);
@@ -9,10 +10,26 @@ const ELEVATION_PALETTE = [
 ] as const;
 
 /** Actual 3D surface palette, in Three's linear working color space. */
-export function terrainSurfaceColor(chunk: TerrainChunk): THREE.Color {
+export function terrainSurfaceColor(chunk: TerrainChunk, style: WorldVisualStyle = 'classic'): THREE.Color {
   if (chunk.waterKind === 'Ocean') return new THREE.Color(0x1b4b63);
   if (chunk.waterKind === 'Coast') return new THREE.Color(0xb7aa83);
-  if (chunk.waterKind === 'Wetland') return new THREE.Color(0x496e58);
+  if (chunk.waterKind === 'Wetland') return new THREE.Color(style === 'illustrated' ? 0x719b7b : 0x496e58);
+  if (style === 'illustrated') {
+    // A brighter, coherent cartographic palette over the exact existing
+    // Core topography. This affects vertex colors ONLY, not height or water.
+    const grass = clamp01(chunk.grassCoverage01);
+    const forest = clamp01(chunk.forestCoverage01);
+    const rock = clamp01(chunk.rockCoverage01);
+    const moisture = clamp01(chunk.moisture01);
+    const elevation = clamp01(chunk.elevation01);
+    const base = new THREE.Color(0xabc58b);
+    base.lerp(new THREE.Color(0x63966b),
+      Math.min(0.72, forest * 0.58 + grass * 0.11));
+    base.lerp(new THREE.Color(0xb4ae99),
+      Math.min(0.83, rock * 0.73 + Math.max(0, elevation - 0.68) * 0.42));
+    base.lerp(new THREE.Color(0x84ab80), moisture * 0.12);
+    return base;
+  }
   const elevation = clamp01(chunk.elevation01);
   const base = new THREE.Color(ELEVATION_PALETTE[0][1]);
   for (let i = 1; i < ELEVATION_PALETTE.length; i += 1) {
@@ -30,8 +47,8 @@ export function terrainSurfaceColor(chunk: TerrainChunk): THREE.Color {
 }
 
 /** Interpolate observed chunk-center colors; never generate extra terrain. */
-export function createTerrainColorSampler(window: TerrainWindow) {
-  const colors = new Map(window.chunks.map(chunk => [key(chunk.x, chunk.y), terrainSurfaceColor(chunk)]));
+export function createTerrainColorSampler(window: TerrainWindow, style: WorldVisualStyle = 'classic') {
+  const colors = new Map(window.chunks.map(chunk => [key(chunk.x, chunk.y), terrainSurfaceColor(chunk, style)]));
   return (chunkX: number, chunkY: number, tx: number, ty: number, target: THREE.Color): THREE.Color => {
     const x = chunkX + tx - 0.5;
     const y = chunkY + ty - 0.5;
