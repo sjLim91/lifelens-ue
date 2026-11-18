@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ObservationEvent } from '../state/observation-feed';
 import { formatDay } from './observer-format';
 
@@ -67,25 +68,47 @@ function ObservationEventButton({
 export function ObservationFeedOverlay({
   observations,
   onFocus,
+  compactOnMobile = false,
 }: {
   observations: ObservationEvent[];
   onFocus: (event: ObservationEvent) => void;
+  compactOnMobile?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const latest = observations.slice(0, 3);
   if (latest.length === 0) return null;
 
   return (
-    <section className="observation-feed-overlay" aria-label="최근 관찰 포착">
-      <div className="observation-feed-title">
-        <span>관찰 포착</span>
-        <b>{latest.length}</b>
-      </div>
+    <section
+      className={`observation-feed-overlay ${compactOnMobile ? 'field-compact-observation' : ''} ${expanded ? 'is-expanded' : 'is-collapsed'}`}
+      aria-label="최근 관찰 포착"
+    >
+      {compactOnMobile ? (
+        <button
+          type="button"
+          className="observation-feed-title observation-feed-toggle"
+          aria-expanded={expanded}
+          onClick={() => setExpanded(value => !value)}
+          aria-label={expanded ? '관찰 포착 접기' : `관찰 포착 ${latest.length}건 펼치기`}
+        >
+          <span>관찰 포착</span><b>{latest.length}</b>
+          <span aria-hidden="true">{expanded ? '접기 −' : '보기 +'}</span>
+        </button>
+      ) : (
+        <div className="observation-feed-title">
+          <span>관찰 포착</span>
+          <b>{latest.length}</b>
+        </div>
+      )}
       <div className="observation-feed-items">
         {latest.map((event) => (
           <ObservationEventButton
             key={event.id}
             event={event}
-            onFocus={onFocus}
+            onFocus={(selected) => {
+              if (compactOnMobile) setExpanded(false);
+              onFocus(selected);
+            }}
             compact
           />
         ))}
