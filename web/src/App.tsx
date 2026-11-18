@@ -28,15 +28,18 @@ import { WorldActivityPanel } from './ui/world-activity';
 import { SettlementDetail } from './ui/settlement-detail';
 import { FastForwardControl } from './ui/fast-forward-control';
 import { EarthGlobePreview } from './ui/earth-globe-preview';
+import { RegionMapPreview } from './ui/region-map-preview';
 import { visibleHumanTraces } from './state/human-traces';
 import { formatResidentName } from './ui/observer-format';
 import type { EarthPreviewGeoPoint } from './earth/globe-region-picking';
 
 import { MOBILE_OBSERVER_QUERY, MobileObservationControls, ObserverIcon, type ObserverModalView as MobileModalView } from './ui/observer-controls';
 
-function Topbar({ onOpenGlobe, globeOpen }: {
+function Topbar({ onOpenGlobe, globeOpen, onOpenRegion, regionOpen }: {
   onOpenGlobe: () => void;
   globeOpen: boolean;
+  onOpenRegion: () => void;
+  regionOpen: boolean;
 }) {
   const snapshot = useObserverSnapshot();
 
@@ -49,6 +52,9 @@ function Topbar({ onOpenGlobe, globeOpen }: {
       <div className="earth-topbar-actions">
         <a className="earth-globe-open asset-credits-link" href="./vendor/wildlife/CREDITS.html"
           target="_blank" rel="noopener noreferrer">3D 자산 출처</a>
+        <button className="earth-globe-open" type="button" aria-pressed={regionOpen} onClick={onOpenRegion}>
+          {regionOpen ? '지역 관찰' : '지역 지도'}
+        </button>
         <button className="earth-globe-open" type="button" aria-pressed={globeOpen} onClick={onOpenGlobe}>
           {globeOpen ? '주민 관찰' : '지구 관찰'}
         </button>
@@ -731,6 +737,7 @@ function MobileObserverModal({
 export default function App() {
   const [mobileModal, setMobileModal] = useState<MobileModalView>(null);
   const [showEarthGlobe, setShowEarthGlobe] = useState(false);
+  const [showRegionMap, setShowRegionMap] = useState(false);
   const [mobileViewport, setMobileViewport] = useState(() => window.matchMedia(MOBILE_OBSERVER_QUERY).matches);
   const snapshot = useObserverSnapshot();
 
@@ -774,15 +781,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    observerActions.setWorldViewOccluded(showEarthGlobe);
+    observerActions.setWorldViewOccluded(showEarthGlobe || showRegionMap);
     return () => observerActions.setWorldViewOccluded(false);
-  }, [showEarthGlobe]);
+  }, [showEarthGlobe, showRegionMap]);
 
   return (
     <div id="app">
       <Topbar
         globeOpen={showEarthGlobe}
-        onOpenGlobe={() => setShowEarthGlobe(open => !open)}
+        onOpenGlobe={() => { setShowRegionMap(false); setShowEarthGlobe(open => !open); }}
+        regionOpen={showRegionMap}
+        onOpenRegion={() => { setShowEarthGlobe(false); setShowRegionMap(open => !open); }}
       />
       <main className="layout">
         <WorldViewport
@@ -798,6 +807,20 @@ export default function App() {
         onClose={() => setMobileModal(null)}
       />
       <SettlementDetail snapshot={snapshot} />
+      {showRegionMap && (
+        <RegionMapPreview
+          terrain={snapshot.terrain}
+          civilization={snapshot.civilization}
+          residents={snapshot.residents}
+          centerChunkX={snapshot.camera.centerChunkX}
+          centerChunkY={snapshot.camera.centerChunkY}
+          onClose={() => setShowRegionMap(false)}
+          onFocusChunk={(x, y) => {
+            observerActions.moveObserver(x - snapshot.camera.centerChunkX, y - snapshot.camera.centerChunkY);
+            setShowRegionMap(false);
+          }}
+        />
+      )}
       {showEarthGlobe && (
         <EarthGlobePreview
           earthScenario={snapshot.earthScenario}
