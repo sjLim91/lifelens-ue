@@ -5,12 +5,12 @@ import { runtimeDiagnostics } from '../runtime/runtime-diagnostics';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import { shade, terrainColor } from './terrain-presentation';
-import { observedRiverLinks, stableNatureUnit } from './isometric-natural-presentation';
+import { observedRiverLinks } from './isometric-natural-presentation';
 import type { IsometricWorldDrawOptions } from './isometric-canvas-world-renderer';
 import { createFieldProjection, type FieldView } from './field-projection';
 import { FieldSpriteAtlas, type FieldSpriteName, type FieldSpritePainter } from './field-asset-atlas';
 import { fieldCoreClearances, fieldDecorativePositionClear, fieldFacilityArt,
-  fieldSpriteVisualOcclusion } from './field-scene-clarity';
+  fieldSpriteVisualOcclusion, fieldVisualUnit } from './field-scene-clarity';
 
 export type FieldMarkerKind = 'resident' | 'trace' | 'settlement' | 'animal';
 export interface FieldMarker {
@@ -62,7 +62,7 @@ export function paintFieldWorld(
     x-options.centerX,y-options.centerY,h);
   const visible=(x:number,y:number,r=tile)=>x+r>=0&&x-r<=width&&y+r>=0&&y-r<=height;
   const seed=String(terrain.worldSeed??'0');
-  const rand=(x:number,y:number,salt:number)=>stableNatureUnit(seed,x,y,salt);
+  const rand=(x:number,y:number,salt:number)=>fieldVisualUnit(seed,x,y,salt);
   const poly=(points:Array<{x:number;y:number}>,fill:string)=>{
     ctx.fillStyle=fill;ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
     for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
@@ -150,8 +150,8 @@ export function paintFieldWorld(
     const cold=/taiga|boreal|tundra|conifer/.test(biome);
     const addScenery=(name:FieldSpriteName,u:number,v:number,w:number,h:number)=>{
       const gx=c.x+u,gy=c.y+v;
-      const radius=(name==='cliff'?.21:name==='rock'?.12:name==='flowers'?.035
-        :name==='bush'?.085:.17);
+      const radius=(name==='cliff'?.15:name==='rock'?.075:name==='flowers'?.025
+        :name==='bush'?.055:.105);
       if(!fieldDecorativePositionClear(gx,gy,clearance,radius))return;
       const p=screen(c.x+u-.5,c.y+v-.5,sample(c.x,c.y,u,v));
       put(name,p,w,h);
