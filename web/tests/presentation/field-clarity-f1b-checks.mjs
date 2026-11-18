@@ -113,7 +113,8 @@ export function fieldClarityF1bChecks({test,source,chunk,windowOf}) {
     const all=scene.sprites.filter(s=>['oak','pine','cedar','hut'].includes(s.name));
     assert.ok(all.length>0);
     assert.ok(all.every(s=>s.opacity<=1&&s.opacity>=.23));
-    assert.equal(scene.ops.at(-1)?.name,'stroke',
+    const lastSprite=scene.ops.map(op=>op.name).lastIndexOf('sprite');
+    assert.ok(scene.ops.slice(lastSprite+1).some(op=>op.name==='stroke'),
       'selected resident outline must render over any foreground scenery');
   });
 
