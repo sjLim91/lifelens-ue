@@ -58,7 +58,7 @@ export function startObserverEngine(): () => void {
   const preferredRenderMode = readRenderMode();
   // The 2.5D Canvas requires no WebGL and is safe in embedded Android.
   // An explicit ?safe=1 still enforces the proven legacy rescue path.
-  const requestedRenderMode = new URLSearchParams(window.location.search).get('safe') === '1'
+  const requestedRenderMode = new URLSearchParams(window.location?.search ?? '').get('safe') === '1'
     || (canvasCompatibility && preferredRenderMode === 'three-world')
     ? 'legacy-canvas' : preferredRenderMode;
 
