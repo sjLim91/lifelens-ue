@@ -30,6 +30,7 @@ import {
 import { VegetationLayer } from './vegetation-layer';
 import { WaterLayer } from './water-layer';
 import { createTerrainSurfaceSignature } from './terrain-surface';
+import { readWorldVisualStyle } from './world-visual-style';
 import { WeatherLayer } from './weather-layer';
 import { WildlifeLayer } from './wildlife-layer';
 
@@ -59,6 +60,7 @@ export class WorldScene {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(42, 1, 0.1, 5000);
 
+  private readonly visualStyle = readWorldVisualStyle();
   private readonly terrainGroup = new THREE.Group();
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
   private readonly resourceProjectionCache = new NaturalResourceProjectionCache();
@@ -471,6 +473,7 @@ export class WorldScene {
     const buildGeometry = createTerrainGeometryBuilder(window, {
       chunkWorldSize: WORLD_GRID_CONTRACT.worldUnitsPerChunk,
       elevationScale: WORLD_GRID_CONTRACT.elevationScale,
+      visualStyle: this.visualStyle,
     });
     const terrainSignature = createTerrainSurfaceSignature(window);
 
