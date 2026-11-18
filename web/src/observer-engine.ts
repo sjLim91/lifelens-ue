@@ -31,6 +31,7 @@ import { CameraInput } from './input/camera-input';
 
 import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer';
 import { IsometricCanvasWorldRenderer } from './render/isometric-canvas-world-renderer';
+import { FieldObserverRenderer } from './render/field-observer-renderer';
 import { readRenderMode } from './render/render-mode';
 import { useCanvasCompatibilityProfile } from './runtime/device-performance';
 import type { WorldRenderer } from './render/world-renderer';
@@ -67,6 +68,7 @@ export function startObserverEngine(): () => void {
   let characterLayer: CharacterLayer | null = null;
   let legacyRenderer: LegacyCanvasWorldRenderer | null = null;
   let isometricRenderer: IsometricCanvasWorldRenderer | null = null;
+  let fieldRenderer: FieldObserverRenderer | null = null;
   let worldViewOccluded = false;
   let renderFailureBanner: HTMLElement | null = null;
   let startupRenderFailure: string | null = null;
@@ -81,6 +83,8 @@ export function startObserverEngine(): () => void {
     const failedRenderer = threeWorldRenderer;
     threeWorldRenderer = null;
     isometricRenderer = null;
+    fieldRenderer?.dispose();
+    fieldRenderer = null;
     try { failedRenderer?.dispose(); } catch (disposeError) {
       console.warn('Failed to dispose unavailable WebGL renderer', disposeError);
     }
@@ -131,13 +135,22 @@ export function startObserverEngine(): () => void {
       }
     }
 
+    if (requestedRenderMode === 'field-canvas') {
+      try {
+        fieldRenderer = new FieldObserverRenderer(canvas, residentContinuity, () => drawWorld());
+      } catch (error) {
+        effectiveRenderMode = 'legacy-canvas';
+        startupRenderFailure = error instanceof Error ? error.message : String(error);
+        console.warn('LifeLens field viewer unavailable; using safe observer', error);
+      }
+    }
     if (requestedRenderMode === 'isometric-canvas') {
       try {
         isometricRenderer = new IsometricCanvasWorldRenderer(canvas, residentContinuity);
       } catch (error) {
         effectiveRenderMode = 'legacy-canvas';
         startupRenderFailure = error instanceof Error ? error.message : String(error);
-        console.warn('LifeLens 2.5D Canvas unavailable; using safe observer', error);
+        console.warn('LifeLens 2.5D regional map unavailable; using safe observer', error);
       }
     }
 
@@ -266,7 +279,8 @@ export function startObserverEngine(): () => void {
   let localPanX = 0;
   let localPanZ = 0;
   function groundPointAtClient(x: number, y: number): { x: number; z: number } | null {
-    return isometricRenderer?.groundPointAtClient(x, y)
+    return fieldRenderer?.groundPointAtClient(x, y)
+      ?? isometricRenderer?.groundPointAtClient(x, y)
       ?? threeWorldRenderer?.groundPointAtClient(x, y)
       ?? legacyRenderer?.groundPointAtClient(x, y) ?? null;
   }
@@ -313,9 +327,9 @@ export function startObserverEngine(): () => void {
     drawWorld();
   }
   const cameraInput = new CameraInput(canvas, {
-    touchDragMode: requestedRenderMode === 'isometric-canvas' ? 'pan' : 'orbit',
-    leftDragMode: requestedRenderMode === 'isometric-canvas' ? 'pan' : 'select',
-    rightDragMode: requestedRenderMode === 'isometric-canvas' ? 'pan' : 'orbit',
+    touchDragMode: requestedRenderMode === 'field-canvas' || requestedRenderMode === 'isometric-canvas' ? 'pan' : 'orbit',
+    leftDragMode: requestedRenderMode === 'field-canvas' || requestedRenderMode === 'isometric-canvas' ? 'pan' : 'select',
+    rightDragMode: requestedRenderMode === 'field-canvas' || requestedRenderMode === 'isometric-canvas' ? 'pan' : 'orbit',
     initialAngle: angle,
     initialElevation: elevation,
     initialZoom: zoom,
@@ -353,14 +367,17 @@ export function startObserverEngine(): () => void {
       if (before && after) applyCameraPan({ x: before.x - after.x, z: before.z - after.z });
     },
     onTap(clientX, clientY) {
-      const residentId = isometricRenderer?.pickResident(clientX, clientY)
+      const residentId = fieldRenderer?.pickResident(clientX, clientY)
+        ?? isometricRenderer?.pickResident(clientX, clientY)
         ?? threeWorldRenderer?.pickResident(clientX, clientY);
       if (residentId) selectResident(residentId);
       else {
-        const traceId = isometricRenderer?.pickHumanTrace(clientX, clientY)
+        const traceId = fieldRenderer?.pickHumanTrace(clientX, clientY)
+          ?? isometricRenderer?.pickHumanTrace(clientX, clientY)
           ?? threeWorldRenderer?.pickHumanTrace(clientX, clientY);
         if (traceId) selectHumanTrace(traceId);
-        else selectSettlement(isometricRenderer?.pickSettlement(clientX, clientY)
+        else selectSettlement(fieldRenderer?.pickSettlement(clientX, clientY)
+          ?? isometricRenderer?.pickSettlement(clientX, clientY)
           ?? threeWorldRenderer?.pickSettlement(clientX, clientY) ?? null);
       }
       drawWorld();
@@ -386,6 +403,21 @@ export function startObserverEngine(): () => void {
   
   function drawWorld(): void {
     if (worldViewOccluded || document.hidden) return;
+    if (fieldRenderer) {
+      const selected = observerStore.getSnapshot();
+      try {
+        fieldRenderer.draw({
+          terrain, residents: residentSnapshot,
+          civilization: selected.civilization,
+          centerX, centerY, zoom, panX: localPanX, panZ: localPanZ,
+          selectedResidentId: selected.selectedResidentId,
+          selectedHumanTraceId: selected.selectedHumanTraceId,
+          selectedSettlementId: selected.selectedSettlementId,
+        });
+      } catch (error) {
+        enterCanvasFailover('현장 관찰 화면을 안전한 2D 화면으로 전환합니다.', error);
+      }
+    }
     if (isometricRenderer) {
       const selected = observerStore.getSnapshot();
       try {
@@ -886,6 +918,7 @@ export function startObserverEngine(): () => void {
     resizeObserver.disconnect();
     cameraInput.dispose();
     threeWorldRenderer?.dispose();
+    fieldRenderer?.dispose();
     characterLayer?.dispose();
     renderFailureBanner?.remove();
     storageBanner?.remove();

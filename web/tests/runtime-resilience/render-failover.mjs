@@ -270,6 +270,8 @@ try {
       const document = {createElement:()=>({setAttribute(){}})};
       class LegacyCanvasWorldRenderer {}
       class IsometricCanvasWorldRenderer {}
+      class FieldObserverRenderer { dispose() {} }
+      function drawWorld() {}
       function resizeCanvas() {}
       function enterCanvasFailover() {}
       ${presentation}
@@ -282,6 +284,7 @@ try {
       [androidChrome, '', 'three-world', 'three-world', 1],
       [androidChrome, '', 'legacy-canvas', 'legacy-canvas', 1],
       [androidWebView, '', 'isometric-canvas', 'isometric-canvas', 0],
+      [androidWebView, '?view=2.5d', 'field-canvas', 'field-canvas', 0],
     ]) {
       let constructed = 0, imports = 0;
       class GPU { constructor() { constructed++; } start() {} }
@@ -344,6 +347,7 @@ try {
     let renderFailureBanner = null;
     let legacyRenderer = null;
     let isometricRenderer = null;
+    let fieldRenderer = null;
     let threeWorldRenderer = { dispose() { incrementDispose(); } };
     function resizeCanvas() { incrementResize(); }
     ${failoverCode}
