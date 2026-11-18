@@ -6,6 +6,7 @@ import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import { shade, terrainColor } from './terrain-presentation';
 import { createIsometricProjection, type IsometricView } from './isometric-projection';
+import { forestSilhouettes, observedRiverLinks, stableNatureUnit, terrainSlopeLight } from './isometric-natural-presentation';
 
 export interface IsometricWorldDrawOptions {
   terrain: TerrainWindow | null;
@@ -87,11 +88,8 @@ export function paintIsometricWorld(
   // Adaptive tessellation bounds Canvas cost on low-end/mobile browsers.
   const subdivisionStep = tile < 18 ? 8 : tile < 38 ? 4 : 2;
   const seeds = terrain.worldSeed ?? '0';
-  const hash = (x: number, y: number, i: number) => {
-    let h = 2166136261;
-    for (const c of seeds + ':' + x + ':' + y + ':' + i) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
-    return (h >>> 0) / 4294967296;
-  };
+  const hash = (x: number, y: number, i: number) =>
+    stableNatureUnit(seeds, x, y, i);
   for (const chunk of chunks) {
     const center = point(chunk.x, chunk.y, chunk.elevation01);
     if (!visible(center.x, center.y, tile * 2)) continue;
@@ -110,9 +108,11 @@ export function paintIsometricWorld(
         const p1 = point(chunk.x + u + d - .5, chunk.y + v - .5, b);
         const p2 = point(chunk.x + u + d - .5, chunk.y + v + d - .5, c);
         const p3 = point(chunk.x + u - .5, chunk.y + v + d - .5, e);
-        const slope = Math.max(-.13, Math.min(.13, (a + e - b - c) * .28 + (a + b - c - e) * .2));
-        const variation = (hash(chunk.x, chunk.y, ix * 17 + iy) - .5) * .025;
-        polygon([p0, p1, p2, p3], shade(base, .97 + slope + variation));
+        const light = terrainSlopeLight(a, b, c, e);
+        // High-frequency mottling made the height lattice look like a
+        // debugging checkerboard. Preserve the Core slope, not tile noise.
+        const variation = (hash(chunk.x, chunk.y, ix * 17 + iy) - .5) * .008;
+        polygon([p0, p1, p2, p3], shade(base, light + variation));
       }
     }
     if (chunk.x === options.centerX && chunk.y === options.centerY) {
@@ -126,58 +126,94 @@ export function paintIsometricWorld(
     }
   }
 
-  // A river line is permitted ONLY when Core explicitly reports the
-  // downstream cell within this observed window. No inferred water routes.
+  // M1: bounded, gently curved river bands (illustrative widths, NOT Core
+  // hydrology quantities). Flow edges are included ONLY when the authoritative
+  // downstream cell is an observed adjacent water tile.
+  const riverLinks = observedRiverLinks(terrain);
+  const connected = new Set(riverLinks.map(link => link.from.x + ':' + link.from.y));
+  for (const link of riverLinks) {
+    const { from, to } = link;
+    const a = point(from.x, from.y, sample(from.x, from.y, .5, .5) + .004);
+    const b = point(to.x, to.y, sample(to.x, to.y, .5, .5) + .004);
+    if (!visible((a.x + b.x) * .5, (a.y + b.y) * .5, tile * 1.3)) continue;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const controlX = (a.x + b.x) * .5 - dy / len * link.bend * tile;
+    const controlY = (a.y + b.y) * .5 + dx / len * link.bend * tile;
+    const innerWidth = Math.max(1, Math.min(7.5, tile * link.width01));
+    const drawRiver = (width: number, color: string) => {
+      ctx.lineWidth = width; ctx.strokeStyle = color;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo(controlX, controlY, b.x, b.y); ctx.stroke();
+    };
+    // Muted bank, translucent channel and a narrow water reflection. This
+    // replaces the oversized neon-blue straight lines seen in M0.
+    drawRiver(innerWidth + Math.min(2.2, innerWidth * .48), '#3d6666');
+    drawRiver(innerWidth, from.waterKind === 'River' ? '#5fabb5' : '#6dada9');
+    drawRiver(Math.max(.55, innerWidth * .24), 'rgba(202,231,218,.54)');
+  }
+  // Isolated Core spring/stream/river reports remain visible as tiny water
+  // pools. They are not connected by an invented direction or diagonal road.
   for (const chunk of chunks) {
-    if (!['River', 'Stream', 'Spring'].includes(chunk.waterKind)) continue;
-    const from = point(chunk.x, chunk.y, sample(chunk.x, chunk.y, .5, .5) + .006);
-    if (!visible(from.x, from.y, tile)) continue;
-    const canFlow = chunk.hasDownstream === true
-      && valid(chunk.downstreamChunkX) && valid(chunk.downstreamChunkY)
-      && chunkSet.has(chunk.downstreamChunkX + ':' + chunk.downstreamChunkY);
-    ctx.strokeStyle = chunk.waterKind === 'River' ? '#4fc2dc' : '#76c3d0';
-    ctx.lineWidth = Math.max(1.3, tile * (chunk.waterKind === 'River' ? .11 : .06));
-    ctx.lineCap = 'round';
-    if (canFlow) {
-      const target = chunks.find(c => c.x === chunk.downstreamChunkX && c.y === chunk.downstreamChunkY)!;
-      const to = point(target.x, target.y, sample(target.x, target.y, .5, .5) + .006);
-      ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke();
-    } else {
-      ctx.fillStyle = ctx.strokeStyle; ctx.beginPath();
-      ctx.arc(from.x, from.y, Math.max(1.5, tile * .065), 0, Math.PI * 2); ctx.fill();
-    }
+    if (!['River', 'Stream', 'Spring'].includes(chunk.waterKind)
+      || connected.has(chunk.x + ':' + chunk.y)) continue;
+    const p = point(chunk.x, chunk.y, sample(chunk.x, chunk.y, .5, .5) + .004);
+    if (!visible(p.x, p.y, tile)) continue;
+    ctx.fillStyle = '#589eac'; ctx.beginPath();
+    ctx.ellipse(p.x, p.y, Math.max(1.1, Math.min(3.8, tile * .035)),
+      Math.max(.7, Math.min(2.3, tile * .019)), -.15, 0, Math.PI * 2); ctx.fill();
   }
 
-  // Purely decorative coverage indicators are deterministic and are never
-  // claimed to be individual Core resources, harvested trees or smart objects.
+  // Forest COVERAGE is a real Core ecological observation. These shaded
+  // canopies are seeded *art* of that coverage, not harvested resource nodes.
+  // Leafy crowns and a small number of pines replace uniform triangle pins.
   if (tile >= 11) for (const chunk of chunks) {
     if (chunk.waterKind === 'Ocean' || chunk.waterKind === 'Lake') continue;
     const forest = Math.max(0, Math.min(1, Number(chunk.forestCoverage01) || 0));
     const rock = Math.max(0, Math.min(1, Number(chunk.rockCoverage01) || 0));
-    if (forest >= .18) {
-      const count = Math.min(3, 1 + Math.floor(forest * 2.5));
-      for (let i = 0; i < count; i++) {
-        const u = .2 + hash(chunk.x, chunk.y, i + 100) * .6;
-        const v = .2 + hash(chunk.x, chunk.y, i + 200) * .6;
-        const p = point(chunk.x + u - .5, chunk.y + v - .5, sample(chunk.x, chunk.y, u, v));
-        if (!visible(p.x, p.y, tile)) continue;
-        const size = Math.min(20, tile * (.16 + forest * .1));
-        ctx.fillStyle = '#284a35'; ctx.beginPath();
-        ctx.moveTo(p.x, p.y - size);
-        ctx.lineTo(p.x - size * .52, p.y + size * .15);
-        ctx.lineTo(p.x + size * .52, p.y + size * .15);
-        ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#4b7754'; ctx.beginPath();
-        ctx.moveTo(p.x, p.y - size * 1.22);
-        ctx.lineTo(p.x - size * .4, p.y - size * .22);
-        ctx.lineTo(p.x + size * .4, p.y - size * .22);
-        ctx.closePath(); ctx.fill();
+    for (const silhouette of forestSilhouettes(chunk, seeds)) {
+      const {u,v,scale,broadleaf,tone} = silhouette;
+      const p = point(chunk.x + u - .5, chunk.y + v - .5, sample(chunk.x, chunk.y, u, v));
+      if (!visible(p.x, p.y, tile)) continue;
+      const size = Math.max(3, Math.min(28, tile * (.17 + forest * .08) * scale));
+      ctx.fillStyle = 'rgba(22,34,25,.20)'; ctx.beginPath();
+      ctx.ellipse(p.x + size * .18, p.y + size * .14, size * .65, size * .24,
+        -.14, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = tone > .5 ? '#634c35' : '#756047';
+      ctx.lineWidth = Math.max(1, size * .12); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y - size * .96); ctx.stroke();
+      if (broadleaf) {
+        ctx.fillStyle = tone > .54 ? '#346c51' : '#497f55';
+        ctx.beginPath(); ctx.ellipse(p.x - size * .27, p.y - size * .89,
+          size * .59, size * .51, -.28, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = tone > .54 ? '#477e5b' : '#659367';
+        ctx.beginPath(); ctx.ellipse(p.x + size * .29, p.y - size * .96,
+          size * .6, size * .58, .23, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = tone > .54 ? '#6c9e71' : '#83ab78';
+        ctx.beginPath(); ctx.ellipse(p.x - size * .06, p.y - size * 1.34,
+          size * .64, size * .57, -.09, 0, Math.PI * 2); ctx.fill();
+      } else {
+        polygon([
+          {x:p.x,y:p.y - size*1.78},{x:p.x-size*.61,y:p.y-size*.27},
+          {x:p.x+size*.61,y:p.y-size*.27}
+        ], tone > .5 ? '#2c5b50' : '#366b52');
+        polygon([
+          {x:p.x,y:p.y - size*1.96},{x:p.x-size*.45,y:p.y-size*.82},
+          {x:p.x+size*.45,y:p.y-size*.82}
+        ], tone > .5 ? '#44796b' : '#588a67');
       }
     }
     if (rock > .36) {
-      const p = point(chunk.x + .16, chunk.y - .17, sample(chunk.x, chunk.y, .66, .33));
-      const size = Math.min(12, tile * .1);
-      polygon([{x:p.x,y:p.y-size},{x:p.x+size,y:p.y},{x:p.x,y:p.y+size*.5},{x:p.x-size,y:p.y}], '#a7a393');
+      const u = .63, v = .32;
+      const p = point(chunk.x + u - .5, chunk.y + v - .5, sample(chunk.x, chunk.y, u, v));
+      const size = Math.max(2.1, Math.min(17, tile * (.07 + rock*.06)));
+      // Four shaded facets read as rocks, rather than a floating gray pixel.
+      const top = {x:p.x, y:p.y-size*.88}, left = {x:p.x-size*.76,y:p.y-size*.18};
+      const right = {x:p.x+size*.72,y:p.y-size*.13}, foot = {x:p.x+size*.16,y:p.y+size*.49};
+      polygon([top,left,{x:p.x-size*.2,y:p.y+size*.27},foot], '#9d9b89');
+      polygon([top,right,foot], '#777d78');
+      polygon([top,left,{x:p.x+size*.05,y:p.y-size*.08},right], '#bbb9a3');
     }
   }
 
