@@ -181,7 +181,6 @@ export function paintFieldWorld(
       }
     }
   }
-  const span=WORLD_GRID_CONTRACT.gridCellsPerChunk;
   for(const trace of visibleHumanTraces(terrain)){
     if(trace.kind!=='Facility' || !Number.isFinite(trace.gridX+trace.gridY))continue;
     const elevation=sampleGrid(trace.gridX,trace.gridY);
