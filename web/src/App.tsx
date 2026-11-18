@@ -95,15 +95,15 @@ function WorldViewport({
       <button
         type="button"
         className="isometric-view-switch"
-        aria-label={activeRenderMode === 'isometric-canvas' ? '기존 3D 관찰 화면 열기' : '2.5D 아이소메트릭 관찰 화면 열기'}
-        title="2.5D M0 · 같은 Core 월드를 보여줍니다. 주민 스프라이트와 모든 시설 표현은 후속 단계입니다."
+        aria-label={activeRenderMode === 'field-canvas' ? '지역 2.5D 지도 열기' : '현장 2.5D 관찰 화면 열기'}
+        title="현장은 주민과 실제 Core 환경을 근접 스프라이트로 관찰하고, 지역 지도는 지형과 정착지를 넓게 탐색합니다."
         onClick={() => {
-          const next = activeRenderMode === 'isometric-canvas' ? 'three-world' : 'isometric-canvas';
+          const next = activeRenderMode === 'field-canvas' ? 'isometric-canvas' : 'field-canvas';
           writeRenderMode(next);
           window.location.assign(urlForRenderMode(window.location.href, next));
         }}
       >
-        {activeRenderMode === 'isometric-canvas' ? '3D 기존 화면' : '2.5D 화면'}
+        {activeRenderMode === 'field-canvas' ? '지역 2.5D 지도' : '현장 2.5D'}
       </button>
       {experimentalWorldStyleAvailable && (
         <button
