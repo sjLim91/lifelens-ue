@@ -17,10 +17,22 @@ export class ObserverFoliageClarity {
     llResidentFocus: { value: Array.from({ length: 4 }, () => new THREE.Vector3()) },
     llResidentFocusCount: { value: 0 },
   };
-  setResidents(targets: readonly THREE.Vector3[]): void {
-    this.uniforms.llResidentFocusCount.value = Math.min(4, targets.length);
-    for (let i = 0; i < this.uniforms.llResidentFocusCount.value; i++)
-      this.uniforms.llResidentFocus.value[i].copy(targets[i]);
+  setResidents(targets: readonly THREE.Vector3[], selected: THREE.Vector3 | null = null): void {
+    // The shader has four resident sightlines. Always reserve one for the
+    // selected resident, even if the nearest-four list excludes that person.
+    // Dedupe to avoid spending GPU work on identical/invalid ray targets.
+    const ordered = selected ? [selected, ...targets] : targets;
+    const unique: THREE.Vector3[] = [];
+    for (const target of ordered) {
+      if (!Number.isFinite(target.x) || !Number.isFinite(target.y) || !Number.isFinite(target.z))
+        continue;
+      if (unique.some(existing => existing.distanceToSquared(target) < .04)) continue;
+      unique.push(target);
+      if (unique.length === 4) break;
+    }
+    this.uniforms.llResidentFocusCount.value = unique.length;
+    for (let i = 0; i < unique.length; i++)
+      this.uniforms.llResidentFocus.value[i].copy(unique[i]);
   }
   set(camera: THREE.Camera, target: THREE.Vector3 | null, selected: boolean): void {
     if (!target) {
