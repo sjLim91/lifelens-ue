@@ -3,6 +3,7 @@ import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
 import { knownProductionMaterial, ownedMaterialUnits, PRODUCTION_MATERIALS } from './production-material-presentation';
 import { registeredProductionDirective } from './resident-production-context';
+import { readWorldVisualStyle } from './world-visual-style';
 import type { PhysicalArtifact, ResidentCivilizationItem, ResidentPresentationDirective } from '../runtime/core-types';
 
 const DISPLAY_ITEMS = [
@@ -113,6 +114,9 @@ export class ResidentPropResources {
   private disposed = false;
   private readonly artifactGeometries = new Map<string, THREE.BufferGeometry>();
   constructor() {
+    // Held goods and actual Core-authored tools share the P1 environment's
+    // material finish. Geometry and inventory ownership stay unchanged.
+    if (readWorldVisualStyle() === 'illustrated') this.material.flatShading = true;
     this.empty.setAttribute('position', new THREE.Float32BufferAttribute([], 3));
     this.empty.setAttribute('normal', new THREE.Float32BufferAttribute([], 3));
     this.empty.setAttribute('color', new THREE.Float32BufferAttribute([], 3));
@@ -189,6 +193,9 @@ export class ResidentInventoryProps {
   private presentation: ResidentPresentationDirective | null | undefined;
   private visuallyMoving = false;
   private interacting = true;
+  // Moving or interacting with a missing/mismatched Core site must not create
+  // a seemingly carried load just because a material is in inventory.
+  private targetVerified = true;
   private disposed = false;
   private readonly loadRoot = new THREE.Group();
   private readonly rightHand: THREE.Object3D | undefined;
@@ -219,13 +226,21 @@ export class ResidentInventoryProps {
     if(this.disposed)return;this.inventory=inventory;this.presentation=presentation;this.applyInventory();
   }
   setInteractionAllowed(allowed:boolean): void {if(this.interacting!==allowed){this.interacting=allowed;this.applyInventory();}}
+  setTargetVerified(verified: boolean): void {
+    if (this.targetVerified !== verified) {
+      this.targetVerified = verified;
+      this.applyInventory();
+    }
+  }
   setVisuallyMoving(moving: boolean): void {if(this.visuallyMoving!==moving){this.visuallyMoving=moving;this.applyInventory();}}
   private applyInventory(): void {
     const inventory=this.inventory;
     const p=this.visuallyMoving && this.presentation?.phase === 'Interacting'
       ? {...this.presentation,phase:'Moving' as const}:this.presentation;
-    const material=p?.phase === 'Interacting' && !this.interacting ? null : residentCarriedMaterial(inventory,p);
-    this.hasWaterContainer=Boolean(this.rightHand) && this.interacting && !this.visuallyMoving && residentPouringWater(inventory,p);
+    const material = !this.targetVerified || (p?.phase === 'Interacting' && !this.interacting)
+      ? null : residentCarriedMaterial(inventory, p);
+    this.hasWaterContainer=Boolean(this.rightHand) && this.targetVerified && this.interacting
+      && !this.visuallyMoving && residentPouringWater(inventory,p);
     this.hasCarriedLoad=Boolean(material && this.rightHand && this.leftHand);
     const jug=this.hasWaterContainer || material === 'Water';
     // The current Core DTO reports ownership and wornGarment, not equipment.
@@ -233,7 +248,8 @@ export class ResidentInventoryProps {
     const items=residentVisibleItems(inventory).filter(i=>!(i === 'SimpleContainer' && jug));
     this.slots.forEach((slot,i)=>{slot.visible=!!items[i];slot.geometry=this.resources.get(items[i] ?? '');});
     this.root.visible=Boolean(this.pelvis) && items.length>0;
-    const artifact=this.interacting && !this.visuallyMoving ? activeArtifact(p) : null;
+    const artifact=this.targetVerified && this.interacting && !this.visuallyMoving
+      ? activeArtifact(p) : null;
     this.loadRoot.visible=this.hasCarriedLoad || this.hasWaterContainer || Boolean(artifact && this.rightHand);
     const quantity=material ? ownedMaterialUnits(inventory,material):0;
     const pieces=Math.min(WORLD_PRESENTATION.load.maxPieces,Math.max(1,Math.ceil(quantity)));
@@ -252,6 +268,6 @@ export class ResidentInventoryProps {
       this.loadRoot.position.copy(this.visual.worldToLocal(this.point));
     }
   }
-  reset(): void {this.inventory=undefined;this.presentation=null;this.visuallyMoving=false;this.hasCarriedLoad=false;this.hasWaterContainer=false;this.root.visible=false;this.loadRoot.visible=false;for(const slot of this.slots)slot.visible=false;}
+  reset(): void {this.inventory=undefined;this.presentation=null;this.visuallyMoving=false;this.targetVerified=true;this.hasCarriedLoad=false;this.hasWaterContainer=false;this.root.visible=false;this.loadRoot.visible=false;for(const slot of this.slots)slot.visible=false;}
   dispose(): void {if(this.disposed)return;this.disposed=true;this.reset();this.root.removeFromParent();this.loadRoot.removeFromParent();if(this.ownsResources)this.resources.dispose();}
 }
