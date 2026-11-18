@@ -95,7 +95,8 @@ const surfaceFill = (chunk: TerrainChunk): string => {
   const forest = clamp01(chunk.forestCoverage01);
   const rock = clamp01(chunk.rockCoverage01);
   const wet = clamp01(chunk.moisture01);
-  if (rock > 0.56) return '#a6a68d';
+  const elevation = clamp01(chunk.elevation01);
+  if (rock > 0.56 || (elevation > .78 && rock > .22)) return '#a6a68d';
   if (forest > 0.58) return '#588655';
   if (forest > 0.24) return '#82a572';
   if (chunk.waterKind === 'River' || chunk.waterKind === 'Stream') return '#85b49a';
@@ -194,7 +195,8 @@ export function paintIllustratedRegion(
         drawFir(ctx, px, py, size, i % 3 === 0 ? '#31583c' : '#426e49');
       }
     }
-    if (rock > .32 && chunk.waterKind !== 'Ocean' && chunk.waterKind !== 'Lake') {
+    if ((rock > .32 || (clamp01(chunk.elevation01) > .78 && rock > .15))
+      && chunk.waterKind !== 'Ocean' && chunk.waterKind !== 'Lake') {
       drawRock(ctx, p.x + tile * .23, p.y + tile * .19, Math.min(18, tile * (.16 + rock * .3)));
     }
     if (clamp01(chunk.grassCoverage01) > .55 && forest < .4 && rock < .4 && tile > 16) {
@@ -210,6 +212,7 @@ export function paintIllustratedRegion(
   }
 
   if (tile >= 12) {
+    const observed = new Set(terrain.chunks.map(c => String(c.x) + ':' + String(c.y)));
     for (const chunk of terrain.chunks) {
       if (chunk.waterKind !== 'River' && chunk.waterKind !== 'Stream') continue;
       const p = point(chunk.x, chunk.y);
@@ -217,11 +220,24 @@ export function paintIllustratedRegion(
       ctx.strokeStyle = chunk.waterKind === 'River' ? '#4e9bb1' : '#71b4c4';
       ctx.lineWidth = tile * (chunk.waterKind === 'River' ? .17 : .09);
       ctx.lineCap = 'round';
-      // Show only the observed water cell; never infer a downstream segment.
+      // Draw a connected flow segment only for an explicit Core downstream
+      // edge whose destination is also present in this observation window.
+      const hasEdge = chunk.hasDownstream === true
+        && typeof chunk.downstreamChunkX === 'number'
+        && typeof chunk.downstreamChunkY === 'number'
+        && observed.has(String(chunk.downstreamChunkX) + ':' + String(chunk.downstreamChunkY));
       ctx.beginPath();
-      ctx.moveTo(p.x - tile * .26, p.y);
-      ctx.lineTo(p.x + tile * .26, p.y);
-      ctx.stroke();
+      if (hasEdge) {
+        const downstream = point(chunk.downstreamChunkX!, chunk.downstreamChunkY!);
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(downstream.x, downstream.y);
+        ctx.stroke();
+      } else {
+        // A water glyph is not an invented direction or upstream source.
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.arc(p.x, p.y, tile * .12, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 
@@ -252,7 +268,8 @@ export function paintIllustratedRegion(
 
   let residentMarkers = 0;
   for (const resident of residents) {
-    if (!resident.hasPosition || !Number.isFinite(resident.gridX) || !Number.isFinite(resident.gridY)) continue;
+    if (!resident.hasPosition || typeof resident.gridX !== 'number' || typeof resident.gridY !== 'number'
+      || !Number.isFinite(resident.gridX) || !Number.isFinite(resident.gridY)) continue;
     const x = resident.gridX / WORLD_GRID_CONTRACT.gridCellsPerChunk - .5;
     const y = resident.gridY / WORLD_GRID_CONTRACT.gridCellsPerChunk - .5;
     const p = point(x, y);
