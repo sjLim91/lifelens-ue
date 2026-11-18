@@ -19,7 +19,9 @@ export function createIsometricProjection(view: IsometricView) {
     view.width / (extent * 1.16), view.height / (extent * .72),
   ) * zoom);
   const originX = view.width * .5, originY = view.height * .56;
-  const relief = tile * .72;
+  // Vertical exaggeration belongs to the viewer only: the underlying 17×17
+  // Core elevation samples and inverse ground picking remain authoritative.
+  const relief = tile * 2.35;
   const chunkSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
   const panX = (view.panX ?? 0) / chunkSize;
   const panZ = (view.panZ ?? 0) / chunkSize;
