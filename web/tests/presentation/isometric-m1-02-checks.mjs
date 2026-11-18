@@ -81,12 +81,18 @@ export function isometricM102Checks({test,source,chunk,windowOf}) {
     draw(windowOf([chunk(0,0,'Ocean',.42)]),ocean.ctx);
     const firstFill=ops=>ops.find(op=>op.name==='fill')?.fillStyle;
     const sandy=firstFill(sand.ops),blue=firstFill(ocean.ops);
-    assert.match(sandy,/^#[0-9a-f]{6}$/i);
-    assert.match(blue,/^#[0-9a-f]{6}$/i);
-    const red=hex=>parseInt(hex.slice(1,3),16);
-    const cyan=hex=>parseInt(hex.slice(5,7),16);
-    assert.ok(red(sandy)>cyan(sandy)+25,'coast still painted as ocean blue');
-    assert.ok(cyan(blue)>red(blue),'ocean no longer reads as water');
+    const channels = color => {
+      if (/^#[0-9a-f]{6}$/i.test(color)) return [
+        parseInt(color.slice(1,3),16), parseInt(color.slice(3,5),16),
+        parseInt(color.slice(5,7),16),
+      ];
+      const rgb = /^rgb\\(\\s*(\\d+)[, ]+\\s*(\\d+)[, ]+\\s*(\\d+)\\s*\\)$/.exec(color);
+      assert.ok(rgb, 'unsupported Canvas CSS color: ' + color);
+      return rgb.slice(1).map(Number);
+    };
+    const sandChannels = channels(sandy), seaChannels = channels(blue);
+    assert.ok(sandChannels[0]>sandChannels[2]+25,'coast still painted as ocean blue');
+    assert.ok(seaChannels[2]>seaChannels[0],'ocean no longer reads as water');
   });
 
   test('M1-02 ground details track only real Core grass/wetland/rock coverage',()=>{
