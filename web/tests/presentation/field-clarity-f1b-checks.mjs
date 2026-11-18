@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 export function fieldClarityF1bChecks({test,source,chunk,windowOf}) {
   const {fieldFacilityArt,fieldCoreClearances,fieldDecorativePositionClear,
-    fieldSpriteVisualOcclusion}=source('render/field-scene-clarity.ts');
+    fieldSpriteVisualOcclusion,fieldVisualUnit}=source('render/field-scene-clarity.ts');
   const {paintFieldWorld}=source('render/field-observer-renderer.ts');
   const {FIELD_SPRITES}=source('render/field-asset-atlas.ts');
   const {ResidentContinuity}=source('runtime/resident-continuity.ts');
@@ -51,6 +51,23 @@ export function fieldClarityF1bChecks({test,source,chunk,windowOf}) {
     },new ResidentContinuity(),painter);
     return {ops,sprites,result};
   };
+
+  test('F1b nearby seeded canopy positions are genuinely dispersed, deterministic and local',()=>{
+    const seed='clarity-seed';
+    const positions=Array.from({length:5},(_,i)=>({
+      x:fieldVisualUnit(seed,0,0,1000+i*4),
+      y:fieldVisualUnit(seed,0,0,1001+i*4),
+    }));
+    assert.ok(positions.every(p=>p.x>=0&&p.x<1&&p.y>=0&&p.y<1));
+    const xs=positions.map(p=>p.x),ys=positions.map(p=>p.y);
+    assert.ok(Math.max(...xs)-Math.min(...xs)>.48,'canopy clumped on one X point');
+    assert.ok(Math.max(...ys)-Math.min(...ys)>.38,'canopy clumped on one Y point');
+    assert.deepEqual(positions,Array.from({length:5},(_,i)=>({
+      x:fieldVisualUnit(seed,0,0,1000+i*4),
+      y:fieldVisualUnit(seed,0,0,1001+i*4),
+    })));
+    assert.notEqual(fieldVisualUnit(seed,0,0,1000),fieldVisualUnit('other-seed',0,0,1000));
+  });
 
   test('F1b every operational Core facility kind has truthful different art, only Shelter is hut',()=>{
     assert.deepEqual(physical.map(kind=>fieldFacilityArt(facility(kind)).sprite),expected);
