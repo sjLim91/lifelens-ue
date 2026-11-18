@@ -377,6 +377,7 @@ export class WorldScene {
     this.vegetationLayer.setObservationFocus(
       this.camera, this.foliageLookTarget, Boolean(selectedAnchor),
       this.residentLayer.observationFocuses(this.camera),
+      selectedAnchor ? this.foliageLookTarget : null,
     );
     this.vegetationLayer.update(this.camera);
     this.waterLayer.update(deltaSeconds);

@@ -184,9 +184,25 @@ export function createTerrainGeometryBuilder(
         );
         sampleColor(chunk.x, chunk.y, tx, ty, color).multiplyScalar(shade);
         sampleNormal(chunk.x + tx, chunk.y + ty);
-        if (chunk.elevationSamples?.length === 289) {
-          const rock = THREE.MathUtils.clamp((0.96 - normal.y) * 6, 0, 0.8);
-          color.lerp(new THREE.Color(options.visualStyle === 'illustrated' ? 0xb4b3a1 : 0x888477), rock);
+        if (chunk.elevationSamples?.length === 289 || options.visualStyle === 'illustrated') {
+          // In illustrated mode also tint steep *coarse* terrain, which has
+          // Core-derived normals but no 17x17 detailed elevation lattice.
+          // This is a color-only relief cue: no invented hills or path blocks.
+          const rock = THREE.MathUtils.clamp(
+            (0.96 - normal.y) * 6,
+            0,
+            options.visualStyle === 'illustrated' ? 0.72 : 0.8,
+          );
+          color.lerp(
+            new THREE.Color(options.visualStyle === 'illustrated' ? 0xb4b3a1 : 0x888477),
+            rock,
+          );
+          if (options.visualStyle === 'illustrated') {
+            // A restrained directional tint makes ridge contours readable
+            // without a shadow-casting mesh or a new GPU pass.
+            const reliefLight = THREE.MathUtils.clamp(0.96 + normal.x * 0.055 + normal.z * 0.035, 0.89, 1.04);
+            color.multiplyScalar(reliefLight);
+          }
         }
         colors.push(color.r, color.g, color.b);
         normals.push(normal.x, normal.y, normal.z);
