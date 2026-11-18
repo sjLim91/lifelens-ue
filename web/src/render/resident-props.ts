@@ -195,7 +195,7 @@ export class ResidentInventoryProps {
   private interacting = true;
   // Moving or interacting with a missing/mismatched Core site must not create
   // a seemingly carried load just because a material is in inventory.
-  private targetVerified = false;
+  private targetVerified = true;
   private disposed = false;
   private readonly loadRoot = new THREE.Group();
   private readonly rightHand: THREE.Object3D | undefined;
@@ -268,6 +268,6 @@ export class ResidentInventoryProps {
       this.loadRoot.position.copy(this.visual.worldToLocal(this.point));
     }
   }
-  reset(): void {this.inventory=undefined;this.presentation=null;this.visuallyMoving=false;this.targetVerified=false;this.hasCarriedLoad=false;this.hasWaterContainer=false;this.root.visible=false;this.loadRoot.visible=false;for(const slot of this.slots)slot.visible=false;}
+  reset(): void {this.inventory=undefined;this.presentation=null;this.visuallyMoving=false;this.targetVerified=true;this.hasCarriedLoad=false;this.hasWaterContainer=false;this.root.visible=false;this.loadRoot.visible=false;for(const slot of this.slots)slot.visible=false;}
   dispose(): void {if(this.disposed)return;this.disposed=true;this.reset();this.root.removeFromParent();this.loadRoot.removeFromParent();if(this.ownsResources)this.resources.dispose();}
 }
