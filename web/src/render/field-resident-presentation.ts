@@ -1,13 +1,15 @@
-import type { Resident } from '../runtime/core-types';
+import type { PhysicalArtifact, Resident } from '../runtime/core-types';
 import { fieldVisualUnit } from './field-scene-clarity';
+import { drawFieldArtifact, fieldResidentAction, type FieldInteractionPose } from './field-resident-actions';
 
 export type FieldFacing = 'E'|'SE'|'S'|'SW'|'W'|'NW'|'N'|'NE';
-export type FieldActionPose = 'idle'|'walk'|'work'|'sleep';
+export type FieldActionPose = FieldInteractionPose | 'walk';
 export interface FieldResidentFrame {
   facing:FieldFacing;
   pose:FieldActionPose;
   /** 0..1, only active immediately after a real observed Core displacement. */
   step:number;
+  tool?:PhysicalArtifact|null;
 }
 export interface FieldResidentPalette {
   skin:string;
@@ -104,12 +106,14 @@ export class FieldResidentMotion {
       facing,pose:'walk',
       step:Math.min(1,Math.max(0,(nowMs-movementAt)/330)),
     };
-    if(p?.active===true&&p.phase==='Interacting') {
-      if(p.kind==='Physical'&&p.physicalGoal==='Sleep')
-        return {facing,pose:'sleep',step:0};
-      if(p.kind==='Civilization')
-        return {facing,pose:'work',step:0};
-    }
+    const action=fieldResidentAction(r,x,y);
+    if(action.pose!=='idle') return {
+      facing,pose:action.pose,
+      // Repeating motion is presentation only, and exists exclusively while
+      // the Core is actively reporting that exact interaction.
+      step:nowMs>=0?((nowMs%920)/920):0,
+      tool:action.tool,
+    };
     return {facing,pose:'idle',step:0};
   }
   prune(residents:readonly Resident[]):void {
@@ -150,8 +154,12 @@ export function drawFieldResident(
   const diagonal=['NE','NW','SE','SW'].includes(frame.facing);
   const left=frame.facing==='W'||frame.facing==='SW'||frame.facing==='NW';
   const walk=frame.pose==='walk';
+  const working=['work','gather','build','craft','tend'].includes(frame.pose);
+  const eating=['eat','drink','wash'].includes(frame.pose);
+  const motion=working?Math.sin(frame.step*Math.PI*2)*5:0;
   const swing=walk?Math.sin(frame.step*Math.PI*4)*5:0;
-  const bob=walk?Math.abs(Math.sin(frame.step*Math.PI*4))*2:0;
+  const bob=walk?Math.abs(Math.sin(frame.step*Math.PI*4))*2:
+    frame.pose==='tend'||frame.pose==='gather'?4:0;
   ctx.save();
   ctx.translate(x,y);
   ctx.scale(width/80*(left?-1:1),height/118);
@@ -171,16 +179,43 @@ export function drawFieldResident(
   ellipse(ctx,calf1-8,-7,10,5,sole);
   ellipse(ctx,calf2+8,-7,10,5,sole);
   // Arms behind the torso, alternating swing for a genuine move.
-  const work=frame.pose==='work';
+  const work=frame.pose==='work'||frame.pose==='build';
   path(ctx,[[-19,-65],[-27,-62],[-29-swing*.35,-38],[-23-swing*.35,-32],
     [-13,-45]],a.skinShadow,outline);
   path(ctx,[[18,-65],[27,-61],[29+swing*.35,-39],[23+swing*.35,-34],
     [12,-45]],a.skin,outline);
   if(work){
-    // Core-reported civilization interaction, no fabricated equipment.
-    path(ctx,[[18,-64],[26,-63],[29,-78],[19,-82],[13,-65]],
-      a.outfitShadow,outline);
-    ellipse(ctx,24,-80,5.5,6,a.skin);
+    // Core-reported construction/repair/work: raised, repeated hand stroke.
+    path(ctx,[[18,-64],[26,-63],[29+motion,-78-motion*.6],
+      [19+motion,-82-motion*.6],[13,-65]],a.outfitShadow,outline);
+    ellipse(ctx,24+motion,-80-motion*.6,5.5,6,a.skin);
+  } else if(frame.pose==='gather'){
+    // The Core confirms an actual resource interaction; kneel/reach only.
+    path(ctx,[[17,-64],[25,-60],[32+motion*.25,-29],
+      [21+motion*.25,-26],[12,-46]],a.outfitShadow,outline);
+    ellipse(ctx,26+motion*.25,-30,5.5,6,a.skin);
+  } else if(frame.pose==='craft'){
+    // Both hands meet over the chest; do not imply any invented equipment.
+    path(ctx,[[-19,-66],[-24,-56],[-11,-53],[-5,-59]],a.outfitShadow,outline);
+    path(ctx,[[18,-66],[24,-55],[10+motion*.2,-50],
+      [5,-58]],a.outfitShadow,outline);
+    ellipse(ctx,0,-54,6,5,a.skin);
+  } else if(frame.pose==='tend'){
+    path(ctx,[[17,-61],[27,-54],[30+motion*.3,-30],
+      [20+motion*.3,-24],[12,-43]],a.outfitShadow,outline);
+    ellipse(ctx,23+motion*.3,-27,5,6,a.skin);
+  } else if(eating){
+    // Mouth/face gesture only: never draw food, water, a vessel or soap
+    // without separate Core ownership evidence.
+    const faceY=frame.pose==='wash'?-91:-86;
+    path(ctx,[[18,-65],[26,-59],[23+motion*.12,faceY+6],
+      [13,faceY+9],[11,-63]],a.outfitShadow,outline);
+    ellipse(ctx,17+motion*.12,faceY+8,5.5,6,a.skin);
+    if(frame.pose==='wash'){
+      path(ctx,[[-18,-65],[-25,-60],[-16,-88],
+        [-7,-83],[-11,-62]],a.outfitShadow,outline);
+      ellipse(ctx,-12,-83,5.5,6,a.skin);
+    }
   }
   // Primary tunic and mantle; body type comes from stable genetic build.
   const spread=24*a.build;
@@ -250,5 +285,6 @@ export function drawFieldResident(
   }
   // Small cloth trim and collar, no name labels baked into the asset.
   path(ctx,[[-9,-73],[0,-68],[9,-73],[7,-70],[0,-64],[-7,-70]],a.trim);
+  if(frame.pose==='gather'&&frame.tool) drawFieldArtifact(ctx,frame.tool);
   ctx.restore();
 }
