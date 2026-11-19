@@ -314,3 +314,30 @@ button:disabled { opacity: .45; }
     padding: 6px;
   }
 }
+
+/* Quarter-view mobile: the simulation scene has priority over HUD chrome. */
+@media (max-width: 800px), (max-width: 1024px) and (pointer: coarse) {
+  .field-observer-world .world-overlay {
+    top: 9px;
+    left: max(9px, env(safe-area-inset-left));
+    right: 9px;
+    gap: 4px;
+  }
+  .field-observer-world .world-overview-card {
+    padding: 6px 9px;
+    gap: 2px 10px;
+    border-radius: 11px;
+    background: rgba(12, 23, 18, .84);
+  }
+  .field-observer-world .world-overlay .world-overlay-primary { font-size: 14px; }
+  .field-observer-world .world-context-row { gap: 3px; }
+  .field-observer-world .world-context-row > span,
+  .field-observer-world .world-context-row > .era-badge {
+    padding: 3px 6px;
+    font-size: 9px;
+    background: rgba(12, 23, 18, .78);
+  }
+  .field-observer-world .mobile-navigation button { min-height: 49px; gap: 3px; }
+  .field-observer-world .world-playback button { min-height: 37px; }
+  .field-observer-world .world-recenter { min-height: 44px; width: 44px; }
+}
