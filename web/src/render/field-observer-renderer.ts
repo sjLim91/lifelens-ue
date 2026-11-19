@@ -15,7 +15,9 @@ import { drawFieldResident, FieldResidentMotion, type FieldResidentFrame } from 
 import { fieldLifeStageScale } from './field-resident-actions';
 import { paintFieldAtmosphere } from './field-weather-presentation';
 import { fieldConnectedFloorColor, fieldForestDisplayClusters,
-  fieldObservedRockFace } from './field-natural-art';
+  fieldObservedRockFace,fieldVisualSpriteTile,
+  fieldContinuousGroundNoise,fieldGroundDetailMarks } from './field-natural-art';
+import { paintObservedFieldRiver } from './field-river-presentation';
 
 export type FieldWorldDrawOptions = IsometricWorldDrawOptions & {
   environment?: DynamicEnvironment | null;
@@ -65,6 +67,9 @@ export function paintFieldWorld(
     return result;
   }
   const projection=createFieldProjection(view),{tile}=projection;
+  // Illustration assets should not balloon with a close observer camera.
+  // Ground/picking always use the unmodified authoritative projection tile.
+  const spriteTile=fieldVisualSpriteTile(tile,width,height);
   result.tile=tile;
   const sample=createTerrainElevationSampler(terrain);
   const chunks=[...terrain.chunks].filter(c=>Number.isFinite(c.x+c.y+c.elevation01))
@@ -112,7 +117,9 @@ export function paintFieldWorld(
         ((a+e)-(b+c))*1.12+((a+b)-(e+c))*.83));
       // Color continuity is derived from actual adjacent Core chunks.
       const base=fieldConnectedFloorColor(chunk,neighbors,u+d*.5,v+d*.5);
-      poly([q0,q1,q2,q3],shade(base,1+slope));
+      const pigment=fieldContinuousGroundNoise(seed,
+        chunk.x+u+d*.5,chunk.y+v+d*.5);
+      poly([q0,q1,q2,q3],shade(base,1+slope+pigment*.075));
       // Actual Core elevation differences form gentle land contour shading.
       // Steeper observed surfaces receive a contour edge, not a raised
       // fictional cliff or an additional collision mesh.
@@ -124,34 +131,32 @@ export function paintFieldWorld(
         ctx.lineTo(q3.x,q3.y);ctx.stroke();
       }
     }
-    // Deterministic small ground strokes make terrain readable without
-    // inventing roads, fields, vegetation resources or new simulation state.
-    if(!water && tile>=65 && clamp01(chunk.grassCoverage01)>.16) {
-      const strands=Math.floor(clamp01(chunk.grassCoverage01)*9);
-      ctx.lineWidth=Math.max(.7,tile*.0045);
-      ctx.strokeStyle='rgba(205, 218, 157, .20)';
-      for(let i=0;i<strands;i++){
-        const u=.07+rand(chunk.x,chunk.y,820+i*3)*.86;
-        const v=.07+rand(chunk.x,chunk.y,821+i*3)*.86;
-        const p=screen(chunk.x+u-.5,chunk.y+v-.5,sample(chunk.x,chunk.y,u,v)+.002);
-        const length=tile*(.017+rand(chunk.x,chunk.y,822+i*3)*.02);
-        ctx.beginPath();ctx.moveTo(p.x-length*.3,p.y);
-        ctx.lineTo(p.x,p.y-length);ctx.lineTo(p.x+length*.4,p.y);ctx.stroke();
-      }
-    }
-    // Scenic patches follow real observed grass or wetland COVERAGE, not
-    // traversable paths, extra resources or phantom farm sites.
-    if(!water&&tile>=65) {
-      const coverage=Math.max(clamp01(chunk.grassCoverage01),clamp01(chunk.wetlandCoverage01));
-      const count=Math.floor(coverage*5);
-      for(let i=0;i<count;i++) {
-        const u=.13+rand(chunk.x,chunk.y,140+i*3)*.74;
-        const v=.13+rand(chunk.x,chunk.y,141+i*3)*.74;
-        const p=screen(chunk.x+u-.5,chunk.y+v-.5,sample(chunk.x,chunk.y,u,v)+.001);
-        const s=tile*(.075+rand(chunk.x,chunk.y,142+i*3)*.09);
-        ctx.fillStyle=chunk.waterKind==='Wetland'
-          ?'rgba(57,116,96,.17)':'rgba(183,207,130,.19)';
-        ctx.beginPath();ctx.ellipse(p.x,p.y,s*1.3,s*.42,-.08,0,Math.PI*2);ctx.fill();
+    // Small habitat-dependent strokes replace the large uniform ovals
+    // that previously made open ground look like repeated map stickers.
+    if(!water&&tile>=50){
+      const marks=fieldGroundDetailMarks(seed,chunk.x,chunk.y,
+        chunk.grassCoverage01,chunk.forestCoverage01,chunk.rockCoverage01);
+      const budget=tile<100?Math.ceil(marks.length*.55):marks.length;
+      for(let i=0;i<budget;i++){
+        const mark=marks[i];
+        const elevation=sample(chunk.x,chunk.y,mark.u,mark.v);
+        const p=screen(chunk.x+mark.u-.5,chunk.y+mark.v-.5,elevation+.001);
+        if(!visible(p.x,p.y,9))continue;
+        const s=Math.min(9,Math.max(1.4,tile*mark.length));
+        ctx.lineWidth=mark.kind==='lichen'?1.5:Math.max(.7,s*.16);
+        ctx.strokeStyle=mark.kind==='lichen'
+          ?'rgba(170, 166, 139, .29)':mark.kind==='soil'
+          ?'rgba(99, 104, 76, .18)':'rgba(177, 208, 129, .32)';
+        ctx.beginPath();
+        if(mark.kind==='grass'){
+          ctx.moveTo(p.x-s*.44,p.y+s*.1);
+          ctx.lineTo(p.x+s*mark.rotation*.35,p.y-s*.70);
+          ctx.lineTo(p.x+s*.36,p.y+s*.16);
+        }else{
+          ctx.moveTo(p.x-s*.33,p.y);
+          ctx.lineTo(p.x+s*.28,p.y-s*.12);
+        }
+        ctx.stroke();
       }
     }
   }
@@ -162,14 +167,7 @@ export function paintFieldWorld(
     const b=screen(edge.to.x,edge.to.y,
       sample(edge.to.x,edge.to.y,.5,.5)+.002);
     if(!visible((a.x+b.x)*.5,(a.y+b.y)*.5,tile))continue;
-    const dx=b.x-a.x,dy=b.y-a.y,d=Math.max(1,Math.hypot(dx,dy));
-    const mx=(a.x+b.x)*.5-dy/d*edge.bend*tile*.55;
-    const my=(a.y+b.y)*.5+dx/d*edge.bend*tile*.55;
-    for(const [widthScale,color] of [[1.55,'#728d7d'],[1,'#70a9a4'],[.16,'rgba(220,232,196,.58)']] as const) {
-      ctx.lineWidth=Math.min(12,Math.max(.6,tile*edge.width01*widthScale));
-      ctx.lineCap='round';ctx.strokeStyle=color;ctx.beginPath();
-      ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(mx,my,b.x,b.y);ctx.stroke();
-    }
+    paintObservedFieldRiver(ctx,a,b,edge,tile);
   }
   type DrawItem={depth:number;name:FieldSpriteName;x:number;y:number;w:number;h:number;
     marker?:FieldMarker;selected?:boolean;label?:string;
@@ -206,7 +204,7 @@ export function paintFieldWorld(
     // navigational obstacles exist in Core because of these decorations.
     const canopy=fieldForestDisplayClusters(seed,c.x,c.y,forest,biome);
     for(const tree of canopy) {
-      const size=tile*tree.sizeFactor;
+      const size=spriteTile*tree.sizeFactor;
       addScenery(tree.name,tree.u,tree.v,size,
         size*(tree.name==='oak'?1.08:1.32));
     }
@@ -215,7 +213,7 @@ export function paintFieldWorld(
       for(let i=0;i<count;i++) {
         const u=.16+rand(c.x,c.y,220+i*3)*.68;
         const v=.14+rand(c.x,c.y,221+i*3)*.7;
-        const size=tile*(.18+rock*.085);
+        const size=spriteTile*(.18+rock*.085);
         // A rock-rich flat plain cannot pretend to be a sheer mountain.
         // Inspect the real surface around this visual rock placement.
         const slopeSamples=[
@@ -238,7 +236,7 @@ export function paintFieldWorld(
         :.13+rand(c.x,c.y,350+i*2)*.74;
       const v=anchor?Math.max(.08,Math.min(.92,anchor.v+(rand(c.x,c.y,351+i*2)-.5)*.32))
         :.13+rand(c.x,c.y,351+i*2)*.74;
-      const size=tile*.20;
+      const size=spriteTile*.20;
       addScenery('bush',u,v,size,size*.73);
     }
     // Flowers are non-interactable art for actual grass habitat only.
@@ -249,7 +247,7 @@ export function paintFieldWorld(
       for(let i=0;i<count;i++) {
         const u=Math.max(.08,Math.min(.92,centerU+(rand(c.x,c.y,492+i*2)-.5)*.24));
         const v=Math.max(.08,Math.min(.92,centerV+(rand(c.x,c.y,493+i*2)-.5)*.24));
-        const size=tile*.16;
+        const size=spriteTile*.16;
         addScenery('flowers',u,v,size,size*.67);
       }
     }
@@ -261,7 +259,7 @@ export function paintFieldWorld(
     const p=projection.gridPoint(trace.gridX,trace.gridY,elevation);
     const facilityArt=fieldFacilityArt(trace);
     const name=facilityArt.sprite;
-    const size=tile*facilityArt.size;
+    const size=spriteTile*facilityArt.size;
     const marker:FieldMarker={kind:'trace',id:trace.id,x:p.x,y:p.y,radius:Math.max(17,size*.36)};
     put(name,p,size,size*(name==='fire'?.86:.93),marker,
       trace.id===options.selectedHumanTraceId);
@@ -273,7 +271,7 @@ export function paintFieldWorld(
     if(elevation===null)continue;
     const p=projection.gridPoint(settlement.gridX,settlement.gridY,elevation);
     // A settlement is an administrative site, not an additional physical hut.
-    const size=tile*.17,marker:FieldMarker={
+    const size=spriteTile*.17,marker:FieldMarker={
       kind:'settlement',id:settlement.id,x:p.x,y:p.y,radius:Math.max(18,size*.65)};
     put('flag',p,size,size*1.2,marker,settlement.id===options.selectedSettlementId);
   }
@@ -285,7 +283,7 @@ export function paintFieldWorld(
     const elevation=sampleGrid(pos.x,pos.y);
     if(elevation===null)continue;
     const p=projection.gridPoint(pos.x,pos.y,elevation);
-    const size=Math.max(24,Math.max(45,Math.min(94,tile*.37))
+    const size=Math.max(24,Math.max(45,Math.min(94,spriteTile*.37))
       *fieldLifeStageScale(resident));
     const marker:FieldMarker={kind:'resident',id:resident.id,x:p.x,y:p.y-8,radius:size*.54};
     const label=(resident as Resident & {name?:string}).name;
@@ -304,7 +302,7 @@ export function paintFieldWorld(
     if(elevation===null)continue;
     const p=projection.gridPoint(animal.gridX,animal.gridY,elevation);
     const name:FieldSpriteName=animal.species==='Deer'?'deer':'hare';
-    const size=tile*(name==='deer'?.225:.102);
+    const size=spriteTile*(name==='deer'?.225:.102);
     put(name,p,size,size*.82,
       {kind:'animal',id:animal.id,x:p.x,y:p.y,radius:Math.max(10,size*.44)});
   }
