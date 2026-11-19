@@ -79,12 +79,13 @@ export function fieldResidentF2aChecks({test,source,chunk,windowOf}) {
     const sleep=r('sleep',{presentation:{active:true,phase:'Interacting',
       kind:'Physical',physicalGoal:'Sleep'}});
     const work=r('work',{presentation:{active:true,phase:'Interacting',
-      kind:'Civilization',facilityAction:'Work'}});
+      kind:'Civilization',civilizationIntent:'Craft',facilityAction:'Work',
+      facilityId:'real-facility',hasTargetGrid:true,targetGridX:5,targetGridY:5}});
     const absent=r('nope',{presentation:{active:false,phase:'Interacting',
       kind:'Civilization'}});
     const tracker=new FieldResidentMotion();
     assert.equal(tracker.frame(sleep,5,5,100).pose,'sleep');
-    assert.equal(tracker.frame(work,5,5,100).pose,'work');
+    assert.equal(tracker.frame(work,5,5,100).pose,'build');
     assert.equal(tracker.frame(absent,5,5,100).pose,'idle');
     tracker.prune([sleep]);
     assert.equal(tracker.size,1);
