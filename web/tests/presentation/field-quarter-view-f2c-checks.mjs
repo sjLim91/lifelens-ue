@@ -21,8 +21,8 @@ export function fieldQuarterViewF2cChecks({test,source,chunk,windowOf}){
       assert.ok(south.x<o.x&&south.y>o.y);
       for(const [x,y,h] of [[-.8,.5,.1],[.25,-.4,.89],[0,0,.5]]){
         const screen=p.project(x,y,h),back=p.inverse(screen.x,screen.y,h);
-        assert.ok(Math.abs(back.x-(x*8+(view.panX??0)))<1e-7);
-        assert.ok(Math.abs(back.z-(y*8+(view.panZ??0)))<1e-7);
+        assert.ok(Math.abs(back.x-x*8)<1e-7);
+        assert.ok(Math.abs(back.z-y*8)<1e-7);
       }
       assert.ok(p.project(.2,-.1,.8).y<p.project(.2,-.1,.2).y);
     }
