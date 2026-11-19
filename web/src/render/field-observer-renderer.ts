@@ -4,7 +4,7 @@ import { ResidentContinuity } from '../runtime/resident-continuity';
 import { runtimeDiagnostics } from '../runtime/runtime-diagnostics';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
-import { shade, terrainColor } from './terrain-presentation';
+import { shade } from './terrain-presentation';
 import { observedRiverLinks } from './isometric-natural-presentation';
 import type { IsometricWorldDrawOptions } from './isometric-canvas-world-renderer';
 import { createFieldProjection, type FieldView } from './field-projection';
