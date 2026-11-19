@@ -148,7 +148,8 @@ export interface FieldGroundMark {
 }
 export function fieldGroundDetailMarks(
   seed:string,chunkX:number,chunkY:number,
-  grassCoverage:number,forestCoverage:number,rockCoverage:number,
+  grassCoverage:number|undefined,forestCoverage:number|undefined,
+  rockCoverage:number|undefined,
 ):FieldGroundMark[] {
   const grass=clamp(grassCoverage),forest=clamp(forestCoverage),
     rock=clamp(rockCoverage);
