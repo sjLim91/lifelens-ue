@@ -409,6 +409,8 @@ export function startObserverEngine(): () => void {
         fieldRenderer.draw({
           terrain, residents: residentSnapshot,
           civilization: selected.civilization,
+          environment: selected.environment,
+          worldMinute: selected.world.minute,
           centerX, centerY, zoom, panX: localPanX, panZ: localPanZ,
           selectedResidentId: selected.selectedResidentId,
           selectedHumanTraceId: selected.selectedHumanTraceId,
