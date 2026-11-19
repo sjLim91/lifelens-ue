@@ -27,7 +27,7 @@ export function fieldLightAndWeather(state:FieldAtmosphere) {
   const raining=Boolean(env&&(precip==='Rain'||summary==='Rain'||summary==='Storm'));
   const snowing=Boolean(env&&(precip==='Snow'||summary==='Snow'));
   const intensity=clamp01(env?.precipitationIntensity01,
-    raining||snowing?.4:0);
+    (raining||snowing) ? .4 : 0);
   const cloud=clamp01(env?.cloudCover01);
   return {daylight,nightOpacity,raining,snowing,intensity,cloud};
 }
