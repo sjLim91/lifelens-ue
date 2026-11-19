@@ -25,6 +25,40 @@ export function fieldNaturalFloorColor(chunk:TerrainChunk):string {
   return '#'+color(16)+color(8)+color(0);
 }
 
+export interface FieldSurfaceNeighbors {
+  west?:TerrainChunk; east?:TerrainChunk; north?:TerrainChunk; south?:TerrainChunk;
+}
+const blendHex=(a:string,b:string,t:number):string=>{
+  const alpha=Math.max(0,Math.min(1,t));
+  const from=Number.parseInt(a.slice(1),16),to=Number.parseInt(b.slice(1),16);
+  const channel=(shift:number)=>Math.round(((from>>shift)&255)*(1-alpha)
+    +((to>>shift)&255)*alpha).toString(16).padStart(2,'0');
+  return '#'+channel(16)+channel(8)+channel(0);
+};
+
+/**
+ * Adjacent observed land chunks transition in tone rather than looking like
+ * isolated geometric tiles. Never smear land across Core water borders.
+ */
+export function fieldConnectedFloorColor(
+  chunk:TerrainChunk,neighbor:FieldSurfaceNeighbors,u:number,v:number,
+):string {
+  let tone=fieldNaturalFloorColor(chunk);
+  const water=(c:TerrainChunk)=>c.waterKind==='Ocean'||c.waterKind==='Lake';
+  const same=(other:TerrainChunk|undefined)=>Boolean(other
+    &&water(other)===water(chunk));
+  const x=Math.max(0,Math.min(1,u)),y=Math.max(0,Math.min(1,v));
+  if(x<.5&&same(neighbor.west))tone=blendHex(tone,
+    fieldNaturalFloorColor(neighbor.west!),(.5-x)*.9);
+  if(x>.5&&same(neighbor.east))tone=blendHex(tone,
+    fieldNaturalFloorColor(neighbor.east!),(x-.5)*.9);
+  if(y<.5&&same(neighbor.north))tone=blendHex(tone,
+    fieldNaturalFloorColor(neighbor.north!),(.5-y)*.9);
+  if(y>.5&&same(neighbor.south))tone=blendHex(tone,
+    fieldNaturalFloorColor(neighbor.south!),(y-.5)*.9);
+  return tone;
+}
+
 export interface FieldCanopySprite {
   u:number;v:number;name:Extract<FieldSpriteName,'pine'|'cedar'|'oak'>;
   sizeFactor:number;
