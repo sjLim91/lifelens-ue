@@ -64,6 +64,7 @@ try {
       shadowObserver: { resetWorld() { calls.push('reset-shadow'); } },
       residentAI: { resetWorld() { calls.push('reset-resident-ai'); } },
       threeWorldRenderer: renderer,
+      fieldRenderer: { resetMotion() { calls.push('reset-field-motion'); } },
       refresh: () => { calls.push('refresh'); },
     };
     const createWorld = new Function(...Object.keys(dependencies),
@@ -79,6 +80,9 @@ try {
     assert.equal(f.clock.speed, observerStore.getSnapshot().simulationSpeed, 'clock must match displayed new-world speed');
     assert.equal(f.renderer.speed, f.clock.speed, 'resident animation speed must match simulation');
     assert.equal(f.renderer.selectedSettlement, null);
+    assert(f.calls.indexOf('reset-field-motion') >= 0
+      && f.calls.indexOf('reset-field-motion') < f.calls.indexOf('refresh'),
+      'new-world rendering must discard stale observed actor steps before refresh');
     assert(f.calls.indexOf('reset-clock') < f.calls.indexOf('speed-clock'), 'old accumulated time must be discarded before changing speed');
   }
   const active = fixture(4, true);

@@ -559,6 +559,7 @@ export function startObserverEngine(): () => void {
     residentSnapshot = [];
     terrain = null;
     characterLayer?.clearResidents();
+    fieldRenderer?.resetMotion();
     simulationClock?.resetAccumulator();
     observerStore.resetWorld();
     const newWorldSpeed = observerStore.getSnapshot().simulationSpeed;
@@ -715,6 +716,7 @@ export function startObserverEngine(): () => void {
     residentAI.suspend(true);
     simulationClock?.stop();
     threeWorldRenderer?.breakFootTrafficContinuity();
+    fieldRenderer?.resetMotion();
 
     try {
       const beforeSnapshot = refresh(true);
@@ -743,6 +745,7 @@ export function startObserverEngine(): () => void {
 
       worldSession.recenterToResidents();
       threeWorldRenderer?.breakFootTrafficContinuity();
+      fieldRenderer?.resetMotion();
       const afterSnapshot = refresh(true);
       if (!afterSnapshot) throw new Error('고속 진행 후 세계 기록을 읽지 못했습니다.');
       const after = captureFastForwardState({

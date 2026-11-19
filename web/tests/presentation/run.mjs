@@ -17,6 +17,7 @@ import { isometricM1Checks } from './isometric-m1-checks.mjs';
 import { isometricM102Checks } from './isometric-m1-02-checks.mjs';
 import { fieldObserverF0F1Checks } from './field-observer-f0-f1-checks.mjs';
 import { fieldClarityF1bChecks } from './field-clarity-f1b-checks.mjs';
+import { fieldResidentF2aChecks } from './field-resident-f2a-checks.mjs';
 import { resourceEnvironmentChecks } from './resource-environment-checks.mjs';
 import { worldPresentationChecks } from './world-presentation-checks.mjs';
 
@@ -647,6 +648,7 @@ isometricM1Checks({ test, source, chunk, windowOf });
 isometricM102Checks({ test, source, chunk, windowOf });
 fieldObserverF0F1Checks({ test, source, chunk, windowOf });
 fieldClarityF1bChecks({ test, source, chunk, windowOf });
+fieldResidentF2aChecks({ test, source, chunk, windowOf });
 worldPresentationChecks({ test, source, THREE, flatWindow });
 
 terrainSeamChecks({ test, source, chunk, windowOf, withScene, near });
