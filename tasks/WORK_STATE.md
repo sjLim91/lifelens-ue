@@ -1,3 +1,10 @@
+## 2026-11-19 — Field visual reference decision FIXED / F2-d implementation
+
+- 사용자 제공 게임 화면은 **화풍·지면·실제 높낮이·자연 수계·식생 군집·공간감·시인성의 시각적 레퍼런스**다. 몬스터/거미 구역/던전/퀘스트나 참고 작품의 장소를 LifeLens에 추가하지 않는다. **고정 기준:** [FIELD_VISUAL_REFERENCE_CONTRACT_2026-11-19](../docs/FIELD_VISUAL_REFERENCE_CONTRACT_2026-11-19.md), `AGENTS.md §4.1`.
+- 기준 main `af13f866` (#1053 F2-c). F2-d 현장 Canvas 표시 개선: 강제 마름모 투영 제거(기존 좌표·선택 역변환 유지), Core 지형·피복 기반 자연 바닥 톤과 실제 이웃 청크 간 완만한 연속성, 종이 반복 배치가 아닌 군집형 산림, 평지에 허위 절벽 금지, 야간 관찰 밝기 보정.
+- Web 렌더 전용. Core world / AI / resource / wildlife / facility / save / seeded object positions를 바꾸지 않는다. 새 바이옴/괴물/수로/절벽 생성 금지. 실제 모바일 기기 QA는 요청대로 제외하며 기능 CI 성공을 화면 품질 최종 승인으로 계산하지 않는다.
+- 완료 여부·병합/배포 URL은 실제 PR/Actions 결과로만 기록한다.
+
 ## 2026-11-16 Android 앱 내 실행 멈춤 수정·공개 배포 완료
 
 - 사용자 보고: S23 울트라의 ChatGPT 내부 창에서 화면·버튼 전체 멈춤. 모바일 WebView 소프트웨어 GPU의 기존 공개 기본 3D에서 Qwen worker 0개여도 7,297ms 메인 점유 및 8초 무응답을 재현했다. 앞선 짧은 2D 확인과 실제 3D 실행을 구분한다.
