@@ -14,7 +14,7 @@ import { fieldCoreClearances, fieldDecorativePositionClear, fieldFacilityArt,
 import { drawFieldResident, FieldResidentMotion, type FieldResidentFrame } from './field-resident-presentation';
 import { fieldLifeStageScale } from './field-resident-actions';
 import { paintFieldAtmosphere } from './field-weather-presentation';
-import { fieldNaturalFloorColor, fieldForestDisplayClusters,
+import { fieldConnectedFloorColor, fieldForestDisplayClusters,
   fieldObservedRockFace } from './field-natural-art';
 
 export type FieldWorldDrawOptions = IsometricWorldDrawOptions & {
@@ -69,7 +69,8 @@ export function paintFieldWorld(
   const sample=createTerrainElevationSampler(terrain);
   const chunks=[...terrain.chunks].filter(c=>Number.isFinite(c.x+c.y+c.elevation01))
     .sort((a,b)=>a.y-b.y || a.x-b.x);
-  const byId=new Set(chunks.map(c=>c.x+':'+c.y));
+  const byChunk=new Map(chunks.map(c=>[c.x+':'+c.y,c] as const));
+  const byId=new Set(byChunk.keys());
   const screen=(x:number,y:number,h:number)=>projection.project(
     x-options.centerX,y-options.centerY,h);
   const visible=(x:number,y:number,r=tile)=>x+r>=0&&x-r<=width&&y+r>=0&&y-r<=height;
@@ -93,7 +94,12 @@ export function paintFieldWorld(
     if(!visible(center.x,center.y,tile*1.7))continue;
     result.chunks++;
     const water=chunk.waterKind==='Ocean'||chunk.waterKind==='Lake';
-    const base=fieldNaturalFloorColor(chunk);
+    const neighbors={
+      west:byChunk.get((chunk.x-1)+':'+chunk.y),
+      east:byChunk.get((chunk.x+1)+':'+chunk.y),
+      north:byChunk.get(chunk.x+':'+(chunk.y-1)),
+      south:byChunk.get(chunk.x+':'+(chunk.y+1)),
+    };
     for(let iy=0;iy<16;iy+=step)for(let ix=0;ix<16;ix+=step) {
       const u=ix/16,v=iy/16,d=step/16;
       const a=sample(chunk.x,chunk.y,u,v),b=sample(chunk.x,chunk.y,u+d,v);
@@ -104,6 +110,8 @@ export function paintFieldWorld(
       const q3=screen(chunk.x+u-.5,chunk.y+v+d-.5,e);
       const slope=Math.max(-.23,Math.min(.23,
         ((a+e)-(b+c))*1.12+((a+b)-(e+c))*.83));
+      // Color continuity is derived from actual adjacent Core chunks.
+      const base=fieldConnectedFloorColor(chunk,neighbors,u+d*.5,v+d*.5);
       poly([q0,q1,q2,q3],shade(base,1+slope));
       // Actual Core elevation differences form gentle land contour shading.
       // Steeper observed surfaces receive a contour edge, not a raised
