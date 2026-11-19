@@ -60,7 +60,8 @@ export function fieldObserverF0F1Checks({test,source,chunk,windowOf}) {
     const first=paint(rich),second=paint(rich),empty=paint(barren);
     const count=(x,names)=>x.drawn.filter(d=>names.includes(d.name)).length;
     assert.ok(count(first,['pine','cedar','oak'])>=3,'forest cover did not make any readable woodland');
-    assert.ok(count(first,['cliff'])>=1,'Core rock cover did not create sizeable rock scenery');
+    assert.ok(count(first,['rock'])>=1,'Core rock cover did not draw any grounded rock scenery');
+    assert.equal(count(first,['cliff']),0,'flat Core elevation fabricated an impossible cliff');
     assert.ok(count(first,['bush'])>=2);
     assert.equal(count(empty,['pine','cedar','oak','cliff','bush','flowers']),0);
     assert.deepEqual(first.drawn,second.drawn,'art placement must be deterministic from world seed');
