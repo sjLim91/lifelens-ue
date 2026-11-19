@@ -4,7 +4,7 @@ import { ResidentContinuity } from '../runtime/resident-continuity';
 import { runtimeDiagnostics } from '../runtime/runtime-diagnostics';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
-import { shade, terrainColor } from './terrain-presentation';
+import { shade } from './terrain-presentation';
 import { observedRiverLinks } from './isometric-natural-presentation';
 import type { IsometricWorldDrawOptions } from './isometric-canvas-world-renderer';
 import { createFieldProjection, type FieldView } from './field-projection';
@@ -14,6 +14,8 @@ import { fieldCoreClearances, fieldDecorativePositionClear, fieldFacilityArt,
 import { drawFieldResident, FieldResidentMotion, type FieldResidentFrame } from './field-resident-presentation';
 import { fieldLifeStageScale } from './field-resident-actions';
 import { paintFieldAtmosphere } from './field-weather-presentation';
+import { fieldConnectedFloorColor, fieldForestDisplayClusters,
+  fieldObservedRockFace } from './field-natural-art';
 
 export type FieldWorldDrawOptions = IsometricWorldDrawOptions & {
   environment?: DynamicEnvironment | null;
@@ -66,8 +68,9 @@ export function paintFieldWorld(
   result.tile=tile;
   const sample=createTerrainElevationSampler(terrain);
   const chunks=[...terrain.chunks].filter(c=>Number.isFinite(c.x+c.y+c.elevation01))
-    .sort((a,b)=>(a.x+a.y)-(b.x+b.y) || a.x-b.x);
-  const byId=new Set(chunks.map(c=>c.x+':'+c.y));
+    .sort((a,b)=>a.y-b.y || a.x-b.x);
+  const byChunk=new Map(chunks.map(c=>[c.x+':'+c.y,c] as const));
+  const byId=new Set(byChunk.keys());
   const screen=(x:number,y:number,h:number)=>projection.project(
     x-options.centerX,y-options.centerY,h);
   const visible=(x:number,y:number,r=tile)=>x+r>=0&&x-r<=width&&y+r>=0&&y-r<=height;
@@ -90,8 +93,13 @@ export function paintFieldWorld(
     const center=screen(chunk.x,chunk.y,chunk.elevation01);
     if(!visible(center.x,center.y,tile*1.7))continue;
     result.chunks++;
-    const water=chunk.waterKind==='Ocean'?'#4b8998':chunk.waterKind==='Lake'?'#6aa49c':null;
-    const base=water??(chunk.waterKind==='Coast'?'#c1b48b':terrainColor(chunk));
+    const water=chunk.waterKind==='Ocean'||chunk.waterKind==='Lake';
+    const neighbors={
+      west:byChunk.get((chunk.x-1)+':'+chunk.y),
+      east:byChunk.get((chunk.x+1)+':'+chunk.y),
+      north:byChunk.get(chunk.x+':'+(chunk.y-1)),
+      south:byChunk.get(chunk.x+':'+(chunk.y+1)),
+    };
     for(let iy=0;iy<16;iy+=step)for(let ix=0;ix<16;ix+=step) {
       const u=ix/16,v=iy/16,d=step/16;
       const a=sample(chunk.x,chunk.y,u,v),b=sample(chunk.x,chunk.y,u+d,v);
@@ -102,8 +110,10 @@ export function paintFieldWorld(
       const q3=screen(chunk.x+u-.5,chunk.y+v+d-.5,e);
       const slope=Math.max(-.23,Math.min(.23,
         ((a+e)-(b+c))*1.12+((a+b)-(e+c))*.83));
+      // Color continuity is derived from actual adjacent Core chunks.
+      const base=fieldConnectedFloorColor(chunk,neighbors,u+d*.5,v+d*.5);
       poly([q0,q1,q2,q3],shade(base,1+slope));
-      // Actual elevation gradients form lit/shaded quarter-view facets.
+      // Actual Core elevation differences form gentle land contour shading.
       // Steeper observed surfaces receive a contour edge, not a raised
       // fictional cliff or an additional collision mesh.
       const incline=Math.max(Math.abs(a-c),Math.abs(b-e));
@@ -114,7 +124,7 @@ export function paintFieldWorld(
         ctx.lineTo(q3.x,q3.y);ctx.stroke();
       }
     }
-    // Deterministic small ground strokes make slopes legible without
+    // Deterministic small ground strokes make terrain readable without
     // inventing roads, fields, vegetation resources or new simulation state.
     if(!water && tile>=65 && clamp01(chunk.grassCoverage01)>.16) {
       const strands=Math.floor(clamp01(chunk.grassCoverage01)*9);
@@ -133,14 +143,14 @@ export function paintFieldWorld(
     // traversable paths, extra resources or phantom farm sites.
     if(!water&&tile>=65) {
       const coverage=Math.max(clamp01(chunk.grassCoverage01),clamp01(chunk.wetlandCoverage01));
-      const count=Math.floor(coverage*3);
+      const count=Math.floor(coverage*5);
       for(let i=0;i<count;i++) {
         const u=.13+rand(chunk.x,chunk.y,140+i*3)*.74;
         const v=.13+rand(chunk.x,chunk.y,141+i*3)*.74;
         const p=screen(chunk.x+u-.5,chunk.y+v-.5,sample(chunk.x,chunk.y,u,v)+.001);
-        const s=tile*(.06+rand(chunk.x,chunk.y,142+i*3)*.055);
+        const s=tile*(.075+rand(chunk.x,chunk.y,142+i*3)*.09);
         ctx.fillStyle=chunk.waterKind==='Wetland'
-          ?'rgba(54,110,89,.2)':'rgba(132,160,100,.26)';
+          ?'rgba(57,116,96,.17)':'rgba(183,207,130,.19)';
         ctx.beginPath();ctx.ellipse(p.x,p.y,s*1.3,s*.42,-.08,0,Math.PI*2);ctx.fill();
       }
     }
@@ -183,8 +193,7 @@ export function paintFieldWorld(
     if(c.waterKind==='Ocean'||c.waterKind==='Lake')continue;
     const forest=clamp01(c.forestCoverage01),rock=clamp01(c.rockCoverage01);
     const shrub=clamp01(c.shrubCoverage01),grass=clamp01(c.grassCoverage01);
-    const biome=String(c.biome??'').toLowerCase();
-    const cold=/taiga|boreal|tundra|conifer/.test(biome);
+    const biome=String(c.biome??'');
     const addScenery=(name:FieldSpriteName,u:number,v:number,w:number,h:number)=>{
       const gx=c.x+u,gy=c.y+v;
       const radius=(name==='cliff'?.15:name==='rock'?.075:name==='flowers'?.025
@@ -193,17 +202,13 @@ export function paintFieldWorld(
       const p=screen(c.x+u-.5,c.y+v-.5,sample(c.x,c.y,u,v));
       put(name,p,w,h);
     };
-    // F1 legacy generated up to 11 near-identical trees per chunk, saturating
-    // mobile frames. Cap canopy sprites while retaining actual Core coverage.
-    const trees=forest>=.18?Math.min(5,Math.max(1,Math.ceil(forest*4.7))):0;
-    for(let i=0;i<trees;i++) {
-      const u=.08+rand(c.x,c.y,1000+i*4)*.84;
-      const v=.08+rand(c.x,c.y,1001+i*4)*.84;
-      const shape=rand(c.x,c.y,1002+i*4);
-      const name:FieldSpriteName=cold?(shape>.47?'cedar':'pine'):
-        shape<.33?'pine':shape<.56?'cedar':'oak';
-      const size=tile*(.27+rand(c.x,c.y,1003+i*4)*.115);
-      addScenery(name,u,v,size,size*(name==='oak'?1.08:1.32));
+    // Cohesive observed-forest canopy groups. No extra ecology or
+    // navigational obstacles exist in Core because of these decorations.
+    const canopy=fieldForestDisplayClusters(seed,c.x,c.y,forest,biome);
+    for(const tree of canopy) {
+      const size=tile*tree.sizeFactor;
+      addScenery(tree.name,tree.u,tree.v,size,
+        size*(tree.name==='oak'?1.08:1.32));
     }
     if(rock>.2) {
       const count=Math.min(4,Math.floor(rock*3)+1);
@@ -211,22 +216,39 @@ export function paintFieldWorld(
         const u=.16+rand(c.x,c.y,220+i*3)*.68;
         const v=.14+rand(c.x,c.y,221+i*3)*.7;
         const size=tile*(.18+rock*.085);
-        addScenery(rock>.54&&i===0?'cliff':'rock',u,v,
-          rock>.54&&i===0?size*2:size,
-          rock>.54&&i===0?size*2.1:size*.87);
+        // A rock-rich flat plain cannot pretend to be a sheer mountain.
+        // Inspect the real surface around this visual rock placement.
+        const slopeSamples=[
+          sample(c.x,c.y,Math.max(0,u-.1),Math.max(0,v-.1)),
+          sample(c.x,c.y,Math.min(1,u+.1),Math.max(0,v-.1)),
+          sample(c.x,c.y,Math.max(0,u-.1),Math.min(1,v+.1)),
+          sample(c.x,c.y,Math.min(1,u+.1),Math.min(1,v+.1)),
+        ];
+        const steep=i===0&&fieldObservedRockFace(slopeSamples,rock);
+        addScenery(steep?'cliff':'rock',u,v,
+          steep?size*2:size,steep?size*2.1:size*.87);
       }
     }
     const bushes=Math.min(4,Math.floor(shrub*4));
     for(let i=0;i<bushes;i++) {
-      const u=.13+rand(c.x,c.y,350+i*2)*.74,v=.13+rand(c.x,c.y,351+i*2)*.74;
+      // Shrubs nestle near observed canopy clusters rather than forming
+      // unrelated evenly spaced visual wallpaper.
+      const anchor=canopy.length?canopy[i%canopy.length]:null;
+      const u=anchor?Math.max(.08,Math.min(.92,anchor.u+(rand(c.x,c.y,350+i*2)-.5)*.31))
+        :.13+rand(c.x,c.y,350+i*2)*.74;
+      const v=anchor?Math.max(.08,Math.min(.92,anchor.v+(rand(c.x,c.y,351+i*2)-.5)*.32))
+        :.13+rand(c.x,c.y,351+i*2)*.74;
       const size=tile*.20;
       addScenery('bush',u,v,size,size*.73);
     }
     // Flowers are non-interactable art for actual grass habitat only.
     if(grass>.36 && forest<.67) {
       const count=Math.min(3,Math.floor(grass*3));
+      const centerU=.23+rand(c.x,c.y,490)*.54;
+      const centerV=.23+rand(c.x,c.y,491)*.54;
       for(let i=0;i<count;i++) {
-        const u=.13+rand(c.x,c.y,490+i*2)*.72,v=.13+rand(c.x,c.y,491+i*2)*.72;
+        const u=Math.max(.08,Math.min(.92,centerU+(rand(c.x,c.y,492+i*2)-.5)*.24));
+        const v=Math.max(.08,Math.min(.92,centerV+(rand(c.x,c.y,493+i*2)-.5)*.24));
         const size=tile*.16;
         addScenery('flowers',u,v,size,size*.67);
       }
@@ -298,7 +320,7 @@ export function paintFieldWorld(
     const opacity=fieldSpriteVisualOcclusion(item,people);
     if(opacity<1)ctx.globalAlpha=opacity;
     if(item.name!=='flowers'&&item.name!=='flag'){
-      // Ground-contact ellipse anchors 2D sprites to the angled 3D surface.
+      // Ground-contact ellipse anchors illustrated sprites to Core ground.
       // Its footprint is only a visual shadow, never a Core occupancy cell.
       ctx.fillStyle='rgba(15, 31, 25, .20)';
       ctx.beginPath();ctx.ellipse(item.x+item.w*.07,item.y+item.w*.025,

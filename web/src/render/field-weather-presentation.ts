@@ -21,7 +21,7 @@ export function fieldLightAndWeather(state:FieldAtmosphere) {
     minuteOfDay/60;
   const derivedDaylight=Math.max(0,Math.sin((clockHour-6)*Math.PI/12));
   const daylight=clamp01(env?.calendar?.daylight01,derivedDaylight);
-  const nightOpacity=Math.max(0,Math.min(.53,(1-daylight)*.53));
+  const nightOpacity=Math.max(0,Math.min(.34,(1-daylight)*.34));
   const precip=env?.precipitationType??'None';
   const summary=env?.summary;
   const raining=Boolean(env&&(precip==='Rain'||summary==='Rain'||summary==='Storm'));

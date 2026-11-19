@@ -10,15 +10,15 @@ export function fieldQuarterViewF2cChecks({test,source,chunk,windowOf}){
   const {paintFieldWorld}=source('render/field-observer-renderer.ts');
   const {ResidentContinuity}=source('runtime/resident-continuity.ts');
 
-  test('F2c actual 3/4 projection is reversible and Core height raises the field',()=>{
+  test('F2d reference field avoids giant diamond tiles and preserves invertible Core height',()=>{
     for(const view of [
       {width:360,height:780,zoom:1,centerChunkX:0,centerChunkY:0,panX:2,panZ:-3},
       {width:900,height:540,zoom:1.7,centerChunkX:-2,centerChunkY:4,panX:0,panZ:0},
     ]){
       const p=createFieldProjection(view),o=p.project(0,0,.5);
       const east=p.project(1,0,.5),south=p.project(0,1,.5);
-      assert.ok(east.x>o.x&&east.y>o.y);
-      assert.ok(south.x<o.x&&south.y>o.y);
+      assert.ok(east.x>o.x&&Math.abs(east.y-o.y)<1e-7);
+      assert.ok(south.y>o.y&&Math.abs(south.x-o.x)<1e-7);
       for(const [x,y,h] of [[-.8,.5,.1],[.25,-.4,.89],[0,0,.5]]){
         const screen=p.project(x,y,h),back=p.inverse(screen.x,screen.y,h);
         assert.ok(Math.abs(back.x-x*8)<1e-7);
@@ -38,7 +38,7 @@ export function fieldQuarterViewF2cChecks({test,source,chunk,windowOf}){
       precipitationIntensity01:.75,cloudCover01:.8,
       calendar:{hourOfDay:21,daylight01:0},
     }};
-    assert.ok(fieldLightAndWeather(evening).nightOpacity>.4);
+    assert.ok(fieldLightAndWeather(evening).nightOpacity>.28);
     paintFieldAtmosphere(ctx,350,700,evening,6000);
     assert.ok(ctx.ops.some(x=>x[0]==='fillRect'),'night did not darken the field');
     assert.ok(ctx.ops.some(x=>x[0]==='lineTo'),'Core rain produced no weather strokes');
