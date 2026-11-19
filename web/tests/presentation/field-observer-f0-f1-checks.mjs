@@ -35,15 +35,15 @@ export function fieldObserverF0F1Checks({test,source,chunk,windowOf}) {
     return {result,drawn,ops};
   };
 
-  test('F0 quarter-view remains close, invertible and Core-height grounded',()=>{
+  test('F0 field uses aligned grid axes with observed Core height and invertible camera',()=>{
     const p=createFieldProjection({...view,panX:1.5,panZ:-1.2});
     const point=p.project(.23,-.37,.65);
     const inverse=p.inverse(point.x,point.y,.65);
     assert.ok(Math.abs(inverse.x-1.84)<1e-8);
     assert.ok(Math.abs(inverse.z+2.96)<1e-8);
     const a=p.project(0,0,.5),b=p.project(1,0,.5),c=p.project(0,1,.5);
-    assert.ok(b.x>a.x&&b.y>a.y,'Core X recedes diagonally down-right');
-    assert.ok(c.x<a.x&&c.y>a.y,'Core Y recedes diagonally down-left');
+    assert.ok(b.x>a.x&&Math.abs(b.y-a.y)<1e-9,'Core X stays horizontal');
+    assert.ok(c.y>a.y&&Math.abs(c.x-a.x)<1e-9,'Core Y stays vertical');
     assert.ok(p.tile>100,'camera remains a tiny map instead of close-up field');
     const elevated=p.project(.1,.2,.8);
     const low=p.project(.1,.2,.2);
