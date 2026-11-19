@@ -49,13 +49,13 @@ export function fieldConnectedFloorColor(
     &&water(other)===water(chunk));
   const x=Math.max(0,Math.min(1,u)),y=Math.max(0,Math.min(1,v));
   if(x<.5&&same(neighbor.west))tone=blendHex(tone,
-    fieldNaturalFloorColor(neighbor.west!),(.5-x)*.9);
+    fieldNaturalFloorColor(neighbor.west!),(.5-x));
   if(x>.5&&same(neighbor.east))tone=blendHex(tone,
-    fieldNaturalFloorColor(neighbor.east!),(x-.5)*.9);
+    fieldNaturalFloorColor(neighbor.east!),(x-.5));
   if(y<.5&&same(neighbor.north))tone=blendHex(tone,
-    fieldNaturalFloorColor(neighbor.north!),(.5-y)*.9);
+    fieldNaturalFloorColor(neighbor.north!),(.5-y));
   if(y>.5&&same(neighbor.south))tone=blendHex(tone,
-    fieldNaturalFloorColor(neighbor.south!),(y-.5)*.9);
+    fieldNaturalFloorColor(neighbor.south!),(y-.5));
   return tone;
 }
 
