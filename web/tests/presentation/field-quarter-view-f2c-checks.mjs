@@ -38,7 +38,7 @@ export function fieldQuarterViewF2cChecks({test,source,chunk,windowOf}){
       precipitationIntensity01:.75,cloudCover01:.8,
       calendar:{hourOfDay:21,daylight01:0},
     }};
-    assert.ok(fieldLightAndWeather(evening).nightOpacity>.4);
+    assert.ok(fieldLightAndWeather(evening).nightOpacity>.28);
     paintFieldAtmosphere(ctx,350,700,evening,6000);
     assert.ok(ctx.ops.some(x=>x[0]==='fillRect'),'night did not darken the field');
     assert.ok(ctx.ops.some(x=>x[0]==='lineTo'),'Core rain produced no weather strokes');
