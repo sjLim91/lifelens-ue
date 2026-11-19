@@ -78,6 +78,13 @@ Unreal UHT/UBT, Android Unreal APK, UE asset authoring은 현재 제품 gate가 
 - 유료 API/클라우드/런타임이 없어도 baseline simulation이 작동해야 한다.
 - Presentation은 Core에서 발생하지 않은 사건을 꾸며내지 않는다.
 
+## 4.1 Visual references — fixed user decision (2026-11-19)
+
+- 사용자 첨부 모바일 게임 스크린샷은 **자연 지형·식생·절벽·수계·맵 구성·화풍·가독성**을 참고하기 위한 시각 레퍼런스다.
+- 이미지에 있는 **몬스터/던전/거미 구역/특수 세계관/퀘스트/RPG 시스템**을 LifeLens에 추가하라는 뜻으로 해석하지 않는다.
+- 현장 필드는 **실제 Core의 terrain/elevation/biome/hydrology/ecology/주민·동물·시설 데이터**를 같은 화풍의 관찰 가능한 게임형 필드로 표현한다. 임의의 45도 투영보다 읽기 쉽고 완성된 화면을 우선한다.
+- 이 규칙을 다시 임의로 설계 변경하지 않는다. 상세·인수 기준: `docs/FIELD_VISUAL_REFERENCE_CONTRACT_2026-11-19.md`.
+
 ## 5. Active ownership
 
 기본 구현 owner는 통합형이다. milestone에 필요하면 다음을 end-to-end로 수정할 수 있다.
