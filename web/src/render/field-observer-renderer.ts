@@ -12,6 +12,7 @@ import { FieldSpriteAtlas, type FieldSpriteName, type FieldSpritePainter } from 
 import { fieldCoreClearances, fieldDecorativePositionClear, fieldFacilityArt,
   fieldSpriteVisualOcclusion, fieldVisualUnit } from './field-scene-clarity';
 import { drawFieldResident, FieldResidentMotion, type FieldResidentFrame } from './field-resident-presentation';
+import { fieldLifeStageScale } from './field-resident-actions';
 
 export type FieldMarkerKind = 'resident' | 'trace' | 'settlement' | 'animal';
 export interface FieldMarker {
@@ -231,7 +232,8 @@ export function paintFieldWorld(
     const elevation=sampleGrid(pos.x,pos.y);
     if(elevation===null)continue;
     const p=projection.gridPoint(pos.x,pos.y,elevation);
-    const size=Math.max(45,Math.min(94,tile*.37));
+    const size=Math.max(24,Math.max(45,Math.min(94,tile*.37))
+      *fieldLifeStageScale(resident));
     const marker:FieldMarker={kind:'resident',id:resident.id,x:p.x,y:p.y-8,radius:size*.54};
     const label=(resident as Resident & {name?:string}).name;
     const frame=motion?.frame(resident,pos.x,pos.y,nowMs);
