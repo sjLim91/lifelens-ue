@@ -79,8 +79,8 @@ export function fieldForestDisplayClusters(
   const unit=(salt:number)=>fieldVisualUnit(seed,chunkX,chunkY,salt);
   const groups=count<4?1:2;
   const centers=[
-    {u:.26+unit(301)*.12,v:.27+unit(302)*.12},
-    {u:.69+unit(303)*.09,v:.67+unit(304)*.09},
+    {u:.18+unit(301)*.08,v:.19+unit(302)*.08},
+    {u:.77+unit(303)*.08,v:.76+unit(304)*.08},
   ];
   const out:FieldCanopySprite[]=[];
   for(let i=0;i<count;i++){
