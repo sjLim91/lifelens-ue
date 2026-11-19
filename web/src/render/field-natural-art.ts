@@ -108,3 +108,60 @@ export function fieldObservedRockFace(
     return false;
   return Math.max(...samples)-Math.min(...samples)>.095;
 }
+
+
+/**
+ * A close camera changes how much ground is visible, not the physical scale
+ * of a bonfire, bed or hare. Beyond the close-observer threshold, the sprite
+ * magnification slows while its grounding/selection still follows full zoom.
+ */
+export function fieldVisualSpriteTile(tile:number,width:number,height:number):number {
+  const unzoomed=Math.max(16,Math.min(width*.49,height*.35));
+  return Math.min(tile,unzoomed*1.43);
+}
+
+/** Seamless seed-derived ground pigment. Absolute Core chunk coordinates,
+ * not per-chunk random seeds, give identical values at chunk boundaries. */
+export function fieldContinuousGroundNoise(
+  seed:string,globalX:number,globalY:number,
+):number {
+  const layer=(frequency:number,salt:number):number=>{
+    const x=globalX*frequency,y=globalY*frequency;
+    const ix=Math.floor(x),iy=Math.floor(y);
+    const smooth=(n:number)=>n*n*(3-2*n);
+    const tx=smooth(x-ix),ty=smooth(y-iy);
+    const n00=fieldVisualUnit(seed,ix,iy,salt);
+    const n10=fieldVisualUnit(seed,ix+1,iy,salt);
+    const n01=fieldVisualUnit(seed,ix,iy+1,salt);
+    const n11=fieldVisualUnit(seed,ix+1,iy+1,salt);
+    return (n00*(1-tx)+n10*tx)*(1-ty)
+      +(n01*(1-tx)+n11*tx)*ty;
+  };
+  return (layer(1.85,702)*.72+layer(6.7,703)*.28)*2-1;
+}
+
+/** World-coordinate seed details do not shift when the user pans/zooms.
+ * Decorative marks follow habitat coverage; none is harvestable. */
+export interface FieldGroundMark {
+  u:number;v:number;length:number;rotation:number;
+  kind:'grass'|'lichen'|'soil';
+}
+export function fieldGroundDetailMarks(
+  seed:string,chunkX:number,chunkY:number,
+  grassCoverage:number,forestCoverage:number,rockCoverage:number,
+):FieldGroundMark[] {
+  const grass=clamp(grassCoverage),forest=clamp(forestCoverage),
+    rock=clamp(rockCoverage);
+  const count=Math.min(25,Math.floor(grass*13+forest*6+rock*5));
+  const out:FieldGroundMark[]=[];
+  for(let i=0;i<count;i++){
+    const u=.045+fieldVisualUnit(seed,chunkX,chunkY,1700+i*5)*.91;
+    const v=.045+fieldVisualUnit(seed,chunkX,chunkY,1701+i*5)*.91;
+    const choice=fieldVisualUnit(seed,chunkX,chunkY,1702+i*5);
+    const kind:FieldGroundMark['kind']=choice<rock*.32?'lichen'
+      :choice<.17?'soil':'grass';
+    out.push({u,v,kind,length:.017+fieldVisualUnit(seed,chunkX,chunkY,1703+i*5)*.031,
+      rotation:(fieldVisualUnit(seed,chunkX,chunkY,1704+i*5)-.5)*.95});
+  }
+  return out;
+}
