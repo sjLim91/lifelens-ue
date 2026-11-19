@@ -1,4 +1,4 @@
-import type { Resident, TerrainWindow } from '../runtime/core-types';
+import type { DynamicEnvironment, Resident, TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { ResidentContinuity } from '../runtime/resident-continuity';
 import { runtimeDiagnostics } from '../runtime/runtime-diagnostics';
@@ -13,6 +13,12 @@ import { fieldCoreClearances, fieldDecorativePositionClear, fieldFacilityArt,
   fieldSpriteVisualOcclusion, fieldVisualUnit } from './field-scene-clarity';
 import { drawFieldResident, FieldResidentMotion, type FieldResidentFrame } from './field-resident-presentation';
 import { fieldLifeStageScale } from './field-resident-actions';
+import { paintFieldAtmosphere } from './field-weather-presentation';
+
+export type FieldWorldDrawOptions = IsometricWorldDrawOptions & {
+  environment?: DynamicEnvironment | null;
+  worldMinute?: number;
+};
 
 export type FieldMarkerKind = 'resident' | 'trace' | 'settlement' | 'animal';
 export interface FieldMarker {
@@ -39,7 +45,7 @@ const clamp01 = (n: unknown) => Number.isFinite(Number(n)) ? Math.max(0,Math.min
 export function paintFieldWorld(
   ctx: CanvasRenderingContext2D,
   view: FieldView,
-  options: IsometricWorldDrawOptions,
+  options: FieldWorldDrawOptions,
   continuity: ResidentContinuity,
   art: FieldSpritePainter,
   motion?: FieldResidentMotion,
@@ -60,7 +66,7 @@ export function paintFieldWorld(
   result.tile=tile;
   const sample=createTerrainElevationSampler(terrain);
   const chunks=[...terrain.chunks].filter(c=>Number.isFinite(c.x+c.y+c.elevation01))
-    .sort((a,b)=>a.y-b.y || a.x-b.x);
+    .sort((a,b)=>(a.x+a.y)-(b.x+b.y) || a.x-b.x);
   const byId=new Set(chunks.map(c=>c.x+':'+c.y));
   const screen=(x:number,y:number,h:number)=>projection.project(
     x-options.centerX,y-options.centerY,h);
@@ -97,6 +103,31 @@ export function paintFieldWorld(
       const slope=Math.max(-.23,Math.min(.23,
         ((a+e)-(b+c))*1.12+((a+b)-(e+c))*.83));
       poly([q0,q1,q2,q3],shade(base,1+slope));
+      // Actual elevation gradients form lit/shaded quarter-view facets.
+      // Steeper observed surfaces receive a contour edge, not a raised
+      // fictional cliff or an additional collision mesh.
+      const incline=Math.max(Math.abs(a-c),Math.abs(b-e));
+      if(!water&&incline>.042){
+        ctx.strokeStyle='rgba(19, 42, 31, .20)';
+        ctx.lineWidth=Math.min(2.6,Math.max(.65,tile*.009));
+        ctx.beginPath();ctx.moveTo(q1.x,q1.y);ctx.lineTo(q2.x,q2.y);
+        ctx.lineTo(q3.x,q3.y);ctx.stroke();
+      }
+    }
+    // Deterministic small ground strokes make slopes legible without
+    // inventing roads, fields, vegetation resources or new simulation state.
+    if(!water && tile>=65 && clamp01(chunk.grassCoverage01)>.16) {
+      const strands=Math.floor(clamp01(chunk.grassCoverage01)*9);
+      ctx.lineWidth=Math.max(.7,tile*.0045);
+      ctx.strokeStyle='rgba(205, 218, 157, .20)';
+      for(let i=0;i<strands;i++){
+        const u=.07+rand(chunk.x,chunk.y,820+i*3)*.86;
+        const v=.07+rand(chunk.x,chunk.y,821+i*3)*.86;
+        const p=screen(chunk.x+u-.5,chunk.y+v-.5,sample(chunk.x,chunk.y,u,v)+.002);
+        const length=tile*(.017+rand(chunk.x,chunk.y,822+i*3)*.02);
+        ctx.beginPath();ctx.moveTo(p.x-length*.3,p.y);
+        ctx.lineTo(p.x,p.y-length);ctx.lineTo(p.x+length*.4,p.y);ctx.stroke();
+      }
     }
     // Scenic patches follow real observed grass or wetland COVERAGE, not
     // traversable paths, extra resources or phantom farm sites.
@@ -107,7 +138,7 @@ export function paintFieldWorld(
         const u=.13+rand(chunk.x,chunk.y,140+i*3)*.74;
         const v=.13+rand(chunk.x,chunk.y,141+i*3)*.74;
         const p=screen(chunk.x+u-.5,chunk.y+v-.5,sample(chunk.x,chunk.y,u,v)+.001);
-        const s=tile*(.09+rand(chunk.x,chunk.y,142+i*3)*.09);
+        const s=tile*(.06+rand(chunk.x,chunk.y,142+i*3)*.055);
         ctx.fillStyle=chunk.waterKind==='Wetland'
           ?'rgba(54,110,89,.2)':'rgba(132,160,100,.26)';
         ctx.beginPath();ctx.ellipse(p.x,p.y,s*1.3,s*.42,-.08,0,Math.PI*2);ctx.fill();
@@ -164,14 +195,14 @@ export function paintFieldWorld(
     };
     // F1 legacy generated up to 11 near-identical trees per chunk, saturating
     // mobile frames. Cap canopy sprites while retaining actual Core coverage.
-    const trees=forest>=.18?Math.min(6,Math.max(1,Math.ceil(forest*5.3))):0;
+    const trees=forest>=.18?Math.min(5,Math.max(1,Math.ceil(forest*4.7))):0;
     for(let i=0;i<trees;i++) {
       const u=.08+rand(c.x,c.y,1000+i*4)*.84;
       const v=.08+rand(c.x,c.y,1001+i*4)*.84;
       const shape=rand(c.x,c.y,1002+i*4);
       const name:FieldSpriteName=cold?(shape>.47?'cedar':'pine'):
         shape<.33?'pine':shape<.56?'cedar':'oak';
-      const size=tile*(.38+rand(c.x,c.y,1003+i*4)*.16);
+      const size=tile*(.27+rand(c.x,c.y,1003+i*4)*.115);
       addScenery(name,u,v,size,size*(name==='oak'?1.08:1.32));
     }
     if(rock>.2) {
@@ -179,7 +210,7 @@ export function paintFieldWorld(
       for(let i=0;i<count;i++) {
         const u=.16+rand(c.x,c.y,220+i*3)*.68;
         const v=.14+rand(c.x,c.y,221+i*3)*.7;
-        const size=tile*(.22+rock*.16);
+        const size=tile*(.18+rock*.085);
         addScenery(rock>.54&&i===0?'cliff':'rock',u,v,
           rock>.54&&i===0?size*2:size,
           rock>.54&&i===0?size*2.1:size*.87);
@@ -188,7 +219,7 @@ export function paintFieldWorld(
     const bushes=Math.min(4,Math.floor(shrub*4));
     for(let i=0;i<bushes;i++) {
       const u=.13+rand(c.x,c.y,350+i*2)*.74,v=.13+rand(c.x,c.y,351+i*2)*.74;
-      const size=tile*.29;
+      const size=tile*.20;
       addScenery('bush',u,v,size,size*.73);
     }
     // Flowers are non-interactable art for actual grass habitat only.
@@ -196,7 +227,7 @@ export function paintFieldWorld(
       const count=Math.min(3,Math.floor(grass*3));
       for(let i=0;i<count;i++) {
         const u=.13+rand(c.x,c.y,490+i*2)*.72,v=.13+rand(c.x,c.y,491+i*2)*.72;
-        const size=tile*.28;
+        const size=tile*.16;
         addScenery('flowers',u,v,size,size*.67);
       }
     }
@@ -251,7 +282,7 @@ export function paintFieldWorld(
     if(elevation===null)continue;
     const p=projection.gridPoint(animal.gridX,animal.gridY,elevation);
     const name:FieldSpriteName=animal.species==='Deer'?'deer':'hare';
-    const size=tile*(name==='deer'?.38:.26);
+    const size=tile*(name==='deer'?.225:.102);
     put(name,p,size,size*.82,
       {kind:'animal',id:animal.id,x:p.x,y:p.y,radius:Math.max(10,size*.44)});
   }
@@ -266,6 +297,14 @@ export function paintFieldWorld(
     const previousAlpha=ctx.globalAlpha;
     const opacity=fieldSpriteVisualOcclusion(item,people);
     if(opacity<1)ctx.globalAlpha=opacity;
+    if(item.name!=='flowers'&&item.name!=='flag'){
+      // Ground-contact ellipse anchors 2D sprites to the angled 3D surface.
+      // Its footprint is only a visual shadow, never a Core occupancy cell.
+      ctx.fillStyle='rgba(15, 31, 25, .20)';
+      ctx.beginPath();ctx.ellipse(item.x+item.w*.07,item.y+item.w*.025,
+        item.w*(item.resident?.22:.32),Math.max(2,item.w*.075),
+        0,0,Math.PI*2);ctx.fill();
+    }
     if(item.selected) {
       ctx.strokeStyle='#f6e9b1';ctx.lineWidth=2.4;ctx.beginPath();
       ctx.ellipse(item.x,item.y,item.w*.54,item.w*.18,0,0,Math.PI*2);ctx.stroke();
@@ -288,6 +327,10 @@ export function paintFieldWorld(
     }
     if(previousAlpha!==undefined)ctx.globalAlpha=previousAlpha;
   }
+  // Weather/light is drawn over the world, not over the UI controls.
+  paintFieldAtmosphere(ctx,width,height,{
+    environment:options.environment,worldMinute:options.worldMinute,
+  },nowMs);
   for(const item of items){
     if(!item.selected||!item.marker)continue;
     // Draw after scenery to keep the selected Core target readable even
@@ -318,7 +361,7 @@ export class FieldObserverRenderer {
     this.ctx=ctx;this.atlas=new FieldSpriteAtlas(onAssetsReady);
     this.atlas.warm();
   }
-  draw(options:IsometricWorldDrawOptions):void {
+  draw(options:FieldWorldDrawOptions):void {
     const started=performance.now();
     const view:FieldView={
       width:this.canvas.width,height:this.canvas.height,zoom:options.zoom,
