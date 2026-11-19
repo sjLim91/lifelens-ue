@@ -30,13 +30,13 @@ export interface FieldFacilityArt {
 /** Never describe a storage/worksite/sleeping mat as a completed house. */
 export function fieldFacilityArt(trace: FacilityTrace): FieldFacilityArt {
   const kinds: Record<string, {sprite:FieldSpriteName;size:number;clearance:number}> = {
-    Shelter:{sprite:'hut',size:.42,clearance:.18},
-    PrimitiveStorage:{sprite:'store',size:.31,clearance:.12},
-    WorkSurface:{sprite:'workbench',size:.31,clearance:.13},
-    SleepingPlace:{sprite:'sleeping',size:.31,clearance:.12},
-    FirePit:{sprite:'fire',size:.24,clearance:.11},
-    Furnace:{sprite:'furnace',size:.35,clearance:.14},
-    CultivatedPlot:{sprite:'farm',size:.42,clearance:.18},
+    Shelter:{sprite:'hut',size:.34,clearance:.18},
+    PrimitiveStorage:{sprite:'store',size:.26,clearance:.12},
+    WorkSurface:{sprite:'workbench',size:.27,clearance:.13},
+    SleepingPlace:{sprite:'sleeping',size:.26,clearance:.12},
+    FirePit:{sprite:'fire',size:.22,clearance:.11},
+    Furnace:{sprite:'furnace',size:.30,clearance:.14},
+    CultivatedPlot:{sprite:'farm',size:.34,clearance:.18},
   };
   // Unfinished, ruined or unknown facilities must not visually claim that
   // an operational building exists. The selectable construction site is real.
