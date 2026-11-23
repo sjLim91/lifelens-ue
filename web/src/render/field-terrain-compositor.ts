@@ -35,8 +35,8 @@ export function fieldWorldGroundColor(
   if(!chunk)return [102,145,97];
   const water=isWater(chunk),self=parse(fieldNaturalFloorColor(chunk));
   const coord=(i:number,t:number):[number,number,number]=>{
-    const global=i+t-.5,low=Math.floor(global+.5);
-    return [low,low+1,smooth(global+.5-low)];
+    const global=i+t-.5,low=Math.floor(global);
+    return [low,low+1,smooth(global-low)];
   };
   const [ax,bx,tx]=coord(chunkX,u),[ay,by,ty]=coord(chunkY,v);
   const tile=(x:number,y:number)=>{
