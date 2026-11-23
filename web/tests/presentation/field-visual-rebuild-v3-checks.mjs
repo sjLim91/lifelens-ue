@@ -100,7 +100,7 @@ export function fieldVisualRebuildV3Checks({test,source,chunk,windowOf}){
     const prev=JSON.stringify({land,resident});
     const calls=[],ctx={globalAlpha:1};
     for(const fn of ['clearRect','fillRect','beginPath','moveTo','lineTo',
-      'stroke','fill','ellipse','fillText','strokeText','quadraticCurveTo']){
+      'closePath','stroke','fill','ellipse','fillText','strokeText','quadraticCurveTo']){
       ctx[fn]=(...args)=>calls.push([fn,...args]);
     }
     const out=paintFieldWorld(ctx,{width:375,height:720,zoom:1,
