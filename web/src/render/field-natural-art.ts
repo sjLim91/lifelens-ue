@@ -161,7 +161,10 @@ export function fieldGroundDetailMarks(
 ):FieldGroundMark[] {
   const grass=clamp(grassCoverage),forest=clamp(forestCoverage),
     rock=clamp(rockCoverage);
-  const count=Math.min(25,Math.floor(grass*13+forest*6+rock*5));
+  // An open field still needs fine habitat detail at close observer zoom.
+  // The renderer applies its own camera-dependent budget, so this density
+  // stays lightweight when observing many chunks at once.
+  const count=Math.min(80,Math.floor(grass*48+forest*27+rock*9));
   const out:FieldGroundMark[]=[];
   for(let i=0;i<count;i++){
     const u=.045+fieldVisualUnit(seed,chunkX,chunkY,1700+i*5)*.91;
