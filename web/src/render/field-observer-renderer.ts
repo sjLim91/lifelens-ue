@@ -136,7 +136,8 @@ export function paintFieldWorld(
     if(!water&&tile>=50){
       const marks=fieldGroundDetailMarks(seed,chunk.x,chunk.y,
         chunk.grassCoverage01,chunk.forestCoverage01,chunk.rockCoverage01);
-      const budget=tile<100?Math.ceil(marks.length*.55):marks.length;
+      const budget=tile<100?Math.ceil(marks.length*.24)
+        :tile<190?Math.ceil(marks.length*.44):marks.length;
       for(let i=0;i<budget;i++){
         const mark=marks[i];
         const elevation=sample(chunk.x,chunk.y,mark.u,mark.v);
@@ -145,8 +146,8 @@ export function paintFieldWorld(
         const s=Math.min(9,Math.max(1.4,tile*mark.length));
         ctx.lineWidth=mark.kind==='lichen'?1.5:Math.max(.7,s*.16);
         ctx.strokeStyle=mark.kind==='lichen'
-          ?'rgba(170, 166, 139, .29)':mark.kind==='soil'
-          ?'rgba(99, 104, 76, .18)':'rgba(177, 208, 129, .32)';
+          ?'rgba(170, 166, 139, .31)':mark.kind==='soil'
+          ?'rgba(99, 104, 76, .20)':'rgba(177, 208, 129, .40)';
         ctx.beginPath();
         if(mark.kind==='grass'){
           ctx.moveTo(p.x-s*.44,p.y+s*.1);
