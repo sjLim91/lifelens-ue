@@ -18,6 +18,7 @@ import { fieldConnectedFloorColor, fieldForestDisplayClusters,
   fieldObservedRockFace,fieldVisualSpriteTile,
   fieldContinuousGroundNoise,fieldGroundDetailMarks } from './field-natural-art';
 import { paintObservedFieldRiver } from './field-river-presentation';
+import { FieldTerrainCompositor, paintFieldShore } from './field-terrain-compositor';
 
 export type FieldWorldDrawOptions = IsometricWorldDrawOptions & {
   environment?: DynamicEnvironment | null;
@@ -54,6 +55,7 @@ export function paintFieldWorld(
   art: FieldSpritePainter,
   motion?: FieldResidentMotion,
   nowMs = 0,
+  terrainPainter?:FieldTerrainCompositor,
 ): FieldPaintResult {
   const {width,height} = view;
   ctx.clearRect(0,0,width,height);
@@ -105,7 +107,9 @@ export function paintFieldWorld(
       north:byChunk.get(chunk.x+':'+(chunk.y-1)),
       south:byChunk.get(chunk.x+':'+(chunk.y+1)),
     };
-    for(let iy=0;iy<16;iy+=step)for(let ix=0;ix<16;ix+=step) {
+    const textured=terrainPainter?.paint(ctx,seed,chunk,
+      (x,y)=>byChunk.get(x+':'+y),screen,sample)===true;
+    if(!textured)for(let iy=0;iy<16;iy+=step)for(let ix=0;ix<16;ix+=step) {
       const u=ix/16,v=iy/16,d=step/16;
       const a=sample(chunk.x,chunk.y,u,v),b=sample(chunk.x,chunk.y,u+d,v);
       const c=sample(chunk.x,chunk.y,u+d,v+d),e=sample(chunk.x,chunk.y,u,v+d);
@@ -131,6 +135,9 @@ export function paintFieldWorld(
         ctx.lineTo(q3.x,q3.y);ctx.stroke();
       }
     }
+    // Only confirmed Core water boundaries receive a visual shore.
+    if(textured)paintFieldShore(ctx,chunk,
+      (x,y)=>byChunk.get(x+':'+y),screen,sample,seed);
     // Small habitat-dependent strokes replace the large uniform ovals
     // that previously made open ground look like repeated map stickers.
     if(!water&&tile>=50){
@@ -393,6 +400,7 @@ export class FieldObserverRenderer {
   private readonly ctx:CanvasRenderingContext2D;
   private readonly atlas:FieldSpriteAtlas;
   private readonly motion=new FieldResidentMotion();
+  private readonly terrainPainter=new FieldTerrainCompositor();
   private last:{view:FieldView;terrain:TerrainWindow;markers:FieldMarker[]}|null=null;
   constructor(private readonly canvas:HTMLCanvasElement,
     private readonly continuity:ResidentContinuity,onAssetsReady:()=>void){
@@ -410,7 +418,7 @@ export class FieldObserverRenderer {
     };
     this.motion.prune(options.residents);
     const stats=paintFieldWorld(this.ctx,view,options,this.continuity,this.atlas,
-      this.motion,performance.now());
+      this.motion,performance.now(),this.terrainPainter);
     this.last=options.terrain?.available
       ?{view,terrain:options.terrain,markers:stats.markers}:null;
     runtimeDiagnostics.recordRender(performance.now()-started);
@@ -452,5 +460,6 @@ export class FieldObserverRenderer {
   pickHumanTrace(x:number,y:number){return this.pick('trace',x,y);}
   pickSettlement(x:number,y:number){return this.pick('settlement',x,y);}
   resetMotion():void {this.motion.reset();}
-  dispose(){this.motion.reset();this.atlas.dispose();this.last=null;}
+  dispose(){this.motion.reset();this.terrainPainter.clear();
+    this.atlas.dispose();this.last=null;}
 }
