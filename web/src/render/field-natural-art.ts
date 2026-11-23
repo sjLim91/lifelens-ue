@@ -74,27 +74,35 @@ export function fieldForestDisplayClusters(
   coverage:number,biome:string,
 ):FieldCanopySprite[] {
   const forest=clamp(coverage);
-  const count=forest<.18?0:Math.min(7,Math.max(1,Math.ceil(forest*6.1)));
+  const count=forest<.18?0:Math.min(9,Math.max(1,Math.ceil(forest*8)));
   const cold=/taiga|boreal|tundra|conifer/i.test(biome);
   const unit=(salt:number)=>fieldVisualUnit(seed,chunkX,chunkY,salt);
-  const groups=count<4?1:2;
-  const centers=[
-    {u:.18+unit(301)*.08,v:.19+unit(302)*.08},
-    {u:.77+unit(303)*.08,v:.76+unit(304)*.08},
-  ];
-  const out:FieldCanopySprite[]=[];
-  for(let i=0;i<count;i++){
-    const g=i%groups,rank=Math.floor(i/groups),a=unit(310+i)*Math.PI*2;
-    const spread=rank===0?0:.09+Math.sqrt(rank)*.046;
-    const u=Math.min(.91,Math.max(.09,centers[g].u+Math.cos(a)*spread));
-    const v=Math.min(.91,Math.max(.09,centers[g].v+Math.sin(a)*spread));
-    const shape=unit(350+i);
+  // The previous two fixed NW/SE anchors repeated on every Core chunk and
+  // were visible as a checkerboard at mobile zoom. Candidate plants now form
+  // patches selected by continuous world-coordinate canopy potential.
+  // Coverage still determines the *maximum* display density; no real tree,
+  // ecological inventory or obstacle is created.
+  const candidates:Array<FieldCanopySprite&{score:number}>=[];
+  for(let index=0;index<25;index++){
+    const x=index%5,y=Math.floor(index/5);
+    const u=.03+(x+.12+unit(600+index*2)*.76)*.188;
+    const v=.03+(y+.12+unit(601+index*2)*.76)*.188;
+    const coarse=fieldContinuousGroundNoise(seed,(chunkX+u)*.58,(chunkY+v)*.58);
+    const fine=fieldContinuousGroundNoise(seed,(chunkX+u)*1.43,(chunkY+v)*1.43);
+    const score=coarse*.64+fine*.30+(unit(850+index)-.5)*.18;
+    const shape=unit(1000+index);
     const name:FieldCanopySprite['name']=cold
       ?(shape>.54?'cedar':'pine')
-      :(shape<.30?'pine':shape<.55?'cedar':'oak');
-    out.push({u,v,name,sizeFactor:.24+unit(370+i)*.115});
+      :(shape<.29?'pine':shape<.54?'cedar':'oak');
+    candidates.push({
+      u:Math.min(.96,Math.max(.04,u)),v:Math.min(.96,Math.max(.04,v)),
+      name,sizeFactor:.21+unit(1200+index)*.13,score,
+    });
   }
-  return out;
+  candidates.sort((a,b)=>b.score-a.score||a.u-b.u);
+  return candidates.slice(0,count).map(({u,v,name,sizeFactor})=>({
+    u,v,name,sizeFactor,
+  }));
 }
 
 /**
