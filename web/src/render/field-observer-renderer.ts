@@ -19,6 +19,7 @@ import { fieldConnectedFloorColor, fieldForestDisplayClusters,
   fieldContinuousGroundNoise,fieldGroundDetailMarks } from './field-natural-art';
 import { paintObservedFieldRiver } from './field-river-presentation';
 import { FieldTerrainCompositor, paintFieldShore } from './field-terrain-compositor';
+import { paintFieldCampGround, type FieldCampAnchor } from './field-settlement-illustration';
 
 export type FieldWorldDrawOptions = IsometricWorldDrawOptions & {
   environment?: DynamicEnvironment | null;
@@ -177,6 +178,17 @@ export function paintFieldWorld(
     if(!visible((a.x+b.x)*.5,(a.y+b.y)*.5,tile))continue;
     paintObservedFieldRiver(ctx,a,b,edge,tile);
   }
+  // Render faint inhabited ground only at actual observed facilities, before
+  // objects/actors. These washes are environmental paint, not new roads.
+  const campAnchors:FieldCampAnchor[]=visibleHumanTraces(terrain)
+    .filter(t=>t.kind==='Facility'&&Number.isFinite(t.gridX+t.gridY))
+    .flatMap(t=>{
+      const h=sampleGrid(t.gridX,t.gridY);
+      if(h===null)return [];
+      const p=projection.gridPoint(t.gridX,t.gridY,h);
+      return [{id:t.id,x:p.x,y:p.y,kind:t.facilityKind??'Unknown'}];
+    });
+  paintFieldCampGround(ctx,campAnchors,tile);
   type DrawItem={depth:number;name:FieldSpriteName;x:number;y:number;w:number;h:number;
     marker?:FieldMarker;selected?:boolean;label?:string;
     resident?:Resident;frame?:FieldResidentFrame;variation?:number};
