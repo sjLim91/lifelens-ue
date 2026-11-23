@@ -86,12 +86,14 @@ export function fieldF2fHabitatChecks({test,source,chunk,windowOf}){
       width:400,height:720,zoom:1,centerChunkX:0,centerChunkY:0,
     },{terrain,residents:[person],civilization:{available:false},
       centerX:0,centerY:0,zoom:1},
-      new ResidentContinuity(),{draw:(_ctx,name,x,y,w,h)=>{
-        painted.push({name,x,y,w,h,filter:_ctx.filter});return true;
+      new ResidentContinuity(),{draw:(_ctx,name,x,y,w,h,variation)=>{
+        painted.push({name,x,y,w,h,variation});return true;
       }});
     const trees=painted.filter(p=>['pine','cedar','oak'].includes(p.name));
     assert.ok(trees.length>=3,'real forest coverage lost all visuals');
-    assert.ok(trees.every(p=>p.filter.includes('hue-rotate(')));
+    assert.ok(trees.every(p=>typeof p.variation==='number'
+      &&p.variation>=0&&p.variation<=1),
+      'plant variants were not derived from stable world-coordinates');
     assert.equal(output.markers.filter(m=>m.kind==='resident').length,1);
     assert.equal(output.markers.filter(m=>m.kind==='animal').length,0);
     assert.equal(JSON.stringify({terrain,person}),before);
