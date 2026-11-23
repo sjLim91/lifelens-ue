@@ -52,7 +52,7 @@ export function fieldWorldGroundColor(
   const meadow=Math.sin(gx*5.8+phase)*Math.cos(gy*6.3-phase*.7)*.55
     +Math.cos(gx*11.4+gy*8.1+phase)*.22;
   const fiber=Math.sin(gx*84.1+gy*18.3+phase)*Math.cos(gy*79.9-gx*7.4)*.15;
-  const amount=water?7:13;
+  const amount=water?10:20;
   const variance=(meadow+fiber)*amount;
   const forest=limit(chunk.forestCoverage01??0),rock=limit(chunk.rockCoverage01??0);
   const warm=(Math.sin(gx*18+phase)*Math.sin(gy*13-phase)*.5+.5);
@@ -95,6 +95,71 @@ export class FieldTerrainCompositor {
       d[k]=r;d[k+1]=g;d[k+2]=b;d[k+3]=255;
     }
     ctx.putImageData(img,0,0);
+    // Authored brushwork stays inside the cached texture, never 80 repeated
+    // V-shaped marks floating above the scene. These are purely pigment.
+    let randomSeed=Math.floor(code(seed+':ground:'+chunk.x+':'+chunk.y)*4294967295)||1;
+    const rand=()=>{randomSeed^=randomSeed<<13;randomSeed^=randomSeed>>>17;
+      randomSeed^=randomSeed<<5;return (randomSeed>>>0)/4294967296;};
+    const grass=limit(chunk.grassCoverage01??0);
+    const forest=limit(chunk.forestCoverage01??0);
+    const rock=limit(chunk.rockCoverage01??0);
+    const water=isWater(chunk);
+    if(water){
+      const count=10+Math.floor(rand()*7);
+      for(let i=0;i<count;i++){
+        const x=rand()*this.size,y=rand()*this.size,w=2+rand()*9;
+        ctx.strokeStyle=`rgba(216, 234, 208, ${(.12+rand()*.15).toFixed(3)})`;
+        ctx.lineWidth=.65+rand()*.45;
+        ctx.beginPath();ctx.moveTo(x-w*.5,y);
+        ctx.quadraticCurveTo(x,y-1.2,x+w*.5,y-.3);ctx.stroke();
+      }
+    }else{
+      // Diffuse meadow patches, with smaller muted plant and earth gestures.
+      const patchCount=Math.round(grass*6+forest*6+rock*2);
+      for(let i=0;i<patchCount;i++){
+        const x=rand()*this.size,y=rand()*this.size,r=4+rand()*11;
+        const g=ctx.createRadialGradient(x,y,0,x,y,r);
+        const soil=rand()<(rock*.34+.12);
+        g.addColorStop(0,soil?'rgba(109,109,80,.12)':'rgba(172,186,109,.18)');
+        g.addColorStop(1,'rgba(100,125,80,0)');
+        ctx.fillStyle=g;ctx.beginPath();
+        ctx.ellipse(x,y,r,r*(.52+rand()*.43),rand()-.5,0,Math.PI*2);
+        ctx.fill();
+      }
+      const clusters=Math.floor(grass*26+forest*19+rock*7);
+      for(let i=0;i<clusters;i++){
+        const x=2+rand()*(this.size-4),y=2+rand()*(this.size-4);
+        const localGrass=rand()<(grass+forest*.20);
+        if(localGrass){
+          const blades=2+Math.floor(rand()*3);
+          const len=1.2+rand()*3.1;
+          ctx.fillStyle=rand()<.5?'rgba(190,203,129,.37)':'rgba(48,101,60,.24)';
+          for(let n=0;n<blades;n++){
+            const dx=(n-(blades-1)/2)*1.7;
+            ctx.beginPath();ctx.moveTo(x+dx,y+.8);
+            ctx.quadraticCurveTo(x+dx-1,y-len*.65,x+dx+.2,y-len);
+            ctx.lineTo(x+dx+.8,y+.7);ctx.closePath();ctx.fill();
+          }
+        }else if(rock>.17){
+          ctx.fillStyle=rand()<.5?'rgba(183,178,143,.34)':'rgba(79,91,76,.28)';
+          ctx.beginPath();ctx.moveTo(x-2,y+1);
+          ctx.lineTo(x-1,y-1.8);ctx.lineTo(x+2.1,y-1.1);
+          ctx.lineTo(x+2.7,y+1);ctx.closePath();ctx.fill();
+        }else {
+          ctx.strokeStyle='rgba(105,93,64,.22)';ctx.lineWidth=.7;
+          ctx.beginPath();ctx.moveTo(x-2,y);
+          ctx.quadraticCurveTo(x,y-1.2,x+3,y+.3);ctx.stroke();
+        }
+      }
+      // Leaf litter only where Core records actual forest habitat.
+      const litter=Math.floor(forest*27);
+      for(let i=0;i<litter;i++){
+        const x=rand()*this.size,y=rand()*this.size;
+        ctx.fillStyle=rand()<.55?'rgba(169,139,80,.31)':'rgba(114,145,74,.39)';
+        ctx.beginPath();ctx.ellipse(x,y,.8+rand()*1.6,.35+rand()*.8,
+          rand()*Math.PI,0,Math.PI*2);ctx.fill();
+      }
+    }
     return tex;
   }
   paint(
