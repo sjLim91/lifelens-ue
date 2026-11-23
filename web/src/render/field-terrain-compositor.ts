@@ -81,8 +81,16 @@ export function fieldWorldGroundColor(
   // cover at the same four Core centers avoids rectangular chunk edges.
   const cover=(x:number,y:number)=>{
     const c=lookup(x,y);
-    return c&&isWater(c)===water?limit(c.forestCoverage01??0)
-      :limit(chunk.forestCoverage01??0);
+    if(c&&isWater(c)===water)return limit(c.forestCoverage01??0);
+    // Match the color-palette edge fallback on both sides. Otherwise a
+    // missing diagonal neighbor reintroduces a rectangular habitat seam.
+    for(const [dx,dy] of [[0,1],[-1,0],[1,0],[0,-1],
+      [-1,1],[1,1],[-1,-1],[1,-1]]){
+      const neighbor=lookup(x+dx,y+dy);
+      if(neighbor&&isWater(neighbor)===water)
+        return limit(neighbor.forestCoverage01??0);
+    }
+    return limit(chunk.forestCoverage01??0);
   };
   const coverage=water?0:
     (cover(ax,ay)*(1-tx)+cover(bx,ay)*tx)*(1-ty)
