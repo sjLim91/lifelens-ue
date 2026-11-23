@@ -1,0 +1,72 @@
+name: LifeLens Field Visual QA
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'web/src/render/field-*.ts'
+      - 'web/public/field/**'
+      - 'web/tests/presentation/**'
+      - 'Tools/probe_lifelens_field_browser.mjs'
+      - '.github/workflows/field-visual-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-field-visual-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-field-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install Web dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+        working-directory: web
+      - name: Prepare real current LifeLensCore WASM
+        run: |
+          mkdir -p web/public/runtime
+          gh release download web-runtime-latest \
+            --repo "${GITHUB_REPOSITORY}" \
+            --pattern 'lifelens_core.js' \
+            --pattern 'lifelens_core.wasm' \
+            --dir web/public/runtime --clobber
+          test -s web/public/runtime/lifelens_core.js
+          test -s web/public/runtime/lifelens_core.wasm
+      - name: Build exact PR field
+        run: npm run build
+        working-directory: web
+      - name: Start local preview
+        run: |
+          nohup npm --prefix web run preview -- --host 127.0.0.1 --port 4173 \
+            >/tmp/lifelens-field-preview.log 2>&1 &
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 2
+          done
+          cat /tmp/lifelens-field-preview.log
+          exit 1
+      - name: Verify V3 field Canvas with a real Core world and take screenshot
+        run: |
+          browser=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)
+          test -n "$browser"
+          node Tools/probe_lifelens_field_browser.mjs \
+            "http://127.0.0.1:4173/?view=2.5d" "$browser" \
+            "artifacts/lifelens-field-v3-mobile.png"
+      - name: Publish mobile visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifelens-field-v3-mobile-${{ github.run_id }}
+          path: artifacts/lifelens-field-v3-mobile.png
+          if-no-files-found: warn
+          retention-days: 14
