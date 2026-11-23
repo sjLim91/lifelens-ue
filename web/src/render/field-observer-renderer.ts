@@ -138,7 +138,7 @@ export function paintFieldWorld(
     }
     // Only confirmed Core water boundaries receive a visual shore.
     if(textured)paintFieldShore(ctx,chunk,
-      (x,y)=>byChunk.get(x+':'+y),screen,sample,seed);
+      (x,y)=>byChunk.get(x+':'+y),(x,y)=>screen(x,y,.5),sample,seed);
     // Small habitat-dependent strokes replace the large uniform ovals
     // that previously made open ground look like repeated map stickers.
     // The authored terrain texture already contains grass/soil detail.
