@@ -186,7 +186,7 @@ export function paintFieldWorld(
       const h=sampleGrid(t.gridX,t.gridY);
       if(h===null)return [];
       const p=projection.gridPoint(t.gridX,t.gridY,h);
-      return [{id:t.id,x:p.x,y:p.y,kind:t.facilityKind??'Unknown'}];
+      return [{id:t.id,x:p.x,y:p.y,kind:t.kind==='Facility'?t.facilityKind??'Unknown':'Unknown'}];
     });
   paintFieldCampGround(ctx,campAnchors,tile);
   type DrawItem={depth:number;name:FieldSpriteName;x:number;y:number;w:number;h:number;
