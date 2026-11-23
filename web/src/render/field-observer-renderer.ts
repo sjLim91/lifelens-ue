@@ -141,7 +141,9 @@ export function paintFieldWorld(
       (x,y)=>byChunk.get(x+':'+y),screen,sample,seed);
     // Small habitat-dependent strokes replace the large uniform ovals
     // that previously made open ground look like repeated map stickers.
-    if(!water&&tile>=50){
+    // The authored terrain texture already contains grass/soil detail.
+    // The old V-shaped glyph spray remains only for safe legacy/fake Canvas.
+    if(!textured&&!water&&tile>=50){
       const marks=fieldGroundDetailMarks(seed,chunk.x,chunk.y,
         chunk.grassCoverage01,chunk.forestCoverage01,chunk.rockCoverage01);
       const budget=tile<100?Math.ceil(marks.length*.24)
@@ -307,12 +309,13 @@ export function paintFieldWorld(
     const elevation=sampleGrid(pos.x,pos.y);
     if(elevation===null)continue;
     const p=projection.gridPoint(pos.x,pos.y,elevation);
-    const size=Math.max(24,Math.max(45,Math.min(94,spriteTile*.37))
-      *fieldLifeStageScale(resident));
-    const marker:FieldMarker={kind:'resident',id:resident.id,x:p.x,y:p.y-8,radius:size*.54};
+    const size=Math.max(22,Math.min(70,spriteTile*.235))
+      *fieldLifeStageScale(resident);
+    const marker:FieldMarker={kind:'resident',id:resident.id,
+      x:p.x,y:p.y-6,radius:Math.max(20,size*.54)};
     const label=(resident as Resident & {name?:string}).name;
     const frame=motion?.frame(resident,pos.x,pos.y,nowMs);
-    put(resident.sex==='Female'?'citizen_f':'citizen_m',p,size,size*1.33,marker,
+    put(resident.sex==='Female'?'citizen_f':'citizen_m',p,size,size*1.27,marker,
       resident.id===options.selectedResidentId,typeof label==='string'?label:undefined,
       resident,frame);
   }
