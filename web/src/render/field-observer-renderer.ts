@@ -312,7 +312,7 @@ export function paintFieldWorld(
     const size=Math.max(22,Math.min(70,spriteTile*.235))
       *fieldLifeStageScale(resident);
     const marker:FieldMarker={kind:'resident',id:resident.id,
-      x:p.x,y:p.y-6,radius:Math.max(20,size*.54)};
+      x:p.x,y:p.y-6,radius:Math.max(15,size*.65)};
     const label=(resident as Resident & {name?:string}).name;
     const frame=motion?.frame(resident,pos.x,pos.y,nowMs);
     put(resident.sex==='Female'?'citizen_f':'citizen_m',p,size,size*1.27,marker,
