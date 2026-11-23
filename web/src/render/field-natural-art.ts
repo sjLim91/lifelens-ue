@@ -112,7 +112,7 @@ export function fieldForestDisplayClusters(
       :(shape<.29?'pine':shape<.54?'cedar':'oak');
     candidates.push({
       u:Math.min(.96,Math.max(.04,u)),v:Math.min(.96,Math.max(.04,v)),
-      name,sizeFactor:.21+unit(1200+index)*.13,score,
+      name,sizeFactor:.38+unit(1200+index)*.19,score,
     });
   }
   candidates.sort((a,b)=>b.score-a.score||a.u-b.u);
