@@ -56,10 +56,22 @@ export function fieldWorldGroundColor(
   const variance=(meadow+fiber)*amount;
   const forest=limit(chunk.forestCoverage01??0),rock=limit(chunk.rockCoverage01??0);
   const warm=(Math.sin(gx*18+phase)*Math.sin(gy*13-phase)*.5+.5);
+  // A shoreline is a color transition *on the already authoritative side*
+  // of the water/land boundary. It never converts a Core land tile to water.
+  const waterNeighbor=[
+    {edge:u,found:lookup(chunkX-1,chunkY)},
+    {edge:1-u,found:lookup(chunkX+1,chunkY)},
+    {edge:v,found:lookup(chunkX,chunkY-1)},
+    {edge:1-v,found:lookup(chunkX,chunkY+1)},
+  ].filter(e=>e.found&&isWater(e.found)!==water);
+  const edge=waterNeighbor.length?Math.min(...waterNeighbor.map(e=>e.edge)):1;
+  const ripple=.012*Math.sin((gx+gy)*21+phase)+.009*Math.cos((gx-gy)*31+phase);
+  const shallow=limit((.09-edge+ripple)/.09);
+  const target=water?[131,181,166]:[157,166,117];
   return [
-    limit(rgb[0]+variance+rock*warm*4,0,255),
-    limit(rgb[1]+variance*.88+forest*warm*5,0,255),
-    limit(rgb[2]+variance*.49-rock*warm*3,0,255),
+    limit(rgb[0]+variance+rock*warm*4,0,255)*(1-shallow*.40)+target[0]*shallow*.40,
+    limit(rgb[1]+variance*.88+forest*warm*5,0,255)*(1-shallow*.40)+target[1]*shallow*.40,
+    limit(rgb[2]+variance*.49-rock*warm*3,0,255)*(1-shallow*.40)+target[2]*shallow*.40,
   ];
 }
 
@@ -122,6 +134,20 @@ export class FieldTerrainCompositor {
       if(w<.1||h<.1)continue;
       ctx.drawImage(image,x*this.size/4,y*this.size/4,
         this.size/4,this.size/4,x0-.35,y0-.35,w+.7,h+.7);
+      // Readable actual relief, rather than invented decorative cliffs.
+      // Descending Core elevations cast a restrained terrain ledge shadow.
+      const slope=Math.max(Math.abs(a-b),Math.abs(a-d),Math.abs(c-b),Math.abs(c-d));
+      if(!isWater(chunk)&&slope>.043){
+        const weight=Math.min(1,(slope-.043)*6.5);
+        const high=a>d?a:d,low=b<c?b:c;
+        const edge0=project(chunk.x+u-.5,chunk.y+v+du-.5,high);
+        const edge1=project(chunk.x+u+du-.5,chunk.y+v+du-.5,low);
+        ctx.beginPath();ctx.moveTo(edge0.x,edge0.y);
+        ctx.lineTo(edge1.x,edge1.y);
+        ctx.lineWidth=1.4+weight*3.6;
+        ctx.strokeStyle=`rgba(41, 64, 52, ${(.12+weight*.26).toFixed(3)})`;
+        ctx.stroke();
+      }
     }
     return true;
   }
