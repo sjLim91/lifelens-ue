@@ -84,11 +84,9 @@ export function fieldWorldGroundColor(
     return c&&isWater(c)===water?limit(c.forestCoverage01??0)
       :limit(chunk.forestCoverage01??0);
   };
-  const coverage=water?0:mix(
-    [cover(ax,ay),cover(ax,ay),cover(ax,ay)],
-    [cover(bx,ay),cover(bx,ay),cover(bx,ay)],tx)[0]*(1-ty)
-    +mix([cover(ax,by),cover(ax,by),cover(ax,by)],
-      [cover(bx,by),cover(bx,by),cover(bx,by)],tx)[0]*ty;
+  const coverage=water?0:
+    (cover(ax,ay)*(1-tx)+cover(bx,ay)*tx)*(1-ty)
+    +(cover(ax,by)*(1-tx)+cover(bx,by)*tx)*ty;
   const woodland=(Math.sin(gx*7.1+phase)*Math.cos(gy*5.8-phase*.3)
     +Math.sin(gx*3.2-gy*4.6+phase)*.55);
   const canopy=water?0:coverage*(.40+.60*smooth((woodland+.55)/1.4));
