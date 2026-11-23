@@ -43,7 +43,15 @@ export function fieldWorldGroundColor(
   const [ax,bx,tx]=coord(chunkX,u),[ay,by,ty]=coord(chunkY,v);
   const tile=(x:number,y:number)=>{
     const c=lookup(x,y);
-    return c&&isWater(c)===water?readPalette(c):self;
+    if(c&&isWater(c)===water)return readPalette(c);
+    // Missing diagonal samples must use the same world-coordinate fallback
+    // from either side of a seam; using the *current chunk* created lines.
+    for(const [dx,dy] of [[0,1],[-1,0],[1,0],[0,-1],
+      [-1,1],[1,1],[-1,-1],[1,-1]]){
+      const near=lookup(x+dx,y+dy);
+      if(near&&isWater(near)===water)return readPalette(near);
+    }
+    return self;
   };
   const row0=mix(tile(ax,ay),tile(bx,ay),tx);
   const row1=mix(tile(ax,by),tile(bx,by),tx);
