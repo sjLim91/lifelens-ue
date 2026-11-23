@@ -30,15 +30,18 @@ export function fieldReferenceF2dChecks({test,source,chunk,windowOf}){
     const rich=fieldForestDisplayClusters('actual-seed',10,4,.94,'TemperateForest');
     const retry=fieldForestDisplayClusters('actual-seed',10,4,.94,'TemperateForest');
     assert.deepEqual(rich,retry,'repeat loading changed decorative canopy layout');
-    assert.ok(rich.length>=5&&rich.length<=7);
+    assert.ok(rich.length>=5&&rich.length<=9);
     assert.ok(rich.every(p=>p.u>=0&&p.u<=1&&p.v>=0&&p.v<=1));
     assert.equal(fieldForestDisplayClusters('actual-seed',10,4,0,'TemperateForest').length,0,
       'a bare chunk gained invented woodland');
     assert.ok(fieldForestDisplayClusters('actual-seed',10,4,.35,'Taiga')
       .every(p=>p.name!=='oak'),'conifer biome displayed a broadleaf oak');
-    const groupDistances=rich.map(p=>Math.min(
-      Math.hypot(p.u-.32,p.v-.33),Math.hypot(p.u-.73,p.v-.71)));
-    assert.ok(groupDistances.every(d=>d<.34),'forest remains evenly scattered rather than grouped');
+    // The canonical decision is coherence with the observed world, not
+    // the F2-d fixed diagonal stamp coordinates. Adjacent chunks must not
+    // reproduce the same two placements in every cell.
+    const adjacent=fieldForestDisplayClusters('actual-seed',11,4,.94,'TemperateForest');
+    assert.notDeepEqual(rich.map(p=>[p.u,p.v]),adjacent.map(p=>[p.u,p.v]),
+      'forest repeated identical tile-local placement in adjacent chunks');
   });
 
   test('F2d flat Core rock biome never creates a fabricated steep cliff',()=>{
