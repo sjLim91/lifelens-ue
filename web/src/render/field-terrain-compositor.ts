@@ -64,8 +64,6 @@ export function fieldWorldGroundColor(
   const fiber=Math.sin(gx*84.1+gy*18.3+phase)*Math.cos(gy*79.9-gx*7.4)*.15;
   const amount=water?10:20;
   const variance=(meadow+fiber)*amount;
-  const forest=limit(chunk.forestCoverage01??0),rock=limit(chunk.rockCoverage01??0);
-  const warm=(Math.sin(gx*18+phase)*Math.sin(gy*13-phase)*.5+.5);
   // A shoreline is a color transition *on the already authoritative side*
   // of the water/land boundary. It never converts a Core land tile to water.
   const waterNeighbor=[
@@ -79,9 +77,9 @@ export function fieldWorldGroundColor(
   const shallow=limit((.09-edge+ripple)/.09);
   const target=water?[131,181,166]:[157,166,117];
   return [
-    limit(rgb[0]+variance+rock*warm*4,0,255)*(1-shallow*.40)+target[0]*shallow*.40,
-    limit(rgb[1]+variance*.88+forest*warm*5,0,255)*(1-shallow*.40)+target[1]*shallow*.40,
-    limit(rgb[2]+variance*.49-rock*warm*3,0,255)*(1-shallow*.40)+target[2]*shallow*.40,
+    limit(rgb[0]+variance,0,255)*(1-shallow*.40)+target[0]*shallow*.40,
+    limit(rgb[1]+variance*.88,0,255)*(1-shallow*.40)+target[1]*shallow*.40,
+    limit(rgb[2]+variance*.49,0,255)*(1-shallow*.40)+target[2]*shallow*.40,
   ];
 }
 
