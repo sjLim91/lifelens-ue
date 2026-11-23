@@ -1,0 +1,167 @@
+import type {TerrainChunk} from '../runtime/core-types';
+import {fieldNaturalFloorColor} from './field-natural-art';
+
+export type FieldTerrainLookup=(x:number,y:number)=>TerrainChunk|undefined;
+export interface GroundScreenPoint {x:number;y:number}
+export type GroundProject=(x:number,y:number,h:number)=>GroundScreenPoint;
+export type GroundElevation=(chunkX:number,chunkY:number,u:number,v:number)=>number;
+
+const limit=(n:number,a=0,b=1)=>Math.max(a,Math.min(b,n));
+const smooth=(n:number)=>{const x=limit(n);return x*x*(3-2*x);};
+const parse=(str:string):[number,number,number]=>{
+  const c=Number.parseInt(str.replace('#',''),16);
+  if(!Number.isFinite(c))return [103,147,104];
+  return [(c>>16)&255,(c>>8)&255,c&255];
+};
+const mix=(a:readonly number[],b:readonly number[],f:number):[number,number,number]=>{
+  const t=limit(f);return [a[0]*(1-t)+b[0]*t,a[1]*(1-t)+b[1]*t,a[2]*(1-t)+b[2]*t];
+};
+const isWater=(c:TerrainChunk)=>c.waterKind==='Ocean'||c.waterKind==='Lake';
+const code=(seed:string)=>{
+  let h=2166136261>>>0;
+  for(let i=0;i<seed.length;i++)h=Math.imul(h^seed.charCodeAt(i),16777619)>>>0;
+  return (h>>>0)/4294967296;
+};
+/**
+ * Every land pixel is interpolated between the same four authoritative Core
+ * chunk centers on both sides of an edge. No rectangle of a single chunk
+ * color is allowed. Never interpolate a land pixel into a Core water chunk.
+ */
+export function fieldWorldGroundColor(
+  seed:string,chunkX:number,chunkY:number,u:number,v:number,
+  lookup:FieldTerrainLookup,
+):[number,number,number] {
+  const chunk=lookup(chunkX,chunkY);
+  if(!chunk)return [102,145,97];
+  const water=isWater(chunk),self=parse(fieldNaturalFloorColor(chunk));
+  const coord=(i:number,t:number):[number,number,number]=>{
+    const global=i+t-.5,low=Math.floor(global+.5);
+    return [low,low+1,smooth(global+.5-low)];
+  };
+  const [ax,bx,tx]=coord(chunkX,u),[ay,by,ty]=coord(chunkY,v);
+  const tile=(x:number,y:number)=>{
+    const c=lookup(x,y);
+    return c&&isWater(c)===water?parse(fieldNaturalFloorColor(c)):self;
+  };
+  const row0=mix(tile(ax,ay),tile(bx,ay),tx);
+  const row1=mix(tile(ax,by),tile(bx,by),tx);
+  const rgb=mix(row0,row1,ty);
+  // Continuous, bounded painterly pigment in absolute world coordinates.
+  // Low-frequency meadows and small grain are non-interactive decoration.
+  const gx=chunkX+u-.5,gy=chunkY+v-.5,phase=code(seed)*17.3;
+  const meadow=Math.sin(gx*5.8+phase)*Math.cos(gy*6.3-phase*.7)*.55
+    +Math.cos(gx*11.4+gy*8.1+phase)*.22;
+  const fiber=Math.sin(gx*84.1+gy*18.3+phase)*Math.cos(gy*79.9-gx*7.4)*.15;
+  const amount=water?7:13;
+  const variance=(meadow+fiber)*amount;
+  const forest=limit(chunk.forestCoverage01??0),rock=limit(chunk.rockCoverage01??0);
+  const warm=(Math.sin(gx*18+phase)*Math.sin(gy*13-phase)*.5+.5);
+  return [
+    limit(rgb[0]+variance+rock*warm*4,0,255),
+    limit(rgb[1]+variance*.88+forest*warm*5,0,255),
+    limit(rgb[2]+variance*.49-rock*warm*3,0,255),
+  ];
+}
+
+/** Offscreen textures are created once per changed Core snapshot and reused
+ * during zoom, pan and animation. Capped for mobile RAM and Canvas2D budget. */
+export class FieldTerrainCompositor {
+  private readonly textures=new Map<string,HTMLCanvasElement>();
+  private readonly limit=112;
+  private readonly size=80;
+  private create(seed:string,chunk:TerrainChunk,lookup:FieldTerrainLookup){
+    if(typeof document==='undefined')return null;
+    const tex=document.createElement('canvas');
+    tex.width=this.size;tex.height=this.size;
+    const ctx=tex.getContext('2d');
+    if(!ctx||typeof ctx.createImageData!=='function')return null;
+    const img=ctx.createImageData(this.size,this.size),d=img.data;
+    for(let j=0;j<this.size;j++)for(let i=0;i<this.size;i++){
+      const u=(i+.5)/this.size,v=(j+.5)/this.size;
+      const [r,g,b]=fieldWorldGroundColor(seed,chunk.x,chunk.y,u,v,lookup);
+      const k=(j*this.size+i)*4;
+      d[k]=r;d[k+1]=g;d[k+2]=b;d[k+3]=255;
+    }
+    ctx.putImageData(img,0,0);
+    return tex;
+  }
+  paint(
+    ctx:CanvasRenderingContext2D,seed:string,chunk:TerrainChunk,
+    lookup:FieldTerrainLookup,project:GroundProject,elev:GroundElevation,
+  ):boolean {
+    if(typeof ctx.drawImage!=='function'||typeof document==='undefined')return false;
+    const neighbors=[-1,0,1].flatMap(dy=>[-1,0,1].map(dx=>{
+      const c=lookup(chunk.x+dx,chunk.y+dy);
+      return c?[
+        c.waterKind,c.elevation01,c.grassCoverage01,c.forestCoverage01,
+        c.rockCoverage01,c.wetlandCoverage01,c.shrubCoverage01,
+      ].join(','):'-';
+    }));
+    const key=JSON.stringify([seed,chunk.x,chunk.y,...neighbors]);
+    let image=this.textures.get(key);
+    if(!image) {
+      const created=this.create(seed,chunk,lookup);
+      if(!created)return false;
+      if(this.textures.size>=this.limit){
+        const first=this.textures.keys().next().value;
+        if(first)this.textures.delete(first);
+      }
+      this.textures.set(key,created);image=created;
+    }
+    // Preserve actual observed height variation with 4x4 source slices;
+    // 1px overlap avoids tile seams from half-pixel canvas rounding.
+    for(let y=0;y<4;y++)for(let x=0;x<4;x++){
+      const u=x/4,v=y/4,du=.25;
+      const a=elev(chunk.x,chunk.y,u,v);
+      const b=elev(chunk.x,chunk.y,u+du,v);
+      const c=elev(chunk.x,chunk.y,u+du,v+du);
+      const d=elev(chunk.x,chunk.y,u,v+du);
+      const p=project(chunk.x+u-.5,chunk.y+v-.5,(a+b+d)*.333333);
+      const q=project(chunk.x+u+du-.5,chunk.y+v+du-.5,(b+c+d)*.333333);
+      const x0=Math.min(p.x,q.x),y0=Math.min(p.y,q.y),w=Math.abs(q.x-p.x),h=Math.abs(q.y-p.y);
+      if(w<.1||h<.1)continue;
+      ctx.drawImage(image,x*this.size/4,y*this.size/4,
+        this.size/4,this.size/4,x0-.35,y0-.35,w+.7,h+.7);
+    }
+    return true;
+  }
+  clear(){this.textures.clear();}
+}
+
+/**
+ * Only a Core-observed land/water boundary gets a soft shore highlight.
+ * Slight bends stay on the exact boundary; no river, lake or coast is created.
+ */
+export function paintFieldShore(
+ ctx:CanvasRenderingContext2D,chunk:TerrainChunk,lookup:FieldTerrainLookup,
+ project:GroundProject,elev:GroundElevation,seed:string,
+):void {
+  if(chunk.waterKind!=='Lake'&&chunk.waterKind!=='Ocean')return;
+  const same=(x:number,y:number)=>{
+    const other=lookup(x,y);return other&&isWater(other);
+  };
+  const sides=[
+    {dx:0,dy:-1,from:[0,0],to:[1,0]},
+    {dx:1,dy:0,from:[1,0],to:[1,1]},
+    {dx:0,dy:1,from:[0,1],to:[1,1]},
+    {dx:-1,dy:0,from:[0,0],to:[0,1]},
+  ];
+  const phase=code(seed+chunk.x+':'+chunk.y)*6.28;
+  for(const side of sides){
+    const other=lookup(chunk.x+side.dx,chunk.y+side.dy);
+    if(!other||same(chunk.x+side.dx,chunk.y+side.dy))continue;
+    ctx.beginPath();
+    for(let k=0;k<=12;k++){
+      const t=k/12;
+      const u=side.from[0]*(1-t)+side.to[0]*t;
+      const v=side.from[1]*(1-t)+side.to[1]*t;
+      const h=elev(chunk.x,chunk.y,u,v);
+      const p=project(chunk.x+u-.5,chunk.y+v-.5,h+.002);
+      const d=Math.sin(t*11+phase)*.0055;
+      if(k===0)ctx.moveTo(p.x,p.y);
+      else ctx.lineTo(p.x+(side.dx!==0?d:0),p.y+(side.dy!==0?d:0));
+    }
+    ctx.strokeStyle='rgba(225,225,181,.46)';ctx.lineWidth=2;
+    ctx.stroke();
+  }
+}
