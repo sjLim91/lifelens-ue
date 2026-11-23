@@ -144,8 +144,7 @@ const path=(ctx:CanvasRenderingContext2D,points:ReadonlyArray<readonly [number,n
  */
 export function drawFieldResident(
   ctx:CanvasRenderingContext2D,
-  r:Resident,
-  x:number,y:number,width:number,height:number,
+  r:Resident,x:number,y:number,width:number,height:number,
   frame:FieldResidentFrame,
 ):void {
   const a=fieldResidentPalette(r);
@@ -153,141 +152,168 @@ export function drawFieldResident(
   const side=frame.facing==='E'||frame.facing==='W';
   const diagonal=['NE','NW','SE','SW'].includes(frame.facing);
   const left=frame.facing==='W'||frame.facing==='SW'||frame.facing==='NW';
-  const walk=frame.pose==='walk';
-  const working=['work','gather','build','craft','tend'].includes(frame.pose);
-  const eating=['eat','drink','wash'].includes(frame.pose);
-  const motion=working?Math.sin(frame.step*Math.PI*2)*5:0;
-  const swing=walk?Math.sin(frame.step*Math.PI*4)*5:0;
-  const bob=walk?Math.abs(Math.sin(frame.step*Math.PI*4))*2:
-    frame.pose==='tend'||frame.pose==='gather'?4:0;
+  const moving=frame.pose==='walk';
+  const gather=frame.pose==='gather'||frame.pose==='tend';
+  const working=['work','build','craft'].includes(frame.pose);
+  const handToFace=['eat','drink','wash'].includes(frame.pose);
+  const sleep=frame.pose==='sleep';
+  const stride=moving?Math.sin(frame.step*Math.PI*4)*5.5:0;
+  const lift=working?Math.sin(frame.step*Math.PI*2)*3.5:0;
+  const bend=gather?5:0;
+  const breathe=1+Math.sin(frame.step*Math.PI*2)*.012;
   ctx.save();
   ctx.translate(x,y);
-  ctx.scale(width/80*(left?-1:1),height/118);
-  // An actual Core resident remains planted to the same ground coordinate.
-  ellipse(ctx,0,-2,30,6,'rgba(22,37,29,.24)');
-  if(frame.pose==='sleep') {
-    // Center the sideways body on the *actual* Core ground position.
-    // The old -12,-19 pivot offset the whole sleeper far to the left,
-    // making an occupied mat appear unused even at the same Core coordinate.
-    // Do NOT teleport the sleeper to a nearby mat: that would fabricate use.
-    ctx.rotate(-Math.PI*.5);
+  ctx.scale(width/80*(left?-1:1),height/118*a.height);
+  // Ground point never moves: shadow, feet and selection all share Core xy.
+  ellipse(ctx,0,-1,26,5.5,'rgba(19,42,30,.22)');
+  if(sleep){
+    // The only rotation is visual. The body stays centered at Core xy,
+    // never jumps to a nearby unverified sleeping mat.
+    ctx.rotate(-Math.PI/2);
     ctx.translate(0,55);
   }
-  ctx.translate(0,-bob);
-  const outline='#3f4841',sole='#504c46';
-  const calf1=-2+swing,calf2=-2-swing;
-  // Rear leg / boot, articulated only on an observed short move.
-  path(ctx,[[-17,-42],[-3,-41],[calf1-2,-8],[calf1-14,-7]],a.outfitShadow,outline);
-  path(ctx,[[7,-42],[20,-41],[calf2+13,-8],[calf2+2,-7]],a.outfitShadow,outline);
-  ellipse(ctx,calf1-8,-7,10,5,sole);
-  ellipse(ctx,calf2+8,-7,10,5,sole);
-  // Arms behind the torso, alternating swing for a genuine move.
-  const work=frame.pose==='work'||frame.pose==='build';
-  path(ctx,[[-19,-65],[-27,-62],[-29-swing*.35,-38],[-23-swing*.35,-32],
-    [-13,-45]],a.skinShadow,outline);
-  path(ctx,[[18,-65],[27,-61],[29+swing*.35,-39],[23+swing*.35,-34],
-    [12,-45]],a.skin,outline);
-  if(work){
-    // Core-reported construction/repair/work: raised, repeated hand stroke.
-    path(ctx,[[18,-64],[26,-63],[29+motion,-78-motion*.6],
-      [19+motion,-82-motion*.6],[13,-65]],a.outfitShadow,outline);
-    ellipse(ctx,24+motion,-80-motion*.6,5.5,6,a.skin);
-  } else if(frame.pose==='gather'){
-    // The Core confirms an actual resource interaction; kneel/reach only.
-    path(ctx,[[17,-64],[25,-60],[32+motion*.25,-29],
-      [21+motion*.25,-26],[12,-46]],a.outfitShadow,outline);
-    ellipse(ctx,26+motion*.25,-30,5.5,6,a.skin);
-  } else if(frame.pose==='craft'){
-    // Both hands meet over the chest; do not imply any invented equipment.
-    path(ctx,[[-19,-66],[-24,-56],[-11,-53],[-5,-59]],a.outfitShadow,outline);
-    path(ctx,[[18,-66],[24,-55],[10+motion*.2,-50],
-      [5,-58]],a.outfitShadow,outline);
-    ellipse(ctx,0,-54,6,5,a.skin);
-  } else if(frame.pose==='tend'){
-    path(ctx,[[17,-61],[27,-54],[30+motion*.3,-30],
-      [20+motion*.3,-24],[12,-43]],a.outfitShadow,outline);
-    ellipse(ctx,23+motion*.3,-27,5,6,a.skin);
-  } else if(eating){
-    // Mouth/face gesture only: never draw food, water, a vessel or soap
-    // without separate Core ownership evidence.
-    const faceY=frame.pose==='wash'?-91:-86;
-    path(ctx,[[18,-65],[26,-59],[23+motion*.12,faceY+6],
-      [13,faceY+9],[11,-63]],a.outfitShadow,outline);
-    ellipse(ctx,17+motion*.12,faceY+8,5.5,6,a.skin);
-    if(frame.pose==='wash'){
-      path(ctx,[[-18,-65],[-25,-60],[-16,-88],
-        [-7,-83],[-11,-62]],a.outfitShadow,outline);
-      ellipse(ctx,-12,-83,5.5,6,a.skin);
+  ctx.translate(0,-(moving?Math.abs(stride)*.31:0));
+  const outline='#455045',boot='#51483e';
+  const broad=21*a.build;
+  const calfA=-3+stride,calfB=3-stride;
+  // Legs are tapered and offset in a human walk direction.
+  path(ctx,[[-broad*.60,-44],[-3,-46],[calfA-3,-12],
+    [calfA-15,-10],[-broad*.70,-32]],a.outfitShadow,outline);
+  path(ctx,[[3,-45],[broad*.7,-44],[calfB+14,-11],
+    [calfB+2,-11],[4,-31]],a.outfitShadow,outline);
+  path(ctx,[[calfA-17,-14],[calfA-1,-12],[calfA+1,-6],
+    [calfA-14,-5],[calfA-19,-8]],boot,outline);
+  path(ctx,[[calfB+1,-14],[calfB+16,-13],[calfB+20,-7],
+    [calfB+4,-5],[calfB, -9]],boot,outline);
+  path(ctx,[[calfA-13,-13],[calfA-8,-10]],'#aa9271');
+  path(ctx,[[calfB+7,-13],[calfB+12,-10]],'#a28b68');
+
+  // In a side-facing frame the far shoulder partly hides behind the body.
+  const farOffset=side?4:0;
+  path(ctx,[[-19,-70],[-29,-65],[-28-bend,-44+stride*.22],
+    [-22-bend,-36+stride*.13],[-14,-54]],a.outfitShadow,outline);
+  path(ctx,[[19,-70],[28+farOffset,-64],
+    [30+bend,-43-stride*.23],[23+bend,-36-stride*.2],
+    [12,-52]],a.outfitShadow,outline);
+  ellipse(ctx,-24-bend,-37+stride*.13,6,6,a.skinShadow);
+  ellipse(ctx,25+bend,-37-stride*.2,6,6,a.skin);
+  // Woven sash and layered mantle match the illustrated natural asset set.
+  ctx.save();
+  ctx.translate(0,bend);
+  ctx.scale(breathe,1);
+  path(ctx,[[-broad*.92,-76],[-8,-78],[2,-73],[broad*.86,-75],
+    [broad+3,-58],[broad*.82,-36],[-broad*.87,-36],
+    [-broad-2,-58]],a.outfit,outline);
+  path(ctx,[[-broad*.9,-73],[-5,-75],[-2,-68],[-9,-48],
+    [-broad*.75,-41],[-broad-2,-56]],a.outfitShadow);
+  path(ctx,[[broad*.66,-73],[broad*.95,-59],
+    [broad*.6,-38],[broad*.27,-39],[broad*.40,-68]],a.outfitShadow);
+  // Pleated collar and cloth overlays.
+  path(ctx,[[-14,-75],[-3,-66],[2,-68],[11,-75],
+    [15,-67],[1,-57],[-13,-67]],a.trim);
+  path(ctx,[[-broad*.85,-44],[broad*.84,-44],[broad*.83,-37],
+    [-broad*.82,-37]],a.trim);
+  path(ctx,[[-11,-61],[-7,-54],[-10,-43],[-15,-45]],a.outfitShadow);
+  path(ctx,[[8,-62],[12,-56],[9,-44],[4,-45]],a.hairLight);
+  ctx.strokeStyle=a.outfitShadow;ctx.lineWidth=1.15;
+  for(let n=0;n<4;n++){
+    ctx.beginPath();ctx.moveTo(-broad*.75+n*3,-40);
+    ctx.lineTo(-broad*.68+n*3,-37);ctx.stroke();
+  }
+  ctx.restore();
+
+  // Core-confirmed interaction creates hand motion, never imagined tools.
+  if(gather){
+    path(ctx,[[18,-68],[26,-58],[31+lift,-29],[22+lift,-26],
+      [11,-47]],a.outfitShadow,outline);
+    ellipse(ctx,27+lift,-29,5.5,5.5,a.skin);
+    path(ctx,[[-16,-44],[-9,-28],[-18,-20],[-27,-30]],a.outfitShadow);
+  }else if(working){
+    const swing=frame.pose==='craft'?0:lift;
+    path(ctx,[[15,-68],[22,-64],[30+swing,-80-swing],
+      [24+swing,-86-swing],[15,-76]],a.outfit,outline);
+    ellipse(ctx,25+swing,-83-swing,5.8,6,a.skin);
+    if(frame.pose==='craft'){
+      path(ctx,[[-17,-67],[-21,-58],[-3,-53],[1,-60]],a.outfitShadow);
+      path(ctx,[[18,-67],[24,-57],[5,-53],[1,-60]],a.outfitShadow);
+      ellipse(ctx,0,-54,5,5,a.skin);
+    }
+  }else if(handToFace){
+    path(ctx,[[18,-70],[26,-62],[19+lift*.15,-84],
+      [10,-79],[9,-64]],a.outfit,outline);
+    ellipse(ctx,16+lift*.14,-83,5.2,5.5,a.skin);
+    if(frame.pose==='wash') {
+      path(ctx,[[-18,-67],[-26,-61],[-16,-85],[-5,-82],
+        [-10,-63]],a.outfitShadow,outline);
     }
   }
-  // Primary tunic and mantle; body type comes from stable genetic build.
-  const spread=24*a.build;
-  path(ctx,[[-spread*.7,-73],[spread*.7,-73],[spread,-39],
-    [spread*.78,-32],[-spread*.75,-32],[-spread,-39]],
-    a.outfit,outline);
-  path(ctx,[[-spread*.69,-70],[-4,-74],[-2,-35],[-spread*.55,-36]],
-    a.outfitShadow);
-  path(ctx,[[spread*.7,-69],[spread*.84,-50],[spread*.62,-40],
-    [spread*.32,-40],[spread*.35,-68]],a.outfitShadow);
-  path(ctx,[[-spread*.75,-41],[spread*.75,-41],[spread*.75,-35],
-    [-spread*.75,-35]],a.trim);
-  path(ctx,[[-5,-71],[6,-71],[2,-55],[-1,-55]],a.trim);
-  // Neck / facial plane change by octant.
-  ellipse(ctx,0,-78,8,9,a.skinShadow);
-  const faceX=side?8:diagonal?4:0;
-  const headRX=side?19:22;
-  ellipse(ctx,faceX,-94,headRX,23,back?a.hair:a.skin,outline);
+
+  // Face: softened silhouette, side/back geometry and stable genetic palette.
+  ellipse(ctx,0,-80,8,10,a.skinShadow);
+  const faceX=side?7:diagonal?3:0;
+  const faceWidth=side?18:21;
+  ellipse(ctx,faceX,-96,faceWidth+1,23,back?a.hair:a.skinShadow,outline);
   if(!back){
-    ellipse(ctx,faceX+3,-89,headRX*.8,17,a.skin);
-    if(side){
-      ellipse(ctx,faceX+14,-94,2.1,3.2,'#3f3936');
-      ctx.strokeStyle=a.skinShadow;ctx.lineWidth=2;
-      ctx.beginPath();ctx.moveTo(faceX+18,-85);ctx.lineTo(faceX+14,-83);ctx.stroke();
-    } else if(diagonal){
-      ellipse(ctx,faceX+4,-94,2.7,3,'#30332d');
-      ellipse(ctx,faceX+14,-92,1.8,2.6,'#34332e');
-    } else {
-      ellipse(ctx,-8,-94,2.4,3,'#30332d');
-      ellipse(ctx,9,-94,2.4,3,'#30332d');
-      path(ctx,[[-2,-85],[4,-85],[1,-83]],a.skinShadow);
+    ellipse(ctx,faceX+2,-94,faceWidth,20,a.skin);
+    ellipse(ctx,faceX+2,-81,12,5,a.skinShadow);
+    if(sleep){
+      ctx.strokeStyle='#6b4f42';ctx.lineWidth=1.9;
+      ctx.beginPath();ctx.moveTo(faceX-8,-93);
+      ctx.quadraticCurveTo(faceX-4,-90,faceX+1,-94);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(faceX+8,-93);
+      ctx.quadraticCurveTo(faceX+12,-90,faceX+15,-94);ctx.stroke();
+    }else if(side){
+      ellipse(ctx,faceX+14,-94,2.1,3.1,'#332e2b');
+      ellipse(ctx,faceX+14.5,-95.2,.7,.9,'#eee6d4');
+      path(ctx,[[faceX+17,-87],[faceX+20,-85],[faceX+16,-82]],a.skinShadow);
+    }else{
+      const ex=diagonal?2:0;
+      ellipse(ctx,faceX-8+ex,-95,2.1,3,'#3b342f');
+      ellipse(ctx,faceX+8+ex,-95,2.1,3,'#3b342f');
+      ellipse(ctx,faceX-7.3+ex,-96,.7,.8,'#f2e3cf');
+      ellipse(ctx,faceX+8.8+ex,-96,.7,.8,'#f2e3cf');
+      path(ctx,[[faceX-2,-85],[faceX+4,-84],
+        [faceX+1,-82]],a.skinShadow);
     }
+    ellipse(ctx,faceX-17,-84,4,2.4,'rgba(170,100,87,.16)');
+    ellipse(ctx,faceX+16,-84,3,2.2,'rgba(170,100,87,.16)');
   }
-  // Distinct hairstyle silhouettes, with cheek/temple strands.
+  // Hair has hand-painted overlapping masses and lighter strands.
   if(a.hairStyle===0){
-    ellipse(ctx,faceX-3,-110,21,11,a.hair,outline);
-    path(ctx,[[faceX-23,-109],[faceX-13,-103],[faceX-17,-87],
-      [faceX-23,-87]],a.hair);
-    path(ctx,[[faceX+6,-117],[faceX+21,-110],[faceX+14,-99],
-      [faceX+4,-103]],a.hair);
-  } else if(a.hairStyle===1){
-    ellipse(ctx,faceX,-110,22,12,a.hair,outline);
-    path(ctx,[[faceX-22,-109],[faceX-15,-98],[faceX-18,-74],
-      [faceX-26,-76]],a.hair,outline);
-    path(ctx,[[faceX+18,-107],[faceX+23,-84],[faceX+15,-75],
-      [faceX+12,-95]],a.hair);
-  } else if(a.hairStyle===2) {
-    ellipse(ctx,faceX,-111,22,11,a.hair,outline);
-    path(ctx,[[faceX-21,-115],[faceX-7,-98],[faceX+3,-105],
-      [faceX+10,-98],[faceX+20,-110]],a.hair);
-    ellipse(ctx,faceX+18,-102,9,11,a.hair);
-  } else {
-    ellipse(ctx,faceX,-112,23,13,a.hair,outline);
-    path(ctx,[[faceX-17,-112],[faceX-12,-103],[faceX-5,-109],
-      [faceX+2,-101],[faceX+9,-109],[faceX+19,-105]],
-      a.hair);
+    ellipse(ctx,faceX-2,-111,22,12,a.hair,outline);
+    path(ctx,[[faceX-22,-112],[faceX-14,-105],
+      [faceX-18,-86],[faceX-24,-86]],a.hair);
+    path(ctx,[[faceX+3,-118],[faceX+21,-112],
+      [faceX+16,-99],[faceX+7,-104]],a.hair);
+  }else if(a.hairStyle===1){
+    ellipse(ctx,faceX,-111,23,13,a.hair,outline);
+    path(ctx,[[faceX-22,-109],[faceX-16,-98],
+      [faceX-17,-73],[faceX-24,-76]],a.hair,outline);
+    path(ctx,[[faceX+19,-110],[faceX+23,-84],
+      [faceX+13,-75],[faceX+12,-100]],a.hair,outline);
+  }else if(a.hairStyle===2){
+    ellipse(ctx,faceX-1,-112,21,11,a.hair,outline);
+    path(ctx,[[faceX-20,-115],[faceX-10,-103],
+      [faceX-1,-111],[faceX+8,-100],
+      [faceX+20,-109]],a.hair);
+    ellipse(ctx,faceX+18,-104,9,10,a.hair);
+  }else{
+    ellipse(ctx,faceX,-113,22,12,a.hair,outline);
+    path(ctx,[[faceX-20,-113],[faceX-13,-105],
+      [faceX-6,-111],[faceX+2,-102],
+      [faceX+9,-111],[faceX+20,-106]],a.hair);
   }
-  if(back) {
-    path(ctx,[[faceX-18,-103],[faceX+16,-103],[faceX+18,-82],
-      [faceX+6,-76],[faceX-15,-79]],a.hair,outline);
-    path(ctx,[[faceX-14,-104],[faceX-6,-83],[faceX+4,-83],
-      [faceX+13,-106]],a.hairLight);
-  } else {
-    ctx.strokeStyle=a.hairLight;ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(faceX-10,-117);
-    ctx.quadraticCurveTo(faceX+4,-120,faceX+11,-113);ctx.stroke();
+  if(back){
+    path(ctx,[[faceX-19,-105],[faceX+17,-105],
+      [faceX+18,-80],[faceX-14,-79]],a.hair,outline);
   }
-  // Small cloth trim and collar, no name labels baked into the asset.
-  path(ctx,[[-9,-73],[0,-68],[9,-73],[7,-70],[0,-64],[-7,-70]],a.trim);
-  if(frame.pose==='gather'&&frame.tool) drawFieldArtifact(ctx,frame.tool);
+  ctx.strokeStyle=a.hairLight;ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(faceX-10,-118);
+  ctx.quadraticCurveTo(faceX+1,-120,faceX+11,-114);ctx.stroke();
+  // Decorative woven garment trim is not a physical Core inventory item.
+  ctx.strokeStyle=a.trim;ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.moveTo(-7,-74);
+  ctx.quadraticCurveTo(0,-68,8,-74);ctx.stroke();
+  if(frame.pose==='gather'&&frame.tool)drawFieldArtifact(ctx,frame.tool);
   ctx.restore();
 }
