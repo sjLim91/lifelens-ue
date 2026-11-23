@@ -201,32 +201,33 @@ export class FieldTerrainCompositor {
       }
       this.textures.set(key,created);image=created;
     }
-    // Preserve actual observed height variation with 4x4 source slices;
-    // 1px overlap avoids tile seams from half-pixel canvas rounding.
-    for(let y=0;y<4;y++)for(let x=0;x<4;x++){
-      const u=x/4,v=y/4,du=.25;
-      const a=elev(chunk.x,chunk.y,u,v);
-      const b=elev(chunk.x,chunk.y,u+du,v);
-      const c=elev(chunk.x,chunk.y,u+du,v+du);
-      const d=elev(chunk.x,chunk.y,u,v+du);
-      const p=project(chunk.x+u-.5,chunk.y+v-.5,(a+b+d)*.333333);
-      const q=project(chunk.x+u+du-.5,chunk.y+v+du-.5,(b+c+d)*.333333);
-      const x0=Math.min(p.x,q.x),y0=Math.min(p.y,q.y),w=Math.abs(q.x-p.x),h=Math.abs(q.y-p.y);
-      if(w<.1||h<.1)continue;
-      ctx.drawImage(image,x*this.size/4,y*this.size/4,
-        this.size/4,this.size/4,x0-.35,y0-.35,w+.7,h+.7);
-      // Readable actual relief, rather than invented decorative cliffs.
-      // Descending Core elevations cast a restrained terrain ledge shadow.
-      const slope=Math.max(Math.abs(a-b),Math.abs(a-d),Math.abs(c-b),Math.abs(c-d));
-      if(!isWater(chunk)&&slope>.043){
-        const weight=Math.min(1,(slope-.043)*6.5);
-        const high=a>d?a:d,low=b<c?b:c;
-        const edge0=project(chunk.x+u-.5,chunk.y+v+du-.5,high);
-        const edge1=project(chunk.x+u+du-.5,chunk.y+v+du-.5,low);
-        ctx.beginPath();ctx.moveTo(edge0.x,edge0.y);
-        ctx.lineTo(edge1.x,edge1.y);
-        ctx.lineWidth=1.4+weight*3.6;
-        ctx.strokeStyle=`rgba(41, 64, 52, ${(.12+weight*.26).toFixed(3)})`;
+    // The ground atlas is one continuous illustrated surface. Previously
+    // drawing 16 elevation-shifted rectangles exposed large horizontal
+    // gaps between slices. Keep source images contiguous and express real
+    // Core relief in a separate, subtle shading layer.
+    const p=project(chunk.x-.5,chunk.y-.5,.5);
+    const q=project(chunk.x+.5,chunk.y+.5,.5);
+    const x0=Math.min(p.x,q.x),y0=Math.min(p.y,q.y);
+    const width=Math.abs(q.x-p.x),height=Math.abs(q.y-p.y);
+    if(width<.1||height<.1)return false;
+    ctx.drawImage(image,x0-.25,y0-.25,width+.5,height+.5);
+    if(!isWater(chunk)){
+      // Only steep, actually observed topography gets a muted ledge cue.
+      // These do not create collision, terrain faces or imaginary cliffs.
+      for(let y=0;y<4;y++)for(let x=0;x<4;x++){
+        const u=x/4,v=y/4,step=.25;
+        const a=elev(chunk.x,chunk.y,u,v);
+        const b=elev(chunk.x,chunk.y,u+step,v);
+        const d=elev(chunk.x,chunk.y,u,v+step);
+        const rise=Math.max(Math.abs(a-b),Math.abs(a-d));
+        if(rise<=.065)continue;
+        const t=Math.min(1,(rise-.065)*6);
+        const from=project(chunk.x+u-.5,chunk.y+v+step-.5,.5);
+        const to=project(chunk.x+u+step-.5,chunk.y+v+step-.5,.5);
+        ctx.beginPath();ctx.moveTo(from.x,from.y);
+        ctx.lineTo(to.x,to.y);
+        ctx.lineWidth=1+t*2;
+        ctx.strokeStyle=`rgba(46, 69, 53, ${(.08+t*.23).toFixed(3)})`;
         ctx.stroke();
       }
     }
