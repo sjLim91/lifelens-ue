@@ -166,9 +166,12 @@ export function drawFieldResident(
   // An actual Core resident remains planted to the same ground coordinate.
   ellipse(ctx,0,-2,30,6,'rgba(22,37,29,.24)');
   if(frame.pose==='sleep') {
-    // Sleeping occurs only when Core currently reports active Sleep/Interacting.
-    ctx.rotate(-Math.PI*.39);
-    ctx.translate(-12,-19);
+    // Center the sideways body on the *actual* Core ground position.
+    // The old -12,-19 pivot offset the whole sleeper far to the left,
+    // making an occupied mat appear unused even at the same Core coordinate.
+    // Do NOT teleport the sleeper to a nearby mat: that would fabricate use.
+    ctx.rotate(-Math.PI*.5);
+    ctx.translate(0,55);
   }
   ctx.translate(0,-bob);
   const outline='#3f4841',sole='#504c46';

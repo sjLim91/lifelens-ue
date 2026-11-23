@@ -63,6 +63,19 @@ export interface FieldCanopySprite {
   u:number;v:number;name:Extract<FieldSpriteName,'pine'|'cedar'|'oak'>;
   sizeFactor:number;
 }
+const canopyLayoutCache=new Map<string,FieldCanopySprite[]>();
+const groundLayoutCache=new Map<string,FieldGroundMark[]>();
+const MAX_VISUAL_LAYOUTS=384;
+function cachedLayout<T>(cache:Map<string,T>,key:string,compute:()=>T):T {
+  if(cache.has(key))return cache.get(key)!;
+  const value=compute();
+  if(cache.size>=MAX_VISUAL_LAYOUTS){
+    const oldest=cache.keys().next().value;
+    if(oldest!==undefined)cache.delete(oldest);
+  }
+  cache.set(key,value);
+  return value;
+}
 
 /**
  * A few spatially coherent canopy groups, instead of independently scattering
@@ -74,27 +87,39 @@ export function fieldForestDisplayClusters(
   coverage:number,biome:string,
 ):FieldCanopySprite[] {
   const forest=clamp(coverage);
-  const count=forest<.18?0:Math.min(7,Math.max(1,Math.ceil(forest*6.1)));
+  if(forest<.18)return [];
+  return cachedLayout(canopyLayoutCache,
+    JSON.stringify([seed,chunkX,chunkY,forest,biome]),()=>{
+  const count=Math.min(9,Math.max(1,Math.ceil(forest*8)));
   const cold=/taiga|boreal|tundra|conifer/i.test(biome);
   const unit=(salt:number)=>fieldVisualUnit(seed,chunkX,chunkY,salt);
-  const groups=count<4?1:2;
-  const centers=[
-    {u:.18+unit(301)*.08,v:.19+unit(302)*.08},
-    {u:.77+unit(303)*.08,v:.76+unit(304)*.08},
-  ];
-  const out:FieldCanopySprite[]=[];
-  for(let i=0;i<count;i++){
-    const g=i%groups,rank=Math.floor(i/groups),a=unit(310+i)*Math.PI*2;
-    const spread=rank===0?0:.09+Math.sqrt(rank)*.046;
-    const u=Math.min(.91,Math.max(.09,centers[g].u+Math.cos(a)*spread));
-    const v=Math.min(.91,Math.max(.09,centers[g].v+Math.sin(a)*spread));
-    const shape=unit(350+i);
+  // The previous two fixed NW/SE anchors repeated on every Core chunk and
+  // were visible as a checkerboard at mobile zoom. Candidate plants now form
+  // patches selected by continuous world-coordinate canopy potential.
+  // Coverage still determines the *maximum* display density; no real tree,
+  // ecological inventory or obstacle is created.
+  const candidates:Array<FieldCanopySprite&{score:number}>=[];
+  for(let index=0;index<25;index++){
+    const x=index%5,y=Math.floor(index/5);
+    const u=.03+(x+.12+unit(600+index*2)*.76)*.188;
+    const v=.03+(y+.12+unit(601+index*2)*.76)*.188;
+    const coarse=fieldContinuousGroundNoise(seed,(chunkX+u)*.58,(chunkY+v)*.58);
+    const fine=fieldContinuousGroundNoise(seed,(chunkX+u)*1.43,(chunkY+v)*1.43);
+    const score=coarse*.64+fine*.30+(unit(850+index)-.5)*.18;
+    const shape=unit(1000+index);
     const name:FieldCanopySprite['name']=cold
       ?(shape>.54?'cedar':'pine')
-      :(shape<.30?'pine':shape<.55?'cedar':'oak');
-    out.push({u,v,name,sizeFactor:.24+unit(370+i)*.115});
+      :(shape<.29?'pine':shape<.54?'cedar':'oak');
+    candidates.push({
+      u:Math.min(.96,Math.max(.04,u)),v:Math.min(.96,Math.max(.04,v)),
+      name,sizeFactor:.21+unit(1200+index)*.13,score,
+    });
   }
-  return out;
+  candidates.sort((a,b)=>b.score-a.score||a.u-b.u);
+  return candidates.slice(0,count).map(({u,v,name,sizeFactor})=>({
+    u,v,name,sizeFactor,
+  }));
+  });
 }
 
 /**
@@ -153,7 +178,13 @@ export function fieldGroundDetailMarks(
 ):FieldGroundMark[] {
   const grass=clamp(grassCoverage),forest=clamp(forestCoverage),
     rock=clamp(rockCoverage);
-  const count=Math.min(25,Math.floor(grass*13+forest*6+rock*5));
+  // An open field still needs fine habitat detail at close observer zoom.
+  // The renderer applies its own camera-dependent budget, so this density
+  // stays lightweight when observing many chunks at once.
+  const count=Math.min(80,Math.floor(grass*48+forest*27+rock*9));
+  if(count===0)return [];
+  return cachedLayout(groundLayoutCache,
+    JSON.stringify([seed,chunkX,chunkY,grass,forest,rock]),()=>{
   const out:FieldGroundMark[]=[];
   for(let i=0;i<count;i++){
     const u=.045+fieldVisualUnit(seed,chunkX,chunkY,1700+i*5)*.91;
@@ -165,4 +196,5 @@ export function fieldGroundDetailMarks(
       rotation:(fieldVisualUnit(seed,chunkX,chunkY,1704+i*5)-.5)*.95});
   }
   return out;
+  });
 }

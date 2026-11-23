@@ -136,7 +136,8 @@ export function paintFieldWorld(
     if(!water&&tile>=50){
       const marks=fieldGroundDetailMarks(seed,chunk.x,chunk.y,
         chunk.grassCoverage01,chunk.forestCoverage01,chunk.rockCoverage01);
-      const budget=tile<100?Math.ceil(marks.length*.55):marks.length;
+      const budget=tile<100?Math.ceil(marks.length*.24)
+        :tile<190?Math.ceil(marks.length*.44):marks.length;
       for(let i=0;i<budget;i++){
         const mark=marks[i];
         const elevation=sample(chunk.x,chunk.y,mark.u,mark.v);
@@ -145,8 +146,8 @@ export function paintFieldWorld(
         const s=Math.min(9,Math.max(1.4,tile*mark.length));
         ctx.lineWidth=mark.kind==='lichen'?1.5:Math.max(.7,s*.16);
         ctx.strokeStyle=mark.kind==='lichen'
-          ?'rgba(170, 166, 139, .29)':mark.kind==='soil'
-          ?'rgba(99, 104, 76, .18)':'rgba(177, 208, 129, .32)';
+          ?'rgba(170, 166, 139, .31)':mark.kind==='soil'
+          ?'rgba(99, 104, 76, .20)':'rgba(177, 208, 129, .40)';
         ctx.beginPath();
         if(mark.kind==='grass'){
           ctx.moveTo(p.x-s*.44,p.y+s*.1);
@@ -171,13 +172,13 @@ export function paintFieldWorld(
   }
   type DrawItem={depth:number;name:FieldSpriteName;x:number;y:number;w:number;h:number;
     marker?:FieldMarker;selected?:boolean;label?:string;
-    resident?:Resident;frame?:FieldResidentFrame};
+    resident?:Resident;frame?:FieldResidentFrame;variation?:number};
   const items:DrawItem[]=[];
   const put=(name:FieldSpriteName,p:{x:number;y:number},w:number,h:number,
     marker?:FieldMarker,selected=false,label?:string,
-    resident?:Resident,frame?:FieldResidentFrame)=>{
+    resident?:Resident,frame?:FieldResidentFrame,variation?:number)=>{
     if(!visible(p.x,p.y,Math.max(w,h)))return;
-    items.push({name,x:p.x,y:p.y,w,h,depth:p.y,marker,selected,label,resident,frame});
+    items.push({name,x:p.x,y:p.y,w,h,depth:p.y,marker,selected,label,resident,frame,variation});
     if(marker)result.markers.push(marker);
   };
   // The real Core resident/facility/animal locations reserve an *observer
@@ -198,7 +199,11 @@ export function paintFieldWorld(
         :name==='bush'?.055:.105);
       if(!fieldDecorativePositionClear(gx,gy,clearance,radius))return;
       const p=screen(c.x+u-.5,c.y+v-.5,sample(c.x,c.y,u,v));
-      put(name,p,w,h);
+      // Stable world-position variation only: camera movement never
+      // changes species, hue or silhouette for a decorative plant.
+      const variation=fieldVisualUnit(seed,c.x,c.y,
+        20000+Math.floor(u*1024)+Math.floor(v*1024)*1031);
+      put(name,p,w,h,undefined,false,undefined,undefined,undefined,variation);
     };
     // Cohesive observed-forest canopy groups. No extra ecology or
     // navigational obstacles exist in Core because of these decorations.
@@ -337,7 +342,22 @@ export function paintFieldWorld(
       &&typeof ctx.scale==='function');
     if(vectorResident) drawFieldResident(ctx,item.resident!,item.x,item.y,
       item.w,item.h,item.frame!);
-    const drawn=vectorResident||art.draw(ctx,item.name,left,top,item.w,item.h);
+    let drawn=vectorResident;
+    const varyPlant=item.variation!==undefined
+      &&['pine','cedar','oak','bush'].includes(item.name)
+      &&typeof ctx.save==='function'&&typeof ctx.restore==='function'
+      &&typeof ctx.translate==='function'&&typeof ctx.scale==='function';
+    if(!drawn){
+      if(varyPlant){
+        ctx.save();
+        const u=item.variation!;
+        // Only geometric mirroring happens per frame; palette variants are
+        // pre-rasterized once at SVG load by the local FieldSpriteAtlas.
+        if(u>.51){ctx.translate(item.x*2,0);ctx.scale(-1,1);}
+      }
+      drawn=art.draw(ctx,item.name,left,top,item.w,item.h,item.variation);
+      if(varyPlant)ctx.restore();
+    }
     result.sprites[item.name]++;
     if(!drawn){
       // Temporary startup placeholder only while an original SVG loads.

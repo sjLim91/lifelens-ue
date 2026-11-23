@@ -22,6 +22,7 @@ import { fieldResidentF2bChecks } from './field-resident-f2b-checks.mjs';
 import { fieldQuarterViewF2cChecks } from './field-quarter-view-f2c-checks.mjs';
 import { fieldReferenceF2dChecks } from './field-reference-f2d-checks.mjs';
 import { fieldF2eClarityChecks } from './field-f2e-clarity-checks.mjs';
+import { fieldF2fHabitatChecks } from './field-f2f-habitat-checks.mjs';
 import { resourceEnvironmentChecks } from './resource-environment-checks.mjs';
 import { worldPresentationChecks } from './world-presentation-checks.mjs';
 
@@ -657,6 +658,7 @@ fieldResidentF2bChecks({ test, source, chunk, windowOf });
 fieldQuarterViewF2cChecks({ test, source, chunk, windowOf });
 fieldReferenceF2dChecks({ test, source, chunk, windowOf });
 fieldF2eClarityChecks({ test, source, chunk, windowOf });
+fieldF2fHabitatChecks({ test, source, chunk, windowOf });
 worldPresentationChecks({ test, source, THREE, flatWindow });
 
 terrainSeamChecks({ test, source, chunk, windowOf, withScene, near });
