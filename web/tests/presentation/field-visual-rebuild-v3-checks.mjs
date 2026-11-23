@@ -60,6 +60,40 @@ export function fieldVisualRebuildV3Checks({test,source,chunk,windowOf}){
     paintFieldShore(notWater.ctx,land,()=>lake,(x,y)=>({x,y}),()=>.5,'seed');
     assert.equal(notWater.calls.length,0);
   });
+  test('V3 terrain draws one continuous bitmap instead of horizontal raster-strip gaps',()=>{
+    const oldDocument=globalThis.document;
+    const canvasContext={
+      createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),
+      putImageData:()=>{},
+      createRadialGradient:()=>({addColorStop:()=>{}}),
+    };
+    for(const fn of ['beginPath','moveTo','lineTo','stroke','ellipse','fill',
+      'quadraticCurveTo','closePath'])canvasContext[fn]=()=>{};
+    globalThis.document={createElement:()=>({
+      width:80,height:80,getContext:()=>canvasContext,
+    })};
+    try{
+      const actual=chunk(0,0,'None',.5,{grassCoverage01:.6,
+        forestCoverage01:.4,rockCoverage01:.2});
+      const painter=new FieldTerrainCompositor(),ops=[],ctx={
+        drawImage:(...args)=>ops.push(args),
+      };
+      for(const fn of ['beginPath','moveTo','lineTo','stroke'])
+        ctx[fn]=()=>{};
+      const result=painter.paint(ctx,'visual-ground',actual,
+        (x,y)=>x===0&&y===0?actual:undefined,
+        (x,y,h)=>({x:x*180+200,y:y*145+320-(h-.5)*150}),
+        ()=>.5);
+      assert.equal(result,true);
+      assert.equal(ops.length,1,
+        'separate height-shifted image slices produced visible horizontal gaps');
+      assert.ok(ops[0][3]>100&&ops[0][4]>100);
+    }finally{
+      if(oldDocument===undefined)delete globalThis.document;
+      else globalThis.document=oldDocument;
+    }
+  });
+
   test('V3 only real facility positions generate muted occupation ground',()=>{
     const input=[{id:'a',x:100,y:110,kind:'Shelter'},
       {id:'b',x:150,y:112,kind:'FirePit'},
