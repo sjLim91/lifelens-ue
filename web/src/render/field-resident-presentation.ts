@@ -159,7 +159,7 @@ export function drawFieldResident(
   const sleep=frame.pose==='sleep';
   const stride=moving?Math.sin(frame.step*Math.PI*4)*5.5:0;
   const lift=working?Math.sin(frame.step*Math.PI*2)*3.5:0;
-  const bend=gather?5:0;
+  const bend=gather?5:handToFace?2:0;
   const breathe=1+Math.sin(frame.step*Math.PI*2)*.012;
   ctx.save();
   ctx.translate(x,y);
