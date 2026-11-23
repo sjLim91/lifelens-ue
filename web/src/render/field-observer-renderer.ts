@@ -351,11 +351,11 @@ export function paintFieldWorld(
       if(varyPlant){
         ctx.save();
         const u=item.variation!;
-        // Asset variation stays subtle so the palette remains one art style.
-        ctx.filter=`hue-rotate(${((u-.5)*20).toFixed(2)}deg) saturate(${(.93+u*.16).toFixed(2)}) brightness(${(.95+u*.10).toFixed(2)})`;
+        // Only geometric mirroring happens per frame; palette variants are
+        // pre-rasterized once at SVG load by the local FieldSpriteAtlas.
         if(u>.51){ctx.translate(item.x*2,0);ctx.scale(-1,1);}
       }
-      drawn=art.draw(ctx,item.name,left,top,item.w,item.h);
+      drawn=art.draw(ctx,item.name,left,top,item.w,item.h,item.variation);
       if(varyPlant)ctx.restore();
     }
     result.sprites[item.name]++;
