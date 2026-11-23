@@ -76,10 +76,28 @@ export function fieldWorldGroundColor(
   const ripple=.012*Math.sin((gx+gy)*21+phase)+.009*Math.cos((gx-gy)*31+phase);
   const shallow=limit((.09-edge+ripple)/.09);
   const target=water?[131,181,166]:[157,166,117];
+  // Soft, overlapping forest-floor shadows express *observed habitat*
+  // without stamping arbitrary extra tree entities. Interpolating forest
+  // cover at the same four Core centers avoids rectangular chunk edges.
+  const cover=(x:number,y:number)=>{
+    const c=lookup(x,y);
+    return c&&isWater(c)===water?limit(c.forestCoverage01??0)
+      :limit(chunk.forestCoverage01??0);
+  };
+  const coverage=water?0:mix(
+    [cover(ax,ay),cover(ax,ay),cover(ax,ay)],
+    [cover(bx,ay),cover(bx,ay),cover(bx,ay)],tx)[0]*(1-ty)
+    +mix([cover(ax,by),cover(ax,by),cover(ax,by)],
+      [cover(bx,by),cover(bx,by),cover(bx,by)],tx)[0]*ty;
+  const woodland=(Math.sin(gx*7.1+phase)*Math.cos(gy*5.8-phase*.3)
+    +Math.sin(gx*3.2-gy*4.6+phase)*.55);
+  const canopy=water?0:coverage*(.40+.60*smooth((woodland+.55)/1.4));
+  const darkening=canopy*26;
+  const warmth=canopy*5;
   return [
-    limit(rgb[0]+variance,0,255)*(1-shallow*.40)+target[0]*shallow*.40,
-    limit(rgb[1]+variance*.88,0,255)*(1-shallow*.40)+target[1]*shallow*.40,
-    limit(rgb[2]+variance*.49,0,255)*(1-shallow*.40)+target[2]*shallow*.40,
+    limit(rgb[0]+variance-darkening*.83+warmth,0,255)*(1-shallow*.40)+target[0]*shallow*.40,
+    limit(rgb[1]+variance*.88-darkening*.58,0,255)*(1-shallow*.40)+target[1]*shallow*.40,
+    limit(rgb[2]+variance*.49-darkening*.58,0,255)*(1-shallow*.40)+target[2]*shallow*.40,
   ];
 }
 
