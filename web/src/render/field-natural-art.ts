@@ -63,6 +63,19 @@ export interface FieldCanopySprite {
   u:number;v:number;name:Extract<FieldSpriteName,'pine'|'cedar'|'oak'>;
   sizeFactor:number;
 }
+const canopyLayoutCache=new Map<string,FieldCanopySprite[]>();
+const groundLayoutCache=new Map<string,FieldGroundMark[]>();
+const MAX_VISUAL_LAYOUTS=384;
+function cachedLayout<T>(cache:Map<string,T>,key:string,compute:()=>T):T {
+  if(cache.has(key))return cache.get(key)!;
+  const value=compute();
+  if(cache.size>=MAX_VISUAL_LAYOUTS){
+    const oldest=cache.keys().next().value;
+    if(oldest!==undefined)cache.delete(oldest);
+  }
+  cache.set(key,value);
+  return value;
+}
 
 /**
  * A few spatially coherent canopy groups, instead of independently scattering
@@ -74,7 +87,10 @@ export function fieldForestDisplayClusters(
   coverage:number,biome:string,
 ):FieldCanopySprite[] {
   const forest=clamp(coverage);
-  const count=forest<.18?0:Math.min(9,Math.max(1,Math.ceil(forest*8)));
+  if(forest<.18)return [];
+  return cachedLayout(canopyLayoutCache,
+    JSON.stringify([seed,chunkX,chunkY,forest,biome]),()=>{
+  const count=Math.min(9,Math.max(1,Math.ceil(forest*8)));
   const cold=/taiga|boreal|tundra|conifer/i.test(biome);
   const unit=(salt:number)=>fieldVisualUnit(seed,chunkX,chunkY,salt);
   // The previous two fixed NW/SE anchors repeated on every Core chunk and
@@ -103,6 +119,7 @@ export function fieldForestDisplayClusters(
   return candidates.slice(0,count).map(({u,v,name,sizeFactor})=>({
     u,v,name,sizeFactor,
   }));
+  });
 }
 
 /**
@@ -165,6 +182,9 @@ export function fieldGroundDetailMarks(
   // The renderer applies its own camera-dependent budget, so this density
   // stays lightweight when observing many chunks at once.
   const count=Math.min(80,Math.floor(grass*48+forest*27+rock*9));
+  if(count===0)return [];
+  return cachedLayout(groundLayoutCache,
+    JSON.stringify([seed,chunkX,chunkY,grass,forest,rock]),()=>{
   const out:FieldGroundMark[]=[];
   for(let i=0;i<count;i++){
     const u=.045+fieldVisualUnit(seed,chunkX,chunkY,1700+i*5)*.91;
@@ -176,4 +196,5 @@ export function fieldGroundDetailMarks(
       rotation:(fieldVisualUnit(seed,chunkX,chunkY,1704+i*5)-.5)*.95});
   }
   return out;
+  });
 }
