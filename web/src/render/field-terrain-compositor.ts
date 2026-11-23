@@ -30,10 +30,12 @@ const code=(seed:string)=>{
 export function fieldWorldGroundColor(
   seed:string,chunkX:number,chunkY:number,u:number,v:number,
   lookup:FieldTerrainLookup,
+  palette?:(chunk:TerrainChunk)=>[number,number,number],
 ):[number,number,number] {
   const chunk=lookup(chunkX,chunkY);
   if(!chunk)return [102,145,97];
-  const water=isWater(chunk),self=parse(fieldNaturalFloorColor(chunk));
+  const readPalette=palette??((c:TerrainChunk)=>parse(fieldNaturalFloorColor(c)));
+  const water=isWater(chunk),self=readPalette(chunk);
   const coord=(i:number,t:number):[number,number,number]=>{
     const global=i+t-.5,low=Math.floor(global);
     return [low,low+1,smooth(global-low)];
@@ -41,7 +43,7 @@ export function fieldWorldGroundColor(
   const [ax,bx,tx]=coord(chunkX,u),[ay,by,ty]=coord(chunkY,v);
   const tile=(x:number,y:number)=>{
     const c=lookup(x,y);
-    return c&&isWater(c)===water?parse(fieldNaturalFloorColor(c)):self;
+    return c&&isWater(c)===water?readPalette(c):self;
   };
   const row0=mix(tile(ax,ay),tile(bx,ay),tx);
   const row1=mix(tile(ax,by),tile(bx,by),tx);
@@ -88,9 +90,17 @@ export class FieldTerrainCompositor {
     const ctx=tex.getContext('2d');
     if(!ctx||typeof ctx.createImageData!=='function')return null;
     const img=ctx.createImageData(this.size,this.size),d=img.data;
+    // Each chunk's Core palette is stable for this texture snapshot. Reusing
+    // its nine neighbors avoids millions of repeated color/biome conversions.
+    const colors=new WeakMap<TerrainChunk,[number,number,number]>();
+    const readPalette=(c:TerrainChunk):[number,number,number]=>{
+      let rgb=colors.get(c);
+      if(!rgb){rgb=parse(fieldNaturalFloorColor(c));colors.set(c,rgb);}
+      return rgb;
+    };
     for(let j=0;j<this.size;j++)for(let i=0;i<this.size;i++){
       const u=(i+.5)/this.size,v=(j+.5)/this.size;
-      const [r,g,b]=fieldWorldGroundColor(seed,chunk.x,chunk.y,u,v,lookup);
+      const [r,g,b]=fieldWorldGroundColor(seed,chunk.x,chunk.y,u,v,lookup,readPalette);
       const k=(j*this.size+i)*4;
       d[k]=r;d[k+1]=g;d[k+2]=b;d[k+3]=255;
     }
