@@ -188,6 +188,7 @@ export function startObserverEngine(): () => void {
     resizeCanvas();
   }
   let followResidents = false;
+  let closeupResident:string|null=null;
   let simulationClock: SimulationClock | null = null;
   let fastForwardRunning = false;
   let activeEarthOrigin: PersistedWorld['earthOrigin'] = null;
@@ -334,6 +335,7 @@ export function startObserverEngine(): () => void {
     initialElevation: elevation,
     initialZoom: zoom,
     onChange(next, zoomAnchor) {
+      closeupResident=null;
       const before = zoomAnchor ? groundPointAtClient(zoomAnchor.x, zoomAnchor.y) : null;
       angle = next.angle;
       elevation = next.elevation;
@@ -355,6 +357,7 @@ export function startObserverEngine(): () => void {
       }
     },
     onPan(deltaX, deltaY, anchor) {
+      closeupResident=null;
       const rect = canvas.getBoundingClientRect();
       const x = anchor?.x ?? rect.left + rect.width / 2;
       const y = anchor?.y ?? rect.top + rect.height / 2;
@@ -372,6 +375,7 @@ export function startObserverEngine(): () => void {
         ?? threeWorldRenderer?.pickResident(clientX, clientY);
       if (residentId) selectResident(residentId);
       else {
+        closeupResident=null;
         const traceId = fieldRenderer?.pickHumanTrace(clientX, clientY)
           ?? isometricRenderer?.pickHumanTrace(clientX, clientY)
           ?? threeWorldRenderer?.pickHumanTrace(clientX, clientY);
@@ -411,6 +415,8 @@ export function startObserverEngine(): () => void {
           civilization: selected.civilization,
           environment: selected.environment,
           worldMinute: selected.world.minute,
+          paused:selected.simulationSpeed===0,
+          residentCloseup:!!closeupResident && selected.selectedResidentId===closeupResident,
           centerX, centerY, zoom, panX: localPanX, panZ: localPanZ,
           selectedResidentId: selected.selectedResidentId,
           selectedHumanTraceId: selected.selectedHumanTraceId,
@@ -551,6 +557,7 @@ export function startObserverEngine(): () => void {
   }
 
   function resetAfterWorldCreated(persist = true): void {
+    closeupResident=null;
     shadowObserver.resetWorld();
     residentAI.resetWorld();
     centerX = 0;
@@ -582,6 +589,7 @@ export function startObserverEngine(): () => void {
   }
 
   function selectResident(residentId: string | null): void {
+    closeupResident=residentId;
     observerStore.selectResident(residentId);
     threeWorldRenderer?.setSelectedHumanTrace(null);
     threeWorldRenderer?.setSelectedSettlement(null);
@@ -676,6 +684,7 @@ export function startObserverEngine(): () => void {
   }
 
   function recenterObserver(): void {
+    closeupResident=null;
     if (!worldSession) return;
     localPanX = 0;
     localPanZ = 0;
@@ -904,8 +913,14 @@ export function startObserverEngine(): () => void {
     }
   }, 15000);
 
+  // Interpolate presentation between authoritative half-second Core reads.
+  const fieldMotionTimer=window.setInterval(()=>{
+    if(fieldRenderer && worldSession && !fastForwardRunning
+      && observerStore.getSnapshot().simulationSpeed>0)drawWorld();
+  },100);
   void boot();
   return () => {
+    window.clearInterval(fieldMotionTimer);
     window.clearInterval(checkpointTimer);
     document.removeEventListener('visibilitychange', onWorldVisibility);
     window.removeEventListener('pagehide', onWorldPageHide);

@@ -1,4 +1,3 @@
-import { SIMULATION_SPEED_MODES } from '../runtime/lifelens-contract';
 import { observerActions } from '../state/observer-actions';
 import { useObserverSnapshot } from '../state/use-observer-snapshot';
 
@@ -35,16 +34,6 @@ export function MobileObservationControls({ view, onView }: {
   ] as const;
   return <div className="mobile-observation-controls">
     <div className="world-playback-row">
-      <div className="world-playback" role="group" aria-label="시뮬레이션 관찰 속도">
-        <span className="playback-label">관찰 속도</span>
-        {SIMULATION_SPEED_MODES.map(preset => <button key={preset.speed} type="button"
-          className={snapshot.simulationSpeed === preset.speed ? 'active' : ''}
-          aria-label={preset.speed === 0 ? '일시정지' : preset.label + ' 관찰 속도'}
-          aria-pressed={snapshot.simulationSpeed === preset.speed}
-          disabled={disabled} onClick={() => observerActions.setSimulationSpeed(preset.speed)}>
-          {preset.speed === 0 ? <ObserverIcon name="pause" /> : preset.label}
-        </button>)}
-      </div>
       <button className="world-recenter" type="button" aria-label="주민 위치로 돌아가기" title="주민 위치로 돌아가기"
         disabled={disabled} onClick={() => observerActions.recenterObserver()}><ObserverIcon name="locate" /></button>
     </div>
