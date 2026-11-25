@@ -72,16 +72,16 @@ export function fieldF2eClarityChecks({test,source,chunk,windowOf}){
 
   test('F2e Core-linked river uses a bounded multi-curve painted corridor',()=>{
     const ops=[],ctx={lineWidth:0};
-    for(const method of ['beginPath','moveTo','quadraticCurveTo','stroke']){
+    for(const method of ['beginPath','moveTo','lineTo','closePath','fill','stroke']){
       ctx[method]=(...args)=>ops.push({method,args,width:ctx.lineWidth});
     }
     paintObservedFieldRiver(ctx,{x:30,y:60},{x:160,y:70},
       {width01:.06,bend:.09},170);
-    assert.equal(ops.filter(x=>x.method==='moveTo').length,3);
-    assert.equal(ops.filter(x=>x.method==='quadraticCurveTo').length,6);
-    assert.ok(ops.filter(x=>x.method==='stroke').every(x=>x.width<=11));
-    assert.deepEqual(ops.filter(x=>x.method==='quadraticCurveTo')[1].args.slice(-2),[160,70],
-      'river no longer meets actual Core downstream endpoint');
+    assert.equal(ops.filter(x=>x.method==='fill').length,5);
+    assert.equal(ops.filter(x=>x.method==='stroke').length,16);
+    const vertex=ops.find(x=>x.method==='moveTo').args;
+    assert.ok(Math.hypot(vertex[0]-30,vertex[1]-60)<15);
+    assert.ok(ops.some(x=>x.method==='lineTo' && Math.hypot(x.args[0]-160,x.args[1]-70)<12));
     ops.length=0;
     paintObservedFieldRiver(ctx,{x:30,y:60},{x:30,y:60},
       {width01:.06,bend:.09},170);

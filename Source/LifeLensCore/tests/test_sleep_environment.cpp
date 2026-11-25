@@ -60,7 +60,10 @@ int main()
     world.facilities={facility(99001,FacilityKind::SleepingPlace,bed),facility(99002,FacilityKind::Shelter,roof)};
     world.minute=weatherMinute(world,start,false);
     GridPos target; FacilityId targetId;
+    assert(sim.settlementSleepTarget(id,target,targetId) && targetId==99002);
+    world.facilities[1].active=false;
     assert(sim.settlementSleepTarget(id,target,targetId) && targetId==99001);
+    world.facilities[1].active=true;
     world.minute=weatherMinute(world,start,true);
     assert(sim.settlementSleepTarget(id,target,targetId) && targetId==99002);
     for(int i=0;i<10;++i){ FacilityId repeat; assert(sim.settlementSleepTarget(id,target,repeat) && repeat==targetId); }
