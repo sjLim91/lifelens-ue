@@ -71,7 +71,7 @@ try{
           const living=document.querySelector('#livingOverlay')?.textContent||'';
           const exception=document.querySelector('.error-card:not(.hidden) #errorText')?.textContent||'';
           const assets=performance.getEntriesByType('resource')
-            .filter(r=>r.name.includes('/field/')&&r.name.includes('.svg')).length;
+            .filter(r=>r.name.includes('/field/')&&r.name.includes('.webp')).length;
           let colors=0;
           if(el&&el.width>10&&el.height>10){
             const ctx=el.getContext('2d');
