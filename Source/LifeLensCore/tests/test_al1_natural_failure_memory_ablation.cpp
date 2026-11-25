@@ -4,14 +4,8 @@
 using namespace lifelens;
 using namespace al1_test;
 
-int main()
+static void verifyNaturalRecovery(WorldSeed seed,bool expectFullRecovery)
 {
-    // M8 structural tools change legitimate untouched-world histories. The
-    // former seed 874213955 no longer presents this rare partial-inventory
-    // failure opportunity within 90 days. Seed 4 supplies a genuine natural
-    // failure with a known alternative; all counterfactual/physical checks
-    // remain, including the unchanged 90-day observation bound.
-    constexpr WorldSeed seed=4;
     Simulation natural(seed);natural.setupNewGame();
     std::optional<SimulationStateSnapshot> boundary;
     CharacterId actor=0;
@@ -71,20 +65,28 @@ int main()
     // A real partial recovery is not yet the original objective. Follow only
     // that SAME goal within its unchanged deadline, including a bounded next
     // batch or actual survival suspension; a fresh goal cannot pass this check.
-    bool completed=false,firstRecoveryExecuted=false;
+    bool completed=false,firstRecoveryExecuted=false,expired=false;
     learned.onEvent([&](const std::string& event){
         if(event.find("AL1_CORE_GATHER_RESULT actor=")!=std::string::npos
            &&number(event,"pending_token")==alternative.token)firstRecoveryExecuted=true;
+        if(event.find("AL1_CORE_GOAL_UNMET actor=")!=std::string::npos
+           &&number(event,"goal_id")==original.gatherGoal.goalId
+           &&event.find(" disposition=expired")!=std::string::npos)expired=true;
         if(event.find("AL1_CORE_GOAL_RESULT actor=")!=std::string::npos
            &&number(event,"goal_id")==original.gatherGoal.goalId
            &&event.find(" outcome=achieved ")!=std::string::npos)completed=true;
     });
     for(int n=0;n<120 &&!completed &&learned.world().minute<=original.gatherGoal.expiresMinute;++n){learned.step();control.step();}
-    assert(firstRecoveryExecuted &&completed);
+    assert(firstRecoveryExecuted);
+    assert(completed==expectFullRecovery);
     const int after=resident(learned,actor).civilization.inventory.count(ItemKind::RawMaterial,alternative.material);
     GridPos to{};assert(learned.runtimePosition(actor,to));
     assert(after>before &&resource(learned,alternative.resourceNode).quantity<stock);
-    assert(after>=original.gatherGoal.targetQuantity); // A partial harvest is not goal completion.
+    if(expectFullRecovery){
+        assert(after>=original.gatherGoal.targetQuantity);
+    }else{
+        assert(expired && after<original.gatherGoal.targetQuantity);
+    }
     assert(!sameGridPos(from,to));
     bool receipt=false;
     for(const auto& memory:resident(learned,actor).memory.entries)
@@ -97,4 +99,12 @@ int main()
         <<resource(learned,alternative.resourceNode).quantity
         <<" removed_receipts=1 other_snapshot_bytes_identical=1 physical_completion=1"
         <<" goal_achieved="<<(after>=original.gatherGoal.targetQuantity)<<"\n";
+}
+
+int main()
+{
+    // Indoor sleep changes these natural histories. Seed 4 now gathers a
+    // partial batch before expiry; seed 10 completes the same original goal.
+    verifyNaturalRecovery(4,false);
+    verifyNaturalRecovery(10,true);
 }
