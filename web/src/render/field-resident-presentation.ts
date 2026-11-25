@@ -1,3 +1,4 @@
+import type { FieldSpritePainter } from './field-asset-atlas';
 import type { PhysicalArtifact, Resident } from '../runtime/core-types';
 import { fieldVisualUnit } from './field-scene-clarity';
 import { drawFieldArtifact, fieldResidentAction, type FieldInteractionPose } from './field-resident-actions';
@@ -68,7 +69,7 @@ export function fieldResidentPalette(r:Resident):FieldResidentPalette {
   };
 }
 interface MotionMemory {
-  x:number;y:number;facing:FieldFacing;movementAt:number;lastSeenAt:number;
+  x:number;y:number;facing:FieldFacing;movementAt:number;walkStarted:number;lastSeenAt:number;
 }
 /**
  * A new Core position is evidence of displacement, but target/intent alone
@@ -86,11 +87,13 @@ export class FieldResidentMotion {
     const goal=targeting?fieldHeading(p!.targetGridX!-x,p!.targetGridY!-y):null;
     let facing=prev?.facing??goal??'S';
     let movementAt=prev?.movementAt??Number.NEGATIVE_INFINITY;
+    let walkStarted=prev?.walkStarted??nowMs;
     if(validPosition) {
       if(prev) {
         const dx=x-prev.x,dy=y-prev.y,dist=Math.hypot(dx,dy);
         if(dist>.025 && dist<=3 && nowMs-prev.lastSeenAt<=5000) {
           facing=fieldHeading(dx,dy)??facing;
+          if(nowMs-movementAt>330)walkStarted=nowMs;
           movementAt=nowMs;
         } else if(dist>3 || nowMs-prev.lastSeenAt>5000) {
           // Teleport/fast-forward/stale observation: do not invent footsteps.
@@ -98,13 +101,13 @@ export class FieldResidentMotion {
           facing=goal??facing;
         } else if(goal && nowMs-movementAt>360) facing=goal;
       }
-      this.positions.set(r.id,{x,y,facing,movementAt,lastSeenAt:nowMs});
+      this.positions.set(r.id,{x,y,facing,movementAt,walkStarted,lastSeenAt:nowMs});
     }
     const recentMove=validPosition&&r.hasPosition!==false
       &&nowMs-movementAt>=0&&nowMs-movementAt<=330;
     if(recentMove) return {
       facing,pose:'walk',
-      step:Math.min(1,Math.max(0,(nowMs-movementAt)/330)),
+      step:((nowMs-walkStarted)%560)/560,
     };
     const action=fieldResidentAction(r,x,y);
     if(action.pose!=='idle') return {
@@ -142,10 +145,16 @@ const path=(ctx:CanvasRenderingContext2D,points:ReadonlyArray<readonly [number,n
  * profile and diagonal face shapes, not just rotating a front-facing icon.
  * Apparent locomotion is a pose, NEVER movement of the Core footpoint.
  */
+const residentFrames:Record<FieldActionPose,readonly number[]>={
+  idle:[4], walk:[0,1,2,3], gather:[4,5,6,6,7,5], tend:[5,6,7,6],
+  work:[7,8,5,5], build:[5,8,8,5], craft:[7,8,7,5],
+  eat:[4,8,9,9,8], drink:[4,8,9,9,9,8], wash:[5,8,10,10,8], sleep:[11],
+};
+
 export function drawFieldResident(
   ctx:CanvasRenderingContext2D,
   r:Resident,x:number,y:number,width:number,height:number,
-  frame:FieldResidentFrame,
+  frame:FieldResidentFrame,art?:FieldSpritePainter,
 ):void {
   const a=fieldResidentPalette(r);
   const back=frame.facing==='N'||frame.facing==='NE'||frame.facing==='NW';
@@ -166,6 +175,19 @@ export function drawFieldResident(
   ctx.scale(width/80*(left?-1:1),height/118*a.height);
   // Ground point never moves: shadow, feet and selection all share Core xy.
   ellipse(ctx,0,-1,26,5.5,'rgba(19,42,30,.22)');
+  if(art?.drawResidentFrame){
+    const keys=residentFrames[frame.pose];
+    const cell=keys[Math.min(keys.length-1,Math.floor(frame.step*keys.length))];
+    const garment=r.civilization?.wornGarment;
+    const wrapped=garment?.item==='PrimitiveWrap' && (garment.quantity??1)>0;
+    const painted=art.drawResidentFrame(ctx,r.sex==='Female',wrapped,cell,
+      148*a.build,138*(sleep?breathe:1));
+    if(painted){
+      if(frame.pose==='gather'&&frame.tool)drawFieldArtifact(ctx,frame.tool);
+      ctx.restore();
+      return;
+    }
+  }
   if(sleep){
     // The only rotation is visual. The body stays centered at Core xy,
     // never jumps to a nearby unverified sleeping mat.

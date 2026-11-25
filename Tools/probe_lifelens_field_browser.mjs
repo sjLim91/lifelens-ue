@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Field Visual V3 mobile viewport smoke: actual Core + browser SVG painting.
+// Field Visual V3 mobile viewport smoke: actual Core + browser sprite painting.
 // No fake residents, no mocked terrain, no user phone/device claim.
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
@@ -58,7 +58,16 @@ try{
   await send('Emulation.setDeviceMetricsOverride',
     {width:390,height:844,deviceScaleFactor:1,mobile:true});
   await send('Page.addScriptToEvaluateOnNewDocument',{
-    source:"try{localStorage.setItem('lifelens.web.renderMode','field-canvas');}catch(_){ }",
+    source:`window.paintedResidentSheets=new Set();
+      const drawImage=CanvasRenderingContext2D.prototype.drawImage;
+      CanvasRenderingContext2D.prototype.drawImage=function(image,...args){
+        const result=drawImage.call(this,image,...args);
+        if(this.canvas.id==='worldCanvas' && image.src?.includes('/field/motion-')){
+          window.paintedResidentSheets.add(image.src.split('/').pop());
+        }
+        return result;
+      };
+      try{localStorage.setItem('lifelens.web.renderMode','field-canvas');}catch(_){ }`,
   });
   await send('Page.navigate',{url});
   let latest={};
@@ -71,7 +80,7 @@ try{
           const living=document.querySelector('#livingOverlay')?.textContent||'';
           const exception=document.querySelector('.error-card:not(.hidden) #errorText')?.textContent||'';
           const assets=performance.getEntriesByType('resource')
-            .filter(r=>r.name.includes('/field/')&&r.name.includes('.svg')).length;
+            .filter(r=>r.name.includes('/field/')&&r.name.includes('.webp')).length;
           let colors=0;
           if(el&&el.width>10&&el.height>10){
             const ctx=el.getContext('2d');
@@ -86,7 +95,7 @@ try{
               colors=set.size;
             }
           }
-          return {status,living,exception,assets,colors,width:el?.width||0,
+          return {painted:[...window.paintedResidentSheets],status,living,exception,assets,colors,width:el?.width||0,
             height:el?.height||0,opacity:el?.style.opacity||''};
         })()`,
       });
@@ -95,7 +104,7 @@ try{
       if(latest.status.includes('코어 연결 실패'))throw Error('real Core did not boot');
       if(latest.status.includes('시뮬레이션 코어 연결됨')
         &&/인구\s+[1-9]\d*/.test(latest.living)
-        &&latest.assets>=16&&latest.colors>=36&&latest.width>100
+        &&latest.painted.length>=2&&latest.assets>=16&&latest.colors>=36&&latest.width>100
         &&latest.opacity!=='0') {
         await sleep(1200);
         const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});

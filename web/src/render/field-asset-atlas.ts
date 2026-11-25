@@ -6,6 +6,8 @@ export const FIELD_SPRITES = [
 ] as const;
 export type FieldSpriteName = typeof FIELD_SPRITES[number];
 export interface FieldSpritePainter {
+  drawResidentFrame?(ctx:CanvasRenderingContext2D, female:boolean, wrapped:boolean,
+    frame:number, width:number, height:number):boolean;
   /** Coordinates specify an image rectangle, not Core/object positions. */
   draw(ctx: CanvasRenderingContext2D, name: FieldSpriteName,
     x: number, y: number, width: number, height: number,
@@ -18,6 +20,7 @@ export class FieldSpriteAtlas implements FieldSpritePainter {
   // A tiny bounded set of pre-rasterized plant hue variants. No per-frame
   // Canvas filter compositing in mobile software-rendered observers.
   private readonly plantVariants = new Map<string, HTMLCanvasElement>();
+  private readonly motionSheets = new Map<string, HTMLImageElement>();
   private started = false;
   private disposed = false;
 
@@ -27,6 +30,12 @@ export class FieldSpriteAtlas implements FieldSpritePainter {
     if (this.started || this.disposed || typeof Image === 'undefined'
       || typeof document === 'undefined') return;
     this.started = true;
+    for (const key of ['f-base','m-base','f-wrap','m-wrap']) {
+      const sheet=new Image();
+      sheet.onload=()=>{ if(!this.disposed)this.onReady(); };
+      sheet.src=new URL('field/motion-'+key+'.webp',document.baseURI).toString();
+      this.motionSheets.set(key,sheet);
+    }
     for (const name of FIELD_SPRITES) {
       const image = new Image();
       this.images.set(name, image);
@@ -78,7 +87,20 @@ export class FieldSpriteAtlas implements FieldSpritePainter {
     return true;
   }
 
+  drawResidentFrame(ctx:CanvasRenderingContext2D, female:boolean, wrapped:boolean,
+    frame:number, width:number, height:number):boolean {
+    const sheet=this.motionSheets.get((female?'f':'m')+(wrapped?'-wrap':'-base'));
+    if(!sheet?.complete || !sheet.naturalWidth)return false;
+    const cell=sheet.naturalWidth/4;
+    // The sole baseline is at row 186 of each 192-pixel animation cell.
+    ctx.drawImage(sheet,(frame%4)*cell,Math.floor(frame/4)*cell,cell,cell,
+      -width/2,-height*186/192,width,height);
+    return true;
+  }
+
   dispose(): void {
+    for(const sheet of this.motionSheets.values())sheet.onload=null;
+    this.motionSheets.clear();
     this.disposed = true;
     for (const image of this.images.values()) { image.onload = null; image.onerror = null; }
     this.images.clear();
