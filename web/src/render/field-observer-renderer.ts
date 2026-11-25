@@ -356,14 +356,11 @@ export function paintFieldWorld(
       ctx.strokeStyle='#f6e9b1';ctx.lineWidth=2.4;ctx.beginPath();
       ctx.ellipse(item.x,item.y,item.w*.54,item.w*.18,0,0,Math.PI*2);ctx.stroke();
     }
-    // Detailed per-person vector puppet takes priority in the real Canvas.
-    // Tests/nonstandard Canvas without transform support retain the initial
-    // authored sprite fallback, preserving no-WebGL recovery.
     const vectorResident=Boolean(item.resident&&item.frame
       &&typeof ctx.save==='function' &&typeof ctx.translate==='function'
       &&typeof ctx.scale==='function');
     if(vectorResident) drawFieldResident(ctx,item.resident!,item.x,item.y,
-      item.w,item.h,item.frame!);
+      item.w,item.h,item.frame!,art);
     let drawn=vectorResident;
     const varyPlant=item.variation!==undefined
       &&['pine','cedar','oak','bush'].includes(item.name)
