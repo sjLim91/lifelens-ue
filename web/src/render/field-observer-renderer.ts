@@ -8,7 +8,7 @@ import { shade } from './terrain-presentation';
 import { observedRiverLinks } from './isometric-natural-presentation';
 import type { IsometricWorldDrawOptions } from './isometric-canvas-world-renderer';
 import { createFieldProjection, type FieldView } from './field-projection';
-import { FieldSpriteAtlas, type FieldSpriteName, type FieldSpritePainter } from './field-asset-atlas';
+import { fieldArtworkWidth, FieldSpriteAtlas, type FieldSpriteName, type FieldSpritePainter } from './field-asset-atlas';
 import { fieldCoreClearances, fieldDecorativePositionClear, fieldFacilityArt,
   fieldSpriteVisualOcclusion, fieldVisualUnit } from './field-scene-clarity';
 import { drawFieldResident, FieldResidentMotion, type FieldResidentFrame } from './field-resident-presentation';
@@ -24,6 +24,9 @@ import { paintFieldCampGround, type FieldCampAnchor } from './field-settlement-i
 export type FieldWorldDrawOptions = IsometricWorldDrawOptions & {
   environment?: DynamicEnvironment | null;
   worldMinute?: number;
+  residentCloseup?:boolean;
+  pixelRatio?:number;
+  paused?:boolean;
 };
 
 export type FieldMarkerKind = 'resident' | 'trace' | 'settlement' | 'animal';
@@ -33,6 +36,7 @@ export interface FieldMarker {
   x: number;
   y: number;
   radius: number;
+  bodyHeight?:number;
 }
 export interface FieldPaintResult {
   chunks: number;
@@ -48,6 +52,11 @@ const blankCounts = (): Record<FieldSpriteName,number> => ({
 const clamp01 = (n: unknown) => Number.isFinite(Number(n)) ? Math.max(0,Math.min(1,Number(n))) : 0;
 
 /** Strictly read-only art for the same Core window used by the regional map. */
+const facilityHeight:Partial<Record<FieldSpriteName,number>>={
+  hut:1.85,store:1.5,site:1.65,workbench:.74,sleeping:.78,
+  fire:.43,furnace:.92,farm:.90,
+};
+
 export function paintFieldWorld(
   ctx: CanvasRenderingContext2D,
   view: FieldView,
@@ -73,6 +82,11 @@ export function paintFieldWorld(
   // Illustration assets should not balloon with a close observer camera.
   // Ground/picking always use the unmodified authoritative projection tile.
   const spriteTile=fieldVisualSpriteTile(tile,width,height);
+  // Screen height of a standing adult, shared by fauna, scenery and facilities.
+  const ratio=options.pixelRatio??1;
+  const adultHeight=options.residentCloseup
+    ? Math.min(width*.33,146*ratio)
+    : Math.min(86*ratio,spriteTile*.31);
   result.tile=tile;
   const sample=createTerrainElevationSampler(terrain);
   const chunks=[...terrain.chunks].filter(c=>Number.isFinite(c.x+c.y+c.elevation01))
@@ -214,7 +228,7 @@ export function paintFieldWorld(
     const forest=clamp01(c.forestCoverage01),rock=clamp01(c.rockCoverage01);
     const shrub=clamp01(c.shrubCoverage01),grass=clamp01(c.grassCoverage01);
     const biome=String(c.biome??'');
-    const addScenery=(name:FieldSpriteName,u:number,v:number,w:number,h:number)=>{
+    const addScenery=(name:FieldSpriteName,u:number,v:number,h:number)=>{
       const gx=c.x+u,gy=c.y+v;
       const radius=(name==='cliff'?.15:name==='rock'?.075:name==='flowers'?.025
         :name==='bush'?.055:.105);
@@ -224,22 +238,21 @@ export function paintFieldWorld(
       // changes species, hue or silhouette for a decorative plant.
       const variation=fieldVisualUnit(seed,c.x,c.y,
         20000+Math.floor(u*1024)+Math.floor(v*1024)*1031);
-      put(name,p,w,h,undefined,false,undefined,undefined,undefined,variation);
+      put(name,p,fieldArtworkWidth(name,h),h,undefined,false,undefined,undefined,undefined,variation);
     };
     // Cohesive observed-forest canopy groups. No extra ecology or
     // navigational obstacles exist in Core because of these decorations.
     const canopy=fieldForestDisplayClusters(seed,c.x,c.y,forest,biome);
     for(const tree of canopy) {
-      const size=spriteTile*tree.sizeFactor;
-      addScenery(tree.name,tree.u,tree.v,size,
-        size*(tree.name==='oak'?1.08:1.32));
+      const matureHeight=tree.name==='cedar'?4.6:tree.name==='pine'?3.6:3.2;
+      addScenery(tree.name,tree.u,tree.v,adultHeight*matureHeight*tree.sizeFactor/.48);
     }
     if(rock>.2) {
       const count=Math.min(4,Math.floor(rock*3)+1);
       for(let i=0;i<count;i++) {
         const u=.16+rand(c.x,c.y,220+i*3)*.68;
         const v=.14+rand(c.x,c.y,221+i*3)*.7;
-        const size=spriteTile*(.18+rock*.085);
+        const size=adultHeight*(.38+rock*.30);
         // A rock-rich flat plain cannot pretend to be a sheer mountain.
         // Inspect the real surface around this visual rock placement.
         const slopeSamples=[
@@ -250,7 +263,7 @@ export function paintFieldWorld(
         ];
         const steep=i===0&&fieldObservedRockFace(slopeSamples,rock);
         addScenery(steep?'cliff':'rock',u,v,
-          steep?size*2:size,steep?size*2.1:size*.87);
+          steep?size*3.8:size);
       }
     }
     const bushes=Math.min(4,Math.floor(shrub*4));
@@ -262,8 +275,7 @@ export function paintFieldWorld(
         :.13+rand(c.x,c.y,350+i*2)*.74;
       const v=anchor?Math.max(.08,Math.min(.92,anchor.v+(rand(c.x,c.y,351+i*2)-.5)*.32))
         :.13+rand(c.x,c.y,351+i*2)*.74;
-      const size=spriteTile*.20;
-      addScenery('bush',u,v,size,size*.73);
+      addScenery('bush',u,v,adultHeight*(.45+shrub*.22));
     }
     // Flowers are non-interactable art for actual grass habitat only.
     if(grass>.36 && forest<.67) {
@@ -273,8 +285,7 @@ export function paintFieldWorld(
       for(let i=0;i<count;i++) {
         const u=Math.max(.08,Math.min(.92,centerU+(rand(c.x,c.y,492+i*2)-.5)*.24));
         const v=Math.max(.08,Math.min(.92,centerV+(rand(c.x,c.y,493+i*2)-.5)*.24));
-        const size=spriteTile*.16;
-        addScenery('flowers',u,v,size,size*.67);
+        addScenery('flowers',u,v,adultHeight*.21);
       }
     }
   }
@@ -285,9 +296,10 @@ export function paintFieldWorld(
     const p=projection.gridPoint(trace.gridX,trace.gridY,elevation);
     const facilityArt=fieldFacilityArt(trace);
     const name=facilityArt.sprite;
-    const size=spriteTile*facilityArt.size;
+    const height=adultHeight*(facilityHeight[name]??1);
+    const size=fieldArtworkWidth(name,height);
     const marker:FieldMarker={kind:'trace',id:trace.id,x:p.x,y:p.y,radius:Math.max(17,size*.36)};
-    put(name,p,size,size*(name==='fire'?.86:.93),marker,
+    put(name,p,size,height,marker,
       trace.id===options.selectedHumanTraceId);
   }
   for(const settlement of options.civilization.available
@@ -297,9 +309,9 @@ export function paintFieldWorld(
     if(elevation===null)continue;
     const p=projection.gridPoint(settlement.gridX,settlement.gridY,elevation);
     // A settlement is an administrative site, not an additional physical hut.
-    const size=spriteTile*.17,marker:FieldMarker={
+    const height=adultHeight*1.16,size=fieldArtworkWidth('flag',height),marker:FieldMarker={
       kind:'settlement',id:settlement.id,x:p.x,y:p.y,radius:Math.max(18,size*.65)};
-    put('flag',p,size,size*1.2,marker,settlement.id===options.selectedSettlementId);
+    put('flag',p,size,height,marker,settlement.id===options.selectedSettlementId);
   }
   // The resident's drawn footpoint and click selection both use the same
   // continuity position, not a decorative/random offset or future target.
@@ -309,10 +321,10 @@ export function paintFieldWorld(
     const elevation=sampleGrid(pos.x,pos.y);
     if(elevation===null)continue;
     const p=projection.gridPoint(pos.x,pos.y,elevation);
-    const size=Math.max(22,Math.min(70,spriteTile*.235))
+    const size=(adultHeight/1.35)
       *fieldLifeStageScale(resident);
     const marker:FieldMarker={kind:'resident',id:resident.id,
-      x:p.x,y:p.y-6,radius:Math.max(15,size*.65)};
+      x:p.x,y:p.y-6,bodyHeight:size*1.27,radius:15+size*.22};
     const label=(resident as Resident & {name?:string}).name;
     const frame=motion?.frame(resident,pos.x,pos.y,nowMs);
     put(resident.sex==='Female'?'citizen_f':'citizen_m',p,size,size*1.27,marker,
@@ -329,8 +341,9 @@ export function paintFieldWorld(
     if(elevation===null)continue;
     const p=projection.gridPoint(animal.gridX,animal.gridY,elevation);
     const name:FieldSpriteName=animal.species==='Deer'?'deer':'hare';
-    const size=spriteTile*(name==='deer'?.225:.102);
-    put(name,p,size,size*.82,
+    const height=adultHeight*(name==='deer'?.92:.22);
+    const size=fieldArtworkWidth(name,height);
+    put(name,p,size,height,
       {kind:'animal',id:animal.id,x:p.x,y:p.y,radius:Math.max(10,size*.44)});
   }
   const people=items.filter(item=>item.name==='citizen_f'||item.name==='citizen_m')
@@ -340,7 +353,7 @@ export function paintFieldWorld(
   // The highlighted resident has a final screen-space outline on top.
   items.sort((a,b)=>a.depth-b.depth||a.x-b.x);
   for(const item of items) {
-    const left=item.x-item.w*.5,top=item.y-item.h*.93;
+    const left=item.x-item.w*.5,top=item.y-item.h;
     const previousAlpha=ctx.globalAlpha;
     const opacity=fieldSpriteVisualOcclusion(item,people);
     if(opacity<1)ctx.globalAlpha=opacity;
@@ -413,6 +426,8 @@ export class FieldObserverRenderer {
   private readonly atlas:FieldSpriteAtlas;
   private readonly motion=new FieldResidentMotion();
   private readonly terrainPainter=new FieldTerrainCompositor();
+  private motionTime=0;
+  private lastDrawTime=0;
   private last:{view:FieldView;terrain:TerrainWindow;markers:FieldMarker[]}|null=null;
   constructor(private readonly canvas:HTMLCanvasElement,
     private readonly continuity:ResidentContinuity,onAssetsReady:()=>void){
@@ -420,6 +435,7 @@ export class FieldObserverRenderer {
     if(!ctx)throw new Error('현장 관찰 Canvas 2D를 사용할 수 없습니다.');
     this.ctx=ctx;this.atlas=new FieldSpriteAtlas(onAssetsReady);
     this.atlas.warm();
+    this.terrainPainter.warm(onAssetsReady);
   }
   draw(options:FieldWorldDrawOptions):void {
     const started=performance.now();
@@ -428,9 +444,22 @@ export class FieldObserverRenderer {
       centerChunkX:options.centerX,centerChunkY:options.centerY,
       panX:options.panX,panZ:options.panZ,
     };
+    if(options.residentCloseup){
+      const person=options.residents.find(r=>r.id===options.selectedResidentId);
+      const pos=person&&this.continuity.positionFor(person);
+      if(pos){
+        const span=WORLD_GRID_CONTRACT.gridCellsPerChunk;
+        const units=WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+        view.zoom=3.6;
+        view.panX=(pos.x/span-view.centerChunkX-.5)*units;
+        view.panZ=(pos.y/span-view.centerChunkY-.5)*units;
+      }
+    }
     this.motion.prune(options.residents);
-    const stats=paintFieldWorld(this.ctx,view,options,this.continuity,this.atlas,
-      this.motion,performance.now(),this.terrainPainter);
+    if(!options.paused)this.motionTime+=Math.min(500,started-this.lastDrawTime);
+    this.lastDrawTime=started;
+    const stats=paintFieldWorld(this.ctx,view,{...options,pixelRatio:this.canvas.width/(this.canvas.clientWidth||this.canvas.width)},this.continuity,this.atlas,
+      this.motion,this.motionTime,this.terrainPainter);
     this.last=options.terrain?.available
       ?{view,terrain:options.terrain,markers:stats.markers}:null;
     runtimeDiagnostics.recordRender(performance.now()-started);
@@ -464,7 +493,7 @@ export class FieldObserverRenderer {
     const p=this.clientPoint(clientX,clientY);
     if(!p||!this.last)return null;
     const candidates=this.last.markers.filter(m=>m.kind===kind
-      &&Math.hypot(m.x-p.x,m.y-p.y)<=m.radius);
+      &&Math.hypot(m.x-p.x,Math.max(0,p.y-m.y,m.y-(m.bodyHeight??0)-p.y))<=m.radius);
     candidates.sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y));
     return candidates[0]?.id??null;
   }

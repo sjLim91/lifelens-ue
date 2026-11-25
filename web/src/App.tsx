@@ -17,7 +17,6 @@ import {
 } from './ui/observer-readout';
 import { DiagnosticsPanel } from './ui/diagnostics-panel';
 import {
-  ObservationFeedOverlay,
   ObservationFeedPanel,
   ObservationFocusBanner,
 } from './ui/observation-feed';
@@ -78,8 +77,6 @@ function WorldViewport({
   const activeRenderMode = readRenderMode();
   const experimentalWorldStyleAvailable = !useCanvasCompatibilityProfile() && activeRenderMode === 'three-world';
   const currentWorldStyle = readWorldVisualStyle();
-  const selectedTrace = visibleHumanTraces(snapshot.terrain)
-    .find(trace => trace.id === snapshot.selectedHumanTraceId);
   const focusedObservation = snapshot.focusedObservationId
     ? snapshot.observations.find(
         (event) => event.id === snapshot.focusedObservationId,
@@ -138,14 +135,6 @@ function WorldViewport({
             {' '}{snapshot.fastForward.requestedDays}일
           </span>
         </div>
-      )}
-
-      {!selectedTrace && (
-        <ObservationFeedOverlay
-          observations={snapshot.observations}
-          compactOnMobile={activeRenderMode === 'field-canvas'}
-          onFocus={(event) => observerActions.focusObservation(event)}
-        />
       )}
 
       <MobileObservationControls view={mobileView} onView={onMobileView} />
@@ -789,6 +778,7 @@ export default function App() {
   useEffect(() => {
     if (
       snapshot.selectedResidentId
+      && readRenderMode() !== 'field-canvas'
       && window.matchMedia(MOBILE_OBSERVER_QUERY).matches
     ) {
       setMobileModal('resident');

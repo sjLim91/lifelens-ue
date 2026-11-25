@@ -135,16 +135,14 @@ export function fieldClarityF1bChecks({test,source,chunk,windowOf}) {
       'selected resident outline must render over any foreground scenery');
   });
 
-  test('F1b mobile feed remains actionable and compact by default only on field view',()=>{
+  test('mobile field keeps playback in the menu and observations in the journal',()=>{
     const root=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
-    const overlay=readFileSync(resolve(root,'src/ui/observation-feed.tsx'),'utf8');
     const app=readFileSync(resolve(root,'src/App.tsx'),'utf8');
-    const css=readFileSync(resolve(root,'src/ui/observer-shell.css'),'utf8');
-    assert.match(overlay,/compactOnMobile = false/);
-    assert.match(overlay,/aria-expanded=\{expanded\}/);
-    assert.match(overlay,/onClick=\{\(\) => setExpanded/);
-    assert.match(app,/compactOnMobile=\{activeRenderMode === 'field-canvas'\}/);
-    assert.match(css,/field-compact-observation\.is-collapsed \.observation-feed-items/);
+    const controls=readFileSync(resolve(root,'src/ui/observer-controls.tsx'),'utf8');
+    assert.doesNotMatch(app,/<ObservationFeedOverlay/);
+    assert.doesNotMatch(controls,/className="world-playback"/);
+    assert.match(app,/<ObservationFeedPanel/);
+    assert.match(app,/onClick=.*setSimulationSpeed/);
   });
 
   test('F1b only original bundled asset names are loaded; new facility sprite files exist',()=>{

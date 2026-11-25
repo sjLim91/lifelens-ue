@@ -110,10 +110,20 @@ export function fieldWorldGroundColor(
 /** Offscreen textures are created once per changed Core snapshot and reused
  * during zoom, pan and animation. Capped for mobile RAM and Canvas2D budget. */
 export class FieldTerrainCompositor {
+  private meadow?:HTMLImageElement;
+
+  warm(onReady:()=>void){
+    if(this.meadow || typeof Image==='undefined')return;
+    const image=new Image();
+    image.onload=onReady;
+    this.meadow=image;
+    image.src=new URL('field/meadow-floor.webp',document.baseURI).toString();
+  }
+
   private readonly textures=new Map<string,HTMLCanvasElement>();
   private readonly limit=112;
   private readonly size=80;
-  private create(seed:string,chunk:TerrainChunk,lookup:FieldTerrainLookup){
+  private create(seed:string,chunk:TerrainChunk,lookup:FieldTerrainLookup,elev:GroundElevation){
     if(typeof document==='undefined')return null;
     const tex=document.createElement('canvas');
     tex.width=this.size;tex.height=this.size;
@@ -128,11 +138,24 @@ export class FieldTerrainCompositor {
       if(!rgb){rgb=parse(fieldNaturalFloorColor(c));colors.set(c,rgb);}
       return rgb;
     };
+    // Interpolate illumination from the observed elevation surface. Sample
+    // at a coarse spacing so a high zoom cannot amplify tiny height noise.
+    const relief=new Float32Array(81);
+    if(!isWater(chunk))for(let y=0;y<=8;y++)for(let x=0;x<=8;x++){
+      const u=x/8,v=y/8,r=.0625;
+      const dx=elev(chunk.x,chunk.y,Math.max(0,u-r),v)-elev(chunk.x,chunk.y,Math.min(1,u+r),v);
+      const dy=elev(chunk.x,chunk.y,u,Math.max(0,v-r))-elev(chunk.x,chunk.y,u,Math.min(1,v+r));
+      relief[y*9+x]=limit((dx*.8+dy)*480,-30,30);
+    }
     for(let j=0;j<this.size;j++)for(let i=0;i<this.size;i++){
       const u=(i+.5)/this.size,v=(j+.5)/this.size;
       const [r,g,b]=fieldWorldGroundColor(seed,chunk.x,chunk.y,u,v,lookup,readPalette);
       const k=(j*this.size+i)*4;
-      d[k]=r;d[k+1]=g;d[k+2]=b;d[k+3]=255;
+      const x=Math.floor(u*8),y=Math.floor(v*8),fx=u*8-x,fy=v*8-y;
+      const n=y*9+x;
+      const light=(relief[n]*(1-fx)+relief[n+1]*fx)*(1-fy)
+        +(relief[n+9]*(1-fx)+relief[n+10]*fx)*fy;
+      d[k]=r+light;d[k+1]=g+light;d[k+2]=b+light*.8;d[k+3]=255;
     }
     ctx.putImageData(img,0,0);
     // Authored brushwork stays inside the cached texture, never 80 repeated
@@ -217,7 +240,7 @@ export class FieldTerrainCompositor {
     const key=JSON.stringify([seed,chunk.x,chunk.y,...neighbors]);
     let image=this.textures.get(key);
     if(!image) {
-      const created=this.create(seed,chunk,lookup);
+      const created=this.create(seed,chunk,lookup,elev);
       if(!created)return false;
       if(this.textures.size>=this.limit){
         const first=this.textures.keys().next().value;
@@ -236,6 +259,23 @@ export class FieldTerrainCompositor {
     if(width<.1||height<.1)return false;
     ctx.drawImage(image,x0-.25,y0-.25,width+.5,height+.5);
     if(!isWater(chunk)){
+      const meadow=this.meadow;
+      if(meadow?.complete && meadow.naturalWidth){
+        // Four chunks share one swatch. Reflect adjacent swatches so their
+        // edge texels match, including at negative world coordinates.
+        const quadrant=(n:number)=>((n%2)+2)%2;
+        const flipX=quadrant(Math.floor(chunk.x/2))===1;
+        const flipY=quadrant(Math.floor(chunk.y/2))===1;
+        const sx=quadrant(chunk.x)^(flipX?1:0);
+        const sy=quadrant(chunk.y)^(flipY?1:0);
+        const half=meadow.naturalWidth/2;
+        ctx.save();
+        ctx.translate(x0+(flipX?width:0),y0+(flipY?height:0));
+        ctx.scale(flipX?-1:1,flipY?-1:1);
+        ctx.globalAlpha=.60;
+        ctx.drawImage(meadow,sx*half,sy*half,half,half,0,0,width+.25,height+.25);
+        ctx.restore();
+      }
       // Only steep, actually observed topography gets a muted ledge cue.
       // These do not create collision, terrain faces or imaginary cliffs.
       for(let y=0;y<4;y++)for(let x=0;x<4;x++){
@@ -257,7 +297,7 @@ export class FieldTerrainCompositor {
     }
     return true;
   }
-  clear(){this.textures.clear();}
+  clear(){this.textures.clear();if(this.meadow)this.meadow.onload=null;}
 }
 
 /**

@@ -5,6 +5,33 @@ export const FIELD_SPRITES = [
   'workbench','store','sleeping','furnace','farm','site','flag',
 ] as const;
 export type FieldSpriteName = typeof FIELD_SPRITES[number];
+// Pixel bounds of the painted subject in each padded WebP.
+const artworkBounds:Record<FieldSpriteName,readonly [number,number,number,number]>={
+  bush:[138,176,204,191],
+  cedar:[152,290,176,283],
+  citizen_f:[127,119,185,333],
+  citizen_m:[140,104,160,347],
+  cliff:[132,291,255,251],
+  deer:[151,86,218,312],
+  farm:[120,154,259,205],
+  fire:[138,199,204,179],
+  flag:[158,128,130,255],
+  flowers:[135,167,210,199],
+  furnace:[120,211,230,200],
+  hare:[158,173,136,189],
+  hut:[105,231,282,225],
+  oak:[104,283,270,266],
+  pine:[112,315,254,258],
+  rock:[140,160,239,200],
+  site:[93,182,283,208],
+  sleeping:[130,173,225,162],
+  store:[119,208,261,219],
+  workbench:[128,180,245,200],
+};
+export function fieldArtworkWidth(name:FieldSpriteName,height:number):number {
+  const [, , width, sourceHeight]=artworkBounds[name];
+  return height*width/sourceHeight;
+}
 export interface FieldSpritePainter {
   drawResidentFrame?(ctx:CanvasRenderingContext2D, female:boolean, wrapped:boolean,
     frame:number, width:number, height:number):boolean;
@@ -83,7 +110,12 @@ export class FieldSpriteAtlas implements FieldSpritePainter {
     const variant=variation===undefined?null:
       this.plantVariants.get(name+':'+Math.min(2,Math.max(0,
         Math.floor(variation*3))));
-    ctx.drawImage(variant??image, x, y, width, height);
+    if(image.src.endsWith('.webp')){
+      const [sx,sy,sw,sh]=artworkBounds[name];
+      ctx.drawImage(variant??image,sx,sy,sw,sh,x,y,width,height);
+    }else{
+      ctx.drawImage(variant??image,x,y,width,height);
+    }
     return true;
   }
 

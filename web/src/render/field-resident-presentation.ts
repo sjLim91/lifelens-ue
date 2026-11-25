@@ -10,6 +10,7 @@ export interface FieldResidentFrame {
   pose:FieldActionPose;
   /** 0..1, only active immediately after a real observed Core displacement. */
   step:number;
+  breath?:number;
   tool?:PhysicalArtifact|null;
 }
 export interface FieldResidentPalette {
@@ -114,10 +115,10 @@ export class FieldResidentMotion {
       facing,pose:action.pose,
       // Repeating motion is presentation only, and exists exclusively while
       // the Core is actively reporting that exact interaction.
-      step:nowMs>=0?((nowMs%920)/920):0,
+      step:nowMs>=0?(nowMs%actionDuration[action.pose])/actionDuration[action.pose]:0,
       tool:action.tool,
     };
-    return {facing,pose:'idle',step:0};
+    return {facing,pose:'idle',step:0,breath:(nowMs%3400)/3400};
   }
   prune(residents:readonly Resident[]):void {
     const present=new Set(residents.filter(r=>r.alive!==false).map(r=>r.id));
@@ -145,10 +146,14 @@ const path=(ctx:CanvasRenderingContext2D,points:ReadonlyArray<readonly [number,n
  * profile and diagonal face shapes, not just rotating a front-facing icon.
  * Apparent locomotion is a pose, NEVER movement of the Core footpoint.
  */
+const actionDuration:Record<FieldInteractionPose,number>={
+  idle:3200,sleep:3600,drink:1850,eat:1450,wash:1150,craft:1650,
+  build:1200,work:1400,tend:1750,gather:1650,
+};
 const residentFrames:Record<FieldActionPose,readonly number[]>={
   idle:[4], walk:[0,1,2,3], gather:[4,5,6,6,7,5], tend:[5,6,7,6],
-  work:[7,8,5,5], build:[5,8,8,5], craft:[7,8,7,5],
-  eat:[4,8,9,9,8], drink:[4,8,9,9,9,8], wash:[5,8,10,10,8], sleep:[11],
+  work:[5,7,20,21,20,5], build:[20,21,22,22,23,20], craft:[16,17,18,19,19,17],
+  eat:[4,8,9,9,8], drink:[12,13,14,14,15,4], wash:[5,8,10,10,8], sleep:[11],
 };
 
 export function drawFieldResident(
@@ -169,7 +174,7 @@ export function drawFieldResident(
   const stride=moving?Math.sin(frame.step*Math.PI*4)*5.5:0;
   const lift=working?Math.sin(frame.step*Math.PI*2)*3.5:0;
   const bend=gather?5:handToFace?2:0;
-  const breathe=1+Math.sin(frame.step*Math.PI*2)*.012;
+  const breathe=1+Math.sin((frame.breath??frame.step)*Math.PI*2)*.012;
   ctx.save();
   ctx.translate(x,y);
   ctx.scale(width/80*(left?-1:1),height/118*a.height);
@@ -181,7 +186,7 @@ export function drawFieldResident(
     const garment=r.civilization?.wornGarment;
     const wrapped=garment?.item==='PrimitiveWrap' && (garment.quantity??1)>0;
     const painted=art.drawResidentFrame(ctx,r.sex==='Female',wrapped,cell,
-      148*a.build,138*(sleep?breathe:1));
+      148*a.build,138*(sleep||frame.pose==='idle'?breathe:1));
     if(painted){
       if(frame.pose==='gather'&&frame.tool)drawFieldArtifact(ctx,frame.tool);
       ctx.restore();
