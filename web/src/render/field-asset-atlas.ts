@@ -12,7 +12,7 @@ export interface FieldSpritePainter {
     variation?: number): boolean;
 }
 
-/** Small original SVG artwork; one Image instance per reusable sprite, not per tree. */
+/** Small original field artwork; one Image instance per reusable sprite, not per tree. */
 export class FieldSpriteAtlas implements FieldSpritePainter {
   private readonly images = new Map<FieldSpriteName, HTMLImageElement>();
   // A tiny bounded set of pre-rasterized plant hue variants. No per-frame
@@ -37,9 +37,13 @@ export class FieldSpriteAtlas implements FieldSpritePainter {
         }
         this.onReady();
       };
-      image.onerror = () => { if (!this.disposed) console.warn('LifeLens field sprite unavailable:', name); };
+      image.onerror = () => {
+        if (this.disposed) return;
+        image.onerror = null;
+        image.src = new URL('field/' + name + '.svg', document.baseURI).toString();
+      };
       // Vite base './' also works on GitHub Pages /lifelens-ue/ and locally.
-      image.src = new URL('field/' + name + '.svg', document.baseURI).toString();
+      image.src = new URL('field/' + name + '.webp', document.baseURI).toString();
     }
   }
 
