@@ -75,7 +75,7 @@ export function fieldWorldGroundColor(
   const edge=waterNeighbor.length?Math.min(...waterNeighbor.map(e=>e.edge)):1;
   const ripple=.012*Math.sin((gx+gy)*21+phase)+.009*Math.cos((gx-gy)*31+phase);
   const shallow=limit((.09-edge+ripple)/.09);
-  const target=water?[131,181,166]:[157,166,117];
+  const target=water?[162,197,165]:[157,166,117];
   // Soft, overlapping forest-floor shadows express *observed habitat*
   // without stamping arbitrary extra tree entities. Interpolating forest
   // cover at the same four Core centers avoids rectangular chunk edges.
@@ -98,7 +98,8 @@ export function fieldWorldGroundColor(
   const woodland=(Math.sin(gx*7.1+phase)*Math.cos(gy*5.8-phase*.3)
     +Math.sin(gx*3.2-gy*4.6+phase)*.55);
   const canopy=water?0:coverage*(.40+.60*smooth((woodland+.55)/1.4));
-  const darkening=canopy*26;
+  const deep=water?smooth(edge/.32):0;
+  const darkening=canopy*26+deep*(chunk.waterKind==='Ocean'?22:13);
   const warmth=canopy*5;
   return [
     limit(rgb[0]+variance-darkening*.83+warmth,0,255)*(1-shallow*.40)+target[0]*shallow*.40,
@@ -111,12 +112,26 @@ export function fieldWorldGroundColor(
  * during zoom, pan and animation. Capped for mobile RAM and Canvas2D budget. */
 export class FieldTerrainCompositor {
   private meadow?:HTMLImageElement;
+  private water?:HTMLImageElement;
+  private waterPatterns=new WeakMap<CanvasRenderingContext2D,CanvasPattern>();
+  waterPattern(ctx:CanvasRenderingContext2D){
+    if(!this.water?.complete || !this.water.naturalWidth)return null;
+    let pattern=this.waterPatterns.get(ctx);
+    if(!pattern){
+      pattern=ctx.createPattern(this.water,'repeat')??undefined;
+      if(pattern)this.waterPatterns.set(ctx,pattern);
+    }
+    return pattern;
+  }
 
   warm(onReady:()=>void){
     if(this.meadow || typeof Image==='undefined')return;
     const image=new Image();
     image.onload=onReady;
     this.meadow=image;
+    this.water=new Image();
+    this.water.onload=onReady;
+    this.water.src=new URL('field/water-surface.webp',document.baseURI).toString();
     image.src=new URL('field/meadow-floor.webp',document.baseURI).toString();
   }
 
@@ -168,13 +183,13 @@ export class FieldTerrainCompositor {
     const rock=limit(chunk.rockCoverage01??0);
     const water=isWater(chunk);
     if(water){
-      const count=10+Math.floor(rand()*7);
+      const count=20+Math.floor(rand()*12);
       for(let i=0;i<count;i++){
         const x=rand()*this.size,y=rand()*this.size,w=2+rand()*9;
         ctx.strokeStyle=`rgba(216, 234, 208, ${(.12+rand()*.15).toFixed(3)})`;
         ctx.lineWidth=.65+rand()*.45;
         ctx.beginPath();ctx.moveTo(x-w*.5,y);
-        ctx.quadraticCurveTo(x,y-1.2,x+w*.5,y-.3);ctx.stroke();
+        ctx.quadraticCurveTo(x,y-.6-rand()*.9,x+w*.5,y-.3);ctx.stroke();
       }
     }else{
       // Diffuse meadow patches, with smaller muted plant and earth gestures.
@@ -258,6 +273,12 @@ export class FieldTerrainCompositor {
     const width=Math.abs(q.x-p.x),height=Math.abs(q.y-p.y);
     if(width<.1||height<.1)return false;
     ctx.drawImage(image,x0-.25,y0-.25,width+.5,height+.5);
+    if(isWater(chunk) && this.water?.complete && this.water.naturalWidth){
+      ctx.save();
+      ctx.globalAlpha=chunk.waterKind==='Lake'?.40:.24;
+      ctx.drawImage(this.water,x0,y0,width,height);
+      ctx.restore();
+    }
     if(!isWater(chunk)){
       const meadow=this.meadow;
       if(meadow?.complete && meadow.naturalWidth){
@@ -297,7 +318,7 @@ export class FieldTerrainCompositor {
     }
     return true;
   }
-  clear(){this.textures.clear();if(this.meadow)this.meadow.onload=null;}
+  clear(){this.textures.clear();if(this.meadow)this.meadow.onload=null;if(this.water)this.water.onload=null;}
 }
 
 /**

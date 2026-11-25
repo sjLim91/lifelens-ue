@@ -192,7 +192,7 @@ export function paintFieldWorld(
     const b=screen(edge.to.x,edge.to.y,
       sample(edge.to.x,edge.to.y,.5,.5)+.002);
     if(!visible((a.x+b.x)*.5,(a.y+b.y)*.5,tile))continue;
-    paintObservedFieldRiver(ctx,a,b,edge,tile);
+    paintObservedFieldRiver(ctx,a,b,edge,tile,nowMs/1000,terrainPainter?.waterPattern(ctx));
   }
   // Render faint inhabited ground only at actual observed facilities, before
   // objects/actors. These washes are environmental paint, not new roads.
@@ -353,6 +353,12 @@ export function paintFieldWorld(
   // The highlighted resident has a final screen-space outline on top.
   items.sort((a,b)=>a.depth-b.depth||a.x-b.x);
   for(const item of items) {
+    const sleep=item.resident?.presentation;
+    if(sleep?.active && sleep.phase==='Interacting' && sleep.physicalGoal==='Sleep'
+      && sleep.sleepContext==='Protected' && sleep.facilityKind==='Shelter'){
+      result.sprites[item.name]++;
+      continue; // The resident occupies the roofed interior at this Core position.
+    }
     const left=item.x-item.w*.5,top=item.y-item.h;
     const previousAlpha=ctx.globalAlpha;
     const opacity=fieldSpriteVisualOcclusion(item,people);
@@ -413,8 +419,9 @@ export function paintFieldWorld(
     if(item.label){
       ctx.font='bold 12px sans-serif';ctx.textAlign='center';
       ctx.fillStyle='#ffffff';ctx.strokeStyle='rgba(24,39,31,.88)';ctx.lineWidth=3;
-      ctx.strokeText(item.label,item.x,item.y-item.h-7);
-      ctx.fillText(item.label,item.x,item.y-item.h-7);
+      const label=item.resident?.presentation?.sleepContext==='Protected' ? item.label+' · 집 안에서 수면 중' : item.label;
+      ctx.strokeText(label,item.x,item.y-item.h-7);
+      ctx.fillText(label,item.x,item.y-item.h-7);
     }
   }
   return result;

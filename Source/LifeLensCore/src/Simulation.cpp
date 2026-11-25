@@ -2112,10 +2112,10 @@ Simulation::nearestAvailableOperationalSleepFacility(
             facilityEffectiveness01(facility)),travelLimit});
     }
     std::sort(candidates.begin(),candidates.end(),[](const Candidate& a,const Candidate& b){
+        const bool roofA=facilityProvidesWeatherProtection(a.facility->kind);
+        const bool roofB=facilityProvidesWeatherProtection(b.facility->kind);
+        if(roofA!=roofB) return roofA;
         if(a.cost!=b.cost) return a.cost<b.cost;
-        if(a.facility->kind!=b.facility->kind){
-            return a.facility->kind==FacilityKind::SleepingPlace;
-        }
         return a.facility->id<b.facility->id;
     });
     // Navigation remains authoritative. Reject inaccessible or excessive
@@ -3555,21 +3555,11 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             if(r.goal==Goal::Sleep){
                 if(r.navigationArrived
                    && world_.minute%SleepEnvironmentContract::ReplanIntervalMinutes==0){
-                    const auto weather=deriveDynamicEnvironment(
-                        world_.genesisIdentity(),chunkCoordForGrid(r.pos),world_.minute);
                     const auto* occupied=bestOperationalSleepFacility(world_,r.pos,0);
-                    const bool protectedSleep=occupied!=nullptr
-                        && facilityProvidesWeatherProtection(occupied->kind);
-                    const auto environment=evaluateSleepEnvironment(
-                        weather,deriveEnvironmentalConsequences(weather),protectedSleep);
-                    if(environment.exposedEmergencyOnly){
+                    if(occupied==nullptr || !facilityProvidesWeatherProtection(occupied->kind)){
                         const auto* safer=nearestAvailableOperationalSleepFacility(c.id,r.pos,
                             sleepDiagnosticsEnabled_ ? &sleepDiagnostics_[c.id] : nullptr);
-                        if(safer!=nullptr && facilityProvidesWeatherProtection(safer->kind)
-                           && sleepCandidateCost(environment,true,manhattan(r.pos,safer->pos),
-                               c.needs.sleep,facilityEffectiveness01(*safer))
-                              +SleepEnvironmentContract::ReplanCostImprovement
-                              <sleepCandidateCost(environment,false,0,c.needs.sleep,1.0)){
+                        if(safer!=nullptr && facilityProvidesWeatherProtection(safer->kind)){
                             closeDiagnosticSleepSession(c.id,c.needs.sleep,SleepDiagnosticEnd::Replan);
                             if(sleepDiagnosticsEnabled_){
                                 ++sleepDiagnostics_[c.id].replans;

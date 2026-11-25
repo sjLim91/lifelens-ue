@@ -165,6 +165,23 @@ export function fieldResidentF2bChecks({test,source,chunk,windowOf}){
     assert.equal(far.pose,'idle');
   });
 
+  test('sleepers are indoors only while the Core reports protected sleep in a shelter',()=>{
+    const terrain=windowOf([chunk(0,0,'None',.5)],0,0,'sleep');
+    const view={width:390,height:700,centerChunkX:0,centerChunkY:0,zoom:1};
+    for(const [phase,context,expected] of [
+      ['Interacting','Protected',0],['Moving','Protected',1],['Interacting','Exposed',1],
+    ]){
+      const person=r({active:true,kind:'Physical',physicalGoal:'Sleep',phase,
+        sleepContext:context,facilityKind:'Shelter'});
+      let bodies=0;
+      const result=paintFieldWorld(canvas().ctx,view,{terrain,residents:[person],
+        civilization:{available:false},centerX:0,centerY:0,zoom:1},new ResidentContinuity(),
+        {draw:()=>true,drawResidentFrame:()=>{bodies++;return true;}},new FieldResidentMotion(),1000);
+      assert.equal(bodies,expected);
+      assert.ok(result.markers.some(m=>m.id===person.id));
+    }
+  });
+
   test('F2b real age-scaled field actor preserves Core footpoint and selection',()=>{
     const terrain=windowOf([chunk(0,0,'None',.5,{forestCoverage01:0})],0,0,'stage');
     const {ctx}=canvas();
