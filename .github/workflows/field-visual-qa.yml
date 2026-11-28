@@ -79,6 +79,7 @@ jobs:
           name: lifelens-field-v3-mobile-${{ github.run_id }}
           path: |
             artifacts/lifelens-field-v3-mobile.png
+            artifacts/lifelens-field-v3-mobile.png.trace.json
             artifacts/field-baseline-provenance.txt
           if-no-files-found: warn
           retention-days: 14
