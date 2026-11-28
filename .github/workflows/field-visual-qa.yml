@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'docs/graphics-v4/**'
       - 'web/src/render/field-*.ts'
       - 'web/public/field/**'
       - 'web/tests/presentation/**'
@@ -42,6 +43,15 @@ jobs:
             --dir web/public/runtime --clobber
           test -s web/public/runtime/lifelens_core.js
           test -s web/public/runtime/lifelens_core.wasm
+      - name: Record checked-out source and runtime provenance
+        run: |
+          mkdir -p artifacts
+          {
+            git rev-parse HEAD
+            gh release view web-runtime-latest --repo "${GITHUB_REPOSITORY}" --json id,tagName,publishedAt,targetCommitish
+            sha256sum web/public/runtime/lifelens_core.js web/public/runtime/lifelens_core.wasm
+            node --version
+          } | tee artifacts/field-baseline-provenance.txt
       - name: Build exact PR field
         run: npm run build
         working-directory: web
@@ -67,6 +77,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lifelens-field-v3-mobile-${{ github.run_id }}
-          path: artifacts/lifelens-field-v3-mobile.png
+          path: |
+            artifacts/lifelens-field-v3-mobile.png
+            artifacts/lifelens-field-v3-mobile.png.trace.json
+            artifacts/field-baseline-provenance.txt
           if-no-files-found: warn
           retention-days: 14

@@ -59,9 +59,27 @@ try{
     {width:390,height:844,deviceScaleFactor:1,mobile:true});
   await send('Page.addScriptToEvaluateOnNewDocument',{
     source:`window.paintedResidentSheets=new Set();
+      window.fieldBaselineTrace={canvasDraws:0,rectSamples:[],rafIntervals:[]};
+      let lastFrame;
+      function sampleFrame(now){
+        if(lastFrame!==undefined && window.fieldBaselineTrace.rafIntervals.length<600)
+          window.fieldBaselineTrace.rafIntervals.push(now-lastFrame);
+        lastFrame=now;
+        if(window.fieldBaselineTrace.rafIntervals.length<600)requestAnimationFrame(sampleFrame);
+      }
+      requestAnimationFrame(sampleFrame);
       const drawImage=CanvasRenderingContext2D.prototype.drawImage;
       CanvasRenderingContext2D.prototype.drawImage=function(image,...args){
         const result=drawImage.call(this,image,...args);
+        if(this.canvas.id==='worldCanvas' && image instanceof HTMLCanvasElement && args.length===4){
+          const trace=window.fieldBaselineTrace;
+          trace.canvasDraws++;
+          if(trace.rectSamples.length<128)trace.rectSamples.push({
+            sourceWidth:image.width,sourceHeight:image.height,destination:args,
+            transform:[this.getTransform().a,this.getTransform().b,this.getTransform().c,
+              this.getTransform().d,this.getTransform().e,this.getTransform().f]
+          });
+        }
         if(this.canvas.id==='worldCanvas' && image.src?.includes('/field/motion-')){
           window.paintedResidentSheets.add(image.src.split('/').pop());
         }
@@ -113,6 +131,14 @@ try{
         assert(bytes.length>16000,'screenshot is unexpectedly small');
         mkdirSync(resolve(output,'..'),{recursive:true});
         writeFileSync(output,bytes);
+        const diagnostic=await send('Runtime.evaluate',{returnByValue:true,expression:
+          'JSON.stringify(window.fieldBaselineTrace)'});
+        assert(diagnostic?.result?.value,'baseline trace unavailable');
+        writeFileSync(output+'.trace.json',JSON.stringify({
+          url,viewport:{width:390,height:844,deviceScaleFactor:1},
+          caveat:'Offscreen canvas rectangle candidates only; no chunk/water classification. rAF intervals are browser callback timing, not renderer FPS.',
+          observation:latest,trace:JSON.parse(diagnostic.result.value),runtimeExceptions:errors
+        },null,2));
         console.log('FIELD_VISUAL_BROWSER_PASS '+JSON.stringify({...latest,
           screenshot:output,bytes:bytes.length}));
         process.exitCode=0;
